@@ -5,6 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<script>
+/* El icono de la pantalla de inicio se queda con una copia congelada del HTML y
+   no la refresca solo: por eso segui viendo la v8.2 con la v10 ya subida. Esto
+   fuerza UNA carga fresca por sesion (la marca en sessionStorage evita que se
+   quede dando vueltas). Al cerrar la app la marca se borra, asi que la proxima
+   vez que la abras vuelve a pedir el archivo nuevo. */
+(function(){
+  try{
+    if(!sessionStorage.getItem('ventaja_fresco')){
+      sessionStorage.setItem('ventaja_fresco','1');
+      location.replace(location.href.split('#')[0].split('?')[0]+'?t='+Date.now());
+    }
+  }catch(e){}
+})();
+</script>
 <title>Ventaja</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -215,6 +233,19 @@ details[open] summary:before{content:'▾ '}
  font-size:15px;flex:0 0 auto}
 .row.hcrow .par input{width:80px;flex:0 0 80px;text-align:center}
 .row.hcrow .esc{width:21px;height:21px}
+.row.hcrow .sel{display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:1px 0 9px;
+ border-bottom:1px solid var(--line);margin-bottom:5px}
+.row.hcrow .sel .q{flex:1 1 100%;font-size:12.5px;color:var(--muted);line-height:1.45}
+.teq{background:var(--night2);color:var(--muted);border:1px solid var(--line);border-radius:20px;
+ padding:6px 13px;font-family:var(--cond);font-size:16px;font-weight:600;box-shadow:none;
+ display:inline-flex;align-items:center;gap:6px;letter-spacing:.2px}
+.teq.on{background:var(--panel2);color:var(--chalk);border-color:var(--signal)}
+.pt{width:14px;height:14px;border-radius:50%;flex:0 0 14px;display:inline-block;
+ border:1px solid rgba(0,0,0,.35)}
+.pt.verde{background:#22C55E}
+.pt.rojo{background:#EF4444}
+.row.hcrow .par label b{font-weight:600;color:var(--chalk);display:inline-flex;
+ align-items:center;gap:5px}
 
 .manual,.registro,.gane{margin-top:28px;border-top:1px solid var(--line);padding-top:18px}
 .manual h2,.registro h2,.gane h2{font-family:var(--cond);font-size:25px;margin:0 0 4px;
@@ -296,7 +327,7 @@ footer summary{font-family:var(--cond);font-size:16px;color:var(--muted);padding
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><span class="ball">&#9918;</span>Ventaja <span class="ver">v10</span></h1>
+  <h1 class="brand"><span class="ball">&#9918;</span>Ventaja <span class="ver">v11</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -722,28 +753,66 @@ function malPar(box){
   return null;
 }
 function malCruce(root){
+  /* Ya no se asume que la primera caja es la del visitante: cada caja dice, en su
+     data-nf/data-nd, a que equipo le toca el -1.5 y a cual el +1.5 segun lo que
+     escogiste arriba. */
   var cmp=root.querySelector('.cmp');
-  var bs=root.querySelectorAll('.row[data-hc]');
-  if(!cmp||bs.length<2) return null;
+  var bs=[].slice.call(root.querySelectorAll('.row[data-hc]'));
+  if(!cmp||!bs.length) return null;
   var g=function(el,c){ var i=el.querySelector(c); return i?impMod(i.value):null; };
   var nA=cmp.dataset.na||'Visita', nH=cmp.dataset.nh||'Local';
-  var pares=[
-    {n:nA, ml:g(cmp,'.ca'), menos:g(bs[0],'.hf'), mas:g(bs[1],'.hd')},
-    {n:nH, ml:g(cmp,'.ch'), menos:g(bs[1],'.hf'), mas:g(bs[0],'.hd')}
-  ];
-  for(var i=0;i<pares.length;i++){
-    var p=pares[i];
-    if(p.ml==null) continue;
-    if(p.menos!=null&&p.menos>p.ml+2)
-      return '«'+esc(p.n)+' gana por 2+» te sale m&aacute;s probable ('+p.menos.toFixed(0)+'%) que '+
-        '«'+esc(p.n)+' gana el juego» ('+p.ml.toFixed(0)+'%). Ganar por 2 es un pedazo de ganar, '+
+  var ml={}; ml[nA]=g(cmp,'.ca'); ml[nH]=g(cmp,'.ch');
+  if(bs.length>1 && bs[0].dataset.sel===bs[1].dataset.sel &&
+     ((bs[0].querySelector('.hf').value||'').trim()||(bs[1].querySelector('.hf').value||'').trim()))
+    return 'Las dos cajas est&aacute;n puestas en <b>'+esc(bs[0].dataset.nf)+'</b>, o sea el mismo '+
+      'mercado dos veces. Cambia una al otro equipo, o d&eacute;jala vac&iacute;a.';
+  var menos={}, mas={};
+  bs.forEach(function(b){
+    var vf=g(b,'.hf'), vd=g(b,'.hd');
+    if(vf!=null) menos[b.dataset.nf]=vf;
+    if(vd!=null) mas[b.dataset.nd]=vd;
+  });
+  var nombres=[nA,nH];
+  for(var i=0;i<nombres.length;i++){
+    var n=nombres[i];
+    if(ml[n]==null) continue;
+    if(menos[n]!=null&&menos[n]>ml[n]+2)
+      return '«'+esc(n)+' gana por 2+» te sale m&aacute;s probable ('+menos[n].toFixed(0)+'%) que '+
+        '«'+esc(n)+' gana el juego» ('+ml[n].toFixed(0)+'%). Ganar por 2 es un pedazo de ganar, '+
         'as&iacute; que siempre tiene que costar menos. Uno de los dos precios est&aacute; mal.';
-    if(p.mas!=null&&p.mas<p.ml-2)
-      return '«'+esc(p.n)+' pierde por 1 o gana» te sale menos probable ('+p.mas.toFixed(0)+'%) que '+
-        '«'+esc(p.n)+' gana el juego» ('+p.ml.toFixed(0)+'%). Imposible: ganar ya est&aacute; incluido '+
+    if(mas[n]!=null&&mas[n]<ml[n]-2)
+      return '«'+esc(n)+' pierde por 1 o gana» te sale menos probable ('+mas[n].toFixed(0)+'%) que '+
+        '«'+esc(n)+' gana el juego» ('+ml[n].toFixed(0)+'%). Imposible: ganar ya est&aacute; incluido '+
         'ah&iacute; dentro. Uno de los dos precios est&aacute; mal.';
   }
   return null;
+}
+/* La caja del handicap. Antes eran cuatro casillas sueltas etiquetadas -1.5 y
+   +1.5 y habia que traducir mentalmente cual era cual; ahora escoges el equipo
+   que aparece en el titulo del contrato y solo copias el verde y el rojo, en el
+   mismo orden en que Kalshi los pinta. */
+function cajaHandicap(nomA,nomH,idA,idH,aPor2,hPor2,sel){
+  var pfA=(aPor2*100).toFixed(3), pdA=((1-aPor2)*100).toFixed(3);
+  var pfH=(hPor2*100).toFixed(3), pdH=((1-hPor2)*100).toFixed(3);
+  var esA=(sel==='a');
+  var nf=esA?nomA:nomH, nd=esA?nomH:nomA;
+  var idf=esA?idA:idH, idd=esA?idH:idA;
+  return '<div class="row hcrow" data-hc="1" data-sel="'+sel+'"'+
+    ' data-pfa="'+pfA+'" data-pda="'+pdA+'" data-pfh="'+pfH+'" data-pdh="'+pdH+'"'+
+    ' data-na="'+nomA+'" data-nh="'+nomH+'" data-ia="'+idA+'" data-ih="'+idH+'"'+
+    ' data-pf="'+(esA?pfA:pfH)+'" data-pd="'+(esA?pdA:pdH)+'"'+
+    ' data-nf="'+nf+'" data-nd="'+nd+'">'+
+    '<div class="sel"><span class="q">&#191;Qu&eacute; equipo dice el t&iacute;tulo del contrato?</span>'+
+      '<button class="teq'+(esA?' on':'')+'" data-w="a">'+escudo(idA,20)+nomA+'</button>'+
+      '<button class="teq'+(esA?'':' on')+'" data-w="h">'+escudo(idH,20)+nomH+'</button>'+
+    '</div>'+
+    '<div class="par"><label><i class="pt verde"></i>'+
+      '<span>Verde (S&iacute;) &middot; <b class="lv">'+escudo(idf,18)+nf+' gana por 2+</b></span></label>'+
+      '<input type="text" class="hf" placeholder="'+ph('+175','40')+'"></div>'+
+    '<div class="par"><label><i class="pt rojo"></i>'+
+      '<span>Rojo (No) &middot; <b class="lr">'+escudo(idd,18)+nd+' pierde por 1 o gana</b></span></label>'+
+      '<input type="text" class="hd" placeholder="'+ph('-175','61')+'"></div>'+
+    '<div class="aviso"></div><div class="out"></div></div>';
 }
 function revisarHc(root){
   var bs=[].slice.call(root.querySelectorAll('.row[data-hc]'));
@@ -2121,33 +2190,21 @@ function detalle(x){
   '</table>'+
   (por1>0.38?'<div class="flag">El modelo da '+pc(por1)+' de juegos decididos por una sola carrera. '+
     'La MLB real anda cerca del 30%, así que aquí el +1.5 viene algo optimista. Tómalo con pinzas.</div>':'')+
-  '<div class="receta"><b>Cómo copiar el hándicap sin equivocarte</b>'+
+  '<div class="receta"><b>Cómo copiar el hándicap, en dos pasos</b>'+
   '<ol>'+
-  '<li>Lee el <b>nombre del título</b> del contrato («Atlanta gana por más de 1.5»). Ese equipo manda: es la fila donde ese equipo aparece con «gana por 2+».</li>'+
-  '<li>El precio <b>verde (Sí)</b> va en «gana por 2+». El <b>rojo (No)</b> va en el renglón de abajo, el del rival.</li>'+
-  '<li>El de arriba siempre tiene que ser <b>menor</b> que el de abajo, y los dos suman cerca de 100.</li>'+
+  '<li>Mira el <b>título</b> del contrato en Kalshi («Minnesota gana por más de 1.5») y toca ese equipo aquí abajo.</li>'+
+  '<li>Copia los dos precios <b>en el mismo orden en que los ves</b>: el verde en la casilla verde, el rojo en la roja. Ya está — la app los coloca donde van.</li>'+
   '</ol>'+
-  'Llena una fila o las dos, según lo que liste tu casa; Kalshi suele listar los dos mercados. '+
-  'Si algo no cuadra, la app te lo dice en rojo y no calcula ventaja con esos números.</div>'+
+  'Kalshi lista los dos mercados (uno por equipo), así que puedes llenar las dos cajas: '+
+  'una con cada equipo en el título. Si algo no cuadra te lo dice en rojo y no calcula '+
+  'ventaja con esos números.</div>'+
   (brecha>=0.60?'<div class="flag">⚠️ Tu fórmula de pesos dice '+(deltaFinal>=0?'+':'')+deltaFinal.toFixed(2)+
     ' carreras y el método multiplicativo dice '+(deltaMult>=0?'+':'')+deltaMult.toFixed(2)+
     '. Son dos maneras independientes de medir lo mismo y se separan '+brecha.toFixed(2)+
     ' carreras, casi siempre porque un abridor tiene muestra corta o el ERA de bullpen viene raro. '+
     'Si juegas este partido, hazlo con medio stake.</div>':'')+
-  '<div class="row hcrow" data-hc="1" data-pf="'+(aPor2*100).toFixed(3)+'" data-pd="'+((1-aPor2)*100).toFixed(3)+
-    '" data-nf="'+nomA+'" data-nd="'+nomH+'">'+
-    '<div class="par"><label>'+escudo(idA,21)+'<span>'+nomA+' gana por 2+</span><i>−1.5</i></label>'+
-      '<input type="text" class="hf" placeholder="'+ph('+175','26')+'"></div>'+
-    '<div class="par"><label>'+escudo(idH,21)+'<span>'+nomH+' pierde por 1 o gana</span><i>+1.5</i></label>'+
-      '<input type="text" class="hd" placeholder="'+ph('-175','76')+'"></div>'+
-    '<div class="aviso"></div><div class="out"></div></div>'+
-  '<div class="row hcrow" data-hc="1" data-pf="'+(hPor2*100).toFixed(3)+'" data-pd="'+((1-hPor2)*100).toFixed(3)+
-    '" data-nf="'+nomH+'" data-nd="'+nomA+'">'+
-    '<div class="par"><label>'+escudo(idH,21)+'<span>'+nomH+' gana por 2+</span><i>−1.5</i></label>'+
-      '<input type="text" class="hf" placeholder="'+ph('+175','42')+'"></div>'+
-    '<div class="par"><label>'+escudo(idA,21)+'<span>'+nomA+' pierde por 1 o gana</span><i>+1.5</i></label>'+
-      '<input type="text" class="hd" placeholder="'+ph('-175','59')+'"></div>'+
-    '<div class="aviso"></div><div class="out"></div></div>'+
+  cajaHandicap(nomA,nomH,idA,idH,aPor2,hPor2,'a')+
+  cajaHandicap(nomA,nomH,idA,idH,aPor2,hPor2,'h')+
   '<div class="aviso avcruce"></div>'+
   '<div class="flag">Si te aparecen las dos filas con valor a la vez, casi seguro hay un precio mal copiado: '+
   'son cuatro lados del mismo juego y no pueden estar todos baratos.</div>'+
@@ -2341,8 +2398,11 @@ function conectar(root){
     box.querySelectorAll('input').forEach(function(i){ i.addEventListener('input',ev); });
   });
   root.querySelectorAll('.row[data-hc]').forEach(function(box){
-    var pf=+box.dataset.pf, pd=+box.dataset.pd, out=box.querySelector('.out');
+    var out=box.querySelector('.out');
     var ev=function(){
+      /* pf y pd se leen aqui dentro y no al enlazar: cambian cuando cambias el
+         equipo del titulo con los botones de arriba */
+      var pf=+box.dataset.pf, pd=+box.dataset.pd;
       revisarHc(root);
       if(box.dataset.malo==='1'){
         /* con los precios cruzados no se calcula nada: el aviso ya explica que pasa */
@@ -2360,6 +2420,23 @@ function conectar(root){
       else { out.className='out '+(hay?'si':'no'); out.innerHTML=msgs.map(esc).join('<br>'); }
       actualizarRanking(root);
     };
+    box.querySelectorAll('.teq').forEach(function(b){
+      b.addEventListener('click',function(){
+        var esA=(b.dataset.w==='a');
+        box.dataset.sel=b.dataset.w;
+        box.dataset.pf=esA?box.dataset.pfa:box.dataset.pfh;
+        box.dataset.pd=esA?box.dataset.pda:box.dataset.pdh;
+        box.dataset.nf=esA?box.dataset.na:box.dataset.nh;
+        box.dataset.nd=esA?box.dataset.nh:box.dataset.na;
+        var idf=esA?box.dataset.ia:box.dataset.ih;
+        var idd=esA?box.dataset.ih:box.dataset.ia;
+        box.querySelectorAll('.teq').forEach(function(z){ z.classList.toggle('on', z===b); });
+        var lv=box.querySelector('.lv'), lr=box.querySelector('.lr');
+        if(lv) lv.innerHTML=escudo(idf,18)+box.dataset.nf+' gana por 2+';
+        if(lr) lr.innerHTML=escudo(idd,18)+box.dataset.nd+' pierde por 1 o gana';
+        ev();
+      });
+    });
     box.querySelectorAll('input').forEach(function(i){ i.addEventListener('input',ev); });
   });
   root.querySelectorAll('button.lu').forEach(function(btn){
