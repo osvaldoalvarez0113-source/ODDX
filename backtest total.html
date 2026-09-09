@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>OVA — Backtest del total</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+ --night:#08161F;--night2:#0C1E2B;--panel:#122D3D;--panel2:#173747;
+ --line:#1F4457;--line2:#2A5A72;--chalk:#F1EEE4;--muted:#7E97A6;--muted2:#5D7684;
+ --signal:#E8B33C;--signal2:#F5C863;--good:#5FB07A;--bad:#D2685F;
+ --cond:'Barlow Condensed','Helvetica Neue',sans-serif;
+ --body:system-ui,-apple-system,'Segoe UI',sans-serif;
+ --r:10px;--r2:14px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;color:var(--chalk);font-family:var(--body);font-size:15px;line-height:1.5;
+ background:var(--night);
+ background-image:radial-gradient(1200px 600px at 50% -200px,#173747 0%,transparent 70%);
+ background-attachment:fixed;padding:0 0 60px;
+ padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+.wrap{max-width:600px;margin:0 auto;padding:0 14px}
+.topbar{position:sticky;top:0;z-index:20;background:rgba(8,22,31,.93);
+ -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+ border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.topbar .inner{max-width:600px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;gap:9px}
+.brand{font-family:var(--cond);font-weight:700;font-size:27px;line-height:1;margin:0;
+ letter-spacing:.5px;display:flex;align-items:center;gap:7px}
+.tag{font-family:var(--cond);font-size:12px;font-weight:600;color:var(--night);
+ background:var(--signal);border-radius:20px;padding:2px 8px;letter-spacing:.5px}
+header.hero{padding:16px 0 2px}
+header.hero p{margin:0;color:var(--muted);font-size:13.5px;max-width:52ch}
+input,select{background:var(--panel);border:1px solid var(--line);color:var(--chalk);
+ border-radius:var(--r);padding:10px 11px;font-family:var(--body);font-size:15px;
+ -webkit-appearance:none;appearance:none;min-width:0}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),
+ linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+ background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;
+ background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:32px}
+button{background:linear-gradient(180deg,var(--signal2),var(--signal));color:#12242F;border:0;
+ border-radius:var(--r);padding:11px 18px;font-family:var(--cond);font-weight:700;font-size:18px;
+ letter-spacing:.3px;cursor:pointer;min-height:44px;
+ box-shadow:0 1px 0 rgba(255,255,255,.25) inset}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.45}
+button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);
+ font-weight:600;box-shadow:none}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.campos{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:14px 0 10px}
+.campos label{grid-column:1/-1;font-family:var(--cond);font-size:16px;color:var(--chalk);
+ letter-spacing:.2px;margin-top:4px}
+.campos input,.campos select{width:100%}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.chk{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);
+ border-radius:var(--r);padding:11px 12px;margin:9px 0;font-size:13.5px;color:var(--muted)}
+.chk input{width:22px;height:22px;accent-color:var(--signal);flex:0 0 22px}
+.chk b{color:var(--chalk);font-weight:600}
+.status{color:var(--muted);font-size:13.5px;padding:11px 2px;line-height:1.55}
+.status.err{color:var(--bad);background:rgba(210,104,95,.1);border:1px solid rgba(210,104,95,.3);
+ border-radius:var(--r);padding:11px 12px}
+.barra{height:6px;background:var(--panel);border-radius:20px;overflow:hidden;margin:8px 0 4px}
+.barra i{display:block;height:100%;background:linear-gradient(90deg,var(--signal),var(--signal2));
+ width:0;transition:width .25s}
+h3{font-family:var(--cond);font-size:20px;font-weight:600;margin:26px 0 6px;padding:0 0 7px;
+ border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;letter-spacing:.3px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0 4px}
+td,th{padding:8px 0;text-align:right;border-bottom:1px solid rgba(31,68,87,.6)}
+th:first-child,td:first-child{text-align:left;color:var(--muted);font-weight:400;padding-right:10px}
+th{font-family:var(--cond);font-size:16px;font-weight:600;color:var(--chalk);
+ border-bottom:1px solid var(--line2)}
+td.n{font-family:var(--cond);font-size:18px;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+tr.usa td{color:var(--signal);font-weight:600}
+tr.usa td:first-child{color:var(--signal)}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.kpi div{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+ padding:10px;text-align:center}
+.kpi b{display:block;font-family:var(--cond);font-size:24px;font-weight:700;line-height:1.1;
+ font-variant-numeric:tabular-nums}
+.kpi span{font-size:10px;color:var(--muted);display:block;margin-top:3px;line-height:1.35}
+.kpi .g b{color:var(--good)}
+.kpi .p b{color:var(--bad)}
+.veredicto{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--signal);
+ border-radius:var(--r);padding:13px 15px;margin:14px 0}
+.veredicto .q{font-family:var(--cond);font-size:24px;font-weight:700;line-height:1.15}
+.veredicto .r{font-size:13.5px;color:var(--muted);margin-top:6px;line-height:1.55}
+.veredicto.bien{border-left-color:var(--good)} .veredicto.bien .q{color:var(--good)}
+.veredicto.mal{border-left-color:var(--bad)}   .veredicto.mal .q{color:var(--bad)}
+.flag{font-size:13.5px;color:var(--muted);padding:6px 0;line-height:1.55}
+.flag b{color:var(--chalk);font-weight:600}
+.leyenda{font-size:12.5px;color:var(--muted2);line-height:1.55;background:var(--panel);
+ border-radius:var(--r);padding:10px 12px;margin:9px 0}
+.leyenda b{color:var(--muted);font-weight:600}
+.nota{font-size:13px;line-height:1.55;color:var(--bad);background:rgba(210,104,95,.1);
+ border:1px solid rgba(210,104,95,.32);border-radius:var(--r);padding:10px 12px;margin:10px 0}
+.nota b{color:var(--chalk)}
+details{margin:10px 0 2px}
+details summary{font-family:var(--cond);font-size:16px;color:var(--muted);cursor:pointer;
+ padding:8px 0;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary:before{content:'▸ ';color:var(--muted2)}
+details[open] summary:before{content:'▾ '}
+footer{color:var(--muted2);font-size:11.5px;padding:24px 0 0;line-height:1.65;
+ border-top:1px solid var(--line);margin-top:28px}
+footer b{color:var(--muted)}
+@media (max-width:360px){.kpi{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion:reduce){.barra i{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="inner">
+  <h1 class="brand"><span>&#9918;</span>Backtest del total <span class="tag">v1</span></h1>
+</div></div>
+
+<div class="wrap">
+
+<header class="hero">
+  <p>Corre la proyecci&oacute;n de carreras de OVA sobre juegos ya terminados y la compara con lo que
+  realmente pas&oacute;. Contesta dos preguntas: &iquest;proyecta de m&aacute;s o de menos siempre?, y
+  &iquest;distingue un juego de 6 carreras de uno de 12?</p>
+</header>
+
+<div class="campos">
+  <label>Rango de fechas</label>
+  <input type="date" id="ini">
+  <input type="date" id="fin">
+  <label>Ofensiva del equipo</label>
+  <select id="off">
+    <option value="mix" selected>Mezcla 70 temporada / 30 &uacute;ltimos 14 d&iacute;as</option>
+    <option value="season">Solo temporada</option>
+  </select>
+  <label>ERA del abridor</label>
+  <select id="modo">
+    <option value="mix" selected>Mezcla 70 temporada / 30 &uacute;ltimas 5</option>
+    <option value="season">Solo temporada</option>
+    <option value="last5">Solo &uacute;ltimas 5</option>
+  </select>
+</div>
+
+<label class="chk"><input type="checkbox" id="temp">
+  <span>Traer la <b>temperatura real</b> de cada juego (30 llamadas m&aacute;s y varios MB;
+  d&eacute;jalo apagado la primera vez)</span></label>
+
+<div class="controls">
+  <button id="correr">Correr backtest</button>
+  <button class="ghost" id="parar" disabled>Parar</button>
+</div>
+
+<div class="barra"><i id="prog"></i></div>
+<div id="status" class="status">Escoge el rango y dale a correr. Una temporada completa tarda
+entre 2 y 5 minutos, y son unas 450 llamadas a la API de la MLB.</div>
+
+<div id="salida"></div>
+
+<footer>
+<details><summary>&#128214; Qu&eacute; mide esto exactamente, y qu&eacute; no</summary>
+
+  <b>Qu&eacute; reproduce.</b> La misma cadena de <code>index.html</code> que produce el total esperado:
+  el ERA del abridor regresado hacia su propio FIP, la ofensiva mezclada 70/30 con los &uacute;ltimos
+  14 d&iacute;as, el ERA de bullpen, el reparto 6/9 &mdash; 3/9 entre abridor y bullpen, el multiplicador
+  1.08 del staff, el park factor amortiguado al 60%, y las +0.18 carreras de innings extra.
+
+  <b>Todo se calcula al d&iacute;a del juego.</b> Los ERA y las carreras por juego se acumulan solo
+  con partidos anteriores a esa fecha, as&iacute; que el modelo nunca ve resultados que todav&iacute;a no
+  hab&iacute;an pasado. Los <i>game logs</i> se bajan una vez por equipo y por pitcher, y de ah&iacute; se
+  reconstruye el estado de cada d&iacute;a; por eso una temporada entera cabe en unas 450 llamadas y
+  no en varios miles.
+
+  <b>Tres cosas se apartan del c&aacute;lculo real, y conviene saberlas.</b> El ERA de bullpen se toma
+  al cierre de la temporada, no al d&iacute;a del juego: la MLB no expone el split de relevistas por
+  rango de fechas, y armarlo desde los boxscores costar&iacute;a miles de llamadas. Es la &uacute;nica
+  entrada con informaci&oacute;n del futuro, y aunque el ERA de bullpen se mueve poco, hace que el
+  modelo se vea un pel&iacute;n mejor de lo que fue. El ERA de liga que sirve de ancla en la regresi&oacute;n
+  tambi&eacute;n va al cierre, por lo mismo. Y los splits de bateo contra zurdos y derechos no se
+  aplican: son un multiplicador de &plusmn;10% sobre las carreras que en promedio se cancela, pero
+  significa que este backtest no mide esa parte.
+
+  <b>Lo que no puede medir.</b> Si le ganas a la l&iacute;nea. Eso necesita las cuotas de cierre
+  hist&oacute;ricas, que son de plan pago. Pero el sesgo no lo necesita: si proyectas medio punto de
+  m&aacute;s en todos los juegos, se ve con las carreras reales solas, y corregirlo te sirve igual.
+
+  <b>La base tonta.</b> El error del modelo se compara contra proyectar siempre el promedio de la
+  liga, sin mirar nada. Si tu modelo no le gana a eso, no est&aacute; aportando informaci&oacute;n &mdash; est&aacute;
+  poniendo n&uacute;meros distintos a cada juego sin acertar mejor. Es la comprobaci&oacute;n m&aacute;s dura de
+  esta p&aacute;gina y la primera que hay que mirar.
+
+  Solo entran juegos de temporada regular, terminados, y con los dos abridores registrados. Los
+  que no cumplen se cuentan aparte y se reportan.
+
+</details>
+</footer>
+
+</div>
+
+<script>
+var API='https://statsapi.mlb.com/api/v1';
+var PARAR=false;
+
+/* Park factors: la misma tabla verificada de index.html. */
+var PARK={
+ 19:['Coors Field',1.28],3313:['Yankee Stadium',1.05],3:['Fenway Park',1.08],
+ 17:['Wrigley Field',1.02],31:['PNC Park',0.95],2680:['Petco Park',0.93],
+ 2395:['Oracle Park',0.90],22:['Dodger Stadium',0.97],2602:['Great American Ball Park',1.10],
+ 4169:['loanDepot park',0.94],3289:['Citi Field',0.96],2681:['Citizens Bank Park',1.06],
+ 3312:['Target Field',1.00],1:['Angel Stadium',0.98],2392:['Daikin Park',1.03],
+ 680:['T-Mobile Park',0.92],14:['Rogers Centre',1.02],15:['Chase Field',1.04],
+ 2394:['Comerica Park',0.97],7:['Kauffman Stadium',1.01],3309:['Nationals Park',1.00],
+ 2:['Oriole Park at Camden Yards',1.02],5325:['Globe Life Field',0.99],
+ 4705:['Truist Park',1.02],2889:['Busch Stadium',0.97],32:['American Family Field',1.01],
+ 4:['Rate Field',1.04],5:['Progressive Field',0.99],2529:['Sutter Health Park',0.96],
+ 12:['Tropicana Field',0.96]
+};
+/* Parques con techo cerrado o retractil: no se les aplica temperatura. */
+var TECHADO={4169:1,680:1,14:1,15:1,5325:1,32:1,12:1,2392:1};
+var COORD={};   /* venueId -> [lat,lon], se llena del schedule */
+
+/* Constantes del modelo, tal como estan en index.html. */
+var K_STAFF=1.08, SUAVE=0.6, EXTRAS=0.18;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[<>&]/g,function(c){
+  return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c]; }); }
+function num(v,d){ d=(d==null?2:d); return (v==null||!isFinite(v))?'—':v.toFixed(d); }
+function sg(v,d){ d=(d==null?2:d); return (v>=0?'+':'')+v.toFixed(d); }
+function ymd(dt){ var p=function(n){return String(n).padStart(2,'0');};
+  return dt.getUTCFullYear()+'-'+p(dt.getUTCMonth()+1)+'-'+p(dt.getUTCDate()); }
+function dias(s,n){ var d=new Date(s+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return ymd(d); }
+function ipNum(ip){
+  if(ip==null) return 0;
+  var n=parseFloat(String(ip));
+  if(!isFinite(n)) return 0;
+  var dec=Math.round((n-Math.trunc(n))*10);
+  return Math.trunc(n)+(dec===1?1/3:dec===2?2/3:0);
+}
+function j(url){
+  return fetch(url).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  });
+}
+/* Cola con 4 peticiones a la vez: mas rapido que en serie, sin ahogar la API
+   ni el telefono. */
+function enCola(items,fn,alAvanzar){
+  var i=0, hechos=0, total=items.length, res=new Array(total);
+  function siguiente(){
+    if(PARAR||i>=total) return Promise.resolve();
+    var k=i++;
+    return Promise.resolve(fn(items[k],k)).then(function(v){
+      res[k]=v; hechos++;
+      if(alAvanzar) alAvanzar(hechos,total);
+      return siguiente();
+    });
+  }
+  var hilos=[];
+  for(var h=0;h<Math.min(4,total);h++) hilos.push(siguiente());
+  return Promise.all(hilos).then(function(){ return res; });
+}
+function estado(t,err){
+  var e=$('status');
+  e.className='status'+(err?' err':'');
+  e.innerHTML=t;
+}
+function progreso(a,b){
+  $('prog').style.width=(b?Math.round(a/b*100):0)+'%';
+}
+
+/* ---------- calendario ---------- */
+function traerJuegos(ini,fin){
+  var trozos=[], d=ini;
+  while(d<=fin){
+    var h=dias(d,27);
+    if(h>fin) h=fin;
+    trozos.push([d,h]);
+    d=dias(h,1);
+  }
+  var todos=[];
+  return enCola(trozos,function(t){
+    return j(API+'/schedule?sportId=1&gameType=R&startDate='+t[0]+'&endDate='+t[1]+
+             '&hydrate=probablePitcher,team,venue(location)')
+      .then(function(d){
+        (d.dates||[]).forEach(function(dd){
+          (dd.games||[]).forEach(function(g){
+            if(!g.status||g.status.abstractGameState!=='Final') return;
+            var t2=g.teams||{};
+            if(!t2.home||!t2.away||!t2.home.team||!t2.away.team) return;
+            var v=g.venue||{};
+            var loc=v.location&&v.location.defaultCoordinates;
+            if(loc&&v.id&&!COORD[v.id]) COORD[v.id]=[loc.latitude,loc.longitude];
+            todos.push({
+              pk:g.gamePk, f:g.officialDate||dd.date,
+              idA:t2.away.team.id, idH:t2.home.team.id,
+              nomA:t2.away.team.abbreviation||t2.away.team.name,
+              nomH:t2.home.team.abbreviation||t2.home.team.name,
+              pA:t2.away.probablePitcher||null, pH:t2.home.probablePitcher||null,
+              rA:(t2.away.score!=null?+t2.away.score:null),
+              rH:(t2.home.score!=null?+t2.home.score:null),
+              venueId:v.id||null
+            });
+          });
+        });
+      }).catch(function(){});
+  },function(a,b){ estado('Bajando el calendario… bloque '+a+' de '+b); })
+  .then(function(){
+    todos.sort(function(a,b){ return a.f<b.f?-1:(a.f>b.f?1:0); });
+    return todos;
+  });
+}
+
+/* ---------- game logs de equipo (ofensiva) ---------- */
+function logOfensiva(teamId,year){
+  return j(API+'/teams/'+teamId+'/stats?stats=gameLog&group=hitting&season='+year+'&gameType=R')
+    .then(function(d){
+      var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];
+      var out=[];
+      sp.forEach(function(s){
+        if(!s.date) return;
+        out.push({f:s.date, r:+(s.stat.runs||0)});
+      });
+      out.sort(function(a,b){ return a.f<b.f?-1:1; });
+      return out;
+    }).catch(function(){ return []; });
+}
+/* Carreras por juego acumuladas hasta el dia anterior, y la ventana de 14 dias. */
+function rgHasta(log,f){
+  var r=0,g=0,r14=0,g14=0;
+  var ini14=dias(f,-14);
+  for(var i=0;i<log.length;i++){
+    if(log[i].f>=f) break;
+    r+=log[i].r; g++;
+    if(log[i].f>=ini14){ r14+=log[i].r; g14++; }
+  }
+  return {rg: g>0?r/g:null, g:g, rg14: g14>=5?r14/g14:null, r:r};
+}
+
+/* ---------- bullpen (cierre de temporada) ---------- */
+function bullpenTemporada(teamId,year){
+  return j(API+'/teams/'+teamId+'/stats?stats=statSplits&sitCodes=rp&group=pitching&season='+
+           year+'&gameType=R').then(function(d){
+    var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
+    if(s&&s.stat&&s.stat.era!=null&&s.stat.era!=='-.--') return parseFloat(s.stat.era);
+    throw new Error('sin split');
+  }).catch(function(){
+    return j(API+'/teams/'+teamId+'/stats?stats=season&group=pitching&season='+year+'&gameType=R')
+      .then(function(d){
+        var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
+        return (s&&s.stat&&s.stat.era!=null)?parseFloat(s.stat.era):null;
+      }).catch(function(){ return null; });
+  });
+}
+
+/* ---------- game log de pitcher ---------- */
+var LOGP={};
+function logPitcher(id,year){
+  var k=id+'-'+year;
+  if(LOGP[k]) return Promise.resolve(LOGP[k]);
+  var p=j(API+'/people/'+id+'/stats?stats=gameLog&group=pitching&season='+year+'&gameType=R')
+    .then(function(d){
+      var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];
+      var out=[];
+      sp.forEach(function(s){
+        if(!s.date) return;
+        var st=s.stat||{};
+        out.push({f:s.date, ip:ipNum(st.inningsPitched), er:+(st.earnedRuns||0),
+                  hr:+(st.homeRuns||0), bb:+(st.baseOnBalls||0), hbp:+(st.hitByPitch||0),
+                  so:+(st.strikeOuts||0), gs:+(st.gamesStarted||0)});
+      });
+      out.sort(function(a,b){ return a.f<b.f?-1:1; });
+      LOGP[k]=out;
+      return out;
+    }).catch(function(){ LOGP[k]=[]; return []; });
+  LOGP[k]=p;
+  return p;
+}
+/* Reproduce eraUsado() de index.html con lo acumulado hasta la vispera. */
+function eraHasta(log,f,modo,ligaEra){
+  var ip=0,er=0,hr=0,bb=0,hbp=0,so=0;
+  var sal=[];
+  for(var i=0;i<log.length;i++){
+    if(log[i].f>=f) break;
+    var s=log[i];
+    ip+=s.ip; er+=s.er; hr+=s.hr; bb+=s.bb; hbp+=s.hbp; so+=s.so;
+    if(s.gs===1) sal.push(s);
+  }
+  if(ip<=0) return null;
+  var eraT=er*9/ip;
+  var fip = ip>=10 ? (13*hr+3*(bb+hbp)-2*so)/ip+3.15 : null;
+  var L=(ligaEra!=null?ligaEra:4.10);
+  var anc = fip!=null ? (fip*ip+L*30)/(ip+30) : null;
+  var A = (anc!=null&&isFinite(anc)) ? anc : L;
+  var s5=sal.slice(-5), ip5=0, er5=0;
+  s5.forEach(function(x){ ip5+=x.ip; er5+=x.er; });
+  var era5 = ip5>0 ? er5*9/ip5 : null;
+  var rS=(eraT*ip+A*40)/(ip+40);
+  var rL= era5!=null ? (era5*ip5+A*25)/(ip5+25) : null;
+  if(modo==='season') return rS;
+  if(modo==='last5')  return rL!=null?rL:rS;
+  return rL!=null ? rS*0.70+rL*0.30 : rS;
+}
+
+/* ---------- temperatura (opcional) ---------- */
+function climaVenue(vid,ini,fin){
+  var c=COORD[vid];
+  if(!c) return Promise.resolve(null);
+  var u='https://archive-api.open-meteo.com/v1/archive?latitude='+c[0]+'&longitude='+c[1]+
+        '&start_date='+ini+'&end_date='+fin+'&daily=temperature_2m_max&temperature_unit=fahrenheit'+
+        '&timezone=auto';
+  return j(u).then(function(d){
+    var t=d.daily&&d.daily.time, v=d.daily&&d.daily.temperature_2m_max;
+    if(!t||!v) return null;
+    var m={};
+    for(var i=0;i<t.length;i++) m[t[i]]=v[i];
+    return m;
+  }).catch(function(){ return null; });
+}
+function fTemp(t){
+  if(t==null) return 1;
+  if(t>=90) return 1.05;
+  if(t>=80) return 1.02;
+  if(t<=55) return 0.96;
+  return 1;
+}
+
+/* ---------- proyeccion ---------- */
+function proyectar(g,k,suave,extras){
+  var crudoA=Math.max(1.5,Math.min(9.0, g.rgA*(g.permH0*k)/g.LRG));
+  var crudoH=Math.max(1.5,Math.min(9.0, g.rgH*(g.permA0*k)/g.LRG));
+  var T=crudoA+crudoH;
+  var bruto=g.pfv*g.ft;
+  var T9=T*(1+(bruto-1)*suave);
+  return T9+extras;
+}
+function metricas(juegos,k,suave,extras){
+  var n=juegos.length;
+  if(!n) return null;
+  var s=0,abs=0,sq=0,over=0;
+  var sx=0,sy=0,sxx=0,syy=0,sxy=0;
+  for(var i=0;i<n;i++){
+    var g=juegos[i];
+    var p=proyectar(g,k,suave,extras);
+    var d=g.real-p;
+    s+=d; abs+=Math.abs(d); sq+=d*d;
+    if(g.real>p) over++;
+    sx+=p; sy+=g.real; sxx+=p*p; syy+=g.real*g.real; sxy+=p*g.real;
+  }
+  var den=Math.sqrt((n*sxx-sx*sx)*(n*syy-sy*sy));
+  return {n:n, sesgo:s/n, mae:abs/n, rmse:Math.sqrt(sq/n),
+          overPct:over/n*100, corr: den>0 ? (n*sxy-sx*sy)/den : null};
+}
+function baseTonta(juegos){
+  var n=juegos.length, sy=0;
+  juegos.forEach(function(g){ sy+=g.real; });
+  var m=sy/n, abs=0, sq=0;
+  juegos.forEach(function(g){ var d=g.real-m; abs+=Math.abs(d); sq+=d*d; });
+  return {media:m, mae:abs/n, rmse:Math.sqrt(sq/n)};
+}
+
+/* ---------- correr ---------- */
+function correr(){
+  var ini=$('ini').value, fin=$('fin').value;
+  if(!ini||!fin){ estado('Faltan las fechas.',true); return; }
+  if(ini>fin){ estado('La fecha de inicio va después de la de fin.',true); return; }
+  var year=+ini.slice(0,4);
+  if(+fin.slice(0,4)!==year){
+    estado('El rango tiene que caer dentro de una misma temporada. Corre 2025 y 2026 por separado '+
+           'y compara: si las dos piden lo mismo, el cambio es de verdad.',true);
+    return;
+  }
+  var modo=$('modo').value, off=$('off').value, usarTemp=$('temp').checked;
+  PARAR=false;
+  $('correr').disabled=true; $('parar').disabled=false;
+  $('salida').innerHTML='';
+  progreso(0,1);
+
+  var juegos=[], equipos={}, ligaEra=null, saltados={sin:0,pitcher:0,datos:0};
+
+  traerJuegos(ini,fin).then(function(gs){
+    if(PARAR) throw new Error('parado');
+    if(!gs.length) throw new Error('No hay juegos terminados en ese rango.');
+    juegos=gs;
+    estado(gs.length+' juegos terminados. Bajando estadísticas de los 30 equipos…');
+    var ids={};
+    gs.forEach(function(g){ ids[g.idA]=1; ids[g.idH]=1; });
+    var lista=Object.keys(ids).map(Number);
+    return enCola(lista,function(id){
+      return Promise.all([logOfensiva(id,year),bullpenTemporada(id,year)])
+        .then(function(r){ equipos[id]={off:r[0], bp:r[1]}; });
+    },function(a,b){ progreso(a,b); estado('Estadísticas de equipo… '+a+' de '+b); });
+  }).then(function(){
+    if(PARAR) throw new Error('parado');
+    return j(API+'/teams/stats?stats=season&group=pitching&season='+year+'&sportIds=1&gameType=R')
+      .then(function(d){
+        var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];
+        var er=0,ip=0;
+        sp.forEach(function(s){ er+=+(s.stat.earnedRuns||0); ip+=ipNum(s.stat.inningsPitched); });
+        ligaEra = ip>0 ? er*9/ip : 4.10;
+      }).catch(function(){ ligaEra=4.10; });
+  }).then(function(){
+    if(PARAR) throw new Error('parado');
+    var pit={};
+    juegos.forEach(function(g){
+      if(g.pA&&g.pA.id) pit[g.pA.id]=1;
+      if(g.pH&&g.pH.id) pit[g.pH.id]=1;
+    });
+    var lista=Object.keys(pit).map(Number);
+    estado('Bajando el historial de '+lista.length+' abridores…');
+    return enCola(lista,function(id){ return logPitcher(id,year); },
+      function(a,b){ progreso(a,b); estado('Abridores… '+a+' de '+b); });
+  }).then(function(){
+    if(PARAR) throw new Error('parado');
+    if(!usarTemp) return null;
+    var vids={};
+    juegos.forEach(function(g){ if(g.venueId&&!TECHADO[g.venueId]) vids[g.venueId]=1; });
+    var lista=Object.keys(vids).map(Number).filter(function(v){ return COORD[v]; });
+    estado('Bajando la temperatura de '+lista.length+' parques…');
+    var mapa={};
+    return enCola(lista,function(vid){
+      return climaVenue(vid,ini,fin).then(function(m){ if(m) mapa[vid]=m; });
+    },function(a,b){ progreso(a,b); estado('Temperatura… '+a+' de '+b); })
+      .then(function(){ return mapa; });
+  }).then(function(clima){
+    if(PARAR) throw new Error('parado');
+    estado('Armando los números…');
+    var listos=[];
+    juegos.forEach(function(g){
+      if(g.rA==null||g.rH==null){ saltados.sin++; return; }
+      if(!g.pA||!g.pA.id||!g.pH||!g.pH.id){ saltados.pitcher++; return; }
+      var eA=eraHasta(LOGP[g.pA.id+'-'+year]||[],g.f,modo,ligaEra);
+      var eH=eraHasta(LOGP[g.pH.id+'-'+year]||[],g.f,modo,ligaEra);
+      var qA=equipos[g.idA], qH=equipos[g.idH];
+      if(!qA||!qH||eA==null||eH==null||qA.bp==null||qH.bp==null){ saltados.datos++; return; }
+      var oA=rgHasta(qA.off,g.f), oH=rgHasta(qH.off,g.f);
+      if(oA.rg==null||oH.rg==null||oA.g<10||oH.g<10){ saltados.datos++; return; }
+      var rgA = (off==='mix'&&oA.rg14!=null) ? oA.rg*0.70+oA.rg14*0.30 : oA.rg;
+      var rgH = (off==='mix'&&oH.rg14!=null) ? oH.rg*0.70+oH.rg14*0.30 : oH.rg;
+      /* Carreras por juego de la liga hasta esa fecha. */
+      var rl=0,gl=0;
+      for(var id in equipos){
+        var q=rgHasta(equipos[id].off,g.f);
+        rl+=q.r; gl+=q.g;
+      }
+      var LRG = gl>0 ? rl/gl : 4.30;
+      var pk=PARK[g.venueId]||null;
+      var ft=1;
+      if(clima&&g.venueId&&clima[g.venueId]) ft=fTemp(clima[g.venueId][g.f]);
+      listos.push({
+        f:g.f, m:g.nomA+' @ '+g.nomH,
+        rgA:rgA, rgH:rgH, LRG:LRG,
+        permA0:(eA*6/9+qA.bp*3/9), permH0:(eH*6/9+qH.bp*3/9),
+        pfv: pk?pk[1]:1.00, ft:ft,
+        real:g.rA+g.rH, parque: pk?pk[0]:'sin tabla'
+      });
+    });
+    if(!listos.length) throw new Error('Ningún juego quedó con datos suficientes.');
+    progreso(1,1);
+    pintar(listos,saltados,juegos.length,usarTemp,ini,fin);
+    estado(listos.length+' juegos medidos, de '+juegos.length+' terminados en el rango.');
+  }).catch(function(e){
+    if(String(e.message)==='parado'){ estado('Backtest detenido.'); }
+    else estado('No se pudo terminar: '+esc(e.message),true);
+  }).then(function(){
+    $('correr').disabled=false; $('parar').disabled=true;
+  });
+}
+
+/* ---------- resultados ---------- */
+function pintar(L,saltados,total,usoTemp,ini,fin){
+  var m=metricas(L,K_STAFF,SUAVE,EXTRAS);
+  var bt=baseTonta(L);
+  var mejora=(bt.mae-m.mae)/bt.mae*100;
+
+  var o='<h3><span>&#128202;</span>Lo que sali&oacute;</h3>';
+  o+='<div class="kpi">'+
+    '<div class="'+(Math.abs(m.sesgo)<0.15?'g':'p')+'"><b>'+sg(m.sesgo)+'</b>'+
+      '<span>sesgo, en carreras</span></div>'+
+    '<div><b>'+num(m.mae)+'</b><span>error medio por juego</span></div>'+
+    '<div class="'+(mejora>0?'g':'p')+'"><b>'+sg(mejora,1)+'%</b>'+
+      '<span>mejor que la base tonta</span></div>'+
+  '</div>';
+
+  /* Veredicto 1: sesgo */
+  var vs, vc;
+  if(Math.abs(m.sesgo)<0.15){
+    vc='bien'; vs='<div class="q">El total no viene sesgado</div><div class="r">'+
+      'La diferencia media entre lo real y lo proyectado es de '+sg(m.sesgo)+' carreras, dentro del ruido. '+
+      'El '+num(m.overPct,1)+'% de los juegos super&oacute; la proyecci&oacute;n, y lo esperado es 50%. '+
+      'Las constantes de esa cadena est&aacute;n razonablemente puestas.</div>';
+  }else{
+    var dir=m.sesgo<0?'de m&aacute;s':'de menos';
+    var lado=m.sesgo<0?'los Over':'los Under';
+    vc='mal'; vs='<div class="q">Proyectas '+Math.abs(m.sesgo).toFixed(2)+' carreras '+dir+'</div>'+
+      '<div class="r">En cada juego, todos los d&iacute;as. Eso significa que '+lado+' que sac&oacute; la app '+
+      'ven&iacute;an inflados y el otro lado lo dejaste pasar. Solo el '+num(m.overPct,1)+'% de los juegos '+
+      'super&oacute; la proyecci&oacute;n, cuando deber&iacute;a ser cerca del 50%. Abajo est&aacute; la constante que lo corrige.</div>';
+  }
+  o+='<div class="veredicto '+vc+'">'+vs+'</div>';
+
+  /* Veredicto 2: la base tonta */
+  var vb,vbc;
+  if(mejora<=0){
+    vbc='mal'; vb='<div class="q">No le gana a no hacer nada</div><div class="r">'+
+      'Proyectar siempre '+num(bt.media,1)+' carreras &mdash; el promedio del rango, sin mirar abridores ni nada &mdash; '+
+      'se equivoca por '+num(bt.mae)+' carreras. Tu modelo se equivoca por '+num(m.mae)+'. '+
+      'Est&aacute; poniendo n&uacute;meros distintos a cada juego sin acertar mejor. '+
+      'Corregir el sesgo lo va a centrar, pero no lo va a hacer &uacute;til para apostar totales.</div>';
+  }else if(mejora<3){
+    vbc=''; vb='<div class="q">Le gana por poco a no hacer nada</div><div class="r">'+
+      'Mejora '+num(mejora,1)+'% sobre proyectar siempre el promedio. Es una se&ntilde;al real pero fina: '+
+      'contra una l&iacute;nea del mercado, que ya trae toda esta informaci&oacute;n, esa ventaja se te va en el vig. '+
+      'Correlaci&oacute;n con lo real: '+num(m.corr,3)+'.</div>';
+  }else{
+    vbc='bien'; vb='<div class="q">S&iacute; distingue los juegos</div><div class="r">'+
+      'Mejora '+num(mejora,1)+'% sobre proyectar siempre el promedio, con correlaci&oacute;n de '+num(m.corr,3)+
+      ' entre lo que dice y lo que pasa. El modelo est&aacute; leyendo algo real del partido.</div>';
+  }
+  o+='<div class="veredicto '+vbc+'">'+vb+'</div>';
+
+  o+='<table>'+
+    '<tr><th></th><th>Tu modelo</th><th>Base tonta</th></tr>'+
+    '<tr><td>Error medio (carreras)</td><td class="n">'+num(m.mae)+'</td><td class="n">'+num(bt.mae)+'</td></tr>'+
+    '<tr><td>Error cuadr&aacute;tico</td><td class="n">'+num(m.rmse)+'</td><td class="n">'+num(bt.rmse)+'</td></tr>'+
+    '<tr><td>Correlaci&oacute;n con lo real</td><td class="n">'+num(m.corr,3)+'</td><td class="n">0.000</td></tr>'+
+    '<tr><td>Juegos medidos</td><td class="n" colspan="2">'+m.n+'</td></tr>'+
+  '</table>'+
+  '<div class="leyenda">El <b>error medio</b> es cu&aacute;nto te separas del resultado en un juego t&iacute;pico. '+
+  'La <b>base tonta</b> proyecta siempre '+num(bt.media,1)+' carreras, el promedio del rango, sin mirar nada. '+
+  'Un modelo que no le gana a eso no est&aacute; aportando informaci&oacute;n.</div>';
+
+  /* Calibracion por tramo */
+  o+='<h3><span>&#127919;</span>&iquest;Acierta parejo en todo el rango?</h3>';
+  var tramos=[[0,7.5,'menos de 7.5'],[7.5,8.5,'7.5 a 8.5'],[8.5,9.5,'8.5 a 9.5'],
+              [9.5,10.5,'9.5 a 10.5'],[10.5,99,'m&aacute;s de 10.5']];
+  o+='<table><tr><th>Cuando proyectas…</th><th>Proyect&oacute;</th><th>Sali&oacute;</th><th>n</th></tr>';
+  var hayHueco=false;
+  tramos.forEach(function(t){
+    var g=L.filter(function(x){ var p=proyectar(x,K_STAFF,SUAVE,EXTRAS); return p>=t[0]&&p<t[1]; });
+    if(!g.length){ o+='<tr><td>'+t[2]+'</td><td class="n">—</td><td class="n">—</td><td class="n">0</td></tr>'; return; }
+    var sp=0,sr=0;
+    g.forEach(function(x){ sp+=proyectar(x,K_STAFF,SUAVE,EXTRAS); sr+=x.real; });
+    var pp=sp/g.length, rr=sr/g.length;
+    if(Math.abs(pp-rr)>=0.6) hayHueco=true;
+    o+='<tr><td>'+t[2]+'</td><td class="n">'+num(pp,1)+'</td><td class="n">'+num(rr,1)+
+       '</td><td class="n">'+g.length+'</td></tr>';
+  });
+  o+='</table>';
+  o+=hayHueco
+    ? '<div class="flag">⚠️ Hay tramos donde lo proyectado y lo real se separan m&aacute;s de 0.6 carreras. '+
+      'Un sesgo &uacute;nico no arregla eso: significa que el modelo se rompe en los extremos, casi siempre '+
+      'porque el <b>clamp de 1.5 a 9.0 carreras por equipo</b> recorta los juegos de mucho o poco anotar.</div>'
+    : '<div class="flag">El error se reparte parejo por todo el rango, as&iacute; que una sola constante '+
+      'lo puede corregir.</div>';
+
+  /* Busqueda de constantes */
+  o+='<h3><span>&#128295;</span>Qu&eacute; constante lo arregla</h3>';
+  var mejorK=null, mejorAbs=Infinity;
+  for(var k=0.94;k<=1.20001;k+=0.005){
+    var mm=metricas(L,k,SUAVE,EXTRAS);
+    if(Math.abs(mm.sesgo)<mejorAbs){ mejorAbs=Math.abs(mm.sesgo); mejorK=k; }
+  }
+  var mk=metricas(L,mejorK,SUAVE,EXTRAS);
+  o+='<table>'+
+    '<tr><th>Multiplicador del staff</th><th>Sesgo</th><th>Error medio</th></tr>'+
+    '<tr><td>1.08 &mdash; el que tienes</td><td class="n">'+sg(m.sesgo)+'</td><td class="n">'+num(m.mae)+'</td></tr>'+
+    '<tr class="usa"><td>'+mejorK.toFixed(3)+' &mdash; el que centra</td><td class="n">'+sg(mk.sesgo)+
+      '</td><td class="n">'+num(mk.mae)+'</td></tr>'+
+  '</table>';
+  var difMae=m.mae-mk.mae;
+  o+='<div class="flag">Cambiar el 1.08 por <b>'+mejorK.toFixed(3)+'</b> centra la proyecci&oacute;n. '+
+     (Math.abs(difMae)<0.02
+       ? 'El error por juego casi no se mueve ('+num(difMae)+'), y es lo esperado: corregir el sesgo '+
+         'no mejora la punter&iacute;a, solo quita la inclinaci&oacute;n sistem&aacute;tica hacia un lado. '+
+         'Aun as&iacute; vale, porque esa inclinaci&oacute;n es la que te met&iacute;a siempre del mismo lado del total.'
+       : 'El error por juego tambi&eacute;n baja '+num(difMae)+' carreras.')+'</div>';
+
+  var mSuave=null, mejorS=null, mejorMae=Infinity;
+  for(var s2=0;s2<=1.001;s2+=0.05){
+    var ms=metricas(L,mejorK,s2,EXTRAS);
+    if(ms.mae<mejorMae){ mejorMae=ms.mae; mejorS=s2; mSuave=ms; }
+  }
+  o+='<table>'+
+    '<tr><th>Amortiguaci&oacute;n del parque</th><th>Sesgo</th><th>Error medio</th></tr>'+
+    '<tr><td>0.60 &mdash; la que tienes</td><td class="n">'+sg(mk.sesgo)+'</td><td class="n">'+num(mk.mae)+'</td></tr>'+
+    '<tr class="usa"><td>'+mejorS.toFixed(2)+' &mdash; la que menos yerra</td><td class="n">'+sg(mSuave.sesgo)+
+      '</td><td class="n">'+num(mSuave.mae)+'</td></tr>'+
+  '</table>';
+  o+= (Math.abs(mk.mae-mSuave.mae)<0.015)
+    ? '<div class="flag">La amortiguaci&oacute;n del parque casi no mueve el error, as&iacute; que d&eacute;jala en 0.60. '+
+      'Cuando un cambio no mejora nada medible, no es un cambio: es ruido con opini&oacute;n.</div>'
+    : '<div class="flag">Bajar la amortiguaci&oacute;n a '+mejorS.toFixed(2)+' quita '+num(mk.mae-mSuave.mae)+
+      ' carreras de error. Comprueba que la otra temporada pida lo mismo antes de cambiarla.</div>';
+
+  o+='<div class="nota"><b>Antes de tocar nada:</b> corre el mismo rango en la otra temporada. '+
+     'Si las dos piden la misma constante, el cambio es real. Si cada una pide una cosa distinta, '+
+     'lo que est&aacute;s viendo es ruido y ajustarlo es sobreajustar &mdash; que es exactamente lo que te '+
+     'pas&oacute; con el multiplicador del ganador antes de medirlo.</div>';
+
+  /* Peores fallos */
+  var peores=L.slice().sort(function(a,b){
+    return Math.abs(b.real-proyectar(b,K_STAFF,SUAVE,EXTRAS))-
+           Math.abs(a.real-proyectar(a,K_STAFF,SUAVE,EXTRAS));
+  }).slice(0,12);
+  o+='<details><summary>Ver los 12 juegos donde m&aacute;s fall&oacute;</summary>'+
+     '<table><tr><th>Juego</th><th>Proy.</th><th>Real</th></tr>';
+  peores.forEach(function(x){
+    o+='<tr><td>'+esc(x.f.slice(5))+' '+esc(x.m)+'</td><td class="n">'+
+       num(proyectar(x,K_STAFF,SUAVE,EXTRAS),1)+'</td><td class="n">'+x.real+'</td></tr>';
+  });
+  o+='</table><div class="leyenda">Fallar por 8 carreras en un juego suelto es normal: el b&eacute;isbol '+
+     'tiene esa varianza y ning&uacute;n modelo la quita. Lo que importa es el promedio de arriba.</div></details>';
+
+  /* Nota de alcance */
+  var sal=saltados.sin+saltados.pitcher+saltados.datos;
+  o+='<h3><span>&#9888;&#65039;</span>Qu&eacute; qued&oacute; fuera</h3>';
+  o+='<div class="flag">De '+total+' juegos terminados entre '+esc(ini)+' y '+esc(fin)+
+     ', se midieron <b>'+m.n+'</b>. Quedaron fuera '+sal+': '+saltados.pitcher+
+     ' sin abridor registrado, '+saltados.datos+' sin suficientes datos previos (arranque de temporada, '+
+     'debutantes) y '+saltados.sin+' sin marcador.</div>';
+  o+='<div class="leyenda">El ERA de bullpen va al cierre de temporada, no al d&iacute;a del juego: '+
+     'es la &uacute;nica entrada con informaci&oacute;n del futuro y hace que el modelo se vea un poco mejor '+
+     'de lo que fue. Los splits contra zurdos y derechos no se aplican. '+
+     (usoTemp?'La temperatura s&iacute; entr&oacute;, con la m&aacute;xima diaria del parque.'
+             :'La temperatura no entr&oacute; en esta corrida.')+'</div>';
+
+  $('salida').innerHTML=o;
+}
+
+/* ---------- arranque ---------- */
+(function(){
+  var hoy=new Date();
+  var y=hoy.getUTCFullYear();
+  $('ini').value=y+'-04-01';
+  $('fin').value=ymd(hoy);
+})();
+$('correr').addEventListener('click',correr);
+$('parar').addEventListener('click',function(){ PARAR=true; $('parar').disabled=true; });
+</script>
+</body>
+</html>
