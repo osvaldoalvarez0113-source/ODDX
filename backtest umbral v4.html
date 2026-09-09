@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>OVA — Qué listón poner al total</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+ --night:#08161F;--night2:#0C1E2B;--panel:#122D3D;--panel2:#173747;
+ --line:#1F4457;--line2:#2A5A72;--chalk:#F1EEE4;--muted:#7E97A6;--muted2:#5D7684;
+ --signal:#E8B33C;--signal2:#F5C863;--good:#5FB07A;--bad:#D2685F;
+ --cond:'Barlow Condensed','Helvetica Neue',sans-serif;
+ --body:system-ui,-apple-system,'Segoe UI',sans-serif;
+ --r:10px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;color:var(--chalk);font-family:var(--body);font-size:15px;line-height:1.5;
+ background:var(--night);
+ background-image:radial-gradient(1200px 600px at 50% -200px,#173747 0%,transparent 70%);
+ background-attachment:fixed;padding:0 0 60px;
+ padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+.wrap{max-width:620px;margin:0 auto;padding:0 14px}
+.topbar{position:sticky;top:0;z-index:20;background:rgba(8,22,31,.93);
+ -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+ border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.topbar .inner{max-width:620px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;gap:9px}
+.brand{font-family:var(--cond);font-weight:700;font-size:25px;line-height:1;margin:0;
+ letter-spacing:.5px;display:flex;align-items:center;gap:7px}
+.tag{font-family:var(--cond);font-size:12px;font-weight:600;color:var(--night);
+ background:var(--signal);border-radius:20px;padding:2px 8px}
+header.hero{padding:16px 0 2px}
+header.hero p{margin:0 0 8px;color:var(--muted);font-size:13.5px;max-width:54ch}
+input{background:var(--panel);border:1px solid var(--line);color:var(--chalk);
+ border-radius:var(--r);padding:10px 11px;font-family:var(--body);font-size:15px;
+ -webkit-appearance:none;appearance:none;width:100%}
+button{background:linear-gradient(180deg,var(--signal2),var(--signal));color:#12242F;border:0;
+ border-radius:var(--r);padding:11px 18px;font-family:var(--cond);font-weight:700;font-size:18px;
+ cursor:pointer;min-height:44px;box-shadow:0 1px 0 rgba(255,255,255,.25) inset}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.45}
+button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);
+ font-weight:600;box-shadow:none}
+button:focus-visible,input:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.campos{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0}
+.campos label{grid-column:1/-1;font-family:var(--cond);font-size:16px;color:var(--chalk);margin-top:4px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.status{color:var(--muted);font-size:13.5px;padding:11px 2px;line-height:1.55}
+.status.err{color:var(--bad);background:rgba(210,104,95,.1);border:1px solid rgba(210,104,95,.3);
+ border-radius:var(--r);padding:11px 12px}
+.barra{height:6px;background:var(--panel);border-radius:20px;overflow:hidden;margin:8px 0 4px}
+.barra i{display:block;height:100%;background:linear-gradient(90deg,var(--signal),var(--signal2));
+ width:0;transition:width .25s}
+h3{font-family:var(--cond);font-size:20px;font-weight:600;margin:26px 0 6px;padding:0 0 7px;
+ border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+h4{font-family:var(--cond);font-size:17px;font-weight:600;margin:18px 0 2px;color:var(--chalk)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:8px 0 4px}
+td,th{padding:9px 0;text-align:right;border-bottom:1px solid rgba(31,68,87,.6)}
+th:first-child,td:first-child{text-align:left;color:var(--muted);font-weight:400;padding-right:8px}
+th{font-family:var(--cond);font-size:15px;font-weight:600;color:var(--chalk);
+ border-bottom:1px solid var(--line2)}
+td.n{font-family:var(--cond);font-size:17px;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+tr.gana td{color:var(--good)} tr.gana td:first-child{color:var(--good)}
+tr.pocos td{color:var(--muted2)}
+tr.ref td{color:var(--signal)} tr.ref td:first-child{color:var(--signal)}
+.ver{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--signal);
+ border-radius:var(--r);padding:13px 15px;margin:14px 0}
+.ver .q{font-family:var(--cond);font-size:23px;font-weight:700;line-height:1.15}
+.ver .r{font-size:13.5px;color:var(--muted);margin-top:6px;line-height:1.55}
+.ver.bien{border-left-color:var(--good)} .ver.bien .q{color:var(--good)}
+.ver.mal{border-left-color:var(--bad)}   .ver.mal .q{color:var(--bad)}
+.flag{font-size:13.5px;color:var(--muted);padding:6px 0;line-height:1.55}
+.flag b{color:var(--chalk);font-weight:600}
+.leyenda{font-size:12.5px;color:var(--muted2);line-height:1.55;background:var(--panel);
+ border-radius:var(--r);padding:10px 12px;margin:9px 0}
+.leyenda b{color:var(--muted);font-weight:600}
+.nota{font-size:13px;line-height:1.55;color:var(--bad);background:rgba(210,104,95,.1);
+ border:1px solid rgba(210,104,95,.32);border-radius:var(--r);padding:10px 12px;margin:10px 0}
+.nota b{color:var(--chalk)}
+details summary{font-family:var(--cond);font-size:16px;color:var(--muted);cursor:pointer;
+ padding:8px 0;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary:before{content:'▸ ';color:var(--muted2)}
+details[open] summary:before{content:'▾ '}
+footer{color:var(--muted2);font-size:11.5px;padding:24px 0 0;line-height:1.65;
+ border-top:1px solid var(--line);margin-top:28px}
+footer b{color:var(--muted)}
+@media (max-width:360px){table{font-size:12.5px}}
+@media (prefers-reduced-motion:reduce){.barra i{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="inner">
+  <h1 class="brand"><span>&#9918;</span>Qué listón poner <span class="tag">v4</span></h1>
+</div></div>
+
+<div class="wrap">
+
+<header class="hero">
+  <p>Si el total solo sale como pick cuando se separa X carreras de la l&iacute;nea:
+  <b>&iquest;cu&aacute;ntos picks al a&ntilde;o y con qu&eacute; acierto?</b></p>
+  <p>Corrige el fallo de la v3: la l&iacute;nea se escoge donde de verdad cae la mitad de los juegos a
+  cada lado, y cada listón se compara contra <b>apostar a un lado a ciegas</b>.</p>
+</header>
+
+<div class="campos">
+  <label>Temporada de ajuste</label>
+  <input type="number" id="y1" value="2025">
+  <input type="text" value="04-01 → 09-30" disabled>
+  <label>Temporada de medici&oacute;n</label>
+  <input type="number" id="y2" value="2026">
+  <input type="text" value="04-01 → hoy" disabled>
+</div>
+
+<div class="controls">
+  <button id="correr">Correr</button>
+  <button class="ghost" id="parar" disabled>Parar</button>
+</div>
+
+<div class="barra"><i id="prog"></i></div>
+<div id="status" class="status">Dale a correr. Tarda entre 5 y 10 minutos.</div>
+
+<div id="salida"></div>
+
+<footer>
+<details><summary>&#128214; Qué se corrigió, y contra qué se mide ahora</summary>
+
+  <b>El fallo de la v3.</b> La l&iacute;nea se calculaba redondeando el promedio y, si sal&iacute;a entero,
+  sub&iacute;a medio punto para evitar empates. Con un promedio de 8.96 eso produc&iacute;a una l&iacute;nea de
+  9.5 &mdash; medio punto por encima de donde caen los juegos. Contra esa l&iacute;nea, apostar Under a
+  ciegas ya ganaba, y el 93% de los picks del modelo eran Under. El 64% de acierto que sali&oacute;
+  era casi todo la l&iacute;nea mal puesta, no el modelo.
+
+  <b>C&oacute;mo se escoge la l&iacute;nea ahora.</b> Se prueban las l&iacute;neas de medio punto alrededor del
+  promedio y se usa la que deja el reparto m&aacute;s parejo &mdash; la que est&aacute; m&aacute;s cerca de dividir
+  los juegos mitad y mitad. Contra esa l&iacute;nea, apostar a ciegas no gana nada, que es como debe ser.
+
+  <b>La fila de referencia.</b> En cada tabla aparece <b>apostar siempre al mismo lado</b>, sin
+  mirar nada. Esa es la vara real: si tu modelo no le gana a eso, su acierto no viene de lo que sabe
+  del juego sino de estar inclinado hacia el lado que la l&iacute;nea favorece.
+
+  <b>Las dos l&iacute;neas.</b> Se muestran los resultados con 8.5 y con 9.5 aparte. Si el modelo solo
+  funciona con una de las dos, no est&aacute; leyendo el partido: est&aacute; aprovechando d&oacute;nde qued&oacute; la
+  l&iacute;nea. Un modelo con se&ntilde;al de verdad gana con las dos.
+
+  <b>Lo que sigue sin medirse.</b> La l&iacute;nea real de la casa, que se mueve con los abridores y el
+  parque. Todas estas l&iacute;neas son fijas, o sea el rival m&aacute;s f&aacute;cil posible. Un resultado malo
+  aqu&iacute; cierra la pregunta; uno bueno no la abre.
+
+  <b>El punto de equilibrio</b> a cuota −110 es <b>52.4%</b>. Las l&iacute;neas van en medio punto, as&iacute;
+  que no hay empates.
+
+</details>
+</footer>
+
+</div>
+
+<script>
+var API='https://statsapi.mlb.com/api/v1';
+var PARAR=false;
+var PARK={
+ 19:1.28,3313:1.05,3:1.08,17:1.02,31:0.95,2680:0.93,2395:0.90,22:0.97,2602:1.10,
+ 4169:0.94,3289:0.96,2681:1.06,3312:1.00,1:0.98,2392:1.03,680:0.92,14:1.02,15:1.04,
+ 2394:0.97,7:1.01,3309:1.00,2:1.02,5325:0.99,4705:1.02,2889:0.97,32:1.01,4:1.04,
+ 5:0.99,2529:0.96,12:0.96
+};
+var EQ=52.38;
+var UMB=[0.5,0.75,1.0,1.25,1.5,2.0];
+
+function $(i){ return document.getElementById(i); }
+function esc(s){ return String(s==null?'':s).replace(/[<>&]/g,function(c){
+  return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c]; }); }
+function num(v,d){ d=(d==null?2:d); return (v==null||!isFinite(v))?'—':v.toFixed(d); }
+function sg(v,d){ d=(d==null?2:d); return (v>=0?'+':'')+v.toFixed(d); }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function ymd(dt){ var p=function(n){return String(n).padStart(2,'0');};
+  return dt.getUTCFullYear()+'-'+p(dt.getUTCMonth()+1)+'-'+p(dt.getUTCDate()); }
+function dias(s,n){ var d=new Date(s+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return ymd(d); }
+function ipNum(ip){
+  if(ip==null) return 0;
+  var n=parseFloat(String(ip));
+  if(!isFinite(n)) return 0;
+  var dec=Math.round((n-Math.trunc(n))*10);
+  return Math.trunc(n)+(dec===1?1/3:dec===2?2/3:0);
+}
+function j(u){ return fetch(u).then(function(r){
+  if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }
+function enCola(it,fn,av){
+  var i=0,h=0,t=it.length;
+  function sig(){
+    if(PARAR||i>=t) return Promise.resolve();
+    var k=i++;
+    return Promise.resolve(fn(it[k],k)).then(function(){ h++; if(av) av(h,t); return sig(); });
+  }
+  var hs=[]; for(var q=0;q<Math.min(4,t);q++) hs.push(sig());
+  return Promise.all(hs);
+}
+function estado(t,e){ var x=$('status'); x.className='status'+(e?' err':''); x.innerHTML=t; }
+function prog(a,b){ $('prog').style.width=(b?Math.round(a/b*100):0)+'%'; }
+
+function traer(year,ini,fin,etq){
+  var juegos=[], eq={}, LOGP={}, ligaEra=4.10;
+  function cal(){
+    var tr=[],d=ini;
+    while(d<=fin){ var h=dias(d,27); if(h>fin) h=fin; tr.push([d,h]); d=dias(h,1); }
+    return enCola(tr,function(t){
+      return j(API+'/schedule?sportId=1&gameType=R&startDate='+t[0]+'&endDate='+t[1]+
+               '&hydrate=probablePitcher,team,venue').then(function(d){
+        (d.dates||[]).forEach(function(dd){ (dd.games||[]).forEach(function(g){
+          if(!g.status||g.status.abstractGameState!=='Final') return;
+          var T=g.teams||{};
+          if(!T.home||!T.away||!T.home.team||!T.away.team) return;
+          juegos.push({f:g.officialDate||dd.date, idA:T.away.team.id, idH:T.home.team.id,
+            pA:T.away.probablePitcher||null, pH:T.home.probablePitcher||null,
+            rA:(T.away.score!=null?+T.away.score:null),
+            rH:(T.home.score!=null?+T.home.score:null),
+            vid:(g.venue&&g.venue.id)||null});
+        });});
+      }).catch(function(){});
+    },function(a,b){ estado(etq+': calendario… '+a+' de '+b); });
+  }
+  function logOf(id){
+    return j(API+'/teams/'+id+'/stats?stats=gameLog&group=hitting&season='+year+'&gameType=R')
+      .then(function(d){
+        var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[], o=[];
+        sp.forEach(function(s){ if(s.date) o.push({f:s.date, r:+((s.stat||{}).runs||0)}); });
+        o.sort(function(a,b){ return a.f<b.f?-1:1; });
+        return o;
+      }).catch(function(){ return []; });
+  }
+  function bp(id){
+    return j(API+'/teams/'+id+'/stats?stats=statSplits&sitCodes=rp&group=pitching&season='+
+             year+'&gameType=R').then(function(d){
+      var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
+      if(s&&s.stat&&s.stat.era!=null&&s.stat.era!=='-.--') return parseFloat(s.stat.era);
+      throw 0;
+    }).catch(function(){
+      return j(API+'/teams/'+id+'/stats?stats=season&group=pitching&season='+year+'&gameType=R')
+        .then(function(d){
+          var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
+          return (s&&s.stat&&s.stat.era!=null)?parseFloat(s.stat.era):null;
+        }).catch(function(){ return null; });
+    });
+  }
+  function logPit(id){
+    return j(API+'/people/'+id+'/stats?stats=gameLog&group=pitching&season='+year+'&gameType=R')
+      .then(function(d){
+        var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[], o=[];
+        sp.forEach(function(s){
+          if(!s.date) return;
+          var t=s.stat||{};
+          o.push({f:s.date, ip:ipNum(t.inningsPitched), er:+(t.earnedRuns||0),
+                  hr:+(t.homeRuns||0), bb:+(t.baseOnBalls||0), hbp:+(t.hitByPitch||0),
+                  so:+(t.strikeOuts||0), gs:+(t.gamesStarted||0)});
+        });
+        o.sort(function(a,b){ return a.f<b.f?-1:1; });
+        LOGP[id]=o;
+      }).catch(function(){ LOGP[id]=[]; });
+  }
+  return cal().then(function(){
+    if(PARAR) throw new Error('parado');
+    if(!juegos.length) throw new Error('sin juegos en '+year);
+    juegos.sort(function(a,b){ return a.f<b.f?-1:1; });
+    var ids={}; juegos.forEach(function(g){ ids[g.idA]=1; ids[g.idH]=1; });
+    return enCola(Object.keys(ids).map(Number),function(id){
+      return Promise.all([logOf(id),bp(id)]).then(function(r){ eq[id]={of:r[0],bp:r[1]}; });
+    },function(a,b){ prog(a,b); estado(etq+': equipos… '+a+' de '+b); });
+  }).then(function(){
+    if(PARAR) throw new Error('parado');
+    return j(API+'/teams/stats?stats=season&group=pitching&season='+year+'&sportIds=1&gameType=R')
+      .then(function(d){
+        var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[], er=0, ip=0;
+        sp.forEach(function(s){ er+=+(s.stat.earnedRuns||0); ip+=ipNum(s.stat.inningsPitched); });
+        if(ip>0) ligaEra=er*9/ip;
+      }).catch(function(){});
+  }).then(function(){
+    if(PARAR) throw new Error('parado');
+    var p={};
+    juegos.forEach(function(g){
+      if(g.pA&&g.pA.id) p[g.pA.id]=1;
+      if(g.pH&&g.pH.id) p[g.pH.id]=1;
+    });
+    return enCola(Object.keys(p).map(Number),logPit,
+      function(a,b){ prog(a,b); estado(etq+': abridores… '+a+' de '+b); });
+  }).then(function(){
+    if(PARAR) throw new Error('parado');
+    return armar(juegos,eq,LOGP,ligaEra);
+  });
+}
+function ofHasta(log,f){
+  var r=0,g=0,r14=0,g14=0,i14=dias(f,-14);
+  for(var i=0;i<log.length;i++){
+    if(log[i].f>=f) break;
+    r+=log[i].r; g++;
+    if(log[i].f>=i14){ r14+=log[i].r; g14++; }
+  }
+  return g?{rg:r/g,g:g,r:r,rg14:g14>=5?r14/g14:null}:null;
+}
+function pitHasta(log,f,le){
+  var ip=0,er=0,hr=0,bb=0,hbp=0,so=0,sal=[];
+  for(var i=0;i<log.length;i++){
+    var s=log[i];
+    if(s.f>=f) break;
+    ip+=s.ip; er+=s.er; hr+=s.hr; bb+=s.bb; hbp+=s.hbp; so+=s.so;
+    if(s.gs===1) sal.push(s);
+  }
+  if(ip<=0||!sal.length) return null;
+  var eraT=er*9/ip;
+  var fip= ip>=10 ? (13*hr+3*(bb+hbp)-2*so)/ip+3.15 : null;
+  var A= fip!=null ? (fip*ip+le*30)/(ip+30) : le;
+  var s5=sal.slice(-5), ip5=0, er5=0;
+  s5.forEach(function(x){ ip5+=x.ip; er5+=x.er; });
+  var era5= ip5>0 ? er5*9/ip5 : null;
+  var rS=(eraT*ip+A*40)/(ip+40);
+  var rL= era5!=null ? (era5*ip5+A*25)/(ip5+25) : null;
+  return {era: rL!=null ? rS*0.70+rL*0.30 : rS, ns:sal.length};
+}
+function armar(juegos,eq,LOGP,le){
+  var out=[], cacheF=null, LRG=4.30;
+  juegos.forEach(function(g){
+    if(g.rA==null||g.rH==null) return;
+    if(!g.pA||!g.pA.id||!g.pH||!g.pH.id) return;
+    var qA=eq[g.idA], qH=eq[g.idH];
+    if(!qA||!qH||qA.bp==null||qH.bp==null) return;
+    var pa=pitHasta(LOGP[g.pA.id]||[],g.f,le), ph=pitHasta(LOGP[g.pH.id]||[],g.f,le);
+    if(!pa||!ph||pa.ns<2||ph.ns<2) return;
+    var oA=ofHasta(qA.of,g.f), oH=ofHasta(qH.of,g.f);
+    if(!oA||!oH||oA.g<10||oH.g<10) return;
+    if(cacheF!==g.f){
+      cacheF=g.f;
+      var rr=0,gg=0;
+      for(var id in eq){ var q=ofHasta(eq[id].of,g.f); if(q){ rr+=q.r; gg+=q.g; } }
+      if(gg>0) LRG=rr/gg;
+    }
+    var rgA = oA.rg14!=null ? oA.rg*0.70+oA.rg14*0.30 : oA.rg;
+    var rgH = oH.rg14!=null ? oH.rg*0.70+oH.rg14*0.30 : oH.rg;
+    var permH=(ph.era*6/9 + qH.bp*3/9)*1.08;
+    var permA=(pa.era*6/9 + qA.bp*3/9)*1.08;
+    var cA=clamp(rgA*permH/LRG,1.5,9.0), cH=clamp(rgH*permA/LRG,1.5,9.0);
+    var pf=PARK[g.vid]||1.00;
+    out.push({T:(cA+cH)*(1+(pf-1)*0.6)+0.18, real:g.rA+g.rH});
+  });
+  return out;
+}
+function pendiente(L){
+  var n=L.length, sx=0, sy=0, sxx=0, sxy=0;
+  L.forEach(function(g){ sx+=g.T; sy+=g.real; sxx+=g.T*g.T; sxy+=g.T*g.real; });
+  var den=n*sxx-sx*sx;
+  return den>0 ? (n*sxy-sx*sy)/den : 1;
+}
+/* La linea que mas parejo divide los juegos. Se prueban todas las de medio punto
+   entre 6.5 y 11.5 y gana la que deje el reparto mas cerca de mitad y mitad.
+   Esto es lo que la v3 hacia mal: redondeaba y subia medio punto, dejando una
+   linea donde apostar Under a ciegas ya ganaba. */
+function lineaNeutral(L){
+  var mejor=8.5, dif=Infinity;
+  for(var l=6.5;l<=11.5001;l+=1.0){
+    var ov=0;
+    L.forEach(function(g){ if(g.real>l) ov++; });
+    var d=Math.abs(ov/L.length-0.5);
+    if(d<dif){ dif=d; mejor=l; }
+  }
+  /* las de .5 enteras no producen empates; se recorre en pasos de 1.0 desde 6.5 */
+  return mejor;
+}
+function encoger(T,m,k){ return m+(T-m)*k; }
+function unidades(w,n){ return w*0.909-(n-w); }
+
+function correr(){
+  var y1=+$('y1').value, y2=+$('y2').value;
+  if(!y1||!y2||y1===y2){ estado('Pon dos temporadas distintas.',true); return; }
+  PARAR=false;
+  $('correr').disabled=true; $('parar').disabled=false;
+  $('salida').innerHTML=''; prog(0,1);
+  var hoy=ymd(new Date()), A=null;
+  traer(y1,y1+'-04-01',y1+'-09-30','Ajuste '+y1).then(function(r){
+    A=r;
+    if(PARAR) throw new Error('parado');
+    var fin=y2+'-09-30'; if(hoy<fin) fin=hoy;
+    return traer(y2,y2+'-04-01',fin,'Medición '+y2);
+  }).then(function(B){
+    if(!A.length||!B.length) throw new Error('faltaron datos');
+    prog(1,1);
+    pintar(A,B,y1,y2);
+    estado('Listo. '+A.length+' juegos de ajuste y '+B.length+' de medición.');
+  }).catch(function(e){
+    estado(String(e.message)==='parado'?'Detenido.':'No se pudo terminar: '+esc(e.message),
+           String(e.message)!=='parado');
+  }).then(function(){ $('correr').disabled=false; $('parar').disabled=true; });
+}
+
+/* Evalua el modelo contra UNA linea concreta y devuelve la tabla + el resumen. */
+function evaluar(B,mA,k,linea,factor){
+  var ev=B.map(function(g){
+    var T=encoger(g.T,mA,k), sep=T-linea, over=sep>0;
+    return {sep:Math.abs(sep), over:over,
+            acierto: over ? (g.real>linea) : (g.real<linea)};
+  });
+  var ovTot=B.filter(function(g){ return g.real>linea; }).length;
+  var ciegoOver=ovTot/B.length*100;
+  var ciegoUnder=100-ciegoOver;
+  var mejorCiego=Math.max(ciegoOver,ciegoUnder);
+  var ladoCiego= ciegoOver>=ciegoUnder ? 'Over' : 'Under';
+
+  var filas=[], top=null;
+  UMB.forEach(function(u){
+    var s=ev.filter(function(x){ return x.sep>=u; });
+    var n=s.length;
+    if(!n){ filas.push({u:u,n:0}); return; }
+    var w=s.filter(function(x){ return x.acierto; }).length;
+    var pct=w/n*100;
+    var ov=s.filter(function(x){ return x.over; }).length;
+    var f={u:u, n:n, pct:pct, porAno:Math.round(n*factor),
+           uAno:unidades(w,n)*factor, ovPct:ov/n*100,
+           gana: (pct>=EQ && pct>mejorCiego+1 && n>=40)};
+    if(f.gana && (!top||f.n>top.n)) top=f;
+    filas.push(f);
+  });
+  return {filas:filas, ciego:{pct:mejorCiego, lado:ladoCiego, n:B.length,
+          uAno:unidades(Math.round(mejorCiego/100*B.length),B.length)*factor}, top:top,
+          ovTot:ovTot};
+}
+
+function tabla(r,linea,y2){
+  var o='<table><tr><th>Si se separa…</th><th>Picks/año</th><th>Acertó</th>'+
+        '<th>% Over</th><th>Saldo</th></tr>';
+  r.filas.forEach(function(f){
+    if(!f.n){
+      o+='<tr class="pocos"><td>'+f.u.toFixed(2)+'</td><td class="n">0</td>'+
+         '<td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>';
+      return;
+    }
+    var cls = f.gana ? 'gana' : (f.n<40 ? 'pocos' : '');
+    o+='<tr class="'+cls+'"><td>'+f.u.toFixed(2)+'</td><td class="n">'+f.porAno+'</td>'+
+       '<td class="n">'+num(f.pct,1)+'%</td><td class="n">'+num(f.ovPct,0)+'%</td>'+
+       '<td class="n">'+sg(f.uAno,1)+'u</td></tr>';
+  });
+  o+='<tr class="ref"><td>Apostar '+r.ciego.lado+' a ciegas<br>'+
+     '<span style="font-size:11.5px">sin mirar nada</span></td>'+
+     '<td class="n">'+Math.round(r.ciego.n*(2430/r.ciego.n)*0+r.ciego.n*1)+'</td>'+
+     '<td class="n">'+num(r.ciego.pct,1)+'%</td><td class="n">—</td>'+
+     '<td class="n">'+sg(r.ciego.uAno,1)+'u</td></tr>';
+  o+='</table>';
+  return o;
+}
+
+function pintar(A,B,y1,y2){
+  var k=Math.round(pendiente(A)*100)/100;
+  var mA=0; A.forEach(function(g){ mA+=g.real; }); mA/=A.length;
+  var mB=0; B.forEach(function(g){ mB+=g.real; }); mB/=B.length;
+  var factor=2430/B.length;
+  var lNeutral=lineaNeutral(B);
+
+  var rN=evaluar(B,mA,k,lNeutral,factor);
+  var r85=evaluar(B,mA,k,8.5,factor);
+  var r95=evaluar(B,mA,k,9.5,factor);
+
+  var o='<h3><span>&#127919;</span>Con la línea neutral ('+lNeutral.toFixed(1)+')</h3>';
+  o+='<div class="leyenda">Encogimiento <b>×'+k.toFixed(2)+'</b>, calculado en '+y1+
+     '. El promedio real de '+y2+' fue <b>'+num(mB,2)+'</b> carreras. Con esta l&iacute;nea, '+
+     num(rN.ovTot/B.length*100,1)+'% de los juegos fueron Over &mdash; lo m&aacute;s parejo posible, '+
+     'as&iacute; que apostar a ciegas no gana nada. Hace falta <b>'+EQ.toFixed(1)+'%</b> para no perder.</div>';
+  o+=tabla(rN,lNeutral,y2);
+  o+='<div class="leyenda">La fila dorada es la vara de verdad: apostar siempre al mismo lado, '+
+     'sin modelo. <b>Solo cuentan como buenos los listones que le ganan a esa fila</b>, no los que '+
+     'le ganan al 52.4%. En verde los que lo logran con al menos 40 picks.</div>';
+
+  /* Veredicto */
+  var vc,vq,vr;
+  if(!rN.top){
+    vc='mal'; vq='Ningún listón le gana a apostar a ciegas';
+    vr='Con la l&iacute;nea puesta donde de verdad divide los juegos mitad y mitad, ning&uacute;n corte '+
+       'del modelo supera a apostar '+rN.ciego.lado+' siempre sin mirar nada ('+num(rN.ciego.pct,1)+
+       '%). Eso confirma lo de la v3: el 64% de acierto que sali&oacute; all&aacute; era la l&iacute;nea mal '+
+       'puesta, no el modelo. Y esto midiendo contra una l&iacute;nea que no se mueve, que es el rival '+
+       'm&aacute;s f&aacute;cil que existe.';
+  }else{
+    vc='bien'; vq='El listón de '+rN.top.u.toFixed(2)+' le gana a apostar a ciegas';
+    vr=num(rN.top.pct,1)+'% de acierto contra '+num(rN.ciego.pct,1)+'% de apostar '+rN.ciego.lado+
+       ' siempre, con unos '+rN.top.porAno+' picks al a&ntilde;o y saldo de '+sg(rN.top.uAno,1)+
+       ' unidades. Eso es se&ntilde;al propia del modelo, no inclinaci&oacute;n de la l&iacute;nea. Comprueba '+
+       'abajo que aguante tambi&eacute;n con 8.5 y con 9.5 antes de creerlo.';
+  }
+  o+='<div class="ver '+vc+'"><div class="q">'+esc(vq)+'</div><div class="r">'+vr+'</div></div>';
+
+  /* Las dos lineas de control */
+  o+='<h3><span>&#9878;&#65039;</span>La prueba de las dos líneas</h3>';
+  o+='<div class="leyenda">Un modelo que lee el partido gana con cualquier l&iacute;nea. Uno que solo '+
+     'est&aacute; inclinado hacia un lado gana con una y pierde con la otra. Si estas dos tablas se '+
+     'contradicen, no hay se&ntilde;al.</div>';
+  o+='<h4>Línea 8.5</h4>'+tabla(r85,8.5,y2);
+  o+='<h4>Línea 9.5</h4>'+tabla(r95,9.5,y2);
+
+  var g85=r85.top?1:0, g95=r95.top?1:0;
+  if(g85&&g95)
+    o+='<div class="flag">✅ Aguanta con las dos l&iacute;neas. Eso s&iacute; es se&ntilde;al del modelo.</div>';
+  else if(g85||g95)
+    o+='<div class="nota"><b>Solo aguanta con una de las dos.</b> Con '+(g85?'8.5':'9.5')+
+       ' le gana a apostar a ciegas y con '+(g85?'9.5':'8.5')+' no. Eso no es leer el partido: '+
+       'es estar inclinado hacia el lado que esa l&iacute;nea favorece. No sirve como pick.</div>';
+  else
+    o+='<div class="flag">No aguanta con ninguna de las dos.</div>';
+
+  o+='<div class="nota"><b>Y aun as&iacute;:</b> las tres l&iacute;neas de esta p&aacute;gina son fijas. La casa '+
+     'pone 7.5 en un duelo de abridores y 10.5 en Coors, y esa l&iacute;nea ya trae todo lo que sabe tu '+
+     'modelo. Lo de aqu&iacute; sirve para descartar, no para confirmar.</div>';
+
+  $('salida').innerHTML=o;
+}
+
+$('correr').addEventListener('click',correr);
+$('parar').addEventListener('click',function(){ PARAR=true; $('parar').disabled=true; });
+</script>
+</body>
+</html>
