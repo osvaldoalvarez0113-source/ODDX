@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>OVA — Backtest del total v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+ --night:#08161F;--night2:#0C1E2B;--panel:#122D3D;--panel2:#173747;
+ --line:#1F4457;--line2:#2A5A72;--chalk:#F1EEE4;--muted:#7E97A6;--muted2:#5D7684;
+ --signal:#E8B33C;--signal2:#F5C863;--good:#5FB07A;--bad:#D2685F;
+ --cond:'Barlow Condensed','Helvetica Neue',sans-serif;
+ --body:system-ui,-apple-system,'Segoe UI',sans-serif;
+ --r:10px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;color:var(--chalk);font-family:var(--body);font-size:15px;line-height:1.5;
+ background:var(--night);
+ background-image:radial-gradient(1200px 600px at 50% -200px,#173747 0%,transparent 70%);
+ background-attachment:fixed;padding:0 0 60px;
+ padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+.wrap{max-width:620px;margin:0 auto;padding:0 14px}
+.topbar{position:sticky;top:0;z-index:20;background:rgba(8,22,31,.93);
+ -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+ border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.topbar .inner{max-width:620px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;gap:9px}
+.brand{font-family:var(--cond);font-weight:700;font-size:26px;line-height:1;margin:0;
+ letter-spacing:.5px;display:flex;align-items:center;gap:7px}
+.tag{font-family:var(--cond);font-size:12px;font-weight:600;color:var(--night);
+ background:var(--signal);border-radius:20px;padding:2px 8px;letter-spacing:.5px}
+header.hero{padding:16px 0 2px}
+header.hero p{margin:0 0 8px;color:var(--muted);font-size:13.5px;max-width:54ch}
+input,select{background:var(--panel);border:1px solid var(--line);color:var(--chalk);
+ border-radius:var(--r);padding:10px 11px;font-family:var(--body);font-size:15px;
+ -webkit-appearance:none;appearance:none;min-width:0;width:100%}
+button{background:linear-gradient(180deg,var(--signal2),var(--signal));color:#12242F;border:0;
+ border-radius:var(--r);padding:11px 18px;font-family:var(--cond);font-weight:700;font-size:18px;
+ letter-spacing:.3px;cursor:pointer;min-height:44px;
+ box-shadow:0 1px 0 rgba(255,255,255,.25) inset}
+button:active{transform:translateY(1px)}
+button:disabled{opacity:.45}
+button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);
+ font-weight:600;box-shadow:none}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+.campos{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0}
+.campos label{grid-column:1/-1;font-family:var(--cond);font-size:16px;color:var(--chalk);margin-top:4px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.status{color:var(--muted);font-size:13.5px;padding:11px 2px;line-height:1.55}
+.status.err{color:var(--bad);background:rgba(210,104,95,.1);border:1px solid rgba(210,104,95,.3);
+ border-radius:var(--r);padding:11px 12px}
+.barra{height:6px;background:var(--panel);border-radius:20px;overflow:hidden;margin:8px 0 4px}
+.barra i{display:block;height:100%;background:linear-gradient(90deg,var(--signal),var(--signal2));
+ width:0;transition:width .25s}
+h3{font-family:var(--cond);font-size:20px;font-weight:600;margin:26px 0 6px;padding:0 0 7px;
+ border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:8px 0 4px}
+td,th{padding:8px 0;text-align:right;border-bottom:1px solid rgba(31,68,87,.6)}
+th:first-child,td:first-child{text-align:left;color:var(--muted);font-weight:400;padding-right:8px}
+th{font-family:var(--cond);font-size:15px;font-weight:600;color:var(--chalk);
+ border-bottom:1px solid var(--line2)}
+td.n{font-family:var(--cond);font-size:17px;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+tr.usa td{color:var(--signal);font-weight:600}
+tr.usa td:first-child{color:var(--signal)}
+tr.base td{color:var(--muted2)}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.kpi div{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+ padding:10px;text-align:center}
+.kpi b{display:block;font-family:var(--cond);font-size:24px;font-weight:700;line-height:1.1;
+ font-variant-numeric:tabular-nums}
+.kpi span{font-size:10px;color:var(--muted);display:block;margin-top:3px;line-height:1.35}
+.kpi .g b{color:var(--good)} .kpi .p b{color:var(--bad)}
+.ver{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--signal);
+ border-radius:var(--r);padding:13px 15px;margin:14px 0}
+.ver .q{font-family:var(--cond);font-size:23px;font-weight:700;line-height:1.15}
+.ver .r{font-size:13.5px;color:var(--muted);margin-top:6px;line-height:1.55}
+.ver.bien{border-left-color:var(--good)} .ver.bien .q{color:var(--good)}
+.ver.mal{border-left-color:var(--bad)}   .ver.mal .q{color:var(--bad)}
+.flag{font-size:13.5px;color:var(--muted);padding:6px 0;line-height:1.55}
+.flag b{color:var(--chalk);font-weight:600}
+.leyenda{font-size:12.5px;color:var(--muted2);line-height:1.55;background:var(--panel);
+ border-radius:var(--r);padding:10px 12px;margin:9px 0}
+.leyenda b{color:var(--muted);font-weight:600}
+.nota{font-size:13px;line-height:1.55;color:var(--bad);background:rgba(210,104,95,.1);
+ border:1px solid rgba(210,104,95,.32);border-radius:var(--r);padding:10px 12px;margin:10px 0}
+.nota b{color:var(--chalk)}
+.receta{background:var(--panel);border:1px solid var(--line2);border-radius:var(--r);
+ padding:11px 13px;margin:10px 0;font-size:13.5px;line-height:1.6;color:var(--muted)}
+.receta b{color:var(--chalk)}
+.receta code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--signal);
+ background:var(--night);padding:2px 5px;border-radius:5px}
+details summary{font-family:var(--cond);font-size:16px;color:var(--muted);cursor:pointer;
+ padding:8px 0;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details summary:before{content:'▸ ';color:var(--muted2)}
+details[open] summary:before{content:'▾ '}
+footer{color:var(--muted2);font-size:11.5px;padding:24px 0 0;line-height:1.65;
+ border-top:1px solid var(--line);margin-top:28px}
+footer b{color:var(--muted)}
+@media (max-width:360px){.kpi{grid-template-columns:repeat(2,1fr)}table{font-size:12.5px}}
+@media (prefers-reduced-motion:reduce){.barra i{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="inner">
+  <h1 class="brand"><span>&#9918;</span>Backtest del total <span class="tag">v2</span></h1>
+</div></div>
+
+<div class="wrap">
+
+<header class="hero">
+  <p>Prueba cinco arreglos a la cadena que produce el total de OVA. <b>Ajusta cada constante en una
+  temporada y la mide en la otra</b>, as&iacute; que ninguna mejora puede salir bien por casualidad.</p>
+  <p>Baja las dos temporadas de una vez. Tarda entre 5 y 10 minutos.</p>
+</header>
+
+<div class="campos">
+  <label>Temporada de ajuste</label>
+  <input type="number" id="y1" value="2025">
+  <input type="text" id="f1" value="04-01 → 09-30" disabled>
+  <label>Temporada de medici&oacute;n</label>
+  <input type="number" id="y2" value="2026">
+  <input type="text" id="f2" value="04-01 → hoy" disabled>
+</div>
+
+<div class="controls">
+  <button id="correr">Correr</button>
+  <button class="ghost" id="parar" disabled>Parar</button>
+</div>
+
+<div class="barra"><i id="prog"></i></div>
+<div id="status" class="status">Dale a correr. Va a bajar las dos temporadas completas.</div>
+
+<div id="salida"></div>
+
+<footer>
+<details><summary>&#128214; Qu&eacute; prueba y por qu&eacute; as&iacute;</summary>
+
+  <b>El problema que resuelve esta versi&oacute;n.</b> Si ajustas una constante y la mides sobre los
+  mismos juegos con los que la ajustaste, siempre va a salir mejor &mdash; aunque sea ruido. Es lo
+  que pas&oacute; en la v1 con el multiplicador del staff: una temporada ped&iacute;a 1.065 y la otra 1.075,
+  y las dos parec&iacute;an mejoras. Aqu&iacute; cada constante se busca en una temporada y el resultado que
+  se reporta es siempre el de <b>la otra</b>, que el ajuste nunca vio. Un n&uacute;mero que sobrevive a
+  eso es real.
+
+  <b>Las cinco cosas que prueba.</b>
+  <b>1. Encogimiento.</b> Tu proyecci&oacute;n se mueve casi el doble de lo que se mueve la realidad.
+  Encogerla hacia el promedio de la liga la pone a la escala correcta.
+  <b>2. Innings reales del abridor.</b> La cadena reparte siempre 6 innings al abridor y 3 al
+  bullpen. Un abridor que aguanta 5 le deja 4 al bullpen, y eso cambia cu&aacute;ntas carreras se esperan.
+  Los innings por salida ya los calcula tu app; aqu&iacute; se usan de verdad.
+  <b>3. El recorte de 1.5 a 9.0 carreras.</b> Corta los juegos de mucho y de poco anotar antes de
+  sumarlos, que es justo donde el modelo m&aacute;s se separaba.
+  <b>4. El multiplicador del staff.</b> El 1.08 no sali&oacute; de ning&uacute;n lado. Se busca el que menos yerra.
+  <b>5. OPS en vez de carreras por juego.</b> Las carreras que anota un equipo son ruidosas; el OPS
+  mide lo mismo con menos ruido. Se prueba mezclarlo.
+
+  <b>C&oacute;mo leer la escalera.</b> Cada fila a&ntilde;ade una mejora sobre la anterior. Lo &uacute;nico que
+  importa es la columna de la temporada de medici&oacute;n, y lo &uacute;nico que decide es si le gana a la
+  base tonta &mdash; proyectar siempre el promedio, sin mirar nada. Una mejora que solo se ve en la
+  temporada de ajuste no es una mejora.
+
+  <b>Lo que sigue sin poder medirse.</b> Si le ganas a la l&iacute;nea del mercado. Eso necesita cuotas
+  de cierre hist&oacute;ricas, que son de plan pago. El ERA de bullpen va al cierre de temporada y los
+  splits contra zurdos y derechos no se aplican, igual que en la v1.
+
+</details>
+</footer>
+
+</div>
+
+<script>
+var API='https://statsapi.mlb.com/api/v1';
+var PARAR=false;
+
+var PARK={
+ 19:1.28,3313:1.05,3:1.08,17:1.02,31:0.95,2680:0.93,2395:0.90,22:0.97,2602:1.10,
+ 4169:0.94,3289:0.96,2681:1.06,3312:1.00,1:0.98,2392:1.03,680:0.92,14:1.02,15:1.04,
+ 2394:0.97,7:1.01,3309:1.00,2:1.02,5325:0.99,4705:1.02,2889:0.97,32:1.01,4:1.04,
+ 5:0.99,2529:0.96,12:0.96
+};
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[<>&]/g,function(c){
+  return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c]; }); }
+function num(v,d){ d=(d==null?2:d); return (v==null||!isFinite(v))?'—':v.toFixed(d); }
+function sg(v,d){ d=(d==null?2:d); return (v>=0?'+':'')+v.toFixed(d); }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function ymd(dt){ var p=function(n){return String(n).padStart(2,'0');};
+  return dt.getUTCFullYear()+'-'+p(dt.getUTCMonth()+1)+'-'+p(dt.getUTCDate()); }
+function dias(s,n){ var d=new Date(s+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return ymd(d); }
+function ipNum(ip){
+  if(ip==null) return 0;
+  var n=parseFloat(String(ip));
+  if(!isFinite(n)) return 0;
+  var dec=Math.round((n-Math.trunc(n))*10);
+  return Math.trunc(n)+(dec===1?1/3:dec===2?2/3:0);
+}
+function j(u){ return fetch(u).then(function(r){
+  if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }
+function enCola(items,fn,av){
+  var i=0,h=0,t=items.length,res=new Array(t);
+  function sig(){
+    if(PARAR||i>=t) return Promise.resolve();
+    var k=i++;
+    return Promise.resolve(fn(items[k],k)).then(function(v){
+      res[k]=v; h++; if(av) av(h,t); return sig();
+    });
+  }
+  var hs=[]; for(var q=0;q<Math.min(4,t);q++) hs.push(sig());
+  return Promise.all(hs).then(function(){ return res; });
+}
+function estado(t,e){ var x=$('status'); x.className='status'+(e?' err':''); x.innerHTML=t; }
+function prog(a,b){ $('prog').style.width=(b?Math.round(a/b*100):0)+'%'; }
+
+/* ---------- bajada de una temporada ---------- */
+function traerTemporada(year,ini,fin,etq){
+  var juegos=[], eq={}, LOGP={}, ligaEra=4.10;
+
+  function calendario(){
+    var tr=[],d=ini;
+    while(d<=fin){ var h=dias(d,27); if(h>fin) h=fin; tr.push([d,h]); d=dias(h,1); }
+    return enCola(tr,function(t){
+      return j(API+'/schedule?sportId=1&gameType=R&startDate='+t[0]+'&endDate='+t[1]+
+               '&hydrate=probablePitcher,team,venue').then(function(d){
+        (d.dates||[]).forEach(function(dd){ (dd.games||[]).forEach(function(g){
+          if(!g.status||g.status.abstractGameState!=='Final') return;
+          var T=g.teams||{};
+          if(!T.home||!T.away||!T.home.team||!T.away.team) return;
+          juegos.push({f:g.officialDate||dd.date,
+            idA:T.away.team.id, idH:T.home.team.id,
+            pA:T.away.probablePitcher||null, pH:T.home.probablePitcher||null,
+            rA:(T.away.score!=null?+T.away.score:null),
+            rH:(T.home.score!=null?+T.home.score:null),
+            vid:(g.venue&&g.venue.id)||null});
+        });});
+      }).catch(function(){});
+    },function(a,b){ estado(etq+': calendario… '+a+' de '+b); });
+  }
+
+  function logOf(id){
+    return j(API+'/teams/'+id+'/stats?stats=gameLog&group=hitting&season='+year+'&gameType=R')
+      .then(function(d){
+        var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[], o=[];
+        sp.forEach(function(s){
+          if(!s.date) return;
+          var t=s.stat||{};
+          o.push({f:s.date, r:+(t.runs||0), ab:+(t.atBats||0), h:+(t.hits||0),
+                  d2:+(t.doubles||0), d3:+(t.triples||0), hr:+(t.homeRuns||0),
+                  bb:+(t.baseOnBalls||0), hbp:+(t.hitByPitch||0), sf:+(t.sacFlies||0)});
+        });
+        o.sort(function(a,b){ return a.f<b.f?-1:1; });
+        return o;
+      }).catch(function(){ return []; });
+  }
+  function bp(id){
+    return j(API+'/teams/'+id+'/stats?stats=statSplits&sitCodes=rp&group=pitching&season='+
+             year+'&gameType=R').then(function(d){
+      var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
+      if(s&&s.stat&&s.stat.era!=null&&s.stat.era!=='-.--') return parseFloat(s.stat.era);
+      throw 0;
+    }).catch(function(){
+      return j(API+'/teams/'+id+'/stats?stats=season&group=pitching&season='+year+'&gameType=R')
+        .then(function(d){
+          var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
+          return (s&&s.stat&&s.stat.era!=null)?parseFloat(s.stat.era):null;
+        }).catch(function(){ return null; });
+    });
+  }
+  function logPit(id){
+    return j(API+'/people/'+id+'/stats?stats=gameLog&group=pitching&season='+year+'&gameType=R')
+      .then(function(d){
+        var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[], o=[];
+        sp.forEach(function(s){
+          if(!s.date) return;
+          var t=s.stat||{};
+          o.push({f:s.date, ip:ipNum(t.inningsPitched), er:+(t.earnedRuns||0),
+                  hr:+(t.homeRuns||0), bb:+(t.baseOnBalls||0), hbp:+(t.hitByPitch||0),
+                  so:+(t.strikeOuts||0), gs:+(t.gamesStarted||0)});
+        });
+        o.sort(function(a,b){ return a.f<b.f?-1:1; });
+        LOGP[id]=o;
+      }).catch(function(){ LOGP[id]=[]; });
+  }
+
+  return calendario().then(function(){
+    if(PARAR) throw new Error('parado');
+    if(!juegos.length) throw new Error('sin juegos en '+year);
+    juegos.sort(function(a,b){ return a.f<b.f?-1:1; });
+    var ids={}; juegos.forEach(function(g){ ids[g.idA]=1; ids[g.idH]=1; });
+    return enCola(Object.keys(ids).map(Number),function(id){
+      return Promise.all([logOf(id),bp(id)]).then(function(r){ eq[id]={of:r[0],bp:r[1]}; });
+    },function(a,b){ prog(a,b); estado(etq+': equipos… '+a+' de '+b); });
+  }).then(function(){
+    if(PARAR) throw new Error('parado');
+    return j(API+'/teams/stats?stats=season&group=pitching&season='+year+'&sportIds=1&gameType=R')
+      .then(function(d){
+        var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[], er=0, ip=0;
+        sp.forEach(function(s){ er+=+(s.stat.earnedRuns||0); ip+=ipNum(s.stat.inningsPitched); });
+        if(ip>0) ligaEra=er*9/ip;
+      }).catch(function(){});
+  }).then(function(){
+    if(PARAR) throw new Error('parado');
+    var p={};
+    juegos.forEach(function(g){
+      if(g.pA&&g.pA.id) p[g.pA.id]=1;
+      if(g.pH&&g.pH.id) p[g.pH.id]=1;
+    });
+    var l=Object.keys(p).map(Number);
+    return enCola(l,logPit,function(a,b){ prog(a,b); estado(etq+': abridores… '+a+' de '+b); });
+  }).then(function(){
+    if(PARAR) throw new Error('parado');
+    return armar(juegos,eq,LOGP,ligaEra);
+  });
+}
+
+/* Estado de un equipo hasta la vispera: carreras por juego, OPS y ventana de 14 dias. */
+function ofHasta(log,f){
+  var r=0,g=0,ab=0,h=0,d2=0,d3=0,hr=0,bb=0,hbp=0,sf=0,r14=0,g14=0;
+  var i14=dias(f,-14);
+  for(var i=0;i<log.length;i++){
+    var s=log[i];
+    if(s.f>=f) break;
+    r+=s.r; g++; ab+=s.ab; h+=s.h; d2+=s.d2; d3+=s.d3; hr+=s.hr;
+    bb+=s.bb; hbp+=s.hbp; sf+=s.sf;
+    if(s.f>=i14){ r14+=s.r; g14++; }
+  }
+  if(!g) return null;
+  var den=ab+bb+hbp+sf;
+  var obp= den>0 ? (h+bb+hbp)/den : null;
+  var tb=h+d2+2*d3+3*hr;
+  var slg= ab>0 ? tb/ab : null;
+  return {rg:r/g, g:g, r:r, rg14: g14>=5 ? r14/g14 : null,
+          ops:(obp!=null&&slg!=null)?obp+slg:null};
+}
+/* ERA del abridor e innings reales por apertura, ambos hasta la vispera. */
+function pitHasta(log,f,ligaEra){
+  var ip=0,er=0,hr=0,bb=0,hbp=0,so=0,sal=[];
+  for(var i=0;i<log.length;i++){
+    var s=log[i];
+    if(s.f>=f) break;
+    ip+=s.ip; er+=s.er; hr+=s.hr; bb+=s.bb; hbp+=s.hbp; so+=s.so;
+    if(s.gs===1) sal.push(s);
+  }
+  if(ip<=0||!sal.length) return null;
+  var eraT=er*9/ip;
+  var fip= ip>=10 ? (13*hr+3*(bb+hbp)-2*so)/ip+3.15 : null;
+  var A= fip!=null ? (fip*ip+ligaEra*30)/(ip+30) : ligaEra;
+  var s5=sal.slice(-5), ip5=0, er5=0;
+  s5.forEach(function(x){ ip5+=x.ip; er5+=x.er; });
+  var era5= ip5>0 ? er5*9/ip5 : null;
+  var rS=(eraT*ip+A*40)/(ip+40);
+  var rL= era5!=null ? (era5*ip5+A*25)/(ip5+25) : null;
+  var era= rL!=null ? rS*0.70+rL*0.30 : rS;
+  var ipS=0; sal.forEach(function(x){ ipS+=x.ip; });
+  return {era:era, ipx: ipS/sal.length, ns:sal.length};
+}
+
+function armar(juegos,eq,LOGP,ligaEra){
+  var out=[], fuera=0;
+  /* Estado de liga por fecha: se recalcula al cambiar de dia, no por juego. */
+  var cacheF=null, LRG=4.30, OPSL=0.720;
+  juegos.forEach(function(g){
+    if(g.rA==null||g.rH==null){ fuera++; return; }
+    if(!g.pA||!g.pA.id||!g.pH||!g.pH.id){ fuera++; return; }
+    var qA=eq[g.idA], qH=eq[g.idH];
+    if(!qA||!qH||qA.bp==null||qH.bp==null){ fuera++; return; }
+    var pa=pitHasta(LOGP[g.pA.id]||[],g.f,ligaEra);
+    var ph=pitHasta(LOGP[g.pH.id]||[],g.f,ligaEra);
+    if(!pa||!ph||pa.ns<2||ph.ns<2){ fuera++; return; }
+    var oA=ofHasta(qA.of,g.f), oH=ofHasta(qH.of,g.f);
+    if(!oA||!oH||oA.g<10||oH.g<10||oA.ops==null||oH.ops==null){ fuera++; return; }
+    if(cacheF!==g.f){
+      cacheF=g.f;
+      var rr=0,gg=0,so=0,no=0;
+      for(var id in eq){
+        var q=ofHasta(eq[id].of,g.f);
+        if(!q) continue;
+        rr+=q.r; gg+=q.g;
+        if(q.ops!=null){ so+=q.ops; no++; }
+      }
+      if(gg>0) LRG=rr/gg;
+      if(no>0) OPSL=so/no;
+    }
+    var rgA = oA.rg14!=null ? oA.rg*0.70+oA.rg14*0.30 : oA.rg;
+    var rgH = oH.rg14!=null ? oH.rg*0.70+oH.rg14*0.30 : oH.rg;
+    out.push({
+      rgA:rgA, rgH:rgH, opsA:oA.ops, opsH:oH.ops,
+      eraA:pa.era, eraH:ph.era, ipxA:pa.ipx, ipxH:ph.ipx,
+      bpA:qA.bp, bpH:qH.bp, LRG:LRG, OPSL:OPSL,
+      pfv: PARK[g.vid]||1.00,
+      real:g.rA+g.rH
+    });
+  });
+  return {L:out, fuera:fuera, total:juegos.length};
+}
+
+/* ---------- el modelo, con todas las variantes ---------- */
+function proyectar(g,p){
+  var ipA = p.useIp ? clamp(g.ipxA,3.5,7.5) : 6;
+  var ipH = p.useIp ? clamp(g.ipxH,3.5,7.5) : 6;
+  var permA=(g.eraA*ipA + g.bpA*(9-ipA))/9 * p.K;
+  var permH=(g.eraH*ipH + g.bpH*(9-ipH))/9 * p.K;
+  var rgA=g.rgA, rgH=g.rgH;
+  if(p.wOps>0){
+    var oA=g.LRG*Math.pow(g.opsA/g.OPSL,p.kOps);
+    var oH=g.LRG*Math.pow(g.opsH/g.OPSL,p.kOps);
+    rgA=rgA*(1-p.wOps)+oA*p.wOps;
+    rgH=rgH*(1-p.wOps)+oH*p.wOps;
+  }
+  var cA=clamp(rgA*permH/g.LRG,p.lo,p.hi);
+  var cH=clamp(rgH*permA/g.LRG,p.lo,p.hi);
+  var T=(cA+cH)*(1+(g.pfv-1)*p.suave)+p.extras;
+  if(p.shrink!==1){
+    var m=g.LRG*2+p.extras;
+    T=m+(T-m)*p.shrink;
+  }
+  return T;
+}
+function medir(L,p){
+  var n=L.length, s=0,ab=0,sq=0,sx=0,sy=0,sxx=0,syy=0,sxy=0;
+  for(var i=0;i<n;i++){
+    var t=proyectar(L[i],p), d=L[i].real-t;
+    s+=d; ab+=Math.abs(d); sq+=d*d;
+    sx+=t; sy+=L[i].real; sxx+=t*t; syy+=L[i].real*L[i].real; sxy+=t*L[i].real;
+  }
+  var den=Math.sqrt((n*sxx-sx*sx)*(n*syy-sy*sy));
+  return {n:n, sesgo:s/n, mae:ab/n, rmse:Math.sqrt(sq/n),
+          corr: den>0?(n*sxy-sx*sy)/den:0};
+}
+function tonta(L){
+  var n=L.length,s=0;
+  L.forEach(function(g){ s+=g.real; });
+  var m=s/n, ab=0, sq=0;
+  L.forEach(function(g){ var d=g.real-m; ab+=Math.abs(d); sq+=d*d; });
+  return {media:m, mae:ab/n, rmse:Math.sqrt(sq/n)};
+}
+function copia(p,c){ var o={}; for(var k in p) o[k]=p[k]; for(var k2 in c) o[k2]=c[k2]; return o; }
+/* Busca el valor de una constante que menos yerra EN LA TEMPORADA DE AJUSTE. */
+function ajustar(L,base,campo,de,a,paso){
+  var mejor=base[campo], mm=Infinity;
+  for(var v=de;v<=a+1e-9;v+=paso){
+    var r=medir(L,copia(base,(function(){var o={};o[campo]=v;return o;})()));
+    if(r.mae<mm){ mm=r.mae; mejor=v; }
+  }
+  return Math.round(mejor*1000)/1000;
+}
+
+var BASE={K:1.08, suave:0.6, extras:0.18, shrink:1, useIp:false, lo:1.5, hi:9.0, wOps:0, kOps:1.8};
+
+function correr(){
+  var y1=+$('y1').value, y2=+$('y2').value;
+  if(!y1||!y2||y1===y2){ estado('Pon dos temporadas distintas.',true); return; }
+  PARAR=false;
+  $('correr').disabled=true; $('parar').disabled=false;
+  $('salida').innerHTML=''; prog(0,1);
+  var hoy=ymd(new Date());
+  var A=null,B=null;
+  traerTemporada(y1,y1+'-04-01',y1+'-09-30','Ajuste '+y1).then(function(r){
+    A=r;
+    if(PARAR) throw new Error('parado');
+    var fin=(y2+'-09-30'); if(hoy<fin) fin=hoy;
+    return traerTemporada(y2,y2+'-04-01',fin,'Medición '+y2);
+  }).then(function(r){
+    B=r;
+    if(!A.L.length||!B.L.length) throw new Error('Faltaron datos en una de las dos temporadas.');
+    prog(1,1);
+    pintar(A,B,y1,y2);
+    estado('Listo. '+A.L.length+' juegos de ajuste ('+y1+') y '+B.L.length+' de medición ('+y2+').');
+  }).catch(function(e){
+    estado(String(e.message)==='parado'?'Detenido.':'No se pudo terminar: '+esc(e.message),
+           String(e.message)!=='parado');
+  }).then(function(){ $('correr').disabled=false; $('parar').disabled=true; });
+}
+
+function pintar(A,B,y1,y2){
+  var La=A.L, Lb=B.L;
+  var tb=tonta(Lb), ta=tonta(La);
+
+  /* La escalera: cada peldano suma una mejora, ajustada SIEMPRE en A y medida en B. */
+  var pasos=[];
+  var p=copia(BASE,{});
+  pasos.push({n:'Modelo actual', p:copia(p,{}), det:'tal como está en la app'});
+
+  p=copia(p,{useIp:true});
+  pasos.push({n:'+ innings reales del abridor', p:copia(p,{}), det:'en vez del 6/9 fijo'});
+
+  p=copia(p,{lo:0.5,hi:15});
+  pasos.push({n:'+ sin el recorte 1.5–9.0', p:copia(p,{}), det:'deja pasar los extremos'});
+
+  var kOpt=ajustar(La,p,'K',0.94,1.20,0.005);
+  p=copia(p,{K:kOpt});
+  pasos.push({n:'+ multiplicador del staff', p:copia(p,{}), det:kOpt.toFixed(3)+' en vez de 1.08'});
+
+  var wOpt=ajustar(La,copia(p,{kOps:1.8}),'wOps',0,1,0.05);
+  p=copia(p,{wOps:wOpt,kOps:1.8});
+  if(wOpt>0){
+    var kO=ajustar(La,p,'kOps',1.0,2.6,0.1);
+    p=copia(p,{kOps:kO});
+  }
+  pasos.push({n:'+ OPS en la ofensiva', p:copia(p,{}),
+              det: wOpt>0 ? ('mezcla '+Math.round(wOpt*100)+'% OPS') : 'no aportó, quedó en 0%'});
+
+  var sOpt=ajustar(La,p,'shrink',0.20,1.00,0.01);
+  p=copia(p,{shrink:sOpt});
+  pasos.push({n:'+ encogimiento', p:copia(p,{}), det:'×'+sOpt.toFixed(2)+' hacia el promedio'});
+
+  var o='<h3><span>&#129521;</span>La escalera</h3>';
+  o+='<div class="leyenda">Cada fila a&ntilde;ade una mejora sobre la de arriba. Las constantes se '+
+     'buscan en <b>'+y1+'</b> y todo lo que ves aqu&iacute; se mide en <b>'+y2+'</b>, que el ajuste '+
+     'nunca vio. Menos error es mejor.</div>';
+  o+='<table><tr><th>Paso</th><th>Error '+y2+'</th><th>Corr.</th><th>vs base</th></tr>';
+  var mejorPaso=null, mejorMae=Infinity;
+  pasos.forEach(function(s,i){
+    var m=medir(Lb,s.p);
+    var vs=(tb.mae-m.mae)/tb.mae*100;
+    if(m.mae<mejorMae){ mejorMae=m.mae; mejorPaso=s; }
+    o+='<tr'+(i===pasos.length-1?' class="usa"':'')+'><td>'+esc(s.n)+
+       '<br><span style="font-size:11.5px;color:var(--muted2)">'+esc(s.det)+'</span></td>'+
+       '<td class="n">'+num(m.mae)+'</td><td class="n">'+num(m.corr,3)+'</td>'+
+       '<td class="n">'+sg(vs,1)+'%</td></tr>';
+  });
+  o+='<tr class="base"><td>Base tonta<br><span style="font-size:11.5px">proyectar '+
+     num(tb.media,1)+' siempre</span></td><td class="n">'+num(tb.mae)+
+     '</td><td class="n">0.000</td><td class="n">—</td></tr>';
+  o+='</table>';
+
+  var fin=medir(Lb,p);
+  var vsFin=(tb.mae-fin.mae)/tb.mae*100;
+  var ini=medir(Lb,BASE);
+  var vsIni=(tb.mae-ini.mae)/tb.mae*100;
+
+  o+='<div class="kpi">'+
+    '<div class="'+(Math.abs(fin.sesgo)<0.15?'g':'p')+'"><b>'+sg(fin.sesgo)+'</b><span>sesgo final</span></div>'+
+    '<div><b>'+num(fin.corr,3)+'</b><span>correlación final</span></div>'+
+    '<div class="'+(vsFin>0?'g':'p')+'"><b>'+sg(vsFin,1)+'%</b><span>mejor que la base tonta</span></div>'+
+  '</div>';
+
+  /* Veredicto honesto */
+  var vc,vq,vr;
+  if(vsFin<=0){
+    vc='mal'; vq='No hay nada que rescatar aquí';
+    vr='Con las cinco mejoras puestas y ajustadas en '+y1+', el modelo sigue sin ganarle a proyectar '+
+       num(tb.media,1)+' carreras siempre. Empezó en '+sg(vsIni,1)+'% y terminó en '+sg(vsFin,1)+'%. '+
+       'Eso cierra la pregunta: el total no es un mercado donde tengas ventaja, y no es por cómo está '+
+       'montado el cálculo.';
+  }else if(vsFin<2){
+    vc=''; vq='Le gana, pero por muy poco';
+    vr='Mejora '+num(vsFin,1)+'% sobre la base tonta, arriba del '+sg(vsIni,1)+'% con el que empezó. '+
+       'Es una ganancia real y medida fuera de muestra, pero de ese tamaño no sobrevive al vig. '+
+       'Sirve para que la app deje de sacar picks inflados, no para apostar totales.';
+  }else{
+    vc='bien'; vq='Las mejoras valieron';
+    vr='Mejora '+num(vsFin,1)+'% sobre la base tonta en una temporada que el ajuste nunca vio, '+
+       'contra '+sg(vsIni,1)+'% del modelo actual, con correlación de '+num(fin.corr,3)+'. '+
+       'Aun así, ganarle a la base tonta no es lo mismo que ganarle a la línea del mercado: '+
+       'eso sigue sin medirse y necesita cuotas de cierre.';
+  }
+  o+='<div class="ver '+vc+'"><div class="q">'+esc(vq)+'</div><div class="r">'+vr+'</div></div>';
+
+  /* Cual mejora aporto de verdad: se quita una a una del modelo completo. */
+  o+='<h3><span>&#128300;</span>Qué aportó cada una</h3>';
+  o+='<div class="leyenda">Se quita una sola mejora del modelo completo y se vuelve a medir en '+y2+'. '+
+     'Si al quitarla el error no sube, esa mejora no estaba haciendo nada.</div>';
+  var quitar=[
+    ['Innings reales', {useIp:false}],
+    ['Sin recorte',    {lo:1.5,hi:9.0}],
+    ['Multiplicador',  {K:1.08}],
+    ['OPS',            {wOps:0}],
+    ['Encogimiento',   {shrink:1}]
+  ];
+  o+='<table><tr><th>Si le quito…</th><th>Error '+y2+'</th><th>Aporta</th></tr>';
+  quitar.forEach(function(q){
+    var m=medir(Lb,copia(p,q[1]));
+    var ap=m.mae-fin.mae;
+    o+='<tr><td>'+esc(q[0])+'</td><td class="n">'+num(m.mae)+'</td><td class="n">'+
+       (ap>0.005?sg(ap):'nada')+'</td></tr>';
+  });
+  o+='</table>';
+
+  /* Calibracion final por tramos */
+  o+='<h3><span>&#127919;</span>Cómo queda la escala</h3>';
+  var tr=[[0,7.5,'menos de 7.5'],[7.5,8.5,'7.5 a 8.5'],[8.5,9.5,'8.5 a 9.5'],
+          [9.5,10.5,'9.5 a 10.5'],[10.5,99,'más de 10.5']];
+  o+='<table><tr><th>Proyecta…</th><th>Proyectó</th><th>Salió</th><th>n</th></tr>';
+  tr.forEach(function(t){
+    var g=Lb.filter(function(x){ var v=proyectar(x,p); return v>=t[0]&&v<t[1]; });
+    if(!g.length){ o+='<tr><td>'+t[2]+'</td><td class="n">—</td><td class="n">—</td><td class="n">0</td></tr>'; return; }
+    var sp=0,sr=0;
+    g.forEach(function(x){ sp+=proyectar(x,p); sr+=x.real; });
+    o+='<tr><td>'+t[2]+'</td><td class="n">'+num(sp/g.length,1)+'</td><td class="n">'+
+       num(sr/g.length,1)+'</td><td class="n">'+g.length+'</td></tr>';
+  });
+  o+='</table>';
+  o+='<div class="flag">Las dos columnas del medio deber&iacute;an ir pegadas. Si van pegadas, la app '+
+     'ya no exagera: cuando dice 10.5 es porque de verdad espera 10.5.</div>';
+
+  /* La receta */
+  o+='<h3><span>&#128295;</span>Qué cambiar en la app</h3>';
+  var lineas=[];
+  if(p.useIp) lineas.push('Reparte los innings con la media real de aperturas del abridor '+
+    '(<code>ipxAb</code>, que ya la calculas) en vez de 6/9 fijo, recortada entre 3.5 y 7.5.');
+  if(p.lo!==1.5||p.hi!==9.0) lineas.push('Abre el recorte de carreras por equipo de '+
+    '<code>1.5–9.0</code> a <code>'+p.lo+'–'+p.hi+'</code>.');
+  if(Math.abs(p.K-1.08)>0.002) lineas.push('Cambia el <code>1.08</code> del staff por <code>'+
+    p.K.toFixed(3)+'</code>.');
+  if(p.wOps>0) lineas.push('Mezcla la ofensiva: <code>'+Math.round((1-p.wOps)*100)+
+    '%</code> carreras por juego y <code>'+Math.round(p.wOps*100)+'%</code> estimada por OPS '+
+    '(<code>LRG × (ops/ops_liga)^'+p.kOps.toFixed(1)+'</code>).');
+  if(p.shrink!==1) lineas.push('Al final de todo, encoge hacia el promedio: '+
+    '<code>T = m + (T − m) × '+p.shrink.toFixed(2)+'</code>, con <code>m</code> el total medio de la liga.');
+  o+='<div class="receta"><b>Las constantes que salieron, ajustadas en '+y1+' y medidas en '+y2+':</b>'+
+     '<ol><li>'+lineas.join('</li><li>')+'</li></ol></div>';
+  if(vsFin<2)
+    o+='<div class="nota"><b>Antes de tocar la app:</b> estos cambios centran y encogen la '+
+       'proyecci&oacute;n, que es lo que hace falta para que deje de sacar picks de total inflados. '+
+       'Lo que <b>no</b> hacen es volver rentable ese mercado. Si los aplicas, aplica tambi&eacute;n la '+
+       'decisi&oacute;n: el total queda como referencia, no como pick.</div>';
+
+  o+='<h3><span>&#9888;&#65039;</span>Qué quedó fuera</h3>';
+  o+='<div class="flag">Ajuste '+y1+': '+A.L.length+' juegos medidos de '+A.total+
+     '. Medici&oacute;n '+y2+': '+B.L.length+' de '+B.total+'. El resto no ten&iacute;a abridor registrado, '+
+     'marcador, o suficientes datos previos.</div>';
+  o+='<div class="leyenda">El ERA de bullpen sigue yendo al cierre de temporada y los splits contra '+
+     'zurdos y derechos siguen sin aplicarse, igual que en la v1. Y sigue sin medirse lo &uacute;nico que '+
+     'decide de verdad: si le ganas a la l&iacute;nea del mercado.</div>';
+
+  $('salida').innerHTML=o;
+}
+
+$('correr').addEventListener('click',correr);
+$('parar').addEventListener('click',function(){ PARAR=true; $('parar').disabled=true; });
+</script>
+</body>
+</html>
