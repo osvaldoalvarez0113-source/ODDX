@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OVA · Parche v15</title>
+<style>
+:root{
+ --night:#08161F;--panel:#122D3D;--panel2:#173747;--line:#1F4457;--line2:#2A5A72;
+ --chalk:#F1EEE4;--muted:#7E97A6;--muted2:#5D7684;
+ --signal:#E8B33C;--signal2:#F5C863;--good:#5FB07A;--bad:#D2685F;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--night);color:var(--chalk);
+ font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.5;
+ padding:0 0 60px}
+.wrap{max-width:600px;margin:0 auto;padding:0 14px}
+header{border-bottom:1px solid var(--line);padding:18px 14px;
+ padding-top:calc(env(safe-area-inset-top) + 14px)}
+header h1{font-size:24px;margin:0;letter-spacing:-.3px}
+header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+.caja{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+ padding:14px;margin:14px 0}
+h2{font-size:17px;margin:0 0 8px}
+button{background:linear-gradient(180deg,var(--signal2),var(--signal));color:#12242F;border:0;
+ border-radius:10px;padding:13px 18px;font-size:17px;font-weight:700;width:100%;
+ margin-top:10px;cursor:pointer}
+button:disabled{opacity:.4}
+button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line);font-weight:600}
+a.dl{display:block;text-align:center;background:linear-gradient(180deg,#7BC896,var(--good));
+ color:#0B1F14;border-radius:10px;padding:14px;font-size:17px;font-weight:700;
+ text-decoration:none;margin-top:10px}
+.fila{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px;
+ line-height:1.45}
+.fila:last-child{border-bottom:none}
+.fila .ic{flex:0 0 auto}
+.ok{color:var(--good)}
+.no{color:var(--bad)}
+#estado{color:var(--muted);font-size:13.5px;margin-top:10px;min-height:20px}
+.nota{color:var(--muted);font-size:13px;line-height:1.55}
+.nota b{color:var(--chalk)}
+code{background:var(--night);padding:2px 6px;border-radius:6px;font-size:12.5px}
+.aviso{background:rgba(210,104,95,.1);border:1px solid rgba(210,104,95,.35);
+ border-radius:10px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+.bien{background:rgba(95,176,122,.1);border:1px solid rgba(95,176,122,.35);
+ border-radius:10px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <h1>⚾ Parche v15</h1>
+  <p>Coge tu index.html del repo, le aplica los cambios y te devuelve el archivo nuevo</p>
+</header>
+
+<div class="wrap">
+
+  <div class="caja">
+    <h2>Qué le hace a la app</h2>
+    <p class="nota">
+      <b>1. El arreglo de verdad:</b> la fracción de las primeras 5 pasa de <code>0.53</code> a
+      <code>0.56</code>. Medido sobre 7,734 observaciones de 2025 y 2026 — las carreras reales en
+      las primeras 5 dieron 0.558 y 0.562 del juego completo. Ese 0.53 era el que producía el sesgo
+      de −0.14 carreras que salió en el backtest.<br><br>
+      <b>2. Las etiquetas dicen la verdad nueva:</b> total, carreras por equipo y primeras 5 pasan de
+      «sin medir» a «medido: flojo», con la correlación real al lado. Ponches se queda en «sin medir»,
+      porque ese sí nunca se ha medido.<br><br>
+      <b>3. La nota técnica</b> del pie se actualiza con los números de las dos temporadas.
+    </p>
+  </div>
+
+  <div class="caja">
+    <h2>Aplicar</h2>
+    <p class="nota">Sube este archivo al repo ODDX y ábrelo desde ahí. Coge tu
+    <code>index.html</code> solo, del mismo sitio.</p>
+    <button id="ir">Coger mi index.html y parchearlo</button>
+    <div id="estado"></div>
+    <div id="lista"></div>
+    <div id="salida"></div>
+  </div>
+
+  <div class="caja">
+    <h2>Si prefieres a mano</h2>
+    <p class="nota">El cambio que importa es una sola línea. Búscala en tu index.html:
+    <code>var F5_FRAC=0.53;</code> y ponla en <code>var F5_FRAC=0.56;</code>. Con eso solo ya tienes
+    el arreglo; lo demás son etiquetas y texto.</p>
+  </div>
+
+</div>
+
+<script>
+/* Cada parche: buscar tiene que aparecer EXACTAMENTE una vez. Si aparece cero
+   veces o varias, ese parche se salta y se avisa — nunca se aplica a ciegas. */
+var PARCHES=[
+
+{n:'Versión v14 → v15',
+ buscar:'<span class="ver">v14</span>',
+ poner:'<span class="ver">v15</span>'},
+
+/* ESTE es el arreglo. Va solo, con la cadena mas corta posible, para que entre
+   aunque el comentario de al lado no cuadre por un espacio. */
+{n:'Fracción del F5: 0.53 → 0.56 (EL ARREGLO)',
+ buscar:'var F5_FRAC=0.53;',
+ poner:'var F5_FRAC=0.56;'},
+
+{n:'Comentario de la fracción del F5',
+ buscar:'/* Fraccion del juego que representan las primeras 5 entradas. 5/9 seria 0.556,\n   pero las tiran los abridores, que permiten menos que el bullpen. 0.53 es una\n   estimacion razonable y NO esta medida — por eso F5 va marcado sin medir. */',
+ poner:'/* Fraccion del juego que representan las primeras 5 entradas. MEDIDA sobre\n   7,734 observaciones de 2025 y 2026: las carreras reales en las primeras 5\n   salieron 0.558 del juego completo en 2026 y 0.562 en 2025. O sea 5/9=0.556,\n   la proporcion de innings pura. El 0.53 que habia antes salia de suponer que\n   los abridores permiten menos que el bullpen; medido, eso se cancela con que\n   en las primeras 5 batea el tope de la alineacion completo. Ese 0.53 producia\n   un sesgo de -0.14 carreras por equipo, que es justo el que midio el backtest\n   (-0.142 en 2026, -0.168 en 2025). Arreglar la fraccion arregla el sesgo. */'},
+
+{n:'Estilo del sello gris para «sin medir»',
+ buscar:'.medido.flojo{background:rgba(210,104,95,.14);color:var(--bad);border:1px solid rgba(210,104,95,.32)}',
+ poner:'.medido.flojo{background:rgba(210,104,95,.14);color:var(--bad);border:1px solid rgba(210,104,95,.32)}\n.medido.gris{background:rgba(126,151,166,.14);color:var(--muted);border:1px solid rgba(126,151,166,.32)}'},
+
+{n:'Tres sellos en vez de dos',
+ buscar:"function marca(med){\n  return med==='ok'\n    ? '<span class=\"medido ok\">medido</span>'\n    : '<span class=\"medido flojo\">sin medir</span>';\n}",
+ poner:"/* Tres estados, no dos. «Sin medir» ya solo aplica a los ponches, que de\n   verdad nunca se han probado contra nada. El total, las carreras por equipo\n   y las primeras 5 SI estan medidos ahora — y salieron flojos, que es una\n   informacion distinta y mas util que no saber. */\nfunction marca(med){\n  if(med==='ok')   return '<span class=\"medido ok\">medido</span>';\n  if(med==='nada') return '<span class=\"medido gris\">sin medir</span>';\n  return '<span class=\"medido flojo\">medido: flojo</span>';\n}"},
+
+{n:'Ponches pasan a «sin medir» de verdad (ranking)',
+ buscar:"    meter(q+' Over '+L+' K',  p.over*100,  p.push*100, b.querySelector('.ko').value, 'flojo');\n    meter(q+' Under '+L+' K', p.under*100, p.push*100, b.querySelector('.ku').value, 'flojo');",
+ poner:"    meter(q+' Over '+L+' K',  p.over*100,  p.push*100, b.querySelector('.ko').value, 'nada');\n    meter(q+' Under '+L+' K', p.under*100, p.push*100, b.querySelector('.ku').value, 'nada');"},
+
+{n:'Ponches pasan a «sin medir» de verdad (título)',
+ buscar:"'<h3><span class=\"ic\">🔻</span>Ponches del abridor '+marca('flojo')+'</h3>'+",
+ poner:"'<h3><span class=\"ic\">🔻</span>Ponches del abridor '+marca('nada')+'</h3>'+"},
+
+{n:'Leyenda del ranking con los números nuevos',
+ buscar:"    o+='<div class=\"leyenda\">🔴 <b>Sin medir</b> quiere decir que ese mercado sale de la parte de la '+\n       'app que se probó contra 3,887 juegos y salió floja: correlación 0.16 con el resultado, y no le '+\n       'gana a proyectar el promedio de la liga sin mirar nada. El total, las carreras por equipo, las '+\n       'primeras 5 y los ponches cuelgan todos de ahí. Aparecen porque la decisión es tuya, pero la '+\n       'ventaja que ves en esas filas es la menos confiable de la app. '+\n       '🟢 <b>Medido</b> es el ganador (calibrado sobre 3,077 juegos) y el hándicap, que va anclado a él.</div>';",
+ poner:"    o+='<div class=\"leyenda\">🟢 <b>Medido</b>: el ganador, calibrado sobre 3,077 juegos, y el '+\n       'hándicap, que va anclado a él. '+\n       '🔴 <b>Medido: flojo</b>: el total (correlación 0.16), las carreras por equipo (0.11) y las '+\n       'primeras 5 (0.10), las tres contra las dos temporadas completas. Distinguen el orden de los '+\n       'juegos pero no lo bastante para ganarle a una línea, así que la ventaja que ves en esas filas '+\n       'es la menos confiable de la app. '+\n       '⚪ <b>Sin medir</b>: los ponches, que nunca se han probado contra nada. '+\n       'Todas aparecen porque la decisión es tuya.</div>';"},
+
+{n:'Nota del total con la medición completa',
+ buscar:"  '<div class=\"leyenda\">🔴 <b>Sin medir.</b> Este mercado se probó contra 3,887 juegos de 2025 y 2026: '+\n  'correlación 0.16 con el resultado real, y no le gana a proyectar el promedio de la liga sin mirar '+\n  'nada. Distingue el orden de los juegos pero no lo bastante para ganarle a una línea. Está aquí '+\n  'porque la decisión es tuya — pero de todo lo que saca la app, esta ventaja es la menos confiable. '+\n  'Guárdalos en el registro para tener tu propia respuesta con tus líneas reales.</div>'+",
+ poner:"  '<div class=\"leyenda\">🔴 <b>Medido, y salió flojo.</b> Este mercado se probó contra 3,887 juegos '+\n  'de 2025 y 2026: correlación 0.16 con el resultado real, y no le gana a proyectar el promedio de '+\n  'la liga sin mirar nada. Distingue el orden de los juegos pero no lo bastante para ganarle a una '+\n  'línea. Está aquí porque la decisión es tuya — pero de todo lo que saca la app, esta ventaja es la '+\n  'menos confiable. Guárdalos en el registro para tener tu propia respuesta con tus líneas reales.</div>'+",
+
+},
+
+{n:'Nota nueva en carreras por equipo',
+ buscar:"  ttBloque(nomA,idA,lamAt)+\n  ttBloque(nomH,idH,lamHt)+\n  '<div class=\"aviso avtt\"></div>'+",
+ poner:"  ttBloque(nomA,idA,lamAt)+\n  ttBloque(nomH,idH,lamHt)+\n  '<div class=\"aviso avtt\"></div>'+\n  '<div class=\"leyenda\">🔴 <b>Medido, y salió flojo.</b> Se probó por separado contra las dos '+\n  'temporadas: correlación 0.116 en 2026 y 0.111 en 2025, sobre 7,734 observaciones. Le gana al '+\n  'promedio de liga por 0.05 carreras de error, que es empate con adorno. Repartir el total entre '+\n  'dos equipos no crea información nueva — solo reparte la poca que hay, y por eso sale por debajo '+\n  'del total completo. Los escalones sí quedaron cuadrados: donde proyecta 4.6 salen 4.7.</div>'+"},
+
+{n:'Nota nueva en primeras 5, con la fracción ya medida',
+ buscar:"  '<div class=\"leyenda\">🔴 <b>Sin medir</b>, y aquí hay algo más que decir: la fracción que se usa para '+\n  'las primeras 5 es <b>'+F5_FRAC.toFixed(2)+'</b> del juego completo — una estimación razonable, no un '+\n  'número medido. Cinco de nueve innings serían 0.56, pero los tiran los abridores, que permiten menos '+\n  'que el bullpen. En teoría F5 debería irle mejor a tu modelo que el total completo, porque saca del '+\n  'medio al bullpen, que es la parte más ruidosa de la fórmula. En la práctica eso no se ha comprobado.</div>'+",
+ poner:"  '<div class=\"leyenda\">🔴 <b>Medido, y salió flojo:</b> correlación 0.104 en 2026 y 0.099 en 2025. '+\n  'De los tres mercados de carreras es el más flojo, no el mejor. La teoría decía lo contrario — que '+\n  'sacar al bullpen del medio debía ayudar — y medido no ayuda: cortar el juego en cinco entradas '+\n  'reparte la poca señal que hay en menos carreras. '+\n  'Lo que sí se arregló: la fracción es <b>'+F5_FRAC.toFixed(2)+'</b>, y ahora está medida. Las '+\n  'carreras reales de las primeras 5 dieron 0.558 del juego completo en 2026 y 0.562 en 2025 — o sea '+\n  '5 de 9 innings, sin descuento. Antes iba en 0.53 por suponer que los abridores permiten menos que '+\n  'el bullpen; eso se cancela con que en las primeras 5 batea el tope de la alineación completo. Ese '+\n  '0.53 estaba proyectando 0.14 carreras de menos por equipo en cada juego.</div>'+"},
+
+{n:'Nota técnica del pie',
+ buscar:"  Las <b>carreras por equipo</b>, las <b>primeras 5</b> y los <b>ponches</b> salen de esa misma\n  cadena, así que heredan lo mismo y no se han medido por separado. Están en el ranking porque tú\n  decides qué juegas, pero van marcados <b>«sin medir»</b> a propósito.",
+ poner:"  Las <b>carreras por equipo</b> y las <b>primeras 5</b> ya se midieron por separado, con el mismo\n  método y las mismas dos temporadas: 1,836 juegos de 2026 y 2,031 de 2025, usando solo las\n  estadísticas que existían antes de cada juego. Carreras por equipo dio correlación 0.116 y 0.111;\n  primeras 5 dio 0.104 y 0.099. O sea que los tres mercados de carreras andan entre 0.10 y 0.16 en\n  seis mediciones distintas, y eso ya no parece casualidad de un mercado: es el techo de lo que dan\n  ERA, carreras por juego y ERA de bullpen contra el resultado real. Repartir esa señal entre equipos\n  o cortarla en cinco entradas no crea señal nueva — la diluye, y por eso cada corte sale peor que el\n  anterior. Para mover eso de 0.16 no hace falta más matemática sobre los mismos números, hacen falta\n  datos que la app todavía no usa; el clima es el candidato con más chance, porque viento y\n  temperatura mueven las carreras de verdad y ahora mismo el viento se muestra pero no se calcula.\n  De esa medición sí salió un arreglo concreto, y está aplicado: la fracción de las primeras 5 estaba\n  en 0.53 por suposición y medida da 0.56, lo que estaba costando 0.14 carreras de proyección por\n  equipo en cada juego.\n  Los <b>ponches</b> siguen sin medirse contra nada, y por eso son los únicos que quedan marcados\n  <b>«sin medir»</b>. Los demás van marcados <b>«medido: flojo»</b>, que es peor de leer pero mejor\n  de saber: ya no es que no sepamos, es que sabemos cuánto es poco."}
+
+];
+
+var $=function(id){ return document.getElementById(id); };
+
+function contar(txt,agu){
+  var n=0, i=0;
+  while(true){
+    var p=txt.indexOf(agu,i);
+    if(p<0) break;
+    n++; i=p+agu.length;
+    if(n>5) break;
+  }
+  return n;
+}
+
+function aplicar(src){
+  var res=[], txt=src, ok=0, mal=0;
+  PARCHES.forEach(function(p){
+    var n=contar(txt,p.buscar);
+    if(n===1){
+      txt=txt.replace(p.buscar,function(){ return p.poner; });
+      res.push({n:p.n, ok:true, msg:'aplicado'});
+      ok++;
+    }else if(n===0){
+      var yaEsta=contar(txt,p.poner)>0;
+      res.push({n:p.n, ok:yaEsta, msg: yaEsta
+        ? 'ya estaba puesto — se salta'
+        : 'no se encontró el texto original — se salta'});
+      if(!yaEsta) mal++;
+    }else{
+      res.push({n:p.n, ok:false, msg:'aparece '+n+' veces, no se toca por seguridad'});
+      mal++;
+    }
+  });
+  return {txt:txt, res:res, ok:ok, mal:mal};
+}
+
+function pintar(r){
+  var h='';
+  r.res.forEach(function(x){
+    h+='<div class="fila"><span class="ic '+(x.ok?'ok':'no')+'">'+(x.ok?'✓':'✕')+'</span>'+
+       '<span><b>'+x.n+'</b><br><span style="color:var(--muted)">'+x.msg+'</span></span></div>';
+  });
+  $('lista').innerHTML=h;
+}
+
+$('ir').addEventListener('click',function(){
+  var b=$('ir');
+  b.disabled=true;
+  $('estado').textContent='Cogiendo tu index.html…';
+  $('lista').innerHTML='';
+  $('salida').innerHTML='';
+  fetch('index.html?t='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }).then(function(src){
+    if(src.indexOf('F5_FRAC')<0)
+      throw new Error('ese archivo no parece el index.html de OVA');
+    $('estado').textContent='Leídos '+Math.round(src.length/1024)+' KB. Aplicando…';
+    var r=aplicar(src);
+    pintar(r);
+    if(r.mal>0){
+      $('salida').innerHTML='<div class="aviso">Se saltaron <b>'+r.mal+'</b> cambio(s) porque el '+
+        'texto original no cuadra. Casi seguro es que ya tocaste esa parte a mano. El archivo se '+
+        'puede bajar igual con los '+r.ok+' que sí entraron, pero mira la lista de arriba antes.</div>';
+    }else{
+      $('salida').innerHTML='<div class="bien">Los '+r.ok+' cambios entraron limpios.</div>';
+    }
+    var blob=new Blob([r.txt],{type:'text/html'});
+    var url=URL.createObjectURL(blob);
+    $('salida').innerHTML+='<a class="dl" href="'+url+'" download="index.html">'+
+      '⬇︎ Bajar el index.html de la v15</a>'+
+      '<p class="nota" style="margin-top:12px">Bájalo, súbelo al repo ODDX encima del que está, '+
+      'y recarga la app. Si algo sale raro, GitHub te guarda el anterior en el historial del '+
+      'archivo y lo puedes devolver.</p>';
+    $('estado').textContent='';
+    b.disabled=false;
+  }).catch(function(e){
+    $('estado').innerHTML='<span class="no">No se pudo: '+String(e.message)+'. '+
+      'Este parche tiene que estar en la <b>misma carpeta</b> que tu index.html en el repo, '+
+      'y hay que abrirlo desde github.io — no vale abrirlo bajado en el teléfono.</span>';
+    b.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
