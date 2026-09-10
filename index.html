@@ -227,6 +227,7 @@ details[open] summary:before{content:'▾ '}
  letter-spacing:.4px;border-radius:20px;padding:2px 8px;margin-left:6px;vertical-align:middle}
 .medido.ok{background:rgba(95,176,122,.16);color:var(--good);border:1px solid rgba(95,176,122,.35)}
 .medido.flojo{background:rgba(210,104,95,.14);color:var(--bad);border:1px solid rgba(210,104,95,.32)}
+.medido.gris{background:rgba(126,151,166,.14);color:var(--muted);border:1px solid rgba(126,151,166,.32)}
 
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0;
  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:11px}
@@ -354,7 +355,7 @@ footer summary{font-family:var(--cond);font-size:16px;color:var(--muted);padding
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><span class="ball">&#9918;</span>OVA <span class="ver">v14</span></h1>
+  <h1 class="brand"><span class="ball">&#9918;</span>OVA <span class="ver">v15</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -497,9 +498,22 @@ siguen a mano: Kalshi no los lista por juego.</div>
   ganarle a una línea. Se probaron cinco arreglos (innings reales del abridor, quitar el recorte,
   buscar el multiplicador del staff, usar OPS en vez de carreras por juego, y encoger) ajustándolos
   en una temporada y midiéndolos en la otra: ninguno movió la correlación más allá de 0.16.
-  Las <b>carreras por equipo</b>, las <b>primeras 5</b> y los <b>ponches</b> salen de esa misma
-  cadena, así que heredan lo mismo y no se han medido por separado. Están en el ranking porque tú
-  decides qué juegas, pero van marcados <b>«sin medir»</b> a propósito.
+  Las <b>carreras por equipo</b> y las <b>primeras 5</b> ya se midieron por separado, con el mismo
+  método y las mismas dos temporadas: 1,836 juegos de 2026 y 2,031 de 2025, usando solo las
+  estadísticas que existían antes de cada juego. Carreras por equipo dio correlación 0.116 y 0.111;
+  primeras 5 dio 0.104 y 0.099. O sea que los tres mercados de carreras andan entre 0.10 y 0.16 en
+  seis mediciones distintas, y eso ya no parece casualidad de un mercado: es el techo de lo que dan
+  ERA, carreras por juego y ERA de bullpen contra el resultado real. Repartir esa señal entre equipos
+  o cortarla en cinco entradas no crea señal nueva — la diluye, y por eso cada corte sale peor que el
+  anterior. Para mover eso de 0.16 no hace falta más matemática sobre los mismos números, hacen falta
+  datos que la app todavía no usa; el clima es el candidato con más chance, porque viento y
+  temperatura mueven las carreras de verdad y ahora mismo el viento se muestra pero no se calcula.
+  De esa medición sí salió un arreglo concreto, y está aplicado: la fracción de las primeras 5 estaba
+  en 0.53 por suposición y medida da 0.56, lo que estaba costando 0.14 carreras de proyección por
+  equipo en cada juego.
+  Los <b>ponches</b> siguen sin medirse contra nada, y por eso son los únicos que quedan marcados
+  <b>«sin medir»</b>. Los demás van marcados <b>«medido: flojo»</b>, que es peor de leer pero mejor
+  de saber: ya no es que no sepamos, es que sabemos cuánto es poco.
 
   <b>El encogimiento sube el nivel, no aplasta la diferencia.</b> Hasta la v13 el encogimiento se
   aplicaba multiplicando las dos carreras esperadas por un mismo factor, y eso tenía un efecto que
@@ -617,10 +631,15 @@ var ENCOGE=0.45;
 var CORTE_GRIS=0.50, CORTE_SOLIDO=1.20, CORTE_FUERTE=1.70;
 var PEN_FUERTE=0.15, PEN_LEVE=0.08;
 var EV_IMPOSIBLE=0.20;
-/* Fraccion del juego que representan las primeras 5 entradas. 5/9 seria 0.556,
-   pero las tiran los abridores, que permiten menos que el bullpen. 0.53 es una
-   estimacion razonable y NO esta medida — por eso F5 va marcado sin medir. */
-var F5_FRAC=0.53;
+/* Fraccion del juego que representan las primeras 5 entradas. MEDIDA sobre
+   7,734 observaciones de 2025 y 2026: las carreras reales en las primeras 5
+   salieron 0.558 del juego completo en 2026 y 0.562 en 2025. O sea 5/9=0.556,
+   la proporcion de innings pura. El 0.53 que habia antes salia de suponer que
+   los abridores permiten menos que el bullpen; medido, eso se cancela con que
+   en las primeras 5 batea el tope de la alineacion completo. Ese 0.53 producia
+   un sesgo de -0.14 carreras por equipo, que es justo el que midio el backtest
+   (-0.142 en 2026, -0.168 en 2025). Arreglar la fraccion arregla el sesgo. */
+var F5_FRAC=0.56;
 var ULTIMO=null;
 
 var PARK={
@@ -1929,8 +1948,8 @@ function recolectar(root){
     if(!isFinite(L)) return;
     var p=pOver(L,+b.dataset.k);
     var q=b.dataset.n||'abridor';
-    meter(q+' Over '+L+' K',  p.over*100,  p.push*100, b.querySelector('.ko').value, 'flojo');
-    meter(q+' Under '+L+' K', p.under*100, p.push*100, b.querySelector('.ku').value, 'flojo');
+    meter(q+' Over '+L+' K',  p.over*100,  p.push*100, b.querySelector('.ko').value, 'nada');
+    meter(q+' Under '+L+' K', p.under*100, p.push*100, b.querySelector('.ku').value, 'nada');
   });
   return out;
 }
@@ -1941,10 +1960,14 @@ function nivel(edge,ev){
   if(edge<5)           return {t:'valor moderado',    c:''};
   return                      {t:'valor fuerte',      c:'big'};
 }
+/* Tres estados, no dos. «Sin medir» ya solo aplica a los ponches, que de
+   verdad nunca se han probado contra nada. El total, las carreras por equipo
+   y las primeras 5 SI estan medidos ahora — y salieron flojos, que es una
+   informacion distinta y mas util que no saber. */
 function marca(med){
-  return med==='ok'
-    ? '<span class="medido ok">medido</span>'
-    : '<span class="medido flojo">sin medir</span>';
+  if(med==='ok')   return '<span class="medido ok">medido</span>';
+  if(med==='nada') return '<span class="medido gris">sin medir</span>';
+  return '<span class="medido flojo">medido: flojo</span>';
 }
 function actualizarRanking(root){
   var cajas=[].slice.call(root.querySelectorAll('.rank'));
@@ -1994,12 +2017,14 @@ function actualizarRanking(root){
   var fuera=lista.length-buenos.length;
   if(fuera>0) o+='<div class="flag">Las otras '+fuera+' proposiciones con cuota no pagan lo suficiente y quedaron fuera.</div>';
   if(hayFlojo)
-    o+='<div class="leyenda">🔴 <b>Sin medir</b> quiere decir que ese mercado sale de la parte de la '+
-       'app que se probó contra 3,887 juegos y salió floja: correlación 0.16 con el resultado, y no le '+
-       'gana a proyectar el promedio de la liga sin mirar nada. El total, las carreras por equipo, las '+
-       'primeras 5 y los ponches cuelgan todos de ahí. Aparecen porque la decisión es tuya, pero la '+
-       'ventaja que ves en esas filas es la menos confiable de la app. '+
-       '🟢 <b>Medido</b> es el ganador (calibrado sobre 3,077 juegos) y el hándicap, que va anclado a él.</div>';
+    o+='<div class="leyenda">🟢 <b>Medido</b>: el ganador, calibrado sobre 3,077 juegos, y el '+
+       'hándicap, que va anclado a él. '+
+       '🔴 <b>Medido: flojo</b>: el total (correlación 0.16), las carreras por equipo (0.11) y las '+
+       'primeras 5 (0.10), las tres contra las dos temporadas completas. Distinguen el orden de los '+
+       'juegos pero no lo bastante para ganarle a una línea, así que la ventaja que ves en esas filas '+
+       'es la menos confiable de la app. '+
+       '⚪ <b>Sin medir</b>: los ponches, que nunca se han probado contra nada. '+
+       'Todas aparecen porque la decisión es tuya.</div>';
   if(rank>1) o+='<div class="flag">Están ordenadas por EV, que es cuánto esperas ganar por cada dólar. '+
      'Ojo: los mercados de un mismo juego están correlacionados — si el favorito gana, el Under suele acompañar. '+
      'Jugar dos de esta lista no es diversificar, es doblar la misma apuesta.</div>';
@@ -2488,11 +2513,11 @@ function detalle(x){
     '<label>Over</label><input type="text"'+imOdds()+' class="to" placeholder="'+ph('-110','52')+'">'+
     '<label>Under</label><input type="text"'+imOdds()+' class="tu" placeholder="'+ph('-110','52')+'">'+
     '<div class="out"></div></div>'+
-  '<div class="leyenda">🔴 <b>Sin medir.</b> Este mercado se probó contra 3,887 juegos de 2025 y 2026: '+
-  'correlación 0.16 con el resultado real, y no le gana a proyectar el promedio de la liga sin mirar '+
-  'nada. Distingue el orden de los juegos pero no lo bastante para ganarle a una línea. Está aquí '+
-  'porque la decisión es tuya — pero de todo lo que saca la app, esta ventaja es la menos confiable. '+
-  'Guárdalos en el registro para tener tu propia respuesta con tus líneas reales.</div>'+
+  '<div class="leyenda">🔴 <b>Medido, y salió flojo.</b> Este mercado se probó contra 3,887 juegos '+
+  'de 2025 y 2026: correlación 0.16 con el resultado real, y no le gana a proyectar el promedio de '+
+  'la liga sin mirar nada. Distingue el orden de los juegos pero no lo bastante para ganarle a una '+
+  'línea. Está aquí porque la decisión es tuya — pero de todo lo que saca la app, esta ventaja es la '+
+  'menos confiable. Guárdalos en el registro para tener tu propia respuesta con tus líneas reales.</div>'+
 
   '<h3><span class="ic">⚾</span>Carreras por equipo '+marca('flojo')+'</h3>'+
   '<div class="flag">Cuántas carreras se espera que anote cada equipo por separado. Sale del mismo '+
@@ -2500,6 +2525,11 @@ function detalle(x){
   ttBloque(nomA,idA,lamAt)+
   ttBloque(nomH,idH,lamHt)+
   '<div class="aviso avtt"></div>'+
+  '<div class="leyenda">🔴 <b>Medido, y salió flojo.</b> Se probó por separado contra las dos '+
+  'temporadas: correlación 0.116 en 2026 y 0.111 en 2025, sobre 7,734 observaciones. Le gana al '+
+  'promedio de liga por 0.05 carreras de error, que es empate con adorno. Repartir el total entre '+
+  'dos equipos no crea información nueva — solo reparte la poca que hay, y por eso sale por debajo '+
+  'del total completo. Los escalones sí quedaron cuadrados: donde proyecta 4.6 salen 4.7.</div>'+
 
   '<h3><span class="ic">5️⃣</span>Primeras 5 entradas '+marca('flojo')+'</h3>'+
   '<div class="flag">Total esperado en las primeras 5: <b>'+num(T5,1)+' carreras</b> ('+
@@ -2517,13 +2547,17 @@ function detalle(x){
     '<div class="aviso f5av"></div><div class="out"></div></div>'+
   '<div class="flag">Va a las 5 entradas: '+nomA+' '+pc(f5A)+' · empate '+pc(f5E)+' · '+nomH+' '+pc(f5H)+
   '. El empate en F5 es frecuente, por eso este mercado tiene tres lados y no dos.</div>'+
-  '<div class="leyenda">🔴 <b>Sin medir</b>, y aquí hay algo más que decir: la fracción que se usa para '+
-  'las primeras 5 es <b>'+F5_FRAC.toFixed(2)+'</b> del juego completo — una estimación razonable, no un '+
-  'número medido. Cinco de nueve innings serían 0.56, pero los tiran los abridores, que permiten menos '+
-  'que el bullpen. En teoría F5 debería irle mejor a tu modelo que el total completo, porque saca del '+
-  'medio al bullpen, que es la parte más ruidosa de la fórmula. En la práctica eso no se ha comprobado.</div>'+
+  '<div class="leyenda">🔴 <b>Medido, y salió flojo:</b> correlación 0.104 en 2026 y 0.099 en 2025. '+
+  'De los tres mercados de carreras es el más flojo, no el mejor. La teoría decía lo contrario — que '+
+  'sacar al bullpen del medio debía ayudar — y medido no ayuda: cortar el juego en cinco entradas '+
+  'reparte la poca señal que hay en menos carreras. '+
+  'Lo que sí se arregló: la fracción es <b>'+F5_FRAC.toFixed(2)+'</b>, y ahora está medida. Las '+
+  'carreras reales de las primeras 5 dieron 0.558 del juego completo en 2026 y 0.562 en 2025 — o sea '+
+  '5 de 9 innings, sin descuento. Antes iba en 0.53 por suponer que los abridores permiten menos que '+
+  'el bullpen; eso se cancela con que en las primeras 5 batea el tope de la alineación completo. Ese '+
+  '0.53 estaba proyectando 0.14 carreras de menos por equipo en cada juego.</div>'+
 
-  '<h3><span class="ic">🔻</span>Ponches del abridor '+marca('flojo')+'</h3>'+
+  '<h3><span class="ic">🔻</span>Ponches del abridor '+marca('nada')+'</h3>'+
   kBloque(pa,nomA,idA,sea,oh,nomH,l5a)+
   kBloque(pih,nomH,idH,seh,oa,nomA,l5h)+
 
