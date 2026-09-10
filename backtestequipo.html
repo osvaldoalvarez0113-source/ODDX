@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OVA · Backtest carreras por equipo y F5</title>
+<style>
+  :root{
+    --fondo:#0b1620;
+    --panel:#132534;
+    --panel2:#0f1e2b;
+    --borde:#1e3547;
+    --texto:#e8eef4;
+    --tenue:#8ba3b8;
+    --oro:#f5c24c;
+    --verde:#4ade80;
+    --rojo:#f87171;
+    --azul:#60a5fa;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:var(--fondo);
+    color:var(--texto);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    font-size:16px;
+    line-height:1.5;
+    padding-bottom:60px;
+  }
+  header{
+    position:sticky;top:0;z-index:10;
+    background:rgba(11,22,32,.96);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--borde);
+    padding:14px 16px;
+  }
+  .marca{display:flex;align-items:center;gap:8px;font-weight:800;font-size:22px;letter-spacing:-.5px}
+  .v{background:var(--oro);color:#0b1620;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px}
+  header p{margin:6px 0 0;color:var(--tenue);font-size:13px}
+  main{padding:16px;max-width:760px;margin:0 auto}
+  .caja{
+    background:var(--panel);
+    border:1px solid var(--borde);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  h2{font-size:17px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  h3{font-size:15px;margin:18px 0 8px;color:var(--oro)}
+  label{display:block;font-size:13px;color:var(--tenue);margin-bottom:6px}
+  select,button{
+    font-family:inherit;font-size:16px;
+    border-radius:10px;border:1px solid var(--borde);
+  }
+  select{background:var(--panel2);color:var(--texto);padding:10px 12px;width:100%}
+  button{
+    background:var(--oro);color:#0b1620;font-weight:800;
+    padding:13px 18px;width:100%;margin-top:12px;border:none;cursor:pointer;
+  }
+  button:disabled{opacity:.45}
+  button.sec{background:transparent;color:var(--tenue);border:1px solid var(--borde);font-weight:600}
+  .barra{height:6px;background:var(--panel2);border-radius:99px;overflow:hidden;margin-top:12px}
+  .barra i{display:block;height:100%;background:var(--oro);width:0;transition:width .3s}
+  #estado{font-size:13px;color:var(--tenue);margin-top:8px;min-height:20px}
+  .fila{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--borde);font-size:14px}
+  .fila:last-child{border-bottom:none}
+  .fila span:first-child{color:var(--tenue)}
+  .fila b{font-variant-numeric:tabular-nums}
+  .bien{color:var(--verde)}
+  .mal{color:var(--rojo)}
+  .neutro{color:var(--azul)}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th,td{padding:8px 6px;text-align:right;border-bottom:1px solid var(--borde)}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--tenue);font-weight:600}
+  td{font-variant-numeric:tabular-nums}
+  .veredicto{padding:14px;border-radius:12px;margin-top:14px;font-size:14px;line-height:1.55}
+  .veredicto.ok{background:rgba(74,222,128,.09);border:1px solid rgba(74,222,128,.35)}
+  .veredicto.no{background:rgba(248,113,113,.09);border:1px solid rgba(248,113,113,.35)}
+  .nota{font-size:12.5px;color:var(--tenue);line-height:1.55}
+  code{background:var(--panel2);padding:2px 6px;border-radius:6px;font-size:12.5px}
+  .oculto{display:none}
+  .chip{display:inline-block;font-size:11px;padding:3px 9px;border-radius:99px;border:1px solid var(--borde);color:var(--tenue);margin-left:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="marca">⚾ OVA <span class="v">backtest</span></div>
+  <p>Carreras por equipo y primeras 5 entradas, contra resultados reales</p>
+</header>
+
+<main>
+
+  <div class="caja">
+    <label for="temporada">Temporada a medir</label>
+    <select id="temporada">
+      <option value="2026">2026</option>
+      <option value="2025">2025</option>
+      <option value="ambas">Las dos (2025 + 2026)</option>
+    </select>
+    <button id="correr">Correr el backtest</button>
+    <div class="barra"><i id="progreso"></i></div>
+    <div id="estado">Sin correr todavía.</div>
+  </div>
+
+  <div class="caja">
+    <h2>Cómo se proyecta</h2>
+    <p class="nota">
+      Se reconstruye lo que hace la app, con los datos que había <b>antes</b> de cada juego (nada de mirar el futuro):<br><br>
+      Staff rival = ERA del abridor × 0.65 + ERA del bullpen × 0.35<br>
+      Crudo de cada equipo = (sus carreras por juego + staff rival) ÷ 2, más 0.06 al local y −0.06 al visitante<br>
+      Total encogido = promedio de liga + 0.45 × (crudo − promedio de liga)<br>
+      Carreras por equipo = se reparte el total encogido dejando la diferencia entre equipos intacta (el arreglo de la v14)<br>
+      F5 = carreras del equipo × (5÷9) × (ERA del abridor rival ÷ staff rival)
+    </p>
+  </div>
+
+  <div id="salida"></div>
+
+</main>
+
+<script>
+const API = "https://statsapi.mlb.com/api/v1";
+const TEMPORADAS = {
+  2025: {ini:"2025-03-27", fin:"2025-09-28"},
+  2026: {ini:"2026-03-25", fin:"2026-09-09"}
+};
+
+const $ = id => document.getElementById(id);
+const estado = t => $("estado").textContent = t;
+const progreso = p => $("progreso").style.width = (p*100).toFixed(0)+"%";
+
+function ipNum(ip){
+  if(ip===undefined||ip===null) return 0;
+  const s = String(ip);
+  const [ent, dec] = s.split(".");
+  const e = parseInt(ent,10)||0;
+  const d = dec ? parseInt(dec[0],10) : 0;
+  return e + d/3;
+}
+function mmddyyyy(iso){
+  const [a,m,d] = iso.split("-");
+  return `${m}/${d}/${a}`;
+}
+function sumaDias(iso, n){
+  const f = new Date(iso+"T12:00:00Z");
+  f.setUTCDate(f.getUTCDate()+n);
+  return f.toISOString().slice(0,10);
+}
+
+async function traer(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  return r.json();
+}
+
+// Trae un mismo endpoint probando los dos formatos de fecha que acepta la API
+async function traerConFechas(base, ini, fin){
+  let d = await traer(`${base}&startDate=${mmddyyyy(ini)}&endDate=${mmddyyyy(fin)}`);
+  let sp = d?.stats?.[0]?.splits || [];
+  if(sp.length === 0){
+    d = await traer(`${base}&startDate=${ini}&endDate=${fin}`);
+    sp = d?.stats?.[0]?.splits || [];
+  }
+  return sp;
+}
+
+// ---------- fotos semanales de estadísticas ----------
+async function fotoEquipos(anio, ini, corte){
+  const sp = await traerConFechas(
+    `${API}/teams/stats?stats=byDateRange&group=hitting&season=${anio}&sportIds=1`, ini, corte);
+  const mapa = {}; let rTot=0, jTot=0;
+  for(const s of sp){
+    const id = s.team?.id; if(!id) continue;
+    const r = +s.stat.runs||0, j = +s.stat.gamesPlayed||0;
+    if(j>0){ mapa[id] = {rg: r/j, juegos:j}; rTot+=r; jTot+=j; }
+  }
+  return {equipos: mapa, ligaRG: jTot>0 ? rTot/jTot : 4.5};
+}
+
+async function fotoPitchers(anio, ini, corte){
+  const sp = await traerConFechas(
+    `${API}/stats?stats=byDateRange&group=pitching&season=${anio}&sportId=1&playerPool=All&limit=2000`, ini, corte);
+  const abridores = {};      // id -> ERA
+  const pen = {};            // teamId -> {er, ip}
+  let erL=0, ipL=0;
+  for(const s of sp){
+    const ip = ipNum(s.stat.inningsPitched);
+    const er = +s.stat.earnedRuns||0;
+    const gs = +s.stat.gamesStarted||0;
+    const pid = s.player?.id, tid = s.team?.id;
+    if(pid && ip>0) abridores[pid] = er*9/ip;
+    erL+=er; ipL+=ip;
+    if(tid && gs===0 && ip>0){
+      if(!pen[tid]) pen[tid] = {er:0, ip:0};
+      pen[tid].er += er; pen[tid].ip += ip;
+    }
+  }
+  const bullpen = {};
+  for(const t in pen) if(pen[t].ip >= 30) bullpen[t] = pen[t].er*9/pen[t].ip;
+  return {abridores, bullpen, ligaERA: ipL>0 ? erL*9/ipL : 4.2};
+}
+
+// ---------- juegos ----------
+async function traerJuegos(ini, fin){
+  const juegos = [];
+  let desde = ini;
+  while(desde <= fin){
+    let hasta = sumaDias(desde, 20);
+    if(hasta > fin) hasta = fin;
+    const d = await traer(`${API}/schedule?sportId=1&gameType=R&startDate=${desde}&endDate=${hasta}&hydrate=probablePitcher,linescore`);
+    for(const dia of (d.dates||[])){
+      for(const g of (dia.games||[])){
+        if(g.status?.abstractGameState !== "Final") continue;
+        if(g.gameType !== "R") continue;
+        juegos.push(g);
+      }
+    }
+    desde = sumaDias(hasta, 1);
+  }
+  return juegos;
+}
+
+// ---------- métricas ----------
+function pearson(x,y){
+  const n=x.length; if(n<3) return NaN;
+  const mx=x.reduce((a,b)=>a+b,0)/n, my=y.reduce((a,b)=>a+b,0)/n;
+  let sxy=0,sxx=0,syy=0;
+  for(let i=0;i<n;i++){const a=x[i]-mx,b=y[i]-my;sxy+=a*b;sxx+=a*a;syy+=b*b;}
+  return (sxx>0&&syy>0) ? sxy/Math.sqrt(sxx*syy) : NaN;
+}
+function pendiente(x,y){
+  const n=x.length; if(n<3) return NaN;
+  const mx=x.reduce((a,b)=>a+b,0)/n, my=y.reduce((a,b)=>a+b,0)/n;
+  let sxy=0,sxx=0;
+  for(let i=0;i<n;i++){sxy+=(x[i]-mx)*(y[i]-my);sxx+=(x[i]-mx)**2;}
+  return sxx>0 ? sxy/sxx : NaN;
+}
+function metricas(proy, real, base){
+  const n = proy.length;
+  let mae=0, rmse=0, sesgo=0, maeB=0, rmseB=0;
+  for(let i=0;i<n;i++){
+    const e = proy[i]-real[i];
+    mae += Math.abs(e); rmse += e*e; sesgo += e;
+    const eb = base-real[i];
+    maeB += Math.abs(eb); rmseB += eb*eb;
+  }
+  return {
+    n,
+    r: pearson(proy, real),
+    pend: pendiente(proy, real),
+    mae: mae/n,
+    rmse: Math.sqrt(rmse/n),
+    sesgo: sesgo/n,
+    maeBase: maeB/n,
+    rmseBase: Math.sqrt(rmseB/n),
+    base
+  };
+}
+function cubos(proy, real, k=5){
+  const idx = proy.map((v,i)=>i).sort((a,b)=>proy[a]-proy[b]);
+  const tam = Math.floor(idx.length/k);
+  const filas = [];
+  for(let b=0;b<k;b++){
+    const desde = b*tam, hasta = (b===k-1) ? idx.length : (b+1)*tam;
+    const trozo = idx.slice(desde, hasta);
+    if(!trozo.length) continue;
+    const p = trozo.reduce((a,i)=>a+proy[i],0)/trozo.length;
+    const r = trozo.reduce((a,i)=>a+real[i],0)/trozo.length;
+    filas.push({n:trozo.length, proy:p, real:r, dif:p-r});
+  }
+  return filas;
+}
+
+// ---------- backtest ----------
+async function correrTemporada(anio, avance){
+  const {ini, fin} = TEMPORADAS[anio];
+  estado(`${anio}: bajando el calendario…`);
+  const juegos = await traerJuegos(ini, fin);
+
+  // fotos semanales
+  const cortes = [];
+  let c = sumaDias(ini, 14);
+  while(c < fin){ cortes.push(c); c = sumaDias(c, 7); }
+
+  const fotos = [];
+  for(let i=0;i<cortes.length;i++){
+    estado(`${anio}: estadísticas al ${cortes[i]} (${i+1}/${cortes.length})`);
+    const [eq, pi] = await Promise.all([
+      fotoEquipos(anio, ini, cortes[i]),
+      fotoPitchers(anio, ini, cortes[i])
+    ]);
+    fotos.push({corte: cortes[i], ...eq, ...pi});
+    avance((i+1)/cortes.length);
+  }
+
+  const fotoDe = fecha => {
+    let elegida = null;
+    for(const f of fotos) if(f.corte < fecha) elegida = f;
+    return elegida;
+  };
+
+  const res = {
+    equipoProy:[], equipoReal:[],
+    f5Proy:[], f5Real:[],
+    usados:0, saltados:0, anio
+  };
+
+  for(const g of juegos){
+    const fecha = g.gameDate.slice(0,10);
+    const foto = fotoDe(fecha);
+    if(!foto){ res.saltados++; continue; }
+
+    const vis = g.teams.away, loc = g.teams.home;
+    const idV = vis.team.id, idL = loc.team.id;
+    const pV = vis.probablePitcher?.id, pL = loc.probablePitcher?.id;
+    const eqV = foto.equipos[idV], eqL = foto.equipos[idL];
+    const eraV = foto.abridores[pV], eraL = foto.abridores[pL];
+    const penV = foto.bullpen[idV] ?? foto.ligaERA, penL = foto.bullpen[idL] ?? foto.ligaERA;
+
+    if(!eqV || !eqL || !eraV || !eraL || eqV.juegos<15 || eqL.juegos<15){ res.saltados++; continue; }
+
+    const staffV = eraV*0.65 + penV*0.35;   // staff del visitante (lo que enfrenta el local)
+    const staffL = eraL*0.65 + penL*0.35;   // staff del local (lo que enfrenta el visitante)
+
+    const crudoV = (eqV.rg + staffL)/2 - 0.06;
+    const crudoL = (eqL.rg + staffV)/2 + 0.06;
+
+    const ligaTotal = foto.ligaRG*2;
+    const crudoTot = crudoV + crudoL;
+    const encogido = ligaTotal + 0.45*(crudoTot - ligaTotal);
+    const dif = crudoV - crudoL;
+
+    const proyV = encogido/2 + dif/2;
+    const proyL = encogido/2 - dif/2;
+
+    const realV = vis.score, realL = loc.score;
+    if(realV===undefined || realL===undefined){ res.saltados++; continue; }
+
+    res.equipoProy.push(proyV, proyL);
+    res.equipoReal.push(realV, realL);
+
+    // F5
+    const inn = g.linescore?.innings || [];
+    if(inn.length >= 5){
+      let f5V=0, f5L=0, completo=true;
+      for(let i=0;i<5;i++){
+        const a = inn[i]?.away?.runs, h = inn[i]?.home?.runs;
+        if(a===undefined || h===undefined){ completo=false; break; }
+        f5V+=a; f5L+=h;
+      }
+      if(completo){
+        const shareV = (5/9)*(eraL/staffL);
+        const shareL = (5/9)*(eraV/staffV);
+        res.f5Proy.push(proyV*shareV, proyL*shareL);
+        res.f5Real.push(f5V, f5L);
+      }
+    }
+    res.usados++;
+  }
+  return res;
+}
+
+// ---------- pintar ----------
+function color(v, bueno){ return bueno ? "bien" : "mal"; }
+
+function bloque(titulo, m, cubosDatos, explica){
+  const ganaRMSE = m.rmse < m.rmseBase;
+  const ganaMAE = m.mae < m.maeBase;
+  const mejora = ((m.rmseBase - m.rmse)/m.rmseBase*100);
+  let filas = cubosDatos.map((f,i)=>
+    `<tr><td>${i+1}</td><td>${f.n}</td><td>${f.proy.toFixed(2)}</td><td>${f.real.toFixed(2)}</td><td class="${Math.abs(f.dif)<0.25?'bien':'mal'}">${f.dif>0?'+':''}${f.dif.toFixed(2)}</td></tr>`
+  ).join("");
+
+  let veredicto, clase;
+  if(ganaRMSE && m.r >= 0.30){
+    clase = "ok";
+    veredicto = `Este mercado <b>sí mide</b>. Le gana al promedio de liga por ${mejora.toFixed(1)}% de error y la correlación es ${m.r.toFixed(3)}. Se puede quitar la etiqueta de "sin medir" con la cara limpia.`;
+  } else if(ganaRMSE){
+    clase = "ok";
+    veredicto = `Le gana al promedio de liga, pero apenas: ${mejora.toFixed(1)}% menos error y correlación ${m.r.toFixed(3)}. Sirve para ordenar juegos, no para ganarle a una línea. La etiqueta honesta sería "flojo", no "sin medir".`;
+  } else {
+    clase = "no";
+    veredicto = `<b>No mide.</b> Proyectar el promedio de liga sin mirar nada da menos error que el modelo (${m.rmse.toFixed(3)} contra ${m.rmseBase.toFixed(3)}). La etiqueta "sin medir" se queda, y ahora con número.`;
+  }
+  if(m.pend && m.pend < 0.7){
+    veredicto += `<br><br>La pendiente es ${m.pend.toFixed(2)}: la proyección se mueve ${(1/m.pend).toFixed(1)} veces más de lo que se mueve la realidad. Encogerla a ×${m.pend.toFixed(2)} la acercaría, igual que hiciste con el total.`;
+  }
+
+  return `
+  <div class="caja">
+    <h2>${titulo} <span class="chip">${m.n.toLocaleString()} observaciones</span></h2>
+    <p class="nota">${explica}</p>
+    <div class="fila"><span>Correlación con lo real</span><b class="${m.r>=0.3?'bien':m.r>=0.2?'neutro':'mal'}">${m.r.toFixed(3)}</b></div>
+    <div class="fila"><span>Pendiente</span><b>${m.pend.toFixed(2)}</b></div>
+    <div class="fila"><span>Sesgo (proyecta de más/menos)</span><b>${m.sesgo>0?'+':''}${m.sesgo.toFixed(3)}</b></div>
+    <div class="fila"><span>Error medio del modelo</span><b class="${color(0,m.mae<m.maeBase)}">${m.mae.toFixed(3)}</b></div>
+    <div class="fila"><span>Error medio del promedio de liga</span><b>${m.maeBase.toFixed(3)}</b></div>
+    <div class="fila"><span>RMSE del modelo</span><b class="${color(0,m.rmse<m.rmseBase)}">${m.rmse.toFixed(3)}</b></div>
+    <div class="fila"><span>RMSE del promedio de liga</span><b>${m.rmseBase.toFixed(3)}</b></div>
+    <h3>Por escalón de proyección</h3>
+    <table>
+      <tr><th>Escalón</th><th>N</th><th>Proyectado</th><th>Real</th><th>Dif</th></tr>
+      ${filas}
+    </table>
+    <div class="veredicto ${clase}">${veredicto}</div>
+  </div>`;
+}
+
+async function correr(){
+  const btn = $("correr");
+  btn.disabled = true;
+  $("salida").innerHTML = "";
+  const sel = $("temporada").value;
+  const anios = sel==="ambas" ? [2026,2025] : [+sel];
+
+  try{
+    const todos = [];
+    for(let k=0;k<anios.length;k++){
+      const r = await correrTemporada(anios[k], p => progreso((k+p)/anios.length));
+      todos.push(r);
+    }
+    progreso(1);
+    estado("Listo.");
+
+    let html = "";
+    for(const r of todos){
+      const baseEq = r.equipoReal.reduce((a,b)=>a+b,0)/r.equipoReal.length;
+      const mEq = metricas(r.equipoProy, r.equipoReal, baseEq);
+      const cEq = cubos(r.equipoProy, r.equipoReal);
+
+      html += `<div class="caja" style="background:var(--panel2)">
+        <h2>Temporada ${r.anio}</h2>
+        <div class="fila"><span>Juegos medidos</span><b>${r.usados.toLocaleString()}</b></div>
+        <div class="fila"><span>Juegos saltados (sin datos previos)</span><b>${r.saltados.toLocaleString()}</b></div>
+      </div>`;
+
+      html += bloque(`Carreras por equipo · ${r.anio}`, mEq, cEq,
+        "Cada juego aporta dos observaciones: las carreras proyectadas del visitante y las del local, contra lo que anotó cada uno de verdad.");
+
+      if(r.f5Real.length > 50){
+        const baseF5 = r.f5Real.reduce((a,b)=>a+b,0)/r.f5Real.length;
+        const mF5 = metricas(r.f5Proy, r.f5Real, baseF5);
+        const cF5 = cubos(r.f5Proy, r.f5Real);
+        html += bloque(`Primeras 5 entradas · ${r.anio}`, mF5, cF5,
+          "Carreras proyectadas de cada equipo en las primeras 5, contra las que anotó realmente en esas 5 entradas.");
+      } else {
+        html += `<div class="caja"><h2>Primeras 5 entradas · ${r.anio}</h2>
+          <p class="nota">No se pudo medir: el calendario no trajo el desglose por entrada en suficientes juegos.</p></div>`;
+      }
+    }
+
+    if(todos.length===2){
+      html += `<div class="caja">
+        <h2>Lo que importa de correr las dos</h2>
+        <p class="nota">Si la correlación y la pendiente salen parecidas en 2025 y en 2026, el número es real y se puede usar.
+        Si cambian mucho de una temporada a la otra, es ruido — igual que te pasó con el multiplicador del staff y el parque, y ahí lo correcto es no tocar nada.</p>
+      </div>`;
+    }
+
+    $("salida").innerHTML = html;
+  }catch(e){
+    estado("Falló: " + e.message + ". Revisa la conexión y dale otra vez.");
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+$("correr").addEventListener("click", correr);
+</script>
+</body>
+</html>
