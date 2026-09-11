@@ -355,7 +355,7 @@ footer summary{font-family:var(--cond);font-size:16px;color:var(--muted);padding
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><span class="ball">&#9918;</span>OVA <span class="ver">v18</span></h1>
+  <h1 class="brand"><span class="ball">&#9918;</span>OVA <span class="ver">v19</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -406,9 +406,11 @@ footer summary{font-family:var(--cond);font-size:16px;color:var(--muted);padding
     <div class="modo">
       <label for="disp">&#127922; Forma de la distribuci&oacute;n</label>
       <select id="disp">
-        <option value="1" selected>Poisson &mdash; como siempre, sin medir</option>
-        <option value="1.5">Binomial negativa &times;1.5 &mdash; a medio camino</option>
-        <option value="2">Binomial negativa &times;2.0 &mdash; la varianza real de MLB</option>
+        <option value="2.3" selected>&times; 2.3 &mdash; lo que dio el backtest</option>
+        <option value="2.5">&times; 2.5 &mdash; el borde de lo medido</option>
+        <option value="2">&times; 2.0 &mdash; conservador</option>
+        <option value="1.5">&times; 1.5 &mdash; a medio camino</option>
+        <option value="1">Poisson &mdash; como estaba antes de la v19</option>
       </select>
     </div>
 
@@ -536,12 +538,24 @@ siguen a mano: Kalshi no los lista por juego.</div>
   parejos de lo que son. De ahí sale el aviso de que da demasiados juegos de 1 carrera, que estaba en
   la app desde antes sin explicación. También hace que «gana por 2+» salga bajo en los dos lados y
   que el Over de líneas altas salga bajo.
-  Desde la v18 hay una opción de binomial negativa en ⚙️ Ajustes, con la misma media y la varianza
-  multiplicada por 1.5 o por 2. Viene <b>apagada</b> y eso es deliberado: encenderla mueve el
-  hándicap, el total, las carreras por equipo, las primeras 5 y los ponches de una vez, y meter una
-  constante sin medir es exactamente lo que hubo que deshacer con el multiplicador ×13. Se mide
-  primero en <code>backtestforma.html</code> contra los juegos reales de 2025 y 2026 y se enciende
-  después, si la medición lo pide.
+  <b>Ya está medido, y desde la v19 está encendido en ×2.3.</b> <code>backtestforma.html</code> lo
+  probó contra 4,628 juegos de 2025 y 2026 sin modelo de por medio — solo carreras anotadas, así que
+  no hay nada que discutir. La razón varianza ÷ media salió <b>2.32 en 2026 y 2.37 en 2025</b>, dos
+  temporadas independientes pidiendo el mismo número, igual de firme que la pendiente del
+  encogimiento. Lo que Poisson venía inventando: decía 25.5% de juegos de una carrera y pasan 28.5%;
+  decía que un equipo se queda en cero el 1.2% de las veces y pasa el 6.6%, cinco veces más; y decía
+  6.5% de palizas de 6 carreras o más cuando pasan el 20.6%, tres veces más. El error total de la
+  forma baja de 44 a 20 puntos.
+  Eso último es lo que más dolía: si el modelo cree que las palizas casi no existen, «gana por 2+»
+  sale raro y el −1.5 te salía bajo en los dos lados a la vez. El mejor ajuste salió 2.2 en 2026 y
+  2.5 en 2025 — ese 2.5 era el tope de la lista probada, así que el verdadero puede estar más
+  arriba. Se deja en 2.3, el medio del rango donde las dos temporadas coinciden, y en la pestaña de
+  Cuotas aparece lado a lado lo que habría dicho Poisson para que veas el tamaño del movimiento.
+  Poisson sigue en ⚙️ Ajustes para comparar, igual que el ×13 y el ×17.
+  Ojo con lo que esto NO arregla: la forma no le da poder de predicción al modelo. Las correlaciones
+  de 0.10 a 0.16 de los mercados de carreras siguen donde estaban, porque esas dependen de los
+  insumos. Lo que se arregla es que los porcentajes que ves ya no mienten sobre cómo se reparten los
+  resultados posibles.
 
   <b>El encogimiento sube el nivel, no aplasta la diferencia.</b> Hasta la v13 el encogimiento se
   aplicaba multiplicando las dos carreras esperadas por un mismo factor, y eso tenía un efecto que
@@ -753,7 +767,19 @@ function cara(id,t){
    carreras por equipo, F5 y los ponches de una vez, y meter una constante sin
    medir es justo lo que hubo que deshacer con el multiplicador ×13. Primero se
    mide en backtestforma.html y despues se enciende, si es que se enciende. */
-var DISP=1;
+/* MEDIDO Y ENCENDIDO en la v19. backtestforma.html sobre 4,628 juegos de 2025 y
+   2026 dio razon varianza/media de 2.32 y 2.37 — dos temporadas independientes
+   pidiendo el mismo numero, y sin modelo de por medio: es aritmetica sobre las
+   carreras anotadas. Lo que Poisson venia inventando:
+     juegos de 1 carrera   decia 25.5%   pasa 28.5%
+     equipos blanqueados   decia  1.2%   pasa  6.6%   (cinco veces mas)
+     palizas de 6+         decia  6.5%   pasa 20.6%   (tres veces mas)
+   Por eso el «gana por 2+» salia bajo en los dos lados: si las palizas casi no
+   existen, ganar por 2 es raro. El mejor ajuste salio 2.2 en 2026 y 2.5 en 2025
+   (2.5 era el tope de la lista probada, o sea que el de verdad puede estar mas
+   arriba). Se deja 2.3, el medio del rango donde las dos temporadas coinciden.
+   Poisson se queda en el selector para comparar, igual que el ×13 y el ×17. */
+var DISP=2.3;
 function pmf(k,l){
   if(l<=0) return k===0?1:0;
   if(DISP<=1.0001){ var p=Math.exp(-l); for(var i=1;i<=k;i++) p=p*l/i; return p; }
@@ -2594,6 +2620,15 @@ function detalle(x){
   var aPor2 = matriz(lamA,lamH,function(xx,yy){return xx-yy>=2;});
   var hPor2 = matriz(lamA,lamH,function(xx,yy){return yy-xx>=2;});
   var por1=1-aPor2-hPor2;
+  /* Lo mismo con Poisson, solo para enseñar el tamaño del movimiento. Se apaga
+     DISP un momento, se mide y se devuelve como estaba. Son dos llamadas mas a
+     matriz por juego, que ya viene precalculada y sale barata. */
+  var _dispAntes=DISP;
+  DISP=1;
+  var aPor2P=matriz(lamA,lamH,function(xx,yy){return xx-yy>=2;});
+  var hPor2P=matriz(lamA,lamH,function(xx,yy){return yy-xx>=2;});
+  DISP=_dispAntes;
+  var por1P=1-aPor2P-hPor2P;
   var deltaMult=crudoH-crudoA;
   var brecha=Math.abs(deltaMult-deltaFinal);
 
@@ -2671,7 +2706,17 @@ function detalle(x){
   '<tr><td>Δ carreras: tu fórmula / método multiplicativo</td><td class="n" colspan="2">'+
     (deltaFinal>=0?'+':'')+deltaFinal.toFixed(2)+' / '+(deltaMult>=0?'+':'')+deltaMult.toFixed(2)+'</td></tr>'+
   (brecha>=0.60?'<tr><td>Se separan en</td><td class="n" colspan="2">'+brecha.toFixed(2)+' carreras</td></tr>':'')+
+  (DISP>1.0001?'<tr><td>Con Poisson decía: gana por 2+</td><td class="n">'+pc(aPor2P)+
+    '</td><td class="n">'+pc(hPor2P)+'</td></tr>'+
+    '<tr><td>Con Poisson: decidido por 1 carrera</td><td class="n" colspan="2">'+pc(por1P)+
+    '</td></tr>':'')+
   '</table>'+
+  (DISP>1.0001?'<div class="flag">Las dos últimas filas son lo que esta misma app te habría dicho '+
+    'hasta la v18, con Poisson. La diferencia no es un ajuste de gusto: Poisson daba '+pc(por1P)+
+    ' de juegos de una carrera cuando la MLB real da 28.5%, y decía que un equipo se queda en cero '+
+    'el 1.2% de las veces cuando pasa el 6.6%. Si las palizas casi no existen, ganar por 2+ sale '+
+    'raro — y por eso el −1.5 te salía bajo en los dos lados. Medido sobre 4,628 juegos de las dos '+
+    'temporadas.</div>':'')+
   '<div class="leyenda">El hándicap es el único mercado además del ganador que hereda la calibración '+
   'del ×6: se ancla al porcentaje del ganador por bisección, así que dice lo mismo que él. Por eso '+
   '<b>no se encoge</b> aunque el total sí. Con una salvedad que conviene saber: lo calibrado es el '+
