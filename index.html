@@ -355,7 +355,7 @@ footer summary{font-family:var(--cond);font-size:16px;color:var(--muted);padding
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><span class="ball">&#9918;</span>OVA <span class="ver">v16</span></h1>
+  <h1 class="brand"><span class="ball">&#9918;</span>OVA <span class="ver">v17</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -541,7 +541,8 @@ siguen a mano: Kalshi no los lista por juego.</div>
   <b>El score de calidad de datos.</b> Arriba de cada juego sale un número del 0 al 100 que mide
   cuánto de lo que el modelo necesita está realmente disponible: muestra de los abridores, salidas
   recientes, si el ERA de bullpen es el split real de relevistas o el del equipo completo, splits
-  contra la mano del abridor, si el parque está en la tabla, clima y ofensiva de 14 días. Bajo 60
+  contra la mano del abridor, si el parque está en la tabla, clima, ofensiva de 14 días y lineups
+  confirmados, que valen 11 de esos 100 y solo se suman cuando tocas «Revisar lineups». Bajo 60
   el modelo está trabajando a ciegas en varias entradas y conviene no apostar ese juego por bonito
   que se vea el número. Debajo del score te dice exactamente qué faltó.
 
@@ -606,7 +607,19 @@ siguen a mano: Kalshi no los lista por juego.</div>
   cuota que tomaste contra el de la cuota de cierre del mismo lado. La calibración agrupa tus picks por el
   porcentaje que les diste y compara lo que dijiste contra lo que pasó.
   El <b>Ranking del juego</b> ordena por EV todas las proposiciones en las que metiste cuota. Solo entran
-  las que llegan a 2 puntos de ventaja. En líneas enteras el empate devuelve el dinero y se cuenta como tal.
+  las que llegan a 2 puntos de ventaja, y esos 2 puntos se cuentan sobre lo que de verdad arriesgas.
+  En una línea entera — total de 8, carreras de equipo de 4 — el empate devuelve el dinero, así que
+  sale del reparto: si el empate ronda el 13%, un 52% crudo tuyo es 60% entre los casos que se
+  resuelven. Hasta la v16 el filtro comparaba la probabilidad cruda contra el precio del book, que ya
+  viene condicionado, y con eso botaba del ranking picks con EV positivo de dos dígitos. En líneas de
+  .5 no hay empate y esto no cambia nada.
+
+  <b>Fechas pasadas.</b> Cargando un día que ya pasó, las estadísticas se recortan al día anterior:
+  ERA de temporada, carreras por juego, las últimas 5 salidas y el récord. Hasta la v16 se pedían
+  siempre hasta hoy, así que revisar un juego de hace dos semanas metía en el cálculo lo que pasó
+  después de ese juego — el mismo error que el backtest evita a propósito. El ERA de bullpen es la
+  excepción y queda en el del staff completo: el split de relevistas de la MLB no acepta rango de
+  fechas. Para hoy y mañana no cambia nada.
   Los mercados de un mismo juego están correlacionados, así que jugar dos del ranking no diversifica.
   El tope del porcentaje es 22–78%; si un juego lo toca, el moneyline sale del ranking.
 
@@ -752,7 +765,17 @@ function valor(pPct,amStr,pushPct,plat){
   var bn=pg.b-pg.fee, ln=1+pg.fee;
   var f=bn>0?(p*bn-q*ln)/bn:0;
   var bk=banca();
-  return {imp:imp, ventaja:(p-imp/100)*100, ev:ev, push:push*100, fee:pg.fee*100,
+  /* En una linea entera (total de 8, equipo de 4) el empate devuelve el dinero:
+     no lo ganas ni lo pierdes, sale del reparto. La probabilidad que hay que
+     comparar contra el precio es la TUYA entre los casos en que de verdad se
+     resuelve, no la cruda. Con 13% de empate, un 52% crudo es 60% real — y la
+     cruda hacia que el filtro de 2 puntos botara del ranking picks con EV
+     positivo de dos digitos. El precio del book ya viene condicionado igual,
+     asi que ahora se comparan dos numeros de la misma clase. En lineas de .5
+     el empate es 0 y esto no cambia nada. */
+  var pcond = (push<1) ? p/(1-push) : p;
+  return {imp:imp, ventaja:(pcond-imp/100)*100, ev:ev, push:push*100, fee:pg.fee*100,
+          cruda:(p-imp/100)*100,
           stake: (bk&&f>0)? bk*f*0.25 : null};
 }
 function txtValor(etiqueta,pPct,amStr,pushPct){
@@ -1083,6 +1106,30 @@ function rellenarKalshi(el,forzar){
 
 /* ---------- datos ---------- */
 function j(url){ return fetch(url).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }
+/* ---------- corte historico ----------
+   Las estadisticas de temporada se pedian siempre hasta HOY. Cargando una fecha
+   pasada eso metia en el calculo juegos que pasaron DESPUES del que estabas
+   mirando — el mismo error que el backtest evita a proposito con sus fotos
+   semanales. CORTE recorta al dia anterior cuando la fecha ya paso; en hoy o
+   mañana queda en null y todo va exactamente como antes. */
+var CORTE=null;
+function corteSufijo(){ return CORTE?('-'+CORTE):''; }
+function rangoQS(year){
+  return CORTE ? ('stats=byDateRange&startDate='+year+'-01-01&endDate='+CORTE)
+               : 'stats=season';
+}
+/* Pide con el rango cuando hay corte y, si el rango viene vacio, cae de vuelta
+   a la temporada completa en vez de dejarte sin datos. */
+function pedirStats(url,year){
+  return j(url.replace('__R__',rangoQS(year))).then(function(d){
+    var sp=d&&d.stats&&d.stats[0]&&d.stats[0].splits;
+    if(CORTE&&(!sp||!sp.length)) throw new Error('rango vacio');
+    return d;
+  }).catch(function(e){
+    if(!CORTE) throw e;
+    return j(url.replace('__R__','stats=season'));
+  });
+}
 var BOX_FIELDS='teams,home,away,team,id,players,person,fullName,stats,pitching,'+
                'inningsPitched,earnedRuns,gamesStarted,battingOrder';
 function boxscore(pk){
@@ -1101,10 +1148,11 @@ function ipToNum(ip){
   return Math.trunc(n)+(dec===1?1/3:dec===2?2/3:0);
 }
 function ultimas5(id,year){
-  var k=id+'-'+year;
+  var k=id+'-'+year+corteSufijo();
   if(cache.log[k]) return Promise.resolve(cache.log[k]);
   return j(API+'/people/'+id+'/stats?stats=gameLog&group=pitching&season='+year+'&gameType=R').then(function(d){
     var splits=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];
+    if(CORTE) splits=splits.filter(function(s){ return s.date && s.date<=CORTE; });
     var sal=splits.filter(function(s){return +(s.stat.gamesStarted||0)===1;});
     var use=(sal.length?sal:splits).slice(-5);
     var er=0, ip=0;
@@ -1130,9 +1178,9 @@ function ultimas5(id,year){
   }).catch(function(){ return {era:null,ip:0,n:0,starts:[],ipxAb:null,k9Ab:null,nAb:0}; });
 }
 function temporada(id,year){
-  var k=id+'-'+year;
+  var k=id+'-'+year+corteSufijo();
   if(cache.sea[k]) return Promise.resolve(cache.sea[k]);
-  return j(API+'/people/'+id+'/stats?stats=season&group=pitching&season='+year+'&gameType=R').then(function(d){
+  return pedirStats(API+'/people/'+id+'/stats?__R__&group=pitching&season='+year+'&gameType=R',year).then(function(d){
     var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
     var st=s?s.stat:{};
     var ip=ipToNum(st.inningsPitched);
@@ -1150,9 +1198,9 @@ function temporada(id,year){
   });
 }
 function ofensiva(teamId,year){
-  var k=teamId+'-'+year;
+  var k=teamId+'-'+year+corteSufijo();
   if(cache.hit[k]) return Promise.resolve(cache.hit[k]);
-  return j(API+'/teams/'+teamId+'/stats?stats=season&group=hitting&season='+year+'&gameType=R').then(function(d){
+  return pedirStats(API+'/teams/'+teamId+'/stats?__R__&group=hitting&season='+year+'&gameType=R',year).then(function(d){
     var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
     var st=s?s.stat:{};
     var g=+(st.gamesPlayed||0), r=+(st.runs||0);
@@ -1177,16 +1225,19 @@ function ofensiva14(teamId,baseDate,year){
   }).catch(function(){ var out={rg:null,g:0,ops:null}; cache.off14[k]=out; return out; });
 }
 function bullpen(teamId,year){
-  var k=teamId+'-'+year;
+  var k=teamId+'-'+year+corteSufijo();
   if(cache.pen[k]) return Promise.resolve(cache.pen[k]);
-  return j(API+'/teams/'+teamId+'/stats?stats=statSplits&sitCodes=rp&group=pitching&season='+year+'&gameType=R')
+  /* El split real de relevistas no acepta rango de fechas, asi que en fechas
+     pasadas se va directo al staff completo recortado y queda marcado aprox. */
+  return (CORTE ? Promise.reject(new Error('fecha pasada'))
+    : j(API+'/teams/'+teamId+'/stats?stats=statSplits&sitCodes=rp&group=pitching&season='+year+'&gameType=R'))
     .then(function(d){
       var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
       if(s&&s.stat&&s.stat.era!=null&&s.stat.era!=='-.--') return {era:parseFloat(s.stat.era),aprox:false};
       throw new Error('sin split');
     })
     .catch(function(){
-      return j(API+'/teams/'+teamId+'/stats?stats=season&group=pitching&season='+year+'&gameType=R').then(function(d){
+      return pedirStats(API+'/teams/'+teamId+'/stats?__R__&group=pitching&season='+year+'&gameType=R',year).then(function(d){
         var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
         return {era:(s&&s.stat&&s.stat.era!=null)?parseFloat(s.stat.era):null, aprox:true};
       }).catch(function(){ return {era:null,aprox:true}; });
@@ -1205,7 +1256,8 @@ function ligaEra(year){
 }
 function standings(year){
   if(STAND) return Promise.resolve(STAND);
-  return j(API+'/standings?leagueId=103,104&season='+year+'&standingsTypes=regularSeason').then(function(d){
+  return j(API+'/standings?leagueId=103,104&season='+year+'&standingsTypes=regularSeason'+
+           (CORTE?'&date='+CORTE:'')).then(function(d){
     var o={};
     (d.records||[]).forEach(function(rec){
       (rec.teamRecords||[]).forEach(function(t){
@@ -1815,15 +1867,16 @@ function porMercado(a){
 function porOrigen(a){
   var tipos=[['Del modelo','modelo'],['Míos 👁','mio']];
   return tipos.map(function(t){
-    var g=a.filter(function(p){ return p.res && (p.org||'modelo')===t[1]; });
+    var g=a.filter(function(p){ return (p.org||'modelo')===t[1]; });
     if(!g.length) return null;
-    var w=g.filter(function(p){ return p.res==='G'; }).length;
+    var res=g.filter(function(p){ return p.res; });
+    var w=res.filter(function(p){ return p.res==='G'; }).length;
     var u=0, c=0, cn=0;
-    g.forEach(function(p){
-      var v=unidades(p); if(v!=null) u+=v;
-      var cl=clvPts(p); if(cl!=null){ c+=cl; cn++; }
-    });
-    return {t:t[0], n:g.length, pct:w/g.length*100, u:u, upp:u/g.length, clv: cn?c/cn:null};
+    res.forEach(function(p){ var v=unidades(p); if(v!=null) u+=v; });
+    g.forEach(function(p){ var cl=clvPts(p); if(cl!=null){ c+=cl; cn++; } });
+    return {t:t[0], n:g.length, nres:res.length,
+            pct: res.length?w/res.length*100:null, u:u,
+            upp: res.length?u/res.length:null, clv: cn?c/cn:null};
   }).filter(Boolean);
 }
 function pintarRegistro(){
@@ -1864,14 +1917,15 @@ function pintarRegistro(){
 
   var po=porOrigen(a);
   if(po.length){
-    o+='<table><tr><th>De dónde salió</th><th>Picks</th><th>Acertó</th><th>CLV</th><th>Unid.</th></tr>';
+    o+='<table><tr><th>De dónde salió</th><th>Picks</th><th>Resueltos</th><th>Acertó</th><th>CLV</th><th>Unid.</th></tr>';
     po.forEach(function(m){
-      o+='<tr><td>'+esc(m.t)+'</td><td class="n">'+m.n+'</td><td class="n">'+m.pct.toFixed(0)+
-         '%</td><td class="n">'+(m.clv==null?'—':(m.clv>0?'+':'')+m.clv.toFixed(1))+
-         '</td><td class="n">'+(m.u>=0?'+':'')+m.u.toFixed(1)+'</td></tr>';
+      o+='<tr><td>'+esc(m.t)+'</td><td class="n">'+m.n+'</td><td class="n">'+m.nres+
+         '</td><td class="n">'+(m.pct==null?'—':m.pct.toFixed(0)+'%')+
+         '</td><td class="n">'+(m.clv==null?'—':(m.clv>0?'+':'')+m.clv.toFixed(1))+
+         '</td><td class="n">'+(m.nres?((m.u>=0?'+':'')+m.u.toFixed(1)):'—')+'</td></tr>';
     });
     o+='</table>';
-    if(po.length===2&&po[0].n>=15&&po[1].n>=15){
+    if(po.length===2&&po[0].nres>=15&&po[1].nres>=15){
       var dif=po[1].upp-po[0].upp;
       o+='<div class="flag">'+(dif>0
         ? 'Tus picks propios van <b>'+dif.toFixed(2)+' unidades por pick por encima</b> de los del '+
@@ -1906,7 +1960,7 @@ function pintarRegistro(){
     h+='<h3><span class="ic">⏳</span>Pendientes</h3>';
     abiertos.forEach(function(p){
       var c=clvPts(p);
-      h+='<div class="pk" data-id="'+p.id+'">'+
+      h+='<div class="pk" data-id="'+p.id+'" data-org="'+(p.org==='mio'?'mio':'modelo')+'">'+
          '<div class="t">'+esc(p.m)+' '+esc(fmtOdds(p.am,p.plat))+'</div>'+
          '<div class="s">'+esc(p.juego)+' · '+esc(p.f)+(p.org==='mio'?' · 👁 tuyo':'')+
          ' · tu número '+p.p.toFixed(1)+'%'+
@@ -1916,6 +1970,7 @@ function pintarRegistro(){
            '<button class="rG">Ganó</button>'+
            '<button class="ghost rP">Perdió</button>'+
            '<button class="ghost rE">Empate</button>'+
+           '<button class="ghost rO">'+(p.org==='mio'?'→ del modelo':'→ mío 👁')+'</button>'+
            '<button class="ghost rX">Borrar</button>'+
          '</div></div>';
     });
@@ -1945,6 +2000,7 @@ function pintarRegistro(){
     b('.rG',function(){ if(cie) regUpd(id,{cierre:cie.value||null}); regUpd(id,{res:'G'}); pintarRegistro(); });
     b('.rP',function(){ if(cie) regUpd(id,{cierre:cie.value||null}); regUpd(id,{res:'P'}); pintarRegistro(); });
     b('.rE',function(){ if(cie) regUpd(id,{cierre:cie.value||null}); regUpd(id,{res:'E'}); pintarRegistro(); });
+    b('.rO',function(){ regUpd(id,{org:(d.dataset.org==='mio'?'modelo':'mio')}); pintarRegistro(); });
     b('.rU',function(){ regUpd(id,{res:null}); pintarRegistro(); });
     b('.rX',function(){ regDel(id); pintarRegistro(); });
   });
@@ -2063,7 +2119,10 @@ function actualizarRanking(root){
        '+'+m.v.ventaja.toFixed(1)+' puntos · EV +'+(m.v.ev*100).toFixed(1)+'% por dólar'+
        (m.v.fee>0.05?' (ya con '+m.v.fee.toFixed(1)+'% de comisión)':'')+
        (m.v.stake?' · ¼ Kelly $'+m.v.stake.toFixed(2):'')+
-       (m.push>0.5?' · empata en la línea '+m.push.toFixed(1)+'% de las veces':'')+
+       (m.push>0.5?' · empata en la línea '+m.push.toFixed(1)+'% de las veces, y ahí te '+
+         'devuelven el dinero — por eso la ventaja va contada sobre lo que de verdad arriesgas'+
+         (m.v.cruda!=null&&Math.abs(m.v.ventaja-m.v.cruda)>=1
+           ? ' ('+m.v.cruda.toFixed(1)+' puntos si no se descontara)' : '')+'':'')+
        '</div>'+
        '<div class="acc" style="margin-top:8px">'+
        '<button class="ghost gp" data-org="modelo" data-m="'+esc(m.m)+
@@ -2226,6 +2285,8 @@ function cargar(){
   var iso=$('fecha').value;
   if(!iso){ $('status').textContent='Falta la fecha.'; return; }
   var pt=iso.split('-'), y=pt[0], m=pt[1], d=pt[2];
+  CORTE = (iso < hoyISO()) ? ymd(new Date(diaBase(iso).getTime()-86400000)) : null;
+  STAND=null;
   $('slate').innerHTML='';
   $('algane').innerHTML='';
   $('combibox').innerHTML='';
@@ -2240,7 +2301,11 @@ function cargar(){
   j(API+'/schedule?sportId=1&date='+m+'/'+d+'/'+y+'&hydrate=probablePitcher,team,venue(location,fieldInfo)').then(function(data){
     var games=(data.dates&&data.dates[0]&&data.dates[0].games)||[];
     if(!games.length){ $('status').textContent='No hay juegos de MLB ese día.'; return; }
-    $('status').textContent=games.length+' juegos. Toca uno para correr los números, o dale a 🏆 Ranking al gane para calcularlos todos.';
+    $('status').innerHTML=games.length+' juegos. Toca uno para correr los números, o dale a 🏆 Ranking al gane para calcularlos todos.'+
+      (CORTE?'<br><br>📅 <b>Fecha pasada.</b> Las estadísticas van recortadas al '+esc(CORTE)+
+        ', o sea sin nada de lo que pasó después — así el número que ves es el que habrías tenido '+
+        'ese día. El ERA de bullpen sí queda en el del staff completo: el split de relevistas no '+
+        'acepta rango de fechas.':'');
     games.forEach(function(g){ $('slate').appendChild(fila(g,+y)); });
   }).catch(function(e){
     $('status').className='status err';
@@ -2692,7 +2757,7 @@ function detalle(x){
   contexto(x,pfv,Tbase,T,notaTemp,Tcrudo)+
   '<h3><span class="ic">🧪</span>Calidad de los datos</h3>'+
   '<div class="calwrap">'+calBloque(cal)+'</div>'+
-  '<div class="leyenda">El score suma: muestra de temporada de los abridores (25), salidas recientes '+
+  '<div class="leyenda">El score suma: muestra de temporada de los abridores (22), salidas recientes '+
   '(13), ERA de bullpen con split real de relevistas (18), splits contra la mano del abridor (9), '+
   'parque en la tabla (9), clima (9), ofensiva de 14 días (9) y <b>lineups confirmados (11)</b>. '+
   'Mide si hay <b>con qué</b> calcular, no si el pick es bueno. Los 11 del lineup solo se suman '+
