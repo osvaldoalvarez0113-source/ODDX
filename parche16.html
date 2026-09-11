@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OVA · Parche v16</title>
+<style>
+:root{
+ --night:#08161F;--panel:#122D3D;--line:#1F4457;--chalk:#F1EEE4;--muted:#7E97A6;
+ --signal:#E8B33C;--signal2:#F5C863;--good:#5FB07A;--bad:#D2685F;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--night);color:var(--chalk);
+ font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.5;
+ padding:0 0 60px}
+.wrap{max-width:600px;margin:0 auto;padding:0 14px}
+header{border-bottom:1px solid var(--line);padding:18px 14px;
+ padding-top:calc(env(safe-area-inset-top) + 14px)}
+header h1{font-size:24px;margin:0;letter-spacing:-.3px}
+header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+.caja{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+ padding:14px;margin:14px 0}
+h2{font-size:17px;margin:0 0 8px}
+button{background:linear-gradient(180deg,var(--signal2),var(--signal));color:#12242F;border:0;
+ border-radius:10px;padding:13px 18px;font-size:17px;font-weight:700;width:100%;
+ margin-top:10px;cursor:pointer}
+button:disabled{opacity:.4}
+a.dl{display:block;text-align:center;background:linear-gradient(180deg,#7BC896,var(--good));
+ color:#0B1F14;border-radius:10px;padding:14px;font-size:17px;font-weight:700;
+ text-decoration:none;margin-top:10px}
+.fila{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px;
+ line-height:1.45}
+.fila:last-child{border-bottom:none}
+.ok{color:var(--good)}
+.no{color:var(--bad)}
+#estado{color:var(--muted);font-size:13.5px;margin-top:10px;min-height:20px}
+.nota{color:var(--muted);font-size:13px;line-height:1.55}
+.nota b{color:var(--chalk)}
+code{background:var(--night);padding:2px 6px;border-radius:6px;font-size:12.5px}
+.aviso{background:rgba(210,104,95,.1);border:1px solid rgba(210,104,95,.35);
+ border-radius:10px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+.bien{background:rgba(95,176,122,.1);border:1px solid rgba(95,176,122,.35);
+ border-radius:10px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <h1>⚾ Parche v16</h1>
+  <p>La marca de origen en el registro — del modelo o tuyo</p>
+</header>
+
+<div class="wrap">
+
+  <div class="caja">
+    <h2>Qué le hace a la app</h2>
+    <p class="nota">
+      Donde antes había <b>un</b> botón «Guardar pick», ahora hay <b>dos</b>:
+      «Del modelo» y «Mío». Nada más cambia en cómo calcula — solo se guarda un dato más al lado
+      de cada pick.<br><br>
+      En el registro aparece una tabla nueva que parte tus resultados en esos dos grupos, con CLV
+      y unidades de cada uno. Ahí es donde vas a ver, con tus propios juegos, si tu ojo le gana al
+      número cuando se contradicen.<br><br>
+      Los picks que ya tengas guardados sin marca cuentan como «del modelo», que es lo que eran.
+    </p>
+  </div>
+
+  <div class="caja">
+    <h2>Aplicar</h2>
+    <p class="nota">Este archivo va en la misma carpeta que tu <code>index.html</code>, igual que
+    el parche anterior. Requiere tener ya la v15 puesta.</p>
+    <button id="ir">Coger mi index.html y parchearlo</button>
+    <div id="estado"></div>
+    <div id="lista"></div>
+    <div id="salida"></div>
+  </div>
+
+</div>
+
+<script>
+var PARCHES=[
+
+{n:'Versión v15 → v16',
+ buscar:'<span class="ver">v15</span>',
+ poner:'<span class="ver">v16</span>'},
+
+{n:'Dos botones de guardar en vez de uno',
+ buscar:"       '<div class=\"acc\" style=\"margin-top:8px\"><button class=\"ghost gp\" data-m=\"'+esc(m.m)+\n       '\" data-p=\"'+m.p.toFixed(2)+'\" data-am=\"'+esc(String(m.am))+'\">Guardar pick</button></div>'+",
+ poner:"       '<div class=\"acc\" style=\"margin-top:8px\">'+\n       '<button class=\"ghost gp\" data-org=\"modelo\" data-m=\"'+esc(m.m)+\n       '\" data-p=\"'+m.p.toFixed(2)+'\" data-am=\"'+esc(String(m.am))+'\">Guardar · del modelo</button>'+\n       '<button class=\"ghost gp\" data-org=\"mio\" data-m=\"'+esc(m.m)+\n       '\" data-p=\"'+m.p.toFixed(2)+'\" data-am=\"'+esc(String(m.am))+'\">Guardar · mío 👁</button>'+\n       '</div>'+"},
+
+{n:'Guardar el origen junto al pick',
+ buscar:"      b.addEventListener('click',function(){\n        var id=regAdd({f:base.f, juego:base.juego, m:base.m, p:base.p,\n                       am:base.am, plat:base.plat, cierre:null, res:null});",
+ poner:"      b.addEventListener('click',function(){\n        var id=regAdd({f:base.f, juego:base.juego, m:base.m, p:base.p,\n                       am:base.am, plat:base.plat, org:b.dataset.org||'modelo',\n                       cierre:null, res:null});"},
+
+{n:'Función que parte el registro por origen',
+ buscar:'function pintarRegistro(){',
+ poner:"/* Del modelo o tuyo. Es la unica pregunta que ningun backtest puede contestar,\n   porque mide al que decide, no al modelo. Los picks viejos sin marca cuentan\n   como del modelo, que es lo que eran cuando se guardaron. */\nfunction porOrigen(a){\n  var tipos=[['Del modelo','modelo'],['Míos 👁','mio']];\n  return tipos.map(function(t){\n    var g=a.filter(function(p){ return p.res && (p.org||'modelo')===t[1]; });\n    if(!g.length) return null;\n    var w=g.filter(function(p){ return p.res==='G'; }).length;\n    var u=0, c=0, cn=0;\n    g.forEach(function(p){\n      var v=unidades(p); if(v!=null) u+=v;\n      var cl=clvPts(p); if(cl!=null){ c+=cl; cn++; }\n    });\n    return {t:t[0], n:g.length, pct:w/g.length*100, u:u, upp:u/g.length, clv: cn?c/cn:null};\n  }).filter(Boolean);\n}\nfunction pintarRegistro(){"},
+
+{n:'Tabla nueva: tu ojo contra el modelo',
+ buscar:'  var cal=calibracion(a);',
+ poner:"  var po=porOrigen(a);\n  if(po.length){\n    o+='<table><tr><th>De dónde salió</th><th>Picks</th><th>Acertó</th><th>CLV</th><th>Unid.</th></tr>';\n    po.forEach(function(m){\n      o+='<tr><td>'+esc(m.t)+'</td><td class=\"n\">'+m.n+'</td><td class=\"n\">'+m.pct.toFixed(0)+\n         '%</td><td class=\"n\">'+(m.clv==null?'—':(m.clv>0?'+':'')+m.clv.toFixed(1))+\n         '</td><td class=\"n\">'+(m.u>=0?'+':'')+m.u.toFixed(1)+'</td></tr>';\n    });\n    o+='</table>';\n    if(po.length===2&&po[0].n>=15&&po[1].n>=15){\n      var dif=po[1].upp-po[0].upp;\n      o+='<div class=\"flag\">'+(dif>0\n        ? 'Tus picks propios van <b>'+dif.toFixed(2)+' unidades por pick por encima</b> de los del '+\n          'modelo. Si eso aguanta sobre 40 de cada lado, tu ojo está viendo algo que el número no ve '+\n          '— y lo que hay que hacer es meterle ese algo al modelo, no dejarlo en corazonada.'\n        : 'Los del modelo van <b>'+(-dif).toFixed(2)+' unidades por pick por encima</b> de los tuyos. '+\n          'Si eso aguanta sobre 40 de cada lado, hazle más caso al número y menos a la corazonada.')+\n          ' Mira el CLV antes que las unidades: se mueve más rápido y miente menos.</div>';\n    }else{\n      o+='<div class=\"flag\">Esta tabla contesta lo que ningún backtest puede: cuando tu ojo y el '+\n         'modelo se contradicen, cuál de los dos acierta. Hacen falta unos 15 picks de cada lado para '+\n         'que empiece a decir algo y 40 para creérselo. La corazonada que acierta y la que falla se '+\n         'sienten igual por dentro — por eso hay que anotarlas.</div>';\n    }\n  }\n\n  var cal=calibracion(a);"},
+
+{n:'Marcar los pendientes que son tuyos',
+ buscar:"         '<div class=\"s\">'+esc(p.juego)+' · '+esc(p.f)+' · tu número '+p.p.toFixed(1)+'%'+",
+ poner:"         '<div class=\"s\">'+esc(p.juego)+' · '+esc(p.f)+(p.org==='mio'?' · 👁 tuyo':'')+\n         ' · tu número '+p.p.toFixed(1)+'%'+"},
+
+{n:'Marcar los resueltos que son tuyos',
+ buscar:"         '<div class=\"s\">'+esc(p.juego)+' · '+esc(p.f)+' · dijiste '+p.p.toFixed(1)+'%'+",
+ poner:"         '<div class=\"s\">'+esc(p.juego)+' · '+esc(p.f)+(p.org==='mio'?' · 👁 tuyo':'')+\n         ' · dijiste '+p.p.toFixed(1)+'%'+"},
+
+{n:'Mensaje del registro vacío',
+ buscar:"    lis.innerHTML='<div class=\"flag\">Todavía no has guardado ningún pick. Cuando el ranking te saque uno, dale a Guardar. Sin esto, la app no puede decirte si le estás ganando al mercado — y esa es la única prueba que importa.</div>';",
+ poner:"    lis.innerHTML='<div class=\"flag\">Todavía no has guardado ningún pick. Cuando el ranking te saque uno, dale a <b>Guardar · del modelo</b> si lo tomas porque lo dice la app, o a <b>Guardar · mío</b> si lo tomas por algo que tú ves y el número no. Esa marca hay que ponerla desde el primer pick: los que guardes sin ella ya no sirven para saber cuál de los dos acierta.</div>';"},
+
+{n:'Explicación arriba del registro',
+ buscar:"  <p class=\"flag\">Guarda el pick cuando lo tomes. Después vuelve, mete la cuota de cierre y el\n  resultado. El CLV te dice si tu número le gana al mercado, que es lo único que te dice la verdad\n  rápido: puedes perder tres semanas seguidas con CLV positivo y aun así estar haciéndolo bien.</p>",
+ poner:"  <p class=\"flag\">Guarda el pick cuando lo tomes. Después vuelve, mete la cuota de cierre y el\n  resultado. El CLV te dice si tu número le gana al mercado, que es lo único que te dice la verdad\n  rápido: puedes perder tres semanas seguidas con CLV positivo y aun así estar haciéndolo bien.</p>\n  <p class=\"flag\">Al guardar escoges <b>del modelo</b> o <b>mío</b>. Mío es cuando lo tomas por algo\n  que tú ves y el número no — que el abridor está tirando mejor de lo que dice su ERA, que el otro\n  viene de lesión, lo que sea. Con eso el registro puede decirte, con tus propios juegos, cuál de\n  los dos acierta más cuando se contradicen. Es lo único que mide al que decide y no al modelo.</p>"},
+
+{n:'Nota técnica del pie',
+ buscar:'  Los picks se guardan solo en este teléfono, sin cuenta ni servidor.',
+ poner:'  Al guardar un pick se marca si salió del modelo o de tu propio criterio, y el registro los separa\n  en dos grupos con su CLV y sus unidades. Esa es la única medición de toda la app que no mide al\n  modelo sino al que decide: el backtest te dice lo que da la fórmula sobre líneas inventadas, pero\n  no puede decirte nada sobre las veces que tú miras el número y decides lo contrario. Para que\n  signifique algo hacen falta unos 40 picks de cada lado, y la marca tiene que estar puesta desde el\n  primero — un pick guardado sin marca ya no se puede clasificar después.\n  Los picks se guardan solo en este teléfono, sin cuenta ni servidor.'}
+
+];
+
+var $=function(id){ return document.getElementById(id); };
+
+function contar(txt,agu){
+  var n=0,i=0;
+  while(true){ var p=txt.indexOf(agu,i); if(p<0) break; n++; i=p+agu.length; if(n>5) break; }
+  return n;
+}
+function aplicar(src){
+  var res=[], txt=src, ok=0, mal=0;
+  PARCHES.forEach(function(p){
+    var n=contar(txt,p.buscar);
+    if(n===1){
+      txt=txt.replace(p.buscar,function(){ return p.poner; });
+      res.push({n:p.n, ok:true, msg:'aplicado'}); ok++;
+    }else if(n===0){
+      var ya=contar(txt,p.poner)>0;
+      res.push({n:p.n, ok:ya, msg: ya?'ya estaba puesto — se salta':'no se encontró el texto original — se salta'});
+      if(!ya) mal++;
+    }else{
+      res.push({n:p.n, ok:false, msg:'aparece '+n+' veces, no se toca por seguridad'}); mal++;
+    }
+  });
+  return {txt:txt, res:res, ok:ok, mal:mal};
+}
+function pintar(r){
+  var h='';
+  r.res.forEach(function(x){
+    h+='<div class="fila"><span class="'+(x.ok?'ok':'no')+'">'+(x.ok?'✓':'✕')+'</span>'+
+       '<span><b>'+x.n+'</b><br><span style="color:var(--muted)">'+x.msg+'</span></span></div>';
+  });
+  $('lista').innerHTML=h;
+}
+
+$('ir').addEventListener('click',function(){
+  var b=$('ir');
+  b.disabled=true;
+  $('estado').textContent='Cogiendo tu index.html…';
+  $('lista').innerHTML=''; $('salida').innerHTML='';
+  fetch('index.html?t='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }).then(function(src){
+    if(src.indexOf('REG_KEY')<0) throw new Error('ese archivo no parece el index.html de OVA');
+    if(src.indexOf('F5_FRAC=0.56')<0)
+      throw new Error('esto necesita la v15 puesta primero — tu archivo todavía tiene la fracción vieja');
+    $('estado').textContent='Leídos '+Math.round(src.length/1024)+' KB. Aplicando…';
+    var r=aplicar(src);
+    pintar(r);
+    $('salida').innerHTML = r.mal>0
+      ? '<div class="aviso">Se saltaron <b>'+r.mal+'</b> cambio(s). Mira la lista antes de bajar nada.</div>'
+      : '<div class="bien">Los '+r.ok+' cambios entraron limpios.</div>';
+    var url=URL.createObjectURL(new Blob([r.txt],{type:'text/html'}));
+    $('salida').innerHTML+='<a class="dl" href="'+url+'" download="index.html">'+
+      '⬇︎ Bajar el index.html de la v16</a>'+
+      '<p class="nota" style="margin-top:12px">Tus picks guardados no se tocan: viven en el teléfono, '+
+      'no en el archivo. Los que ya tengas cuentan como «del modelo».</p>';
+    $('estado').textContent='';
+    b.disabled=false;
+  }).catch(function(e){
+    $('estado').innerHTML='<span class="no">No se pudo: '+String(e.message)+'</span>';
+    b.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
