@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OVA · Backtest de forma</title>
+<style>
+:root{
+ --night:#08161F;--panel:#122D3D;--panel2:#0F212E;--line:#1F4457;--line2:#2A5A72;
+ --chalk:#F1EEE4;--muted:#7E97A6;--muted2:#5D7684;
+ --signal:#E8B33C;--signal2:#F5C863;--good:#5FB07A;--bad:#D2685F;--info:#5FA8D3;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--night);color:var(--chalk);
+ font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.5;
+ padding:0 0 60px}
+.wrap{max-width:640px;margin:0 auto;padding:0 14px}
+header{border-bottom:1px solid var(--line);padding:18px 14px;
+ padding-top:calc(env(safe-area-inset-top) + 14px)}
+header h1{font-size:23px;margin:0;letter-spacing:-.3px}
+header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+.caja{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:14px 0}
+h2{font-size:17px;margin:0 0 10px}
+h3{font-size:15px;margin:20px 0 6px;color:var(--signal)}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+select{background:var(--panel2);color:var(--chalk);border:1px solid var(--line);
+ border-radius:10px;padding:10px 12px;width:100%;font-size:16px;font-family:inherit;
+ -webkit-appearance:none;appearance:none}
+button{background:linear-gradient(180deg,var(--signal2),var(--signal));color:#12242F;border:0;
+ border-radius:10px;padding:13px 18px;font-size:17px;font-weight:700;width:100%;
+ margin-top:12px;cursor:pointer;font-family:inherit}
+button:disabled{opacity:.4}
+.barra{height:6px;background:var(--panel2);border-radius:99px;overflow:hidden;margin-top:12px}
+.barra i{display:block;height:100%;background:var(--signal);width:0;transition:width .3s}
+#estado{font-size:13px;color:var(--muted);margin-top:8px;min-height:20px}
+.fila{display:flex;justify-content:space-between;gap:12px;padding:9px 0;
+ border-bottom:1px solid var(--line);font-size:14px}
+.fila:last-child{border-bottom:none}
+.fila span:first-child{color:var(--muted)}
+.fila b{font-variant-numeric:tabular-nums}
+.bien{color:var(--good)} .mal{color:var(--bad)} .neutro{color:var(--info)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+th,td{padding:8px 5px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:600}
+td{font-variant-numeric:tabular-nums}
+tr.gana td{color:var(--signal);font-weight:600}
+.nota{font-size:12.5px;color:var(--muted);line-height:1.55}
+.nota b{color:var(--chalk)}
+.veredicto{padding:14px;border-radius:12px;margin-top:14px;font-size:14px;line-height:1.55}
+.veredicto.ok{background:rgba(95,176,122,.09);border:1px solid rgba(95,176,122,.35)}
+.veredicto.no{background:rgba(210,104,95,.09);border:1px solid rgba(210,104,95,.35)}
+code{background:var(--panel2);padding:2px 6px;border-radius:6px;font-size:12.5px}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <h1>🎲 Backtest de forma</h1>
+  <p>Cuánto se abren de verdad las carreras de MLB, y qué DISP le cuadra</p>
+</header>
+
+<div class="wrap">
+
+  <div class="caja">
+    <h2>Qué mide</h2>
+    <p class="nota">
+      Poisson obliga a que la varianza sea igual a la media. Esto va a los resultados reales de
+      todos los juegos y mide la varianza de verdad, sin modelo de por medio: solo carreras anotadas.
+      Después compara, para cada valor de <code>DISP</code>, qué tan bien reproduce tres cosas que
+      Poisson viene fallando — el porcentaje de juegos de 1 carrera, el de blanqueadas y el reparto
+      de los totales. El que menos se equivoca es el que va en Ajustes.
+    </p>
+  </div>
+
+  <div class="caja">
+    <label for="temporada">Temporada</label>
+    <select id="temporada">
+      <option value="2026">2026</option>
+      <option value="2025">2025</option>
+      <option value="ambas" selected>Las dos (2025 + 2026)</option>
+    </select>
+    <button id="correr">Medir</button>
+    <div class="barra"><i id="progreso"></i></div>
+    <div id="estado">Sin correr todavía.</div>
+  </div>
+
+  <div id="salida"></div>
+
+</div>
+
+<script>
+var API='https://statsapi.mlb.com/api/v1';
+var TEMP={2025:{ini:'2025-03-27',fin:'2025-09-28'}, 2026:{ini:'2026-03-25',fin:'2026-09-09'}};
+var CAND=[1.0,1.2,1.4,1.6,1.8,2.0,2.2,2.5];
+
+var $=function(id){ return document.getElementById(id); };
+function estado(t){ $('estado').textContent=t; }
+function prog(p){ $('progreso').style.width=(p*100).toFixed(0)+'%'; }
+function dia(iso,n){ var f=new Date(iso+'T12:00:00Z'); f.setUTCDate(f.getUTCDate()+n); return f.toISOString().slice(0,10); }
+
+/* pmf identica a la que se le mete a la app */
+function pmf(k,l,disp){
+  if(l<=0) return k===0?1:0;
+  if(disp<=1.0001){ var p=Math.exp(-l); for(var i=1;i<=k;i++) p=p*l/i; return p; }
+  var r=l/(disp-1), q=l/(r+l);
+  var pb=Math.pow(r/(r+l),r);
+  for(var j=1;j<=k;j++) pb=pb*(j-1+r)/j*q;
+  return pb;
+}
+
+async function traer(url){
+  var r=await fetch(url);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+
+async function juegos(anio){
+  var t=TEMP[anio], out=[], desde=t.ini;
+  while(desde<=t.fin){
+    var hasta=dia(desde,20); if(hasta>t.fin) hasta=t.fin;
+    estado(anio+': bajando resultados desde '+desde+'…');
+    var d=await traer(API+'/schedule?sportId=1&gameType=R&startDate='+desde+'&endDate='+hasta);
+    (d.dates||[]).forEach(function(dd){
+      (dd.games||[]).forEach(function(g){
+        if(g.status&&g.status.abstractGameState==='Final'&&g.gameType==='R'&&g.teams){
+          var a=g.teams.away, h=g.teams.home;
+          if(a&&h&&a.score!=null&&h.score!=null) out.push({a:+a.score, h:+h.score});
+        }
+      });
+    });
+    desde=dia(hasta,1);
+  }
+  return out;
+}
+
+function medir(gs){
+  /* Cada juego aporta dos observaciones de carreras de un equipo. */
+  var n=gs.length*2, suma=0;
+  gs.forEach(function(g){ suma+=g.a+g.h; });
+  var media=suma/n;
+  var sc=0;
+  gs.forEach(function(g){ sc+=Math.pow(g.a-media,2)+Math.pow(g.h-media,2); });
+  var varianza=sc/(n-1);
+
+  /* Hechos que Poisson viene fallando. */
+  var d1=0, blanq=0, pal=0;
+  var tot={};
+  gs.forEach(function(g){
+    if(Math.abs(g.a-g.h)===1) d1++;
+    if(g.a===0) blanq++;
+    if(g.h===0) blanq++;
+    if(Math.abs(g.a-g.h)>=6) pal++;
+    var s=g.a+g.h; tot[s]=(tot[s]||0)+1;
+  });
+  return {n:gs.length, obs:n, media:media, varianza:varianza, disp:varianza/media,
+          d1:d1/gs.length, blanq:blanq/n, pal:pal/gs.length, tot:tot};
+}
+
+/* Con dos equipos independientes a la media de la liga, que predice cada DISP */
+function predecir(media,disp){
+  var P=[], K=30;
+  for(var k=0;k<=K;k++) P.push(pmf(k,media,disp));
+  var d1=0, pal=0, tot={};
+  for(var x=0;x<=K;x++){
+    if(P[x]<1e-12) continue;
+    for(var y=0;y<=K;y++){
+      var pr=P[x]*P[y];
+      if(pr<1e-14) continue;
+      if(Math.abs(x-y)===1) d1+=pr;
+      if(Math.abs(x-y)>=6) pal+=pr;
+      var s=x+y; tot[s]=(tot[s]||0)+pr;
+    }
+  }
+  return {d1:d1, blanq:P[0], pal:pal, tot:tot};
+}
+
+/* Error total del reparto de totales, en puntos porcentuales */
+function errTot(real,pred,juegos){
+  var e=0;
+  for(var s=0;s<=24;s++){
+    var r=(real[s]||0)/juegos, p=pred[s]||0;
+    e+=Math.abs(r-p);
+  }
+  return e*100/2;
+}
+
+async function correr(){
+  var b=$('correr'); b.disabled=true; $('salida').innerHTML='';
+  var sel=$('temporada').value;
+  var anios = sel==='ambas' ? [2026,2025] : [+sel];
+  try{
+    var todos=[];
+    for(var i=0;i<anios.length;i++){
+      var gs=await juegos(anios[i]);
+      prog((i+1)/anios.length);
+      todos.push({anio:anios[i], gs:gs});
+    }
+    estado('Midiendo…');
+    var html='';
+    var juntos=[];
+    todos.forEach(function(t){ juntos=juntos.concat(t.gs); });
+
+    todos.forEach(function(t){ html+=bloque(t.anio, medir(t.gs)); });
+    if(todos.length===2) html+=bloque('las dos juntas', medir(juntos));
+
+    $('salida').innerHTML=html;
+    estado('Listo.');
+  }catch(e){
+    estado('Falló: '+e.message+'. Revisa la conexión y dale otra vez.');
+  }finally{ b.disabled=false; }
+}
+
+function bloque(titulo,M){
+  var filas='', mejor=null;
+  CAND.forEach(function(c){
+    var P=predecir(M.media,c);
+    var e1=Math.abs(P.d1-M.d1)*100;
+    var eb=Math.abs(P.blanq-M.blanq)*100;
+    var ep=Math.abs(P.pal-M.pal)*100;
+    var et=errTot(M.tot,P.tot,M.n);
+    var total=e1+eb+ep+et;
+    if(!mejor||total<mejor.total) mejor={c:c,total:total,P:P,e1:e1,eb:eb,et:et};
+    filas+='<tr data-c="'+c+'"><td>'+(c===1?'Poisson':'×'+c.toFixed(1))+'</td>'+
+      '<td>'+(P.d1*100).toFixed(1)+'%</td>'+
+      '<td>'+(P.blanq*100).toFixed(1)+'%</td>'+
+      '<td>'+(P.pal*100).toFixed(1)+'%</td>'+
+      '<td>'+total.toFixed(1)+'</td></tr>';
+  });
+  filas=filas.replace('data-c="'+mejor.c+'"','class="gana"');
+
+  var poi=predecir(M.media,1);
+  var mejoraD1=Math.abs(poi.d1-M.d1)*100 - mejor.e1;
+
+  var ver, cls;
+  if(mejor.c<=1.0001){
+    cls='no';
+    ver='<b>Poisson gana.</b> Con estos datos ninguna binomial negativa reproduce mejor los juegos '+
+        'reales. Deja el selector en Poisson y no lo toques.';
+  }else{
+    cls='ok';
+    ver='<b>El que cuadra es ×'+mejor.c.toFixed(1)+'.</b> Poisson se equivoca por '+
+        (Math.abs(poi.d1-M.d1)*100).toFixed(1)+' puntos en los juegos de 1 carrera y ×'+
+        mejor.c.toFixed(1)+' se equivoca por '+mejor.e1.toFixed(1)+' — '+mejoraD1.toFixed(1)+
+        ' puntos menos. En el reparto de totales baja el error de '+
+        errTot(M.tot,poi.tot,M.n).toFixed(1)+' a '+mejor.et.toFixed(1)+'.'+
+        (M.disp>1.2
+          ? ' Y cuadra con la varianza cruda: los datos dan '+M.disp.toFixed(2)+' de razón varianza/media.'
+          : '')+
+        '<br><br>En ⚙️ Ajustes solo hay 1.5 y 2.0. Coge el más cercano a '+mejor.c.toFixed(1)+
+        ' y compara los números de un par de juegos antes de dejarlo puesto.';
+  }
+  if(todosIguales(M)) ver+='';
+
+  return '<div class="caja">'+
+    '<h2>'+titulo+' <span class="nota">· '+M.n.toLocaleString()+' juegos</span></h2>'+
+    '<div class="fila"><span>Carreras por equipo, media</span><b>'+M.media.toFixed(3)+'</b></div>'+
+    '<div class="fila"><span>Carreras por equipo, varianza</span><b>'+M.varianza.toFixed(3)+'</b></div>'+
+    '<div class="fila"><span>Razón varianza ÷ media</span>'+
+      '<b class="'+(M.disp>1.5?'mal':M.disp>1.2?'neutro':'bien')+'">'+M.disp.toFixed(3)+'</b></div>'+
+    '<p class="nota">Poisson exige que esa razón sea <b>1.000</b>. Todo lo que pase de ahí son '+
+    'blanqueadas y palizas que el modelo no admite. Esto sale de las carreras y nada más — no hay '+
+    'modelo de por medio, así que no se puede discutir.</p>'+
+    '<h3>Lo que pasó de verdad</h3>'+
+    '<div class="fila"><span>Juegos decididos por 1 carrera</span><b>'+(M.d1*100).toFixed(1)+'%</b></div>'+
+    '<div class="fila"><span>Equipos blanqueados</span><b>'+(M.blanq*100).toFixed(1)+'%</b></div>'+
+    '<div class="fila"><span>Juegos con 6+ de diferencia</span><b>'+(M.pal*100).toFixed(1)+'%</b></div>'+
+    '<h3>Qué predice cada forma</h3>'+
+    '<table><tr><th>Forma</th><th>1 carrera</th><th>Blanq.</th><th>Palizas</th><th>Error</th></tr>'+
+    filas+'</table>'+
+    '<p class="nota">La columna de error suma cuánto se desvía cada forma de los cuatro hechos de '+
+    'arriba, en puntos porcentuales. Menos es mejor. Esta prueba usa dos equipos independientes a la '+
+    'media de la liga, así que mide <b>la forma</b> y no tu modelo — es exactamente el pedazo que la '+
+    'app nunca había medido.</p>'+
+    '<div class="veredicto '+cls+'">'+ver+'</div>'+
+  '</div>';
+}
+function todosIguales(){ return false; }
+
+$('correr').addEventListener('click',correr);
+</script>
+</body>
+</html>
