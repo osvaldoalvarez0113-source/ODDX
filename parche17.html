@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OVA · Parche v17</title>
+<style>
+:root{
+ --night:#08161F;--panel:#122D3D;--line:#1F4457;--chalk:#F1EEE4;--muted:#7E97A6;
+ --signal:#E8B33C;--signal2:#F5C863;--good:#5FB07A;--bad:#D2685F;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--night);color:var(--chalk);
+ font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.5;
+ padding:0 0 60px}
+.wrap{max-width:600px;margin:0 auto;padding:0 14px}
+header{border-bottom:1px solid var(--line);padding:18px 14px;
+ padding-top:calc(env(safe-area-inset-top) + 14px)}
+header h1{font-size:24px;margin:0;letter-spacing:-.3px}
+header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+.caja{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+ padding:14px;margin:14px 0}
+h2{font-size:17px;margin:0 0 8px}
+button{background:linear-gradient(180deg,var(--signal2),var(--signal));color:#12242F;border:0;
+ border-radius:10px;padding:13px 18px;font-size:17px;font-weight:700;width:100%;
+ margin-top:10px;cursor:pointer}
+button:disabled{opacity:.4}
+a.dl{display:block;text-align:center;background:linear-gradient(180deg,#7BC896,var(--good));
+ color:#0B1F14;border-radius:10px;padding:14px;font-size:17px;font-weight:700;
+ text-decoration:none;margin-top:10px}
+.fila{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px;
+ line-height:1.45}
+.fila:last-child{border-bottom:none}
+.ok{color:var(--good)}
+.no{color:var(--bad)}
+#estado{color:var(--muted);font-size:13.5px;margin-top:10px;min-height:20px}
+.nota{color:var(--muted);font-size:13px;line-height:1.55}
+.nota b{color:var(--chalk)}
+code{background:var(--night);padding:2px 6px;border-radius:6px;font-size:12.5px}
+.aviso{background:rgba(210,104,95,.1);border:1px solid rgba(210,104,95,.35);
+ border-radius:10px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+.bien{background:rgba(95,176,122,.1);border:1px solid rgba(95,176,122,.35);
+ border-radius:10px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <h1>⚾ Parche v17</h1>
+  <p>El empate en líneas enteras, las fechas pasadas y tres arreglos de higiene</p>
+</header>
+
+<div class="wrap">
+
+  <div class="caja">
+    <h2>Qué le hace a la app</h2>
+    <p class="nota">
+      <b>1. El empate en líneas enteras.</b> El filtro de 2 puntos comparaba tu probabilidad cruda
+      contra la del book sin descontar el empate, así que en líneas de 8 o 9 clavados te botaba picks
+      buenos del ranking. Ahora se compara contra lo que de verdad arriesgas.<br><br>
+      <b>2. Fechas pasadas.</b> Si cargabas una fecha vieja, el ERA y las carreras por juego venían de
+      la temporada completa hasta hoy — o sea, incluían lo que pasó después de ese juego. Ahora se
+      recortan al día anterior. En hoy y mañana nada cambia.<br><br>
+      <b>3. La tabla de origen</b> aparece desde el primer pick guardado, no solo cuando resuelvas uno.<br>
+      <b>4. Botón para cambiar</b> un pick pendiente de «del modelo» a «mío» y al revés.<br>
+      <b>5. El score</b> decía 25 donde el código da 22.
+    </p>
+  </div>
+
+  <div class="caja">
+    <h2>Aplicar</h2>
+    <p class="nota">Misma carpeta que tu <code>index.html</code>. Requiere la v16 puesta.</p>
+    <button id="ir">Coger mi index.html y parchearlo</button>
+    <div id="estado"></div>
+    <div id="lista"></div>
+    <div id="salida"></div>
+  </div>
+
+</div>
+
+<script>
+var PARCHES=[
+
+{n:'Versión v16 → v17',
+ buscar:'<span class="ver">v16</span>',
+ poner:'<span class="ver">v17</span>'},
+
+/* ---------- 1. el empate ---------- */
+{n:'EL ARREGLO — ventaja condicionada al empate',
+ buscar:"  var bk=banca();\n  return {imp:imp, ventaja:(p-imp/100)*100, ev:ev, push:push*100, fee:pg.fee*100,\n          stake: (bk&&f>0)? bk*f*0.25 : null};",
+ poner:"  var bk=banca();\n  /* En una linea entera (total de 8, equipo de 4) el empate devuelve el dinero:\n     no lo ganas ni lo pierdes, sale del reparto. La probabilidad que hay que\n     comparar contra el precio es la TUYA entre los casos en que de verdad se\n     resuelve, no la cruda. Con 13% de empate, un 52% crudo es 60% real — y la\n     cruda hacia que el filtro de 2 puntos botara del ranking picks con EV\n     positivo de dos digitos. El precio del book ya viene condicionado igual,\n     asi que ahora se comparan dos numeros de la misma clase. En lineas de .5\n     el empate es 0 y esto no cambia nada. */\n  var pcond = (push<1) ? p/(1-push) : p;\n  return {imp:imp, ventaja:(pcond-imp/100)*100, ev:ev, push:push*100, fee:pg.fee*100,\n          cruda:(p-imp/100)*100,\n          stake: (bk&&f>0)? bk*f*0.25 : null};"},
+
+{n:'Avisar en el ranking cuando el empate cambia la lectura',
+ buscar:"       (m.push>0.5?' · empata en la línea '+m.push.toFixed(1)+'% de las veces':'')+\n       '</div>'+",
+ poner:"       (m.push>0.5?' · empata en la línea '+m.push.toFixed(1)+'% de las veces, y ahí te '+\n         'devuelven el dinero — por eso la ventaja va contada sobre lo que de verdad arriesgas'+\n         (m.v.cruda!=null&&Math.abs(m.v.ventaja-m.v.cruda)>=1\n           ? ' ('+m.v.cruda.toFixed(1)+' puntos si no se descontara)' : '')+'':'')+\n       '</div>'+"},
+
+/* ---------- 2. fechas pasadas ---------- */
+{n:'Corte histórico para fechas pasadas',
+ buscar:"/* ---------- datos ---------- */\nfunction j(url){ return fetch(url).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }",
+ poner:"/* ---------- datos ---------- */\nfunction j(url){ return fetch(url).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }\n/* ---------- corte historico ----------\n   Las estadisticas de temporada se pedian siempre hasta HOY. Cargando una fecha\n   pasada eso metia en el calculo juegos que pasaron DESPUES del que estabas\n   mirando — el mismo error que el backtest evita a proposito con sus fotos\n   semanales. CORTE recorta al dia anterior cuando la fecha ya paso; en hoy o\n   mañana queda en null y todo va exactamente como antes. */\nvar CORTE=null;\nfunction corteSufijo(){ return CORTE?('-'+CORTE):''; }\nfunction rangoQS(year){\n  return CORTE ? ('stats=byDateRange&startDate='+year+'-01-01&endDate='+CORTE)\n               : 'stats=season';\n}\n/* Pide con el rango cuando hay corte y, si el rango viene vacio, cae de vuelta\n   a la temporada completa en vez de dejarte sin datos. */\nfunction pedirStats(url,year){\n  return j(url.replace('__R__',rangoQS(year))).then(function(d){\n    var sp=d&&d.stats&&d.stats[0]&&d.stats[0].splits;\n    if(CORTE&&(!sp||!sp.length)) throw new Error('rango vacio');\n    return d;\n  }).catch(function(e){\n    if(!CORTE) throw e;\n    return j(url.replace('__R__','stats=season'));\n  });\n}"},
+
+{n:'Fijar el corte al cargar la fecha',
+ buscar:"  var pt=iso.split('-'), y=pt[0], m=pt[1], d=pt[2];\n  $('slate').innerHTML='';",
+ poner:"  var pt=iso.split('-'), y=pt[0], m=pt[1], d=pt[2];\n  CORTE = (iso < hoyISO()) ? ymd(new Date(diaBase(iso).getTime()-86400000)) : null;\n  STAND=null;\n  $('slate').innerHTML='';"},
+
+{n:'Abridores: ERA de temporada recortada a la fecha',
+ buscar:"function temporada(id,year){\n  var k=id+'-'+year;\n  if(cache.sea[k]) return Promise.resolve(cache.sea[k]);\n  return j(API+'/people/'+id+'/stats?stats=season&group=pitching&season='+year+'&gameType=R').then(function(d){",
+ poner:"function temporada(id,year){\n  var k=id+'-'+year+corteSufijo();\n  if(cache.sea[k]) return Promise.resolve(cache.sea[k]);\n  return pedirStats(API+'/people/'+id+'/stats?__R__&group=pitching&season='+year+'&gameType=R',year).then(function(d){"},
+
+{n:'Ofensiva: carreras por juego recortadas a la fecha',
+ buscar:"function ofensiva(teamId,year){\n  var k=teamId+'-'+year;\n  if(cache.hit[k]) return Promise.resolve(cache.hit[k]);\n  return j(API+'/teams/'+teamId+'/stats?stats=season&group=hitting&season='+year+'&gameType=R').then(function(d){",
+ poner:"function ofensiva(teamId,year){\n  var k=teamId+'-'+year+corteSufijo();\n  if(cache.hit[k]) return Promise.resolve(cache.hit[k]);\n  return pedirStats(API+'/teams/'+teamId+'/stats?__R__&group=hitting&season='+year+'&gameType=R',year).then(function(d){"},
+
+{n:'Últimas 5 salidas: solo las anteriores a la fecha',
+ buscar:"function ultimas5(id,year){\n  var k=id+'-'+year;\n  if(cache.log[k]) return Promise.resolve(cache.log[k]);\n  return j(API+'/people/'+id+'/stats?stats=gameLog&group=pitching&season='+year+'&gameType=R').then(function(d){\n    var splits=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];\n    var sal=splits.filter(function(s){return +(s.stat.gamesStarted||0)===1;});",
+ poner:"function ultimas5(id,year){\n  var k=id+'-'+year+corteSufijo();\n  if(cache.log[k]) return Promise.resolve(cache.log[k]);\n  return j(API+'/people/'+id+'/stats?stats=gameLog&group=pitching&season='+year+'&gameType=R').then(function(d){\n    var splits=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];\n    if(CORTE) splits=splits.filter(function(s){ return s.date && s.date<=CORTE; });\n    var sal=splits.filter(function(s){return +(s.stat.gamesStarted||0)===1;});"},
+
+{n:'Bullpen: recortado a la fecha (sin split de relevistas)',
+ buscar:"function bullpen(teamId,year){\n  var k=teamId+'-'+year;\n  if(cache.pen[k]) return Promise.resolve(cache.pen[k]);\n  return j(API+'/teams/'+teamId+'/stats?stats=statSplits&sitCodes=rp&group=pitching&season='+year+'&gameType=R')\n    .then(function(d){",
+ poner:"function bullpen(teamId,year){\n  var k=teamId+'-'+year+corteSufijo();\n  if(cache.pen[k]) return Promise.resolve(cache.pen[k]);\n  /* El split real de relevistas no acepta rango de fechas, asi que en fechas\n     pasadas se va directo al staff completo recortado y queda marcado aprox. */\n  return (CORTE ? Promise.reject(new Error('fecha pasada'))\n    : j(API+'/teams/'+teamId+'/stats?stats=statSplits&sitCodes=rp&group=pitching&season='+year+'&gameType=R'))\n    .then(function(d){"},
+
+{n:'Bullpen: el respaldo también recortado',
+ buscar:"      return j(API+'/teams/'+teamId+'/stats?stats=season&group=pitching&season='+year+'&gameType=R').then(function(d){\n        var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];\n        return {era:(s&&s.stat&&s.stat.era!=null)?parseFloat(s.stat.era):null, aprox:true};",
+ poner:"      return pedirStats(API+'/teams/'+teamId+'/stats?__R__&group=pitching&season='+year+'&gameType=R',year).then(function(d){\n        var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];\n        return {era:(s&&s.stat&&s.stat.era!=null)?parseFloat(s.stat.era):null, aprox:true};"},
+
+{n:'Récord de temporada a la fecha',
+ buscar:"  return j(API+'/standings?leagueId=103,104&season='+year+'&standingsTypes=regularSeason').then(function(d){",
+ poner:"  return j(API+'/standings?leagueId=103,104&season='+year+'&standingsTypes=regularSeason'+\n           (CORTE?'&date='+CORTE:'')).then(function(d){"},
+
+{n:'Avisar cuando estás mirando una fecha pasada',
+ buscar:"    $('status').textContent=games.length+' juegos. Toca uno para correr los números, o dale a 🏆 Ranking al gane para calcularlos todos.';",
+ poner:"    $('status').innerHTML=games.length+' juegos. Toca uno para correr los números, o dale a 🏆 Ranking al gane para calcularlos todos.'+\n      (CORTE?'<br><br>📅 <b>Fecha pasada.</b> Las estadísticas van recortadas al '+esc(CORTE)+\n        ', o sea sin nada de lo que pasó después — así el número que ves es el que habrías tenido '+\n        'ese día. El ERA de bullpen sí queda en el del staff completo: el split de relevistas no '+\n        'acepta rango de fechas.':'');"},
+
+/* ---------- 3, 4. la tabla de origen ---------- */
+{n:'La tabla de origen cuenta también los pendientes',
+ buscar:"function porOrigen(a){\n  var tipos=[['Del modelo','modelo'],['Míos 👁','mio']];\n  return tipos.map(function(t){\n    var g=a.filter(function(p){ return p.res && (p.org||'modelo')===t[1]; });\n    if(!g.length) return null;\n    var w=g.filter(function(p){ return p.res==='G'; }).length;\n    var u=0, c=0, cn=0;\n    g.forEach(function(p){\n      var v=unidades(p); if(v!=null) u+=v;\n      var cl=clvPts(p); if(cl!=null){ c+=cl; cn++; }\n    });\n    return {t:t[0], n:g.length, pct:w/g.length*100, u:u, upp:u/g.length, clv: cn?c/cn:null};\n  }).filter(Boolean);\n}",
+ poner:"function porOrigen(a){\n  var tipos=[['Del modelo','modelo'],['Míos 👁','mio']];\n  return tipos.map(function(t){\n    var g=a.filter(function(p){ return (p.org||'modelo')===t[1]; });\n    if(!g.length) return null;\n    var res=g.filter(function(p){ return p.res; });\n    var w=res.filter(function(p){ return p.res==='G'; }).length;\n    var u=0, c=0, cn=0;\n    res.forEach(function(p){ var v=unidades(p); if(v!=null) u+=v; });\n    g.forEach(function(p){ var cl=clvPts(p); if(cl!=null){ c+=cl; cn++; } });\n    return {t:t[0], n:g.length, nres:res.length,\n            pct: res.length?w/res.length*100:null, u:u,\n            upp: res.length?u/res.length:null, clv: cn?c/cn:null};\n  }).filter(Boolean);\n}"},
+
+{n:'Pintar la tabla de origen con pendientes y resueltos',
+ buscar:"    o+='<table><tr><th>De dónde salió</th><th>Picks</th><th>Acertó</th><th>CLV</th><th>Unid.</th></tr>';\n    po.forEach(function(m){\n      o+='<tr><td>'+esc(m.t)+'</td><td class=\"n\">'+m.n+'</td><td class=\"n\">'+m.pct.toFixed(0)+\n         '%</td><td class=\"n\">'+(m.clv==null?'—':(m.clv>0?'+':'')+m.clv.toFixed(1))+\n         '</td><td class=\"n\">'+(m.u>=0?'+':'')+m.u.toFixed(1)+'</td></tr>';\n    });",
+ poner:"    o+='<table><tr><th>De dónde salió</th><th>Picks</th><th>Resueltos</th><th>Acertó</th><th>CLV</th><th>Unid.</th></tr>';\n    po.forEach(function(m){\n      o+='<tr><td>'+esc(m.t)+'</td><td class=\"n\">'+m.n+'</td><td class=\"n\">'+m.nres+\n         '</td><td class=\"n\">'+(m.pct==null?'—':m.pct.toFixed(0)+'%')+\n         '</td><td class=\"n\">'+(m.clv==null?'—':(m.clv>0?'+':'')+m.clv.toFixed(1))+\n         '</td><td class=\"n\">'+(m.nres?((m.u>=0?'+':'')+m.u.toFixed(1)):'—')+'</td></tr>';\n    });"},
+
+{n:'Comparar solo cuando haya resueltos de los dos lados',
+ buscar:"    if(po.length===2&&po[0].n>=15&&po[1].n>=15){\n      var dif=po[1].upp-po[0].upp;",
+ poner:"    if(po.length===2&&po[0].nres>=15&&po[1].nres>=15){\n      var dif=po[1].upp-po[0].upp;"},
+
+{n:'Guardar el origen en la tarjeta del pick',
+ buscar:"      h+='<div class=\"pk\" data-id=\"'+p.id+'\">'+\n         '<div class=\"t\">'+esc(p.m)+' '+esc(fmtOdds(p.am,p.plat))+'</div>'+",
+ poner:"      h+='<div class=\"pk\" data-id=\"'+p.id+'\" data-org=\"'+(p.org==='mio'?'mio':'modelo')+'\">'+\n         '<div class=\"t\">'+esc(p.m)+' '+esc(fmtOdds(p.am,p.plat))+'</div>'+"},
+
+{n:'Botón para cambiar el origen de un pendiente',
+ buscar:"           '<button class=\"ghost rE\">Empate</button>'+\n           '<button class=\"ghost rX\">Borrar</button>'+",
+ poner:"           '<button class=\"ghost rE\">Empate</button>'+\n           '<button class=\"ghost rO\">'+(p.org==='mio'?'→ del modelo':'→ mío 👁')+'</button>'+\n           '<button class=\"ghost rX\">Borrar</button>'+"},
+
+{n:'Que el botón de origen funcione',
+ buscar:"    b('.rU',function(){ regUpd(id,{res:null}); pintarRegistro(); });",
+ poner:"    b('.rO',function(){ regUpd(id,{org:(d.dataset.org==='mio'?'modelo':'mio')}); pintarRegistro(); });\n    b('.rU',function(){ regUpd(id,{res:null}); pintarRegistro(); });"},
+
+/* ---------- 5. higiene ---------- */
+{n:'El score decía 25 y el código da 22',
+ buscar:"  '<div class=\"leyenda\">El score suma: muestra de temporada de los abridores (25), salidas recientes '+",
+ poner:"  '<div class=\"leyenda\">El score suma: muestra de temporada de los abridores (22), salidas recientes '+"},
+
+{n:'El pie tampoco mencionaba los lineups en el score',
+ buscar:"  contra la mano del abridor, si el parque está en la tabla, clima y ofensiva de 14 días. Bajo 60",
+ poner:"  contra la mano del abridor, si el parque está en la tabla, clima, ofensiva de 14 días y lineups\n  confirmados, que valen 11 de esos 100 y solo se suman cuando tocas «Revisar lineups». Bajo 60",
+
+},
+
+{n:'Nota técnica del pie: empate y fechas pasadas',
+ buscar:"  El <b>Ranking del juego</b> ordena por EV todas las proposiciones en las que metiste cuota. Solo entran\n  las que llegan a 2 puntos de ventaja. En líneas enteras el empate devuelve el dinero y se cuenta como tal.",
+ poner:"  El <b>Ranking del juego</b> ordena por EV todas las proposiciones en las que metiste cuota. Solo entran\n  las que llegan a 2 puntos de ventaja, y esos 2 puntos se cuentan sobre lo que de verdad arriesgas.\n  En una línea entera — total de 8, carreras de equipo de 4 — el empate devuelve el dinero, así que\n  sale del reparto: si el empate ronda el 13%, un 52% crudo tuyo es 60% entre los casos que se\n  resuelven. Hasta la v16 el filtro comparaba la probabilidad cruda contra el precio del book, que ya\n  viene condicionado, y con eso botaba del ranking picks con EV positivo de dos dígitos. En líneas de\n  .5 no hay empate y esto no cambia nada.\n\n  <b>Fechas pasadas.</b> Cargando un día que ya pasó, las estadísticas se recortan al día anterior:\n  ERA de temporada, carreras por juego, las últimas 5 salidas y el récord. Hasta la v16 se pedían\n  siempre hasta hoy, así que revisar un juego de hace dos semanas metía en el cálculo lo que pasó\n  después de ese juego — el mismo error que el backtest evita a propósito. El ERA de bullpen es la\n  excepción y queda en el del staff completo: el split de relevistas de la MLB no acepta rango de\n  fechas. Para hoy y mañana no cambia nada."}
+
+];
+
+var $=function(id){ return document.getElementById(id); };
+
+function contar(txt,agu){
+  var n=0,i=0;
+  while(true){ var p=txt.indexOf(agu,i); if(p<0) break; n++; i=p+agu.length; if(n>5) break; }
+  return n;
+}
+function aplicar(src){
+  var res=[], txt=src, ok=0, mal=0;
+  PARCHES.forEach(function(p){
+    var n=contar(txt,p.buscar);
+    if(n===1){
+      txt=txt.replace(p.buscar,function(){ return p.poner; });
+      res.push({n:p.n, ok:true, msg:'aplicado'}); ok++;
+    }else if(n===0){
+      var ya=contar(txt,p.poner)>0;
+      res.push({n:p.n, ok:ya, msg: ya?'ya estaba puesto — se salta':'no se encontró el texto original — se salta'});
+      if(!ya) mal++;
+    }else{
+      res.push({n:p.n, ok:false, msg:'aparece '+n+' veces, no se toca por seguridad'}); mal++;
+    }
+  });
+  return {txt:txt, res:res, ok:ok, mal:mal};
+}
+function pintar(r){
+  var h='';
+  r.res.forEach(function(x){
+    h+='<div class="fila"><span class="'+(x.ok?'ok':'no')+'">'+(x.ok?'✓':'✕')+'</span>'+
+       '<span><b>'+x.n+'</b><br><span style="color:var(--muted)">'+x.msg+'</span></span></div>';
+  });
+  $('lista').innerHTML=h;
+}
+
+$('ir').addEventListener('click',function(){
+  var b=$('ir');
+  b.disabled=true;
+  $('estado').textContent='Cogiendo tu index.html…';
+  $('lista').innerHTML=''; $('salida').innerHTML='';
+  fetch('index.html?t='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }).then(function(src){
+    if(src.indexOf('porOrigen')<0)
+      throw new Error('esto necesita la v16 puesta primero');
+    $('estado').textContent='Leídos '+Math.round(src.length/1024)+' KB. Aplicando…';
+    var r=aplicar(src);
+    pintar(r);
+    $('salida').innerHTML = r.mal>0
+      ? '<div class="aviso">Se saltaron <b>'+r.mal+'</b> cambio(s). Mira la lista antes de bajar nada.</div>'
+      : '<div class="bien">Los '+r.ok+' cambios entraron limpios.</div>';
+    var url=URL.createObjectURL(new Blob([r.txt],{type:'text/html'}));
+    $('salida').innerHTML+='<a class="dl" href="'+url+'" download="index.html">'+
+      '⬇︎ Bajar el index.html de la v17</a>'+
+      '<p class="nota" style="margin-top:12px">Tus picks guardados no se tocan.</p>';
+    $('estado').textContent='';
+    b.disabled=false;
+  }).catch(function(e){
+    $('estado').innerHTML='<span class="no">No se pudo: '+String(e.message)+'</span>';
+    b.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
