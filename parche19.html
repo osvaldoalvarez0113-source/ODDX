@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OVA · Parche v19</title>
+<style>
+:root{
+ --night:#08161F;--panel:#122D3D;--line:#1F4457;--chalk:#F1EEE4;--muted:#7E97A6;
+ --signal:#E8B33C;--signal2:#F5C863;--good:#5FB07A;--bad:#D2685F;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--night);color:var(--chalk);
+ font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.5;
+ padding:0 0 60px}
+.wrap{max-width:600px;margin:0 auto;padding:0 14px}
+header{border-bottom:1px solid var(--line);padding:18px 14px;
+ padding-top:calc(env(safe-area-inset-top) + 14px)}
+header h1{font-size:24px;margin:0;letter-spacing:-.3px}
+header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+.caja{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+ padding:14px;margin:14px 0}
+h2{font-size:17px;margin:0 0 8px}
+button{background:linear-gradient(180deg,var(--signal2),var(--signal));color:#12242F;border:0;
+ border-radius:10px;padding:13px 18px;font-size:17px;font-weight:700;width:100%;
+ margin-top:10px;cursor:pointer}
+button:disabled{opacity:.4}
+a.dl{display:block;text-align:center;background:linear-gradient(180deg,#7BC896,var(--good));
+ color:#0B1F14;border-radius:10px;padding:14px;font-size:17px;font-weight:700;
+ text-decoration:none;margin-top:10px}
+.fila{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px;
+ line-height:1.45}
+.fila:last-child{border-bottom:none}
+.ok{color:var(--good)}
+.no{color:var(--bad)}
+#estado{color:var(--muted);font-size:13.5px;margin-top:10px;min-height:20px}
+.nota{color:var(--muted);font-size:13px;line-height:1.55}
+.nota b{color:var(--chalk)}
+code{background:var(--night);padding:2px 6px;border-radius:6px;font-size:12.5px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+th,td{padding:7px 4px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:600}
+.aviso{background:rgba(210,104,95,.1);border:1px solid rgba(210,104,95,.35);
+ border-radius:10px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+.bien{background:rgba(95,176,122,.1);border:1px solid rgba(95,176,122,.35);
+ border-radius:10px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <h1>⚾ Parche v19</h1>
+  <p>Enciende la forma medida y te enseña cuánto movió cada número</p>
+</header>
+
+<div class="wrap">
+
+  <div class="caja">
+    <h2>Lo que midió el backtest</h2>
+    <table>
+      <tr><th></th><th>Poisson decía</th><th>Pasó</th></tr>
+      <tr><td>Juegos de 1 carrera</td><td>25.5%</td><td>28.5%</td></tr>
+      <tr><td>Equipos blanqueados</td><td>1.2%</td><td><b>6.6%</b></td></tr>
+      <tr><td>Palizas de 6+</td><td>6.5%</td><td><b>20.6%</b></td></tr>
+    </table>
+    <p class="nota">
+      Razón varianza ÷ media: <b>2.32</b> en 2026 y <b>2.37</b> en 2025. Poisson exige 1.000. Dos
+      temporadas independientes pidiendo el mismo número, y sin modelo de por medio — es aritmética
+      sobre carreras anotadas.
+    </p>
+  </div>
+
+  <div class="caja">
+    <h2>Qué le hace a la app</h2>
+    <p class="nota">
+      <b>1. Enciende ×2.3</b> como la opción por defecto, que es lo que dio la medición. Poisson se
+      queda en el selector para comparar, igual que dejaste ×13 y ×17 en el multiplicador.<br><br>
+      <b>2. Abre la escala hasta 2.5.</b> En la v18 solo ofrecía 1.5 y 2.0 — los dos por debajo de
+      donde apunta lo medido. Ese fue un error mío de diseño.<br><br>
+      <b>3. Una fila nueva</b> en el hándicap que te enseña lado a lado qué decía Poisson y qué dice
+      ahora, para que veas el tamaño del movimiento antes de apostar nada con él.
+    </p>
+    <div class="aviso">
+      Este parche <b>sí mueve tus números</b>, a diferencia del v18. El hándicap, el total, las
+      carreras por equipo, las primeras 5 y los ponches van a salir distintos. El ganador no se toca:
+      ese sale de tu fórmula, no de la distribución.
+    </div>
+  </div>
+
+  <div class="caja">
+    <h2>Aplicar</h2>
+    <p class="nota">Misma carpeta que tu <code>index.html</code>. Requiere la v18 puesta.</p>
+    <button id="ir">Coger mi index.html y parchearlo</button>
+    <div id="estado"></div>
+    <div id="lista"></div>
+    <div id="salida"></div>
+  </div>
+
+</div>
+
+<script>
+var PARCHES=[
+
+{n:'Versión v18 → v19',
+ buscar:'<span class="ver">v18</span>',
+ poner:'<span class="ver">v19</span>'},
+
+{n:'ENCENDER la forma medida: DISP de 1 a 2.3',
+ buscar:"   mide en backtestforma.html y despues se enciende, si es que se enciende. */\nvar DISP=1;",
+ poner:"   mide en backtestforma.html y despues se enciende, si es que se enciende. */\n/* MEDIDO Y ENCENDIDO en la v19. backtestforma.html sobre 4,628 juegos de 2025 y\n   2026 dio razon varianza/media de 2.32 y 2.37 — dos temporadas independientes\n   pidiendo el mismo numero, y sin modelo de por medio: es aritmetica sobre las\n   carreras anotadas. Lo que Poisson venia inventando:\n     juegos de 1 carrera   decia 25.5%   pasa 28.5%\n     equipos blanqueados   decia  1.2%   pasa  6.6%   (cinco veces mas)\n     palizas de 6+         decia  6.5%   pasa 20.6%   (tres veces mas)\n   Por eso el «gana por 2+» salia bajo en los dos lados: si las palizas casi no\n   existen, ganar por 2 es raro. El mejor ajuste salio 2.2 en 2026 y 2.5 en 2025\n   (2.5 era el tope de la lista probada, o sea que el de verdad puede estar mas\n   arriba). Se deja 2.3, el medio del rango donde las dos temporadas coinciden.\n   Poisson se queda en el selector para comparar, igual que el ×13 y el ×17. */\nvar DISP=2.3;"},
+
+{n:'Abrir la escala del selector hasta 2.5',
+ buscar:"      <select id=\"disp\">\n        <option value=\"1\" selected>Poisson &mdash; como siempre, sin medir</option>\n        <option value=\"1.5\">Binomial negativa &times;1.5 &mdash; a medio camino</option>\n        <option value=\"2\">Binomial negativa &times;2.0 &mdash; la varianza real de MLB</option>\n      </select>",
+ poner:"      <select id=\"disp\">\n        <option value=\"2.3\" selected>&times; 2.3 &mdash; lo que dio el backtest</option>\n        <option value=\"2.5\">&times; 2.5 &mdash; el borde de lo medido</option>\n        <option value=\"2\">&times; 2.0 &mdash; conservador</option>\n        <option value=\"1.5\">&times; 1.5 &mdash; a medio camino</option>\n        <option value=\"1\">Poisson &mdash; como estaba antes de la v19</option>\n      </select>"},
+
+{n:'Calcular también qué habría dicho Poisson',
+ buscar:"  var aPor2 = matriz(lamA,lamH,function(xx,yy){return xx-yy>=2;});\n  var hPor2 = matriz(lamA,lamH,function(xx,yy){return yy-xx>=2;});\n  var por1=1-aPor2-hPor2;",
+ poner:"  var aPor2 = matriz(lamA,lamH,function(xx,yy){return xx-yy>=2;});\n  var hPor2 = matriz(lamA,lamH,function(xx,yy){return yy-xx>=2;});\n  var por1=1-aPor2-hPor2;\n  /* Lo mismo con Poisson, solo para enseñar el tamaño del movimiento. Se apaga\n     DISP un momento, se mide y se devuelve como estaba. Son dos llamadas mas a\n     matriz por juego, que ya viene precalculada y sale barata. */\n  var _dispAntes=DISP;\n  DISP=1;\n  var aPor2P=matriz(lamA,lamH,function(xx,yy){return xx-yy>=2;});\n  var hPor2P=matriz(lamA,lamH,function(xx,yy){return yy-xx>=2;});\n  DISP=_dispAntes;\n  var por1P=1-aPor2P-hPor2P;"},
+
+{n:'Fila nueva en el hándicap: Poisson contra lo medido',
+ buscar:"  (brecha>=0.60?'<tr><td>Se separan en</td><td class=\"n\" colspan=\"2\">'+brecha.toFixed(2)+' carreras</td></tr>':'')+\n  '</table>'+",
+ poner:"  (brecha>=0.60?'<tr><td>Se separan en</td><td class=\"n\" colspan=\"2\">'+brecha.toFixed(2)+' carreras</td></tr>':'')+\n  (DISP>1.0001?'<tr><td>Con Poisson decía: gana por 2+</td><td class=\"n\">'+pc(aPor2P)+\n    '</td><td class=\"n\">'+pc(hPor2P)+'</td></tr>'+\n    '<tr><td>Con Poisson: decidido por 1 carrera</td><td class=\"n\" colspan=\"2\">'+pc(por1P)+\n    '</td></tr>':'')+\n  '</table>'+"},
+
+{n:'Explicar la fila de comparación',
+ buscar:"  '<div class=\"leyenda\">El hándicap es el único mercado además del ganador que hereda la calibración '+",
+ poner:"  (DISP>1.0001?'<div class=\"flag\">Las dos últimas filas son lo que esta misma app te habría dicho '+\n    'hasta la v18, con Poisson. La diferencia no es un ajuste de gusto: Poisson daba '+pc(por1P)+\n    ' de juegos de una carrera cuando la MLB real da 28.5%, y decía que un equipo se queda en cero '+\n    'el 1.2% de las veces cuando pasa el 6.6%. Si las palizas casi no existen, ganar por 2+ sale '+\n    'raro — y por eso el −1.5 te salía bajo en los dos lados. Medido sobre 4,628 juegos de las dos '+\n    'temporadas.</div>':'')+\n  '<div class=\"leyenda\">El hándicap es el único mercado además del ganador que hereda la calibración '+"},
+
+{n:'Nota técnica del pie',
+ buscar:"  Desde la v18 hay una opción de binomial negativa en ⚙️ Ajustes, con la misma media y la varianza\n  multiplicada por 1.5 o por 2. Viene <b>apagada</b> y eso es deliberado: encenderla mueve el\n  hándicap, el total, las carreras por equipo, las primeras 5 y los ponches de una vez, y meter una\n  constante sin medir es exactamente lo que hubo que deshacer con el multiplicador ×13. Se mide\n  primero en <code>backtestforma.html</code> contra los juegos reales de 2025 y 2026 y se enciende\n  después, si la medición lo pide.",
+ poner:"  <b>Ya está medido, y desde la v19 está encendido en ×2.3.</b> <code>backtestforma.html</code> lo\n  probó contra 4,628 juegos de 2025 y 2026 sin modelo de por medio — solo carreras anotadas, así que\n  no hay nada que discutir. La razón varianza ÷ media salió <b>2.32 en 2026 y 2.37 en 2025</b>, dos\n  temporadas independientes pidiendo el mismo número, igual de firme que la pendiente del\n  encogimiento. Lo que Poisson venía inventando: decía 25.5% de juegos de una carrera y pasan 28.5%;\n  decía que un equipo se queda en cero el 1.2% de las veces y pasa el 6.6%, cinco veces más; y decía\n  6.5% de palizas de 6 carreras o más cuando pasan el 20.6%, tres veces más. El error total de la\n  forma baja de 44 a 20 puntos.\n  Eso último es lo que más dolía: si el modelo cree que las palizas casi no existen, «gana por 2+»\n  sale raro y el −1.5 te salía bajo en los dos lados a la vez. El mejor ajuste salió 2.2 en 2026 y\n  2.5 en 2025 — ese 2.5 era el tope de la lista probada, así que el verdadero puede estar más\n  arriba. Se deja en 2.3, el medio del rango donde las dos temporadas coinciden, y en la pestaña de\n  Cuotas aparece lado a lado lo que habría dicho Poisson para que veas el tamaño del movimiento.\n  Poisson sigue en ⚙️ Ajustes para comparar, igual que el ×13 y el ×17.\n  Ojo con lo que esto NO arregla: la forma no le da poder de predicción al modelo. Las correlaciones\n  de 0.10 a 0.16 de los mercados de carreras siguen donde estaban, porque esas dependen de los\n  insumos. Lo que se arregla es que los porcentajes que ves ya no mienten sobre cómo se reparten los\n  resultados posibles."}
+
+];
+
+var $=function(id){ return document.getElementById(id); };
+
+function contar(txt,agu){
+  var n=0,i=0;
+  while(true){ var p=txt.indexOf(agu,i); if(p<0) break; n++; i=p+agu.length; if(n>5) break; }
+  return n;
+}
+function aplicar(src){
+  var res=[], txt=src, ok=0, mal=0;
+  PARCHES.forEach(function(p){
+    var n=contar(txt,p.buscar);
+    if(n===1){
+      txt=txt.replace(p.buscar,function(){ return p.poner; });
+      res.push({n:p.n, ok:true, msg:'aplicado'}); ok++;
+    }else if(n===0){
+      var ya=contar(txt,p.poner)>0;
+      res.push({n:p.n, ok:ya, msg: ya?'ya estaba puesto — se salta':'no se encontró el texto original — se salta'});
+      if(!ya) mal++;
+    }else{
+      res.push({n:p.n, ok:false, msg:'aparece '+n+' veces, no se toca por seguridad'}); mal++;
+    }
+  });
+  return {txt:txt, res:res, ok:ok, mal:mal};
+}
+function pintar(r){
+  var h='';
+  r.res.forEach(function(x){
+    h+='<div class="fila"><span class="'+(x.ok?'ok':'no')+'">'+(x.ok?'✓':'✕')+'</span>'+
+       '<span><b>'+x.n+'</b><br><span style="color:var(--muted)">'+x.msg+'</span></span></div>';
+  });
+  $('lista').innerHTML=h;
+}
+
+$('ir').addEventListener('click',function(){
+  var b=$('ir');
+  b.disabled=true;
+  $('estado').textContent='Cogiendo tu index.html…';
+  $('lista').innerHTML=''; $('salida').innerHTML='';
+  fetch('index.html?t='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }).then(function(src){
+    if(src.indexOf('var DISP')<0)
+      throw new Error('esto necesita la v18 puesta primero');
+    if(contar(src,'<option value="2.3" selected>')>0)
+      throw new Error('tu archivo ya tiene la v19 puesta');
+    $('estado').textContent='Leídos '+Math.round(src.length/1024)+' KB. Aplicando…';
+    var r=aplicar(src);
+    pintar(r);
+    $('salida').innerHTML = r.mal>0
+      ? '<div class="aviso">Se saltaron <b>'+r.mal+'</b> cambio(s). Mira la lista antes de bajar nada.</div>'
+      : '<div class="bien">Los '+r.ok+' cambios entraron limpios.</div>';
+    var url=URL.createObjectURL(new Blob([r.txt],{type:'text/html'}));
+    $('salida').innerHTML+='<a class="dl" href="'+url+'" download="index.html">'+
+      '⬇︎ Bajar el index.html de la v19</a>'+
+      '<p class="nota" style="margin-top:12px">Abre un juego → pestaña Cuotas → Hándicap. Las dos '+
+      'filas de abajo de la tabla te enseñan qué decía Poisson. Si el movimiento te parece mucho, '+
+      'puedes volver a Poisson desde ⚙️ Ajustes sin bajar nada.</p>';
+    $('estado').textContent='';
+    b.disabled=false;
+  }).catch(function(e){
+    $('estado').innerHTML='<span class="no">No se pudo: '+String(e.message)+'</span>';
+    b.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
