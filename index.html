@@ -355,7 +355,7 @@ footer summary{font-family:var(--cond);font-size:16px;color:var(--muted);padding
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><span class="ball">&#9918;</span>OVA <span class="ver">v17</span></h1>
+  <h1 class="brand"><span class="ball">&#9918;</span>OVA <span class="ver">v18</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -400,6 +400,15 @@ footer summary{font-family:var(--cond);font-size:16px;color:var(--muted);padding
         <option value="0.45" selected>&times; 0.45 &mdash; lo que dio el backtest</option>
         <option value="0.70">&times; 0.70 &mdash; a medio camino</option>
         <option value="1">Sin encoger &mdash; como estaba antes</option>
+      </select>
+    </div>
+
+    <div class="modo">
+      <label for="disp">&#127922; Forma de la distribuci&oacute;n</label>
+      <select id="disp">
+        <option value="1" selected>Poisson &mdash; como siempre, sin medir</option>
+        <option value="1.5">Binomial negativa &times;1.5 &mdash; a medio camino</option>
+        <option value="2">Binomial negativa &times;2.0 &mdash; la varianza real de MLB</option>
       </select>
     </div>
 
@@ -518,6 +527,21 @@ siguen a mano: Kalshi no los lista por juego.</div>
   Los <b>ponches</b> siguen sin medirse contra nada, y por eso son los únicos que quedan marcados
   <b>«sin medir»</b>. Los demás van marcados <b>«medido: flojo»</b>, que es peor de leer pero mejor
   de saber: ya no es que no sepamos, es que sabemos cuánto es poco.
+
+  <b>La forma de la distribución, y por qué viene apagada.</b> Todo lo que no es el ganador sale de
+  una Poisson montada sobre las carreras esperadas. Poisson tiene una propiedad que nadie escogió:
+  obliga a que la varianza sea igual a la media. En carreras de MLB la media de un equipo ronda 4.5 y
+  la varianza real anda por 9 — el doble. Hay muchas más blanqueadas y muchas más palizas de las que
+  Poisson admite, y el efecto va todo en la misma dirección: el modelo cree que los juegos son más
+  parejos de lo que son. De ahí sale el aviso de que da demasiados juegos de 1 carrera, que estaba en
+  la app desde antes sin explicación. También hace que «gana por 2+» salga bajo en los dos lados y
+  que el Over de líneas altas salga bajo.
+  Desde la v18 hay una opción de binomial negativa en ⚙️ Ajustes, con la misma media y la varianza
+  multiplicada por 1.5 o por 2. Viene <b>apagada</b> y eso es deliberado: encenderla mueve el
+  hándicap, el total, las carreras por equipo, las primeras 5 y los ponches de una vez, y meter una
+  constante sin medir es exactamente lo que hubo que deshacer con el multiplicador ×13. Se mide
+  primero en <code>backtestforma.html</code> contra los juegos reales de 2025 y 2026 y se enciende
+  después, si la medición lo pide.
 
   <b>El encogimiento sube el nivel, no aplasta la diferencia.</b> Hasta la v13 el encogimiento se
   aplicaba multiplicando las dos carreras esperadas por un mismo factor, y eso tenía un efecto que
@@ -718,8 +742,29 @@ function cara(id,t){
         'loading="lazy" onerror="this.style.display=\'none\'">':'')+'</span>';
 }
 
-/* ---------- probabilidad ---------- */
-function pmf(k,l){ if(l<=0) return k===0?1:0; var p=Math.exp(-l); for(var i=1;i<=k;i++) p=p*l/i; return p; }
+/* ---------- probabilidad ----------
+   DISP es la razon varianza/media de las carreras de un equipo en un juego.
+   Poisson la fija en 1 por construccion. En MLB la media ronda 4.5 y la varianza
+   real anda por 9, o sea DISP cerca de 2: hay muchas mas blanqueadas y muchas
+   mas palizas de las que Poisson admite. Con DISP=1 el modelo cree que los
+   juegos son mas parejos de lo que son, y de ahi salia el aviso de que da
+   demasiados juegos de 1 carrera.
+   Va en 1 por defecto A PROPOSITO: cambiarla mueve el handicap, el total, las
+   carreras por equipo, F5 y los ponches de una vez, y meter una constante sin
+   medir es justo lo que hubo que deshacer con el multiplicador ×13. Primero se
+   mide en backtestforma.html y despues se enciende, si es que se enciende. */
+var DISP=1;
+function pmf(k,l){
+  if(l<=0) return k===0?1:0;
+  if(DISP<=1.0001){ var p=Math.exp(-l); for(var i=1;i<=k;i++) p=p*l/i; return p; }
+  /* Binomial negativa con la misma media l y varianza l*DISP.
+     var = l + l^2/r  =>  r = l/(DISP-1). Se arma igual de barata que Poisson:
+     el primer termino y despues una razon por cada paso. */
+  var r=l/(DISP-1), q=l/(r+l);
+  var pb=Math.pow(r/(r+l),r);
+  for(var jj=1;jj<=k;jj++) pb=pb*(jj-1+r)/jj*q;
+  return pb;
+}
 function cdf(k,l){ var s=0; for(var i=0;i<=k;i++) s+=pmf(i,l); return s; }
 function pOver(linea,l){
   var piso=Math.floor(linea);
@@ -1246,7 +1291,7 @@ function bullpen(teamId,year){
 }
 function ligaEra(year){
   if(LIGA_ERA!=null) return Promise.resolve(LIGA_ERA);
-  return j(API+'/teams/stats?stats=season&group=pitching&season='+year+'&sportIds=1&gameType=R').then(function(d){
+  return pedirStats(API+'/teams/stats?__R__&group=pitching&season='+year+'&sportIds=1&gameType=R',year).then(function(d){
     var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];
     var er=0, ip=0;
     sp.forEach(function(s){ er+=+(s.stat.earnedRuns||0); ip+=ipToNum(s.stat.inningsPitched); });
@@ -1446,7 +1491,7 @@ function clima(lat,lon,epoch){
 }
 function kLiga(year){
   if(K_LIGA!=null) return Promise.resolve(K_LIGA);
-  return j(API+'/teams/stats?stats=season&group=hitting&season='+year+'&sportIds=1&gameType=R').then(function(d){
+  return pedirStats(API+'/teams/stats?__R__&group=hitting&season='+year+'&sportIds=1&gameType=R',year).then(function(d){
     var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];
     var pa=0, so=0, rr=0, gg=0;
     sp.forEach(function(s){
@@ -1854,11 +1899,15 @@ function porMercado(a){
     ['Ponches',       function(m){ return / K$/.test(m); }]
   ];
   return tipos.map(function(t){
-    var g=a.filter(function(p){ return p.res && t[1](p.m); });
-    if(!g.length) return null;
+    var todos=a.filter(function(p){ return t[1](p.m); });
+    if(!todos.length) return null;
+    var g=todos.filter(function(p){ return p.res; });
     var w=g.filter(function(p){ return p.res==='G'; }).length;
     var u=0; g.forEach(function(p){ var v=unidades(p); if(v!=null) u+=v; });
-    return {t:t[0], n:g.length, w:w, pct:w/g.length*100, u:u};
+    var c=0, cn=0;
+    todos.forEach(function(p){ var cl=clvPts(p); if(cl!=null){ c+=cl; cn++; } });
+    return {t:t[0], n:todos.length, nres:g.length, w:w,
+            pct: g.length?w/g.length*100:null, u:u, clv: cn?c/cn:null};
   }).filter(Boolean);
 }
 /* Del modelo o tuyo. Es la unica pregunta que ningun backtest puede contestar,
@@ -1905,10 +1954,12 @@ function pintarRegistro(){
 
   var pm=porMercado(a);
   if(pm.length){
-    o+='<table><tr><th>Mercado</th><th>Picks</th><th>Acertó</th><th>Unidades</th></tr>';
+    o+='<table><tr><th>Mercado</th><th>Picks</th><th>Resueltos</th><th>Acertó</th><th>CLV</th><th>Unid.</th></tr>';
     pm.forEach(function(m){
-      o+='<tr><td>'+esc(m.t)+'</td><td class="n">'+m.n+'</td><td class="n">'+m.pct.toFixed(0)+
-         '%</td><td class="n">'+(m.u>=0?'+':'')+m.u.toFixed(1)+'</td></tr>';
+      o+='<tr><td>'+esc(m.t)+'</td><td class="n">'+m.n+'</td><td class="n">'+m.nres+
+         '</td><td class="n">'+(m.pct==null?'—':m.pct.toFixed(0)+'%')+
+         '</td><td class="n">'+(m.clv==null?'—':(m.clv>0?'+':'')+m.clv.toFixed(1))+
+         '</td><td class="n">'+(m.nres?((m.u>=0?'+':'')+m.u.toFixed(1)):'—')+'</td></tr>';
     });
     o+='</table><div class="flag">Esta tabla es la prueba que falta. El backtest midió el modelo '+
        'contra líneas inventadas; esto lo mide contra las líneas de verdad que tú tomaste. Con 30 '+
@@ -2011,6 +2062,12 @@ function pintarRegistro(){
    primeras 5 y ponches. Cada uno se marca con lo que sabemos de el. */
 function recolectar(root){
   var out=[];
+  /* El handicap sale de la biseccion sobre el porcentaje del ganador. Si ese
+     porcentaje choco con el tope de 22-78%, el ancla ya no es comparable contra
+     una cuota — y lo que cuelga de ella tampoco. Antes solo se sacaba el
+     moneyline y el handicap se quedaba, con sello verde. */
+  var capado=false;
+  root.querySelectorAll('.cmp').forEach(function(b){ if(b.dataset.cap==='1') capado=true; });
   var meter=function(m,p,push,am,med){
     if(am==null||String(am).trim()==='') return;
     if(!isFinite(p)) return;
@@ -2022,7 +2079,7 @@ function recolectar(root){
     meter((b.dataset.nh||'Local')+' gana',  +b.dataset.ph, 0, b.querySelector('.ch').value, 'ok');
   });
   root.querySelectorAll('.row[data-hc]').forEach(function(b){
-    if(b.dataset.malo==='1') return;
+    if(capado||b.dataset.malo==='1') return;
     meter(b.dataset.nf+' −1.5 (gana por 2+)', +b.dataset.pf, 0, b.querySelector('.hf').value, 'ok');
     meter(b.dataset.nd+' +1.5 (pierde por 1 o gana)', +b.dataset.pd, 0, b.querySelector('.hd').value, 'ok');
   });
@@ -2147,8 +2204,9 @@ function actualizarRanking(root){
      'Ojo: los mercados de un mismo juego están correlacionados — si el favorito gana, el Under suele acompañar. '+
      'Jugar dos de esta lista no es diversificar, es doblar la misma apuesta.</div>';
   var cap=root.querySelector('.cmp');
-  if(cap&&cap.dataset.cap==='1') o+='<div class="flag">⚠️ El moneyline quedó fuera del ranking: el porcentaje del modelo '+
-     'chocó con el tope y ya no es comparable contra la cuota.</div>';
+  if(cap&&cap.dataset.cap==='1') o+='<div class="flag">⚠️ El moneyline <b>y el hándicap</b> quedaron fuera del ranking: '+
+     'el porcentaje del modelo chocó con el tope de 22–78% y ya no es comparable contra la cuota. '+
+     'El hándicap sale de repartir ese mismo porcentaje, así que arrastra el mismo problema.</div>';
   var juego=caja.dataset.juego||'—', fecha=caja.dataset.fecha||hoyISO();
   cajas.forEach(function(c){
     c.innerHTML=o;
@@ -2285,7 +2343,12 @@ function cargar(){
   var iso=$('fecha').value;
   if(!iso){ $('status').textContent='Falta la fecha.'; return; }
   var pt=iso.split('-'), y=pt[0], m=pt[1], d=pt[2];
+  var corteAntes=CORTE;
   CORTE = (iso < hoyISO()) ? ymd(new Date(diaBase(iso).getTime()-86400000)) : null;
+  /* Los promedios de liga son el denominador de las carreras esperadas y el ancla
+     del encogimiento. Si cambia el corte hay que volver a pedirlos: si no, un
+     juego de abril se divide entre el promedio de la temporada completa. */
+  if(corteAntes!==CORTE){ K_LIGA=null; LIGA_ERA=null; LIGA_RG=null; }
   STAND=null;
   $('slate').innerHTML='';
   $('algane').innerHTML='';
@@ -2611,9 +2674,16 @@ function detalle(x){
   '</table>'+
   '<div class="leyenda">El hándicap es el único mercado además del ganador que hereda la calibración '+
   'del ×6: se ancla al porcentaje del ganador por bisección, así que dice lo mismo que él. Por eso '+
-  '<b>no se encoge</b> aunque el total sí.</div>'+
+  '<b>no se encoge</b> aunque el total sí. Con una salvedad que conviene saber: lo calibrado es el '+
+  '<b>ancla</b>, o sea a qué porcentaje se amarra. El reparto de ese porcentaje entre «gana por 1» y '+
+  '«gana por 2+» lo decide la forma de la distribución, y esa no se ha medido nunca. Si el modelo te '+
+  'da más juegos de 1 carrera de la cuenta, el −1.5 te sale bajo y el +1.5 alto en los dos lados.</div>'+
   (por1>0.38?'<div class="flag">El modelo da '+pc(por1)+' de juegos decididos por una sola carrera. '+
-    'La MLB real anda cerca del 30%, así que aquí el +1.5 viene algo optimista. Tómalo con pinzas.</div>':'')+
+    'La MLB real anda cerca del 30%, así que aquí el +1.5 viene algo optimista. '+
+    'La causa tiene nombre: Poisson obliga a que la varianza sea igual a la media, y en carreras de '+
+    'MLB la varianza real es como el doble. Eso hace que el modelo crea que los juegos son más '+
+    'parejos de lo que son. Hay una opción de binomial negativa en ⚙️ Ajustes, apagada hasta que la '+
+    'midas en el backtest de forma.</div>':'')+
   '<div class="receta"><b>Cómo copiar el hándicap, en dos pasos</b>'+
   '<ol>'+
   '<li>Mira el <b>título</b> del contrato en Kalshi («Minnesota gana por más de 1.5») y toca ese equipo aquí abajo.</li>'+
@@ -3255,6 +3325,7 @@ function repintarTodo(){
   if($('gane_zona').style.display!=='none') pintarAlGane();
 }
 $('mult').addEventListener('change',function(){ MULT=+this.value; repintarTodo(); });
+$('disp').addEventListener('change',function(){ DISP=+this.value; repintarTodo(); });
 $('enco').addEventListener('change',function(){ ENCOGE=+this.value; repintarTodo(); });
 $('modo').addEventListener('change',function(){ MODO=this.value; repintarTodo(); });
 $('off').addEventListener('change',function(){ OFF=this.value; repintarTodo(); });
