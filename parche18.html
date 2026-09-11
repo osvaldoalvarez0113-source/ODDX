@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OVA · Parche v18</title>
+<style>
+:root{
+ --night:#08161F;--panel:#122D3D;--line:#1F4457;--chalk:#F1EEE4;--muted:#7E97A6;
+ --signal:#E8B33C;--signal2:#F5C863;--good:#5FB07A;--bad:#D2685F;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--night);color:var(--chalk);
+ font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.5;
+ padding:0 0 60px}
+.wrap{max-width:600px;margin:0 auto;padding:0 14px}
+header{border-bottom:1px solid var(--line);padding:18px 14px;
+ padding-top:calc(env(safe-area-inset-top) + 14px)}
+header h1{font-size:24px;margin:0;letter-spacing:-.3px}
+header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+.caja{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+ padding:14px;margin:14px 0}
+h2{font-size:17px;margin:0 0 8px}
+button{background:linear-gradient(180deg,var(--signal2),var(--signal));color:#12242F;border:0;
+ border-radius:10px;padding:13px 18px;font-size:17px;font-weight:700;width:100%;
+ margin-top:10px;cursor:pointer}
+button:disabled{opacity:.4}
+a.dl{display:block;text-align:center;background:linear-gradient(180deg,#7BC896,var(--good));
+ color:#0B1F14;border-radius:10px;padding:14px;font-size:17px;font-weight:700;
+ text-decoration:none;margin-top:10px}
+.fila{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13.5px;
+ line-height:1.45}
+.fila:last-child{border-bottom:none}
+.ok{color:var(--good)}
+.no{color:var(--bad)}
+#estado{color:var(--muted);font-size:13.5px;margin-top:10px;min-height:20px}
+.nota{color:var(--muted);font-size:13px;line-height:1.55}
+.nota b{color:var(--chalk)}
+code{background:var(--night);padding:2px 6px;border-radius:6px;font-size:12.5px}
+.aviso{background:rgba(210,104,95,.1);border:1px solid rgba(210,104,95,.35);
+ border-radius:10px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+.bien{background:rgba(95,176,122,.1);border:1px solid rgba(95,176,122,.35);
+ border-radius:10px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <h1>⚾ Parche v18</h1>
+  <p>La forma de la distribución, los promedios de liga por fecha, y dos huecos del ranking</p>
+</header>
+
+<div class="wrap">
+
+  <div class="caja">
+    <h2>Qué le hace a la app</h2>
+    <p class="nota">
+      <b>1. Interruptor de forma, apagado.</b> Poisson asume que la varianza es igual a la media. En
+      carreras de MLB la varianza real es como el doble, y por eso tu modelo cree que los juegos son
+      más parejos de lo que son — es la causa del aviso de «1 carrera» que ya salía en el hándicap.
+      Se añade una opción de binomial negativa en Ajustes, <b>apagada por defecto</b>. No se enciende
+      sola y no cambia nada hasta que tú la toques.<br><br>
+      <b>2. Promedios de liga por fecha.</b> En la v17 recorté el ERA y las carreras por juego para
+      fechas pasadas, pero dejé sin recortar los promedios de la liga, que son el denominador de todo.
+      Queda cerrado.<br><br>
+      <b>3. El hándicap</b> sale del ranking cuando el porcentaje choca con el tope, igual que el
+      moneyline — cuelga del mismo número.<br>
+      <b>4. CLV por mercado</b> en la tabla del registro.
+    </p>
+  </div>
+
+  <div class="caja">
+    <h2>Aplicar</h2>
+    <p class="nota">Misma carpeta que tu <code>index.html</code>. Requiere la v17 puesta.</p>
+    <button id="ir">Coger mi index.html y parchearlo</button>
+    <div id="estado"></div>
+    <div id="lista"></div>
+    <div id="salida"></div>
+  </div>
+
+</div>
+
+<script>
+var PARCHES=[
+
+{n:'Versión v17 → v18',
+ buscar:'<span class="ver">v17</span>',
+ poner:'<span class="ver">v18</span>'},
+
+/* ---------- 1. forma de la distribucion ---------- */
+{n:'EL GRANDE — binomial negativa como opción (apagada)',
+ buscar:"/* ---------- probabilidad ---------- */\nfunction pmf(k,l){ if(l<=0) return k===0?1:0; var p=Math.exp(-l); for(var i=1;i<=k;i++) p=p*l/i; return p; }",
+ poner:"/* ---------- probabilidad ----------\n   DISP es la razon varianza/media de las carreras de un equipo en un juego.\n   Poisson la fija en 1 por construccion. En MLB la media ronda 4.5 y la varianza\n   real anda por 9, o sea DISP cerca de 2: hay muchas mas blanqueadas y muchas\n   mas palizas de las que Poisson admite. Con DISP=1 el modelo cree que los\n   juegos son mas parejos de lo que son, y de ahi salia el aviso de que da\n   demasiados juegos de 1 carrera.\n   Va en 1 por defecto A PROPOSITO: cambiarla mueve el handicap, el total, las\n   carreras por equipo, F5 y los ponches de una vez, y meter una constante sin\n   medir es justo lo que hubo que deshacer con el multiplicador ×13. Primero se\n   mide en backtestforma.html y despues se enciende, si es que se enciende. */\nvar DISP=1;\nfunction pmf(k,l){\n  if(l<=0) return k===0?1:0;\n  if(DISP<=1.0001){ var p=Math.exp(-l); for(var i=1;i<=k;i++) p=p*l/i; return p; }\n  /* Binomial negativa con la misma media l y varianza l*DISP.\n     var = l + l^2/r  =>  r = l/(DISP-1). Se arma igual de barata que Poisson:\n     el primer termino y despues una razon por cada paso. */\n  var r=l/(DISP-1), q=l/(r+l);\n  var pb=Math.pow(r/(r+l),r);\n  for(var jj=1;jj<=k;jj++) pb=pb*(jj-1+r)/jj*q;\n  return pb;\n}"},
+
+{n:'Selector de forma en Ajustes',
+ buscar:"    <div class=\"modo\">\n      <label for=\"modo\">&#9918; ERA del abridor</label>",
+ poner:"    <div class=\"modo\">\n      <label for=\"disp\">&#127922; Forma de la distribuci&oacute;n</label>\n      <select id=\"disp\">\n        <option value=\"1\" selected>Poisson &mdash; como siempre, sin medir</option>\n        <option value=\"1.5\">Binomial negativa &times;1.5 &mdash; a medio camino</option>\n        <option value=\"2\">Binomial negativa &times;2.0 &mdash; la varianza real de MLB</option>\n      </select>\n    </div>\n\n    <div class=\"modo\">\n      <label for=\"modo\">&#9918; ERA del abridor</label>"},
+
+{n:'Que el selector de forma funcione',
+ buscar:"$('mult').addEventListener('change',function(){ MULT=+this.value; repintarTodo(); });",
+ poner:"$('mult').addEventListener('change',function(){ MULT=+this.value; repintarTodo(); });\n$('disp').addEventListener('change',function(){ DISP=+this.value; repintarTodo(); });"},
+
+{n:'Explicar la causa del aviso de «1 carrera»',
+ buscar:"  (por1>0.38?'<div class=\"flag\">El modelo da '+pc(por1)+' de juegos decididos por una sola carrera. '+\n    'La MLB real anda cerca del 30%, así que aquí el +1.5 viene algo optimista. Tómalo con pinzas.</div>':'')+",
+ poner:"  (por1>0.38?'<div class=\"flag\">El modelo da '+pc(por1)+' de juegos decididos por una sola carrera. '+\n    'La MLB real anda cerca del 30%, así que aquí el +1.5 viene algo optimista. '+\n    'La causa tiene nombre: Poisson obliga a que la varianza sea igual a la media, y en carreras de '+\n    'MLB la varianza real es como el doble. Eso hace que el modelo crea que los juegos son más '+\n    'parejos de lo que son. Hay una opción de binomial negativa en ⚙️ Ajustes, apagada hasta que la '+\n    'midas en el backtest de forma.</div>':'')+"},
+
+{n:'Aclarar hasta dónde llega el sello del hándicap',
+ buscar:"  '<div class=\"leyenda\">El hándicap es el único mercado además del ganador que hereda la calibración '+\n  'del ×6: se ancla al porcentaje del ganador por bisección, así que dice lo mismo que él. Por eso '+\n  '<b>no se encoge</b> aunque el total sí.</div>'+",
+ poner:"  '<div class=\"leyenda\">El hándicap es el único mercado además del ganador que hereda la calibración '+\n  'del ×6: se ancla al porcentaje del ganador por bisección, así que dice lo mismo que él. Por eso '+\n  '<b>no se encoge</b> aunque el total sí. Con una salvedad que conviene saber: lo calibrado es el '+\n  '<b>ancla</b>, o sea a qué porcentaje se amarra. El reparto de ese porcentaje entre «gana por 1» y '+\n  '«gana por 2+» lo decide la forma de la distribución, y esa no se ha medido nunca. Si el modelo te '+\n  'da más juegos de 1 carrera de la cuenta, el −1.5 te sale bajo y el +1.5 alto en los dos lados.</div>'+",
+
+},
+
+/* ---------- 2. promedios de liga por fecha ---------- */
+{n:'Resetear los promedios de liga al cambiar de fecha',
+ buscar:"  CORTE = (iso < hoyISO()) ? ymd(new Date(diaBase(iso).getTime()-86400000)) : null;\n  STAND=null;",
+ poner:"  var corteAntes=CORTE;\n  CORTE = (iso < hoyISO()) ? ymd(new Date(diaBase(iso).getTime()-86400000)) : null;\n  /* Los promedios de liga son el denominador de las carreras esperadas y el ancla\n     del encogimiento. Si cambia el corte hay que volver a pedirlos: si no, un\n     juego de abril se divide entre el promedio de la temporada completa. */\n  if(corteAntes!==CORTE){ K_LIGA=null; LIGA_ERA=null; LIGA_RG=null; }\n  STAND=null;"},
+
+{n:'Promedio de carreras de la liga recortado a la fecha',
+ buscar:"  return j(API+'/teams/stats?stats=season&group=hitting&season='+year+'&sportIds=1&gameType=R').then(function(d){\n    var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];\n    var pa=0, so=0, rr=0, gg=0;",
+ poner:"  return pedirStats(API+'/teams/stats?__R__&group=hitting&season='+year+'&sportIds=1&gameType=R',year).then(function(d){\n    var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];\n    var pa=0, so=0, rr=0, gg=0;"},
+
+{n:'ERA de la liga recortada a la fecha',
+ buscar:"  return j(API+'/teams/stats?stats=season&group=pitching&season='+year+'&sportIds=1&gameType=R').then(function(d){\n    var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];\n    var er=0, ip=0;",
+ poner:"  return pedirStats(API+'/teams/stats?__R__&group=pitching&season='+year+'&sportIds=1&gameType=R',year).then(function(d){\n    var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];\n    var er=0, ip=0;"},
+
+/* ---------- 3. handicap con tope ---------- */
+{n:'El hándicap sale del ranking si el ancla chocó con el tope',
+ buscar:"function recolectar(root){\n  var out=[];\n  var meter=function(m,p,push,am,med){",
+ poner:"function recolectar(root){\n  var out=[];\n  /* El handicap sale de la biseccion sobre el porcentaje del ganador. Si ese\n     porcentaje choco con el tope de 22-78%, el ancla ya no es comparable contra\n     una cuota — y lo que cuelga de ella tampoco. Antes solo se sacaba el\n     moneyline y el handicap se quedaba, con sello verde. */\n  var capado=false;\n  root.querySelectorAll('.cmp').forEach(function(b){ if(b.dataset.cap==='1') capado=true; });\n  var meter=function(m,p,push,am,med){"},
+
+{n:'Aplicarlo a las dos cajas del hándicap',
+ buscar:"  root.querySelectorAll('.row[data-hc]').forEach(function(b){\n    if(b.dataset.malo==='1') return;\n    meter(b.dataset.nf+' −1.5 (gana por 2+)', +b.dataset.pf, 0, b.querySelector('.hf').value, 'ok');",
+ poner:"  root.querySelectorAll('.row[data-hc]').forEach(function(b){\n    if(capado||b.dataset.malo==='1') return;\n    meter(b.dataset.nf+' −1.5 (gana por 2+)', +b.dataset.pf, 0, b.querySelector('.hf').value, 'ok');"},
+
+{n:'Decirlo en el aviso del tope',
+ buscar:"  if(cap&&cap.dataset.cap==='1') o+='<div class=\"flag\">⚠️ El moneyline quedó fuera del ranking: el porcentaje del modelo '+\n     'chocó con el tope y ya no es comparable contra la cuota.</div>';",
+ poner:"  if(cap&&cap.dataset.cap==='1') o+='<div class=\"flag\">⚠️ El moneyline <b>y el hándicap</b> quedaron fuera del ranking: '+\n     'el porcentaje del modelo chocó con el tope de 22–78% y ya no es comparable contra la cuota. '+\n     'El hándicap sale de repartir ese mismo porcentaje, así que arrastra el mismo problema.</div>';"},
+
+/* ---------- 4. CLV por mercado ---------- */
+{n:'CLV en la tabla por mercado',
+ buscar:"  return tipos.map(function(t){\n    var g=a.filter(function(p){ return p.res && t[1](p.m); });\n    if(!g.length) return null;\n    var w=g.filter(function(p){ return p.res==='G'; }).length;\n    var u=0; g.forEach(function(p){ var v=unidades(p); if(v!=null) u+=v; });\n    return {t:t[0], n:g.length, w:w, pct:w/g.length*100, u:u};\n  }).filter(Boolean);",
+ poner:"  return tipos.map(function(t){\n    var todos=a.filter(function(p){ return t[1](p.m); });\n    if(!todos.length) return null;\n    var g=todos.filter(function(p){ return p.res; });\n    var w=g.filter(function(p){ return p.res==='G'; }).length;\n    var u=0; g.forEach(function(p){ var v=unidades(p); if(v!=null) u+=v; });\n    var c=0, cn=0;\n    todos.forEach(function(p){ var cl=clvPts(p); if(cl!=null){ c+=cl; cn++; } });\n    return {t:t[0], n:todos.length, nres:g.length, w:w,\n            pct: g.length?w/g.length*100:null, u:u, clv: cn?c/cn:null};\n  }).filter(Boolean);"},
+
+{n:'Pintar el CLV por mercado',
+ buscar:"    o+='<table><tr><th>Mercado</th><th>Picks</th><th>Acertó</th><th>Unidades</th></tr>';\n    pm.forEach(function(m){\n      o+='<tr><td>'+esc(m.t)+'</td><td class=\"n\">'+m.n+'</td><td class=\"n\">'+m.pct.toFixed(0)+\n         '%</td><td class=\"n\">'+(m.u>=0?'+':'')+m.u.toFixed(1)+'</td></tr>';\n    });",
+ poner:"    o+='<table><tr><th>Mercado</th><th>Picks</th><th>Resueltos</th><th>Acertó</th><th>CLV</th><th>Unid.</th></tr>';\n    pm.forEach(function(m){\n      o+='<tr><td>'+esc(m.t)+'</td><td class=\"n\">'+m.n+'</td><td class=\"n\">'+m.nres+\n         '</td><td class=\"n\">'+(m.pct==null?'—':m.pct.toFixed(0)+'%')+\n         '</td><td class=\"n\">'+(m.clv==null?'—':(m.clv>0?'+':'')+m.clv.toFixed(1))+\n         '</td><td class=\"n\">'+(m.nres?((m.u>=0?'+':'')+m.u.toFixed(1)):'—')+'</td></tr>';\n    });"},
+
+{n:'Nota técnica del pie',
+ buscar:"  <b>El encogimiento sube el nivel, no aplasta la diferencia.</b>",
+ poner:"  <b>La forma de la distribución, y por qué viene apagada.</b> Todo lo que no es el ganador sale de\n  una Poisson montada sobre las carreras esperadas. Poisson tiene una propiedad que nadie escogió:\n  obliga a que la varianza sea igual a la media. En carreras de MLB la media de un equipo ronda 4.5 y\n  la varianza real anda por 9 — el doble. Hay muchas más blanqueadas y muchas más palizas de las que\n  Poisson admite, y el efecto va todo en la misma dirección: el modelo cree que los juegos son más\n  parejos de lo que son. De ahí sale el aviso de que da demasiados juegos de 1 carrera, que estaba en\n  la app desde antes sin explicación. También hace que «gana por 2+» salga bajo en los dos lados y\n  que el Over de líneas altas salga bajo.\n  Desde la v18 hay una opción de binomial negativa en ⚙️ Ajustes, con la misma media y la varianza\n  multiplicada por 1.5 o por 2. Viene <b>apagada</b> y eso es deliberado: encenderla mueve el\n  hándicap, el total, las carreras por equipo, las primeras 5 y los ponches de una vez, y meter una\n  constante sin medir es exactamente lo que hubo que deshacer con el multiplicador ×13. Se mide\n  primero en <code>backtestforma.html</code> contra los juegos reales de 2025 y 2026 y se enciende\n  después, si la medición lo pide.\n\n  <b>El encogimiento sube el nivel, no aplasta la diferencia.</b>"}
+
+];
+
+var $=function(id){ return document.getElementById(id); };
+
+function contar(txt,agu){
+  var n=0,i=0;
+  while(true){ var p=txt.indexOf(agu,i); if(p<0) break; n++; i=p+agu.length; if(n>5) break; }
+  return n;
+}
+function aplicar(src){
+  var res=[], txt=src, ok=0, mal=0;
+  PARCHES.forEach(function(p){
+    var n=contar(txt,p.buscar);
+    if(n===1){
+      txt=txt.replace(p.buscar,function(){ return p.poner; });
+      res.push({n:p.n, ok:true, msg:'aplicado'}); ok++;
+    }else if(n===0){
+      var ya=contar(txt,p.poner)>0;
+      res.push({n:p.n, ok:ya, msg: ya?'ya estaba puesto — se salta':'no se encontró el texto original — se salta'});
+      if(!ya) mal++;
+    }else{
+      res.push({n:p.n, ok:false, msg:'aparece '+n+' veces, no se toca por seguridad'}); mal++;
+    }
+  });
+  return {txt:txt, res:res, ok:ok, mal:mal};
+}
+function pintar(r){
+  var h='';
+  r.res.forEach(function(x){
+    h+='<div class="fila"><span class="'+(x.ok?'ok':'no')+'">'+(x.ok?'✓':'✕')+'</span>'+
+       '<span><b>'+x.n+'</b><br><span style="color:var(--muted)">'+x.msg+'</span></span></div>';
+  });
+  $('lista').innerHTML=h;
+}
+
+$('ir').addEventListener('click',function(){
+  var b=$('ir');
+  b.disabled=true;
+  $('estado').textContent='Cogiendo tu index.html…';
+  $('lista').innerHTML=''; $('salida').innerHTML='';
+  fetch('index.html?t='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }).then(function(src){
+    if(src.indexOf('corteSufijo')<0)
+      throw new Error('esto necesita la v17 puesta primero');
+    $('estado').textContent='Leídos '+Math.round(src.length/1024)+' KB. Aplicando…';
+    var r=aplicar(src);
+    pintar(r);
+    $('salida').innerHTML = r.mal>0
+      ? '<div class="aviso">Se saltaron <b>'+r.mal+'</b> cambio(s). Mira la lista antes de bajar nada.</div>'
+      : '<div class="bien">Los '+r.ok+' cambios entraron limpios.</div>';
+    var url=URL.createObjectURL(new Blob([r.txt],{type:'text/html'}));
+    $('salida').innerHTML+='<a class="dl" href="'+url+'" download="index.html">'+
+      '⬇︎ Bajar el index.html de la v18</a>'+
+      '<p class="nota" style="margin-top:12px">La distribución sigue en Poisson hasta que tú cambies '+
+      'el selector. Nada de tus números se mueve solo.</p>';
+    $('estado').textContent='';
+    b.disabled=false;
+  }).catch(function(e){
+    $('estado').innerHTML='<span class="no">No se pudo: '+String(e.message)+'</span>';
+    b.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
