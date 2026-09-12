@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A1119">
+<title>OVA · Parche v30</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:#0A1119;color:#EDF2F7;font-family:'Inter',system-ui,sans-serif;
+ font-size:15px;line-height:1.55;padding:0 0 50px;font-variant-numeric:tabular-nums}
+.wrap{max-width:620px;margin:0 auto;padding:0 13px}
+header{border-bottom:1px solid #2B4256;padding:18px 13px;
+ padding-top:calc(env(safe-area-inset-top) + 14px);background:#101A25}
+header h1{font-size:23px;margin:0;font-family:'Bitter',Georgia,serif;font-weight:700}
+header p{margin:5px 0 0;color:#A7BCCC;font-size:13px}
+.caja{background:#101A25;border:1px solid #2B4256;border-radius:12px;padding:14px;margin:14px 0;
+ box-shadow:0 1px 3px rgba(0,0,0,.35),0 8px 22px -12px rgba(0,0,0,.6)}
+h2{font-size:16px;margin:0 0 8px;display:flex;align-items:center;gap:8px;
+ font-family:'Bitter',Georgia,serif;font-weight:600}
+h2 i{font-style:normal;background:#F0B849;color:#14202B;border-radius:50%;
+ width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+ font-size:13px;font-weight:700;flex:0 0 22px;font-family:'Inter',sans-serif}
+button{background:#4F8FD6;color:#06121C;border:0;border-radius:8px;
+ padding:13px 18px;font-size:16px;font-weight:700;width:100%;margin-top:10px;
+ cursor:pointer;font-family:inherit}
+button:disabled{opacity:.4}
+a.dl{display:block;text-align:center;background:#4ED88A;color:#06180D;
+ border-radius:8px;padding:14px;font-size:16px;font-weight:700;
+ text-decoration:none;margin-top:10px}
+.fila{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid #1A2B38;font-size:13px;
+ line-height:1.45}
+.fila:last-child{border-bottom:none}
+.ok{color:#4ED88A;font-weight:700}
+.no{color:#F5837A;font-weight:700}
+#estado{color:#A7BCCC;font-size:13.5px;margin-top:10px;min-height:20px}
+.nota{color:#A7BCCC;font-size:13px;line-height:1.55}
+.nota b{color:#EDF2F7}
+ul{margin:8px 0;padding-left:20px}
+li{margin:6px 0;font-size:13px;color:#A7BCCC;line-height:1.5}
+li b{color:#EDF2F7}
+code{background:#16232F;padding:2px 6px;border-radius:5px;font-size:12.5px;
+ font-family:ui-monospace,Menlo,monospace}
+.gal{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+.gi{text-align:center;font-size:9.5px;color:#8298A9;line-height:1.3}
+.gi svg{width:32px;height:32px;display:block;margin:0 auto 5px;
+ filter:saturate(1.3) brightness(1.08)}
+.aviso{background:#2C1A18;border:1px solid #5E322C;color:#F8B0A8;
+ border-radius:8px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+.bien{background:#12291D;border:1px solid #2A5439;color:#83E6AA;
+ border-radius:8px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <h1>Parche v30 · el remate</h1>
+  <p>Prensa, los iconos a color pleno, y dos estorbos fuera</p>
+</header>
+
+<div class="wrap">
+
+  <div class="caja">
+    <h2><i>1</i>Tipografía Prensa</h2>
+    <p class="nota"><b>Bitter</b> en los títulos, la serif de máquina de escribir. <b>Inter</b> en el
+    texto y en los números.<br><br>
+    Y lo importante: se va la monoespaciada. Las columnas siguen cuadradas porque los números pasan
+    a <b>cifras tabulares</b>, que es una propiedad de la letra y no un tipo de letra. Mismo cuadre,
+    sin el aire de terminal.</p>
+  </div>
+
+  <div class="caja">
+    <h2><i>2</i>Los iconos, a color pleno</h2>
+    <div class="gal" id="gal"></div>
+    <p class="nota" style="margin-top:12px">Se cambian por el texto que tienen al lado, no a ciegas,
+    así que la diana de <b>Veredicto</b> y la de <b>Total</b> no acaban siendo el mismo dibujo.
+    Los iconos chicos de Ajustes se quedan como están: ahí el color no hace falta y mandaría más de
+    la cuenta.<br><br>
+    El icono de la pestaña activa se enciende y crece un pelín; los demás van apagados.</p>
+  </div>
+
+  <div class="caja">
+    <h2><i>3</i>La marca de agua</h2>
+    <p class="nota">El escudo del equipo detrás de las tablas está en 0.14 y compite con los
+    números. Baja a <b>0.07</b>. Se sigue viendo, deja de estorbar.</p>
+  </div>
+
+  <div class="caja">
+    <h2><i>4</i>El botón redondo</h2>
+    <p class="nota">Te tapaba el final de las líneas. Se hace más chico y ahora <b>se esconde
+    mientras bajas</b> y vuelve en cuanto subes un poco. Cuando lo necesitas está, y cuando lees
+    no está.</p>
+  </div>
+
+  <div class="caja">
+    <h2>Aplicar</h2>
+    <p class="nota">Necesita la v29. Misma carpeta que tu <code>index.html</code>.</p>
+    <button id="ir">Coger mi index.html y parchearlo</button>
+    <div id="estado"></div>
+    <div id="lista"></div>
+    <div id="salida"></div>
+  </div>
+
+</div>
+
+<script>
+/* ---------- los iconos ---------- */
+var IC={
+home:'<path d="M4.6 3.6h14.8v7.9L12 20.5 4.6 11.5z" fill="#F2EDE4"/>'+
+ '<path d="M6.8 5.8h10.4v5L12 17.4 6.8 10.8z" fill="none" stroke="#BDB5A6" stroke-width=".9"/>',
+ticket:'<path d="M3 6.6h18c.9 0 1.6.7 1.6 1.6v1.9a2.2 2.2 0 0 0 0 4.2v1.9c0 .9-.7 1.6-1.6 1.6H3c-.9 0-1.6-.7-1.6-1.6v-1.9a2.2 2.2 0 0 0 0-4.2V8.2c0-.9.7-1.6 1.6-1.6z" fill="#F0B849"/>'+
+ '<path d="M8.9 8.8v6.4M15.1 8.8v6.4" stroke="#0A1119" stroke-width="1.5" stroke-linecap="round"/>',
+marcador:'<rect x="2" y="4.6" width="20" height="14.8" rx="2.4" fill="#22303E"/>'+
+ '<rect x="2" y="4.6" width="20" height="14.8" rx="2.4" fill="none" stroke="#3A4D5F" stroke-width="1"/>'+
+ '<path d="M5.4 8.4h4v3h-4zM5.4 12.6h4v3h-4z" fill="#F0B849"/>'+
+ '<path d="M14.6 8.4h4v3h-4zM14.6 12.6h4v3h-4z" fill="#4F8FD6"/>',
+llama:'<path d="M12 2.2c3.1 4.5 5.3 6.6 5.3 10.1A5.3 5.3 0 0 1 12 17.6a5.3 5.3 0 0 1-5.3-5.3c0-2.1 1-3.5 2.3-4.5.2 1.3 1.1 2.6 2.2 2.6 0-3.4-1.1-5.6.8-8.2z" fill="#E8763C"/>'+
+ '<path d="M12 9.8c1.4 2 2.3 3 2.3 4.4A2.3 2.3 0 0 1 12 16.5a2.3 2.3 0 0 1-2.3-2.3c0-1.1.6-2 1.3-2.6.1.6.5 1.2 1 1.2 0-1.5-.5-2.5 0-3z" fill="#F5CE6B"/>',
+diamante:'<path d="M12 1.9 22.1 12 12 22.1 1.9 12z" fill="#2F6B3D"/>'+
+ '<path d="M12 6.1 17.9 12 12 17.9 6.1 12z" fill="#B4703C"/>'+
+ '<circle cx="12" cy="17.6" r="1.35" fill="#F4F1EA"/><circle cx="17.6" cy="12" r="1.1" fill="#F4F1EA"/>'+
+ '<circle cx="12" cy="6.4" r="1.1" fill="#F4F1EA"/><circle cx="6.4" cy="12" r="1.1" fill="#F4F1EA"/>'+
+ '<circle cx="12" cy="12" r="1.5" fill="#D6A575"/>',
+balanza:'<path d="M11.1 3.4h1.8v16.8h-1.8z" fill="#93A8BA"/>'+
+ '<path d="M6.4 20.2h11.2v1.7H6.4zM3.4 7.7h17.2v1.7H3.4z" fill="#93A8BA"/>'+
+ '<circle cx="12" cy="4.2" r="1.5" fill="#C7D3DE"/>'+
+ '<path d="M3.6 9.6 1.3 14.5a3 3 0 0 0 5.6 0z" fill="#F0B849"/>'+
+ '<path d="M20.4 9.6l2.3 4.9a3 3 0 0 1-5.6 0z" fill="#4F8FD6"/>',
+pelota:'<circle cx="12" cy="12" r="9.1" fill="#F4F1EA"/>'+
+ '<path d="M6.4 5.6c2.6 4.1 2.6 8.7 0 12.8M17.6 5.6c-2.6 4.1-2.6 8.7 0 12.8" fill="none" stroke="#D64545" stroke-width="1.5" stroke-linecap="round"/>'+
+ '<path d="M7.6 7.3l1.5.5M7.1 9.6l1.6.3M7 12.4l1.6-.1M7.3 15l1.5-.4M16.4 7.3l-1.5.5M16.9 9.6l-1.6.3M17 12.4l-1.6-.1M16.7 15l-1.5-.4" stroke="#D64545" stroke-width=".9" stroke-linecap="round"/>',
+k:'<rect x="3" y="3.4" width="18" height="17.2" rx="3.2" fill="#22303E"/>'+
+ '<rect x="3" y="3.4" width="18" height="17.2" rx="3.2" fill="none" stroke="#3A4D5F" stroke-width="1"/>'+
+ '<path d="M7.8 7h2.7v4.4L14.2 7h3.2l-4.4 5 4.6 5.9h-3.3l-3.1-4.2-.7.8V18H7.8z" fill="#F0B849"/>',
+cinco:'<rect x="3" y="3.4" width="18" height="17.2" rx="3.2" fill="#22303E"/>'+
+ '<rect x="3" y="3.4" width="18" height="17.2" rx="3.2" fill="none" stroke="#3A4D5F" stroke-width="1"/>'+
+ '<path d="M14.9 7H9.6l-.8 5.2c1.9-.9 5.1-.3 5.1 2.7 0 2.1-1.5 3.6-3.5 3.6-1.6 0-2.7-.8-3.2-1.9" fill="none" stroke="#4F8FD6" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>',
+trofeo:'<path d="M8 3.4h8v5.2a4 4 0 0 1-8 0z" fill="#F0B849"/>'+
+ '<path d="M8 5.4H5.4v1.5a3.1 3.1 0 0 0 2.9 3.1M16 5.4h2.6v1.5a3.1 3.1 0 0 1-2.9 3.1" fill="none" stroke="#F0B849" stroke-width="1.5"/>'+
+ '<path d="M10.6 13.4h2.8v3.4h-2.8zM8.6 19.4h6.8v1.8H8.6z" fill="#C99A3A"/>',
+libreta:'<path d="M5.4 3.6h11.4a2.2 2.2 0 0 1 2.2 2.2v14.6H7.6a2.2 2.2 0 0 1-2.2-2.2z" fill="#E9E3D6"/>'+
+ '<path d="M5.4 16.6h13.6v3.8H7.6a2.2 2.2 0 0 1-2.2-2.2z" fill="#C9C0AD"/>'+
+ '<path d="M8.4 7.4h7.6M8.4 10.4h7.6M8.4 13.4h5" stroke="#8A8271" stroke-width="1.3" stroke-linecap="round"/>',
+guante:'<path d="M5.6 20.4c-2.1-2.5-2.8-5.3-2.5-8.4.2-2.7 1.4-5.2 3.1-6.9 1-1 2.1-.5 2.1.9v3.5l1-4c.3-1.3 2-1.2 2.1.1l.2 3.8.9-3.5c.3-1.3 2-1.1 2.1.2l.2 3.5.9-2.6c.4-1.2 2.1-.9 2 .5-.2 4.8-.6 8.6-2.7 12.4z" fill="#B5794A"/>'+
+ '<path d="M7.2 15.6c2.4-.8 4.9-.8 7.3 0" fill="none" stroke="#8A5730" stroke-width="1.2" stroke-linecap="round"/>',
+engrane:'<circle cx="12" cy="12" r="8.4" fill="#3A4D5F"/>'+
+ '<path d="M12 2.4l1.5 2.2h-3zM12 21.6l-1.5-2.2h3zM2.4 12l2.2-1.5v3zM21.6 12l-2.2 1.5v-3zM5.2 5.2l2.6.5-2.1 2.1zM18.8 18.8l-2.6-.5 2.1-2.1zM18.8 5.2l-.5 2.6-2.1-2.1zM5.2 18.8l.5-2.6 2.1 2.1z" fill="#3A4D5F"/>'+
+ '<circle cx="12" cy="12" r="3.4" fill="#0A1119"/>'
+};
+var GAL=[['Veredicto','home'],['Cuotas','ticket'],['Números','marcador'],['Forma','llama'],
+ ['Parque','diamante'],['Hándicap','balanza'],['Total','pelota'],['Ponches','k'],
+ ['Primeras 5','cinco'],['Al gane','trofeo'],['Mis picks','libreta'],['Bullpen','guante']];
+document.getElementById('gal').innerHTML=GAL.map(function(g){
+  return '<div class="gi"><svg viewBox="0 0 24 24">'+IC[g[1]]+'</svg>'+g[0]+'</div>';
+}).join('');
+
+/* el bloque que se inyecta en el index */
+var JS_ICONOS =
+"<script>\n"+
+"/* ---------- iconos de beisbol a color ----------\n"+
+"   Los iconos viejos eran de trazo fino y genericos. Estos se cambian POR EL\n"+
+"   TEXTO que tienen al lado, no por su dibujo: si se cambiaran por el dibujo,\n"+
+"   la diana de «Veredicto» y la de «Total del juego» son la misma y acabarian\n"+
+"   siendo el mismo icono. Lo que no case con ningun nombre se queda como esta\n"+
+"   — los de Ajustes son chicos y ahi el color no hace falta. */\n"+
+"(function(){\n"+
+"try{\n"+
+"  var IC="+JSON.stringify(IC)+";\n"+
+"  var MAPA=[\n"+
+"    [/veredicto/i,'home'],\n"+
+"    [/cuotas|compara con el|compara con kalshi/i,'ticket'],\n"+
+"    [/n\\u00fameros|los n\\u00fameros/i,'marcador'],\n"+
+"    [/^\\s*forma|forma y r\\u00e9cord/i,'llama'],\n"+
+"    [/parque/i,'diamante'],\n"+
+"    [/h\\u00e1ndicap/i,'balanza'],\n"+
+"    [/total del juego|carreras por equipo|juegos$/i,'pelota'],\n"+
+"    [/ponches/i,'k'],\n"+
+"    [/primeras 5/i,'cinco'],\n"+
+"    [/al gane|ranking|c\\u00f3mo va quedando/i,'trofeo'],\n"+
+"    [/mis picks|pendientes|resueltos|c\\u00f3mo funciona/i,'libreta'],\n"+
+"    [/manos y bullpen/i,'guante'],\n"+
+"    [/ajustes/i,'engrane']\n"+
+"  ];\n"+
+"  function cambia(sv){\n"+
+"    if(!sv||sv.dataset.ova) return;\n"+
+"    var p=sv.parentNode; if(!p) return;\n"+
+"    var t=(p.textContent||'').trim();\n"+
+"    if(!t) return;\n"+
+"    for(var i=0;i<MAPA.length;i++){\n"+
+"      if(MAPA[i][0].test(t)){\n"+
+"        sv.innerHTML=IC[MAPA[i][1]];\n"+
+"        sv.setAttribute('fill','none');\n"+
+"        sv.removeAttribute('stroke');\n"+
+"        sv.removeAttribute('stroke-width');\n"+
+"        sv.dataset.ova='1';\n"+
+"        return;\n"+
+"      }\n"+
+"    }\n"+
+"    sv.dataset.ova='0';\n"+
+"  }\n"+
+"  function barrer(){ document.querySelectorAll('svg.ic').forEach(cambia); }\n"+
+"  barrer();\n"+
+"  /* La app repinta los juegos cada vez que cambias un ajuste o escribes una\n"+
+"     cuota, asi que hay que volver a barrer. Se agrupa en un frame para no\n"+
+"     hacerlo mil veces seguidas. */\n"+
+"  var pend=false;\n"+
+"  if(window.MutationObserver){\n"+
+"    new MutationObserver(function(){\n"+
+"      if(pend) return; pend=true;\n"+
+"      requestAnimationFrame(function(){ pend=false; barrer(); });\n"+
+"    }).observe(document.body,{childList:true,subtree:true});\n"+
+"  }\n"+
+"  /* El boton redondo tapaba el final de las lineas. Ahora se esconde mientras\n"+
+"     bajas y vuelve en cuanto subes. */\n"+
+"  var fab=document.getElementById('arriba'), ultY=0;\n"+
+"  if(fab) window.addEventListener('scroll',function(){\n"+
+"    var y=window.pageYOffset;\n"+
+"    if(y>ultY+6) fab.classList.add('baja');\n"+
+"    else if(y<ultY-6) fab.classList.remove('baja');\n"+
+"    ultY=y;\n"+
+"  },{passive:true});\n"+
+"}catch(e){}\n"+
+"})();\n"+
+"<\/script>\n";
+
+var CSS_NUEVO =
+"/* ---------- tipografia Prensa ----------\n"+
+"   Bitter (serif) en los titulos e Inter en el resto. La monoespaciada se fue:\n"+
+"   las columnas de numeros cuadran igual con cifras tabulares, que es una\n"+
+"   propiedad de la letra y no un tipo de letra aparte. */\n"+
+"h3,.manual h2,.registro h2,.gane h2,.pick .q,.cal .t b,.vacio b{\n"+
+" font-family:var(--cond);letter-spacing:-.1px}\n"+
+"h3{font-size:15.5px}\n"+
+".pick .q{font-size:16.5px}\n"+
+"/* Los iconos a color: la pestaña activa se enciende, las demas van apagadas. */\n"+
+"svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}\n"+
+".tb svg.ic[data-ova='1']{opacity:.62;filter:saturate(.9) brightness(.95);\n"+
+" transition:opacity .2s,filter .2s,transform .2s}\n"+
+".tb.on svg.ic[data-ova='1']{opacity:1;filter:saturate(1.3) brightness(1.08);\n"+
+" transform:scale(1.06)}\n"+
+".navbar button svg[data-ova='1']{opacity:.6;filter:saturate(.85);transition:all .2s}\n"+
+".navbar button.on svg[data-ova='1']{opacity:1;filter:saturate(1.3) brightness(1.08)}\n"+
+"/* El boton redondo, mas chico y fuera del camino al bajar. */\n"+
+".fab{width:40px;height:40px;font-size:14px;opacity:.92;\n"+
+" transition:opacity .22s,transform .22s}\n"+
+".fab.baja{opacity:0;transform:translateY(14px) scale(.9);pointer-events:none}\n"+
+"@media (prefers-reduced-motion:reduce){.fab{transition:none}}\n";
+
+var PARCHES=[
+
+{n:'Cargar Bitter e Inter',
+ buscar:'<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">',
+ poner:'<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">'},
+
+{n:'LA LETRA — Bitter, Inter y fuera la monoespaciada',
+ buscar:" --cond:'Barlow Condensed','Helvetica Neue',sans-serif;\n --body:system-ui,-apple-system,'Segoe UI',sans-serif;\n --mono:ui-monospace,SFMono-Regular,Menlo,monospace;",
+ poner:" --cond:'Bitter',Georgia,'Times New Roman',serif;\n --body:'Inter',system-ui,-apple-system,sans-serif;\n /* Ya no es monoespaciada: los numeros cuadran con cifras tabulares. */\n --mono:'Inter',system-ui,-apple-system,sans-serif;"},
+
+{n:'Cifras tabulares en toda la app',
+ buscar:"body{margin:0;color:var(--txt);font-family:var(--body);font-size:15px;line-height:1.55;\n background:var(--bg);padding:0 0 76px;",
+ poner:"body{margin:0;color:var(--txt);font-family:var(--body);font-size:15px;line-height:1.55;\n background:var(--bg);padding:0 0 76px;font-variant-numeric:tabular-nums;"},
+
+{n:'El nombre de los equipos, ajustado a la serif',
+ buscar:".match{font-family:var(--cond);font-size:24px;font-weight:600;line-height:1.06;flex:1;\n letter-spacing:.3px}",
+ poner:".match{font-family:var(--cond);font-size:21px;font-weight:700;line-height:1.16;flex:1;\n letter-spacing:-.2px}"},
+
+{n:'La marca de agua, más discreta',
+ buscar:" object-fit:contain;opacity:.14}",
+ poner:" object-fit:contain;opacity:.07}"},
+
+{n:'El estilo nuevo',
+ buscar:"</style>\n</head>",
+ poner:CSS_NUEVO+"</style>\n</head>"},
+
+{n:'LOS ICONOS — el cambiador por texto',
+ buscar:"}catch(e){}\n})();\n<\/script>\n</body>\n</html>",
+ poner:"}catch(e){}\n})();\n<\/script>\n"+JS_ICONOS+"</body>\n</html>"}
+
+];
+
+var $=function(id){ return document.getElementById(id); };
+var listo=false;
+
+function contar(txt,agu){
+  var n=0,i=0;
+  while(true){ var p=txt.indexOf(agu,i); if(p<0) break; n++; i=p+agu.length; if(n>5) break; }
+  return n;
+}
+function aplicar(src){
+  var res=[], txt=src, ok=0, mal=0;
+  PARCHES.forEach(function(p){
+    var n=contar(txt,p.buscar);
+    if(n===1){
+      txt=txt.replace(p.buscar,function(){ return p.poner; });
+      res.push({n:p.n, ok:true, msg:'aplicado'}); ok++;
+    }else if(n===0){
+      var ya=contar(txt,p.poner)>0;
+      res.push({n:p.n, ok:ya, msg: ya?'ya estaba puesto — se salta':'no se encontró el texto original — se salta'});
+      if(!ya) mal++;
+    }else{
+      res.push({n:p.n, ok:false, msg:'aparece '+n+' veces, no se toca por seguridad'}); mal++;
+    }
+  });
+  return {txt:txt, res:res, ok:ok, mal:mal};
+}
+function pintar(r){
+  var h='';
+  r.res.forEach(function(x){
+    h+='<div class="fila"><span class="'+(x.ok?'ok':'no')+'">'+(x.ok?'✓':'✕')+'</span>'+
+       '<span><b>'+x.n+'</b><br><span style="color:#8298A9">'+x.msg+'</span></span></div>';
+  });
+  $('lista').innerHTML=h;
+}
+
+$('ir').addEventListener('click',function(){
+  var b=$('ir');
+  b.disabled=true;
+  $('estado').textContent='Cogiendo tu index.html…';
+  $('lista').innerHTML=''; $('salida').innerHTML='';
+  fetch('index.html?t='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }).then(function(src){
+    if(src.indexOf('--hot:#F0B849')<0) throw new Error('esto necesita la v29 puesta primero');
+    if(!listo){
+      var mv=src.match(/<span class="ver">v(\d+)<\/span>/);
+      if(mv&&mv[1]!=='30')
+        PARCHES.unshift({n:'Versión v'+mv[1]+' → v30', buscar:mv[0],
+                         poner:'<span class="ver">v30</span>'});
+      listo=true;
+    }
+    $('estado').textContent='Leídos '+Math.round(src.length/1024)+' KB. Aplicando…';
+    var r=aplicar(src);
+    pintar(r);
+
+    var faltan=[];
+    ["family=Bitter","'Bitter',Georgia","tabular-nums","opacity:.07","data-ova",
+     "MutationObserver","fab.classList.add('baja')","diamante"]
+      .forEach(function(nm){ if(r.txt.indexOf(nm)<0) faltan.push(nm); });
+    var sobra=[];
+    ['ui-monospace,SFMono','Barlow+Condensed','opacity:.14']
+      .forEach(function(nm){ if(r.txt.indexOf(nm)>=0) sobra.push(nm); });
+    var ab=contar(r.txt,'<script'), ce=contar(r.txt,'<\/script>');
+
+    var aviso='';
+    if(r.mal>0) aviso+='<div class="aviso">Se saltaron <b>'+r.mal+'</b> cambio(s). Mira la lista.</div>';
+    if(faltan.length) aviso+='<div class="aviso">Falta código: <b>'+faltan.join(', ')+'</b>. No bajes el archivo.</div>';
+    if(sobra.length) aviso+='<div class="aviso">Quedó código viejo: <b>'+sobra.join(', ')+'</b>. No bajes el archivo.</div>';
+    if(ab!==ce) aviso+='<div class="aviso">Etiquetas de script descuadradas ('+ab+' y '+ce+').</div>';
+    var bien=!r.mal&&!faltan.length&&!sobra.length&&ab===ce;
+    if(bien)
+      aviso+='<div class="bien">Los '+r.ok+' cambios entraron. Prensa puesta, los iconos a color, '+
+             'la marca de agua bajada y el botón fuera del camino.</div>';
+    $('salida').innerHTML=aviso;
+
+    if(bien){
+      var url=URL.createObjectURL(new Blob([r.txt],{type:'text/html'}));
+      $('salida').innerHTML+='<a class="dl" href="'+url+'" download="index.html">'+
+        '⬇︎ Bajar el index.html de la v30</a>'+
+        '<p class="nota" style="margin-top:12px">Ni un número del modelo se tocó.</p>';
+    }
+    $('estado').textContent='';
+    b.disabled=false;
+  }).catch(function(e){
+    $('estado').innerHTML='<span class="no">No se pudo: '+String(e.message)+'</span>';
+    b.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
