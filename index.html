@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#FAF8F4">
+<meta name="theme-color" content="#EFEBE3">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -26,12 +26,23 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* Tema Papel. Lo que cambia frente a la v22 son los dos grises de texto y la
+   separacion entre el fondo y las tarjetas. Medido con la formula de contraste
+   estandar, en los sitios exactos donde el CSS usa cada variable:
+     .out.no  (el «sin valor» de las cuotas)  2.60 -> 5.26
+     footer                                   2.81 -> 4.86
+     .leyenda, .cal .t, .kpi span             4.41 -> 8.67
+     titulos                                 17.43 -> 18.70
+   El minimo para leer comodo es 4.5 y para leer con sol encima 7. El 2.60 era
+   justo el texto que dice si una cuota tiene valor. Los azules, verdes y rojos
+   no se tocan: solo se oscurecen los grises y el fondo se separa del blanco de
+   la tarjeta, que antes se distinguian apenas (1.06 de razon, ahora 1.19). */
 :root{
- --bg:#FAF8F4;--bg1:#FFFFFF;--bg2:#F2EFE8;--bg3:#E7E3D9;
- --line:#E6E3DC;--line2:#D3CEC3;
- --txt:#1A1A18;--mut:#6F6F67;--mut2:#96968D;
- --acc:#185FA5;--acc2:#378ADD;
- --good:#3B6D11;--bad:#B03A2E;--info:#185FA5;
+ --bg:#EFEBE3;--bg1:#FFFFFF;--bg2:#F7F4EE;--bg3:#E4DED2;
+ --line:#E0DACE;--line2:#BEB5A4;
+ --txt:#14120F;--mut:#4A453C;--mut2:#6B655A;
+ --acc:#0F4C96;--acc2:#1B5FBF;
+ --good:#1E6B3E;--bad:#A32B1E;--info:#0F4C96;
  --cond:'Barlow Condensed','Helvetica Neue',sans-serif;
  --body:system-ui,-apple-system,'Segoe UI',sans-serif;
  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -44,7 +55,7 @@ body{margin:0;color:var(--txt);font-family:var(--body);font-size:15px;line-heigh
 .wrap{max-width:620px;margin:0 auto;padding:0 13px}
 svg.ic{vertical-align:-3px;flex:0 0 auto;stroke-width:1.9}
 
-.topbar{position:sticky;top:0;z-index:20;background:rgba(250,248,244,.95);
+.topbar{position:sticky;top:0;z-index:20;background:rgba(239,235,227,.95);
  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
  border-bottom:1px solid var(--line2);padding-top:env(safe-area-inset-top)}
 .topbar .inner{max-width:620px;margin:0 auto;padding:9px 13px;
@@ -204,16 +215,26 @@ footer details summary:before{content:none}
 .flag{font-size:12.5px;color:var(--mut);padding:5px 0;line-height:1.55}
 .flag b{color:var(--txt);font-weight:600}
 
+/* Cerrada, la leyenda ya no enseña un pedazo del texto. Antes iba con
+   -webkit-line-clamp:2 y cortaba donde cayera — a media palabra la mayoria de
+   las veces — y eso parece un error de la app, no un resumen. Ahora queda una
+   barrita con la etiqueta y la «i», y el texto entero sale al tocarla. */
 .leyenda,.receta{position:relative;font-size:12px;color:var(--mut);line-height:1.55;
- background:var(--bg2);border-radius:var(--r);padding:10px 36px 10px 11px;margin:8px 0;
- cursor:pointer;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
- overflow:hidden}
+ background:var(--bg2);border-radius:var(--r);padding:10px 38px 10px 11px;margin:8px 0;
+ cursor:pointer;display:block}
+.leyenda:not(.abierta):not(.err),.receta:not(.abierta){
+ height:38px;overflow:hidden;font-size:0;line-height:0;padding:0 38px 0 11px}
+.leyenda:not(.abierta):not(.err):before,.receta:not(.abierta):before{
+ content:'Nota · toca para leer';position:absolute;left:11px;top:0;height:38px;
+ display:flex;align-items:center;font-size:12.5px;line-height:1.2;
+ color:var(--mut);font-weight:600}
+.receta:not(.abierta):before{content:'Paso a paso · toca para leer'}
 .leyenda b,.receta b{color:var(--txt);font-weight:600}
 .leyenda:after,.receta:after{content:'i';position:absolute;right:9px;top:9px;
  width:18px;height:18px;border:1px solid var(--line2);border-radius:50%;
  font-family:var(--cond);font-size:12px;font-weight:600;color:var(--mut);
  display:flex;align-items:center;justify-content:center;background:var(--bg2)}
-.leyenda.abierta,.receta.abierta{display:block;-webkit-line-clamp:none;overflow:visible}
+.leyenda.abierta,.receta.abierta{display:block;overflow:visible;height:auto}
 .leyenda.abierta:after,.receta.abierta:after{content:'\00D7';font-size:15px}
 .receta{background:var(--bg1);border:1px solid var(--line2)}
 .receta:after{background:var(--bg1)}
@@ -358,7 +379,7 @@ footer summary{font-size:14px;color:var(--mut);padding:9px 0;display:flex;
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v22</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v25</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -444,12 +465,7 @@ footer summary{font-size:14px;color:var(--mut);padding:9px 0;display:flex;
 
 <div class="controls">
   <button class="ghost" id="algane_btn"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5.2v1.6A3.2 3.2 0 0 0 8.4 11M16 6h2.8v1.6A3.2 3.2 0 0 1 15.6 11M10.4 17h3.2M9 20h6"/></svg> Ranking al gane</button>
-  <button class="ghost" id="kalshi"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12.5V20M8.5 8.5a5 5 0 0 1 7 0M5.5 5.5a9 9 0 0 1 13 0"/><circle cx="12" cy="11" r="1.4"/></svg> Traer precios de Kalshi</button>
 </div>
-<div id="kstatus" class="leyenda">Con el modo <b>Kalshi</b> puesto en &#9881;&#65039; Ajustes, este bot&oacute;n
-llena solo el precio del ganador de cada juego abierto. Kalshi bloquea las llamadas directas desde el
-navegador, as&iacute; que se intenta por varios relevos hasta que uno pase. El resto de mercados
-siguen a mano: Kalshi no los lista por juego.</div>
 
 <div id="status" class="status">Escoge la fecha y dale a cargar.</div>
 <div id="slate"></div>
@@ -1055,128 +1071,13 @@ function revisarTT(root){
     : '';
 }
 
-/* ---------- Kalshi ---------- */
-var KCODE={
- 109:['ari','az'],   144:['atl'],       110:['bal'],       111:['bos'],
- 112:['chc'],        145:['chw','cws'], 113:['cin'],       114:['cle'],
- 115:['col'],        116:['det'],       117:['hou'],       118:['kc','kcr'],
- 108:['laa','ana'],  119:['lad'],       146:['mia','fla'], 158:['mil'],
- 142:['min'],        121:['nym'],       147:['nyy'],       133:['ath','oak'],
- 143:['phi'],        134:['pit'],       135:['sd','sdp'],  136:['sea'],
- 137:['sf','sfg'],   138:['stl'],       139:['tb','tbr'],  140:['tex'],
- 141:['tor'],        120:['wsh','was']
-};
-var KMKT=null;
-var KSTAMP=null;
-function kPrecio(m,lado){
-  if(!m) return null;
-  var v=(lado==='no')?m.no_ask:m.yes_ask;
-  if(!v) v=(lado==='no')?(m.last_price!=null?100-m.last_price:null):m.last_price;
-  return (v>0&&v<100)?v:null;
-}
-function kBuscarPar(idA,idH){
-  if(!KMKT) return null;
-  var ca=KCODE[idA]||[], ch=KCODE[idH]||[];
-  for(var i=0;i<ca.length;i++) for(var jj=0;jj<ch.length;jj++){
-    var ev=KMKT[ca[i]+ch[jj]];
-    if(ev) return {ev:ev, ca:ca[i], ch:ch[jj]};
-  }
-  return null;
-}
-function kPreciosJuego(idA,idH){
-  var f=kBuscarPar(idA,idH);
-  if(!f) return null;
-  var mA=null,mH=null;
-  f.ev.forEach(function(m){
-    var t=String(m.ticker||'').toLowerCase();
-    if(t.endsWith('-'+f.ca)||t.endsWith(f.ca)) mA=m;
-    if(t.endsWith('-'+f.ch)||t.endsWith(f.ch)) mH=m;
-  });
-  var pa=kPrecio(mA,'yes'), ph2=kPrecio(mH,'yes');
-  if(pa==null&&mH) pa=kPrecio(mH,'no');
-  if(ph2==null&&mA) ph2=kPrecio(mA,'no');
-  if(pa==null&&ph2==null) return null;
-  return {a:pa, h:ph2};
-}
-function kEstado(t,err){
-  var e=$('kstatus'); if(!e) return;
-  e.className='leyenda'+(err?' status err':'');
-  e.innerHTML=t;
-}
-var KURL='https://api.elections.kalshi.com/trade-api/v2/markets'+
-         '?series_ticker=KXMLBGAME&status=open&limit=500';
-var RELEVOS=[
-  {n:'directo',  f:function(u){ return u; }},
-  {n:'allorigins', f:function(u){ return 'https://api.allorigins.win/raw?url='+encodeURIComponent(u); }},
-  {n:'corsproxy',  f:function(u){ return 'https://corsproxy.io/?url='+encodeURIComponent(u); }},
-  {n:'codetabs',   f:function(u){ return 'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u); }}
-];
-function pedirKalshi(i){
-  i=i||0;
-  if(i>=RELEVOS.length) return Promise.reject(new Error('ninguna vía funcionó'));
-  var via=RELEVOS[i];
-  if(i>0) kEstado('Directo no se pudo. Probando por relevo <b>'+via.n+'</b>&hellip;');
-  return fetch(via.f(KURL)).then(function(r){
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return r.json();
-  }).then(function(d){
-    if(!d||!d.markets) throw new Error('respuesta rara');
-    d.__via=via.n;
-    return d;
-  }).catch(function(){ return pedirKalshi(i+1); });
-}
-function traerKalshi(){
-  if(PLATA!=='kalshi'){
-    kEstado('⚠️ Est&aacute;s en modo <b>Sportsbook</b>. Los precios de Kalshi vienen en centavos, '+
-            'as&iacute; que cambia arriba a <b>Kalshi</b> en &#9881;&#65039; Ajustes y vuelve a darle.',true);
-    return;
-  }
-  kEstado('Buscando precios en Kalshi&hellip;');
-  pedirKalshi().then(function(d){
-    var ms=(d&&d.markets)||[];
-    if(!ms.length) throw new Error('sin mercados abiertos');
-    KMKT={};
-    ms.forEach(function(m){
-      var ev=String(m.event_ticker||'').toLowerCase();
-      var par=ev.slice(-6);
-      if(par.length!==6) return;
-      (KMKT[par]=KMKT[par]||[]).push(m);
-    });
-    KSTAMP=new Date();
-    var puestos=0, faltan=[];
-    document.querySelectorAll('.game').forEach(function(el){
-      if(!el._d) return;
-      var r=rellenarKalshi(el,true);
-      if(r) puestos++; else faltan.push(el._d.a.team.abbreviation+'@'+el._d.h.team.abbreviation);
-    });
-    var hora=KSTAMP.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
-    kEstado('✅ '+ms.length+' mercados de Kalshi le&iacute;dos a las '+hora+
-      ' (v&iacute;a '+esc(d.__via||'?')+'). '+
-      'Precios puestos en <b>'+puestos+'</b> juego(s) abierto(s).'+
-      (faltan.length?' Sin encontrar: '+esc(faltan.join(', '))+'.':'')+
-      ' Los juegos que abras despu&eacute;s se llenan solos. '+
-      '<b>Solo se llena el ganador</b> &mdash; Kalshi no lista los dem&aacute;s mercados por juego.');
-  }).catch(function(e){
-    KMKT=null;
-    kEstado('No se pudieron traer los precios. Se prob&oacute; directo y por tres relevos distintos y '+
-      'ninguno pas&oacute; ('+esc(e.message||'bloqueado')+'). '+
-      'Sigue escribiendo las cuotas a mano, que la app funciona igual de bien.',true);
-  });
-}
-function rellenarKalshi(el,forzar){
-  if(PLATA!=='kalshi'||!KMKT||!el._d) return false;
-  var box=el.querySelector('.cmp'); if(!box) return false;
-  var pr=kPreciosJuego(el._d.a.team.id, el._d.h.team.id);
-  if(!pr) return false;
-  var ca=box.querySelector('.ca'), ch=box.querySelector('.ch'), puesto=false;
-  if(ca&&!ca.value&&pr.a!=null){ ca.value=pr.a; puesto=true; }
-  if(ch&&!ch.value&&pr.h!=null){ ch.value=pr.h; puesto=true; }
-  if(puesto){
-    if(ca) ca.dispatchEvent(new Event('input'));
-    if(ch) ch.dispatchEvent(new Event('input'));
-  }
-  return puesto;
-}
+/* El boton de traer precios de Kalshi se quito en la v25: nunca llego a
+   funcionar. Kalshi bloquea las llamadas desde el navegador y ninguno de los
+   cuatro relevos que se probaron paso una sola vez, asi que aqui vivian unas
+   130 lineas que no daban ningun precio y un boton que solo daba error.
+   El MODO Kalshi se queda entero: precios en centavos, la comision de
+   0.07 × (1 − precio) descontada del EV y del Kelly, y los ejemplos en
+   centavos. Los precios se copian a mano, que es como se venian metiendo. */
 
 /* ---------- datos ---------- */
 function j(url){ return fetch(url).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }
@@ -2513,7 +2414,6 @@ function pintar(el){
   body.querySelectorAll('input').forEach(function(i){
     if(i.value!=='') i.dispatchEvent(new Event('input'));
   });
-  rellenarKalshi(el);
   medirHead(el);
 }
 
@@ -3440,7 +3340,6 @@ $('reg_import').addEventListener('click',function(){
 })();
 pintarRegistro();
 $('cargar').addEventListener('click',cargar);
-$('kalshi').addEventListener('click',traerKalshi);
 $('algane_btn').addEventListener('click',correrAlGane);
 $('limpiar').addEventListener('click',function(){
   cache.hit={};cache.pen={};cache.log={};cache.sea={};cache.mano={};cache.split={};
