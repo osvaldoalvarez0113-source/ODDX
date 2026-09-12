@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0D0E10">
+<meta name="theme-color" content="#0A1119">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -47,13 +47,24 @@
    de scroll del iPhone salgan oscuras tambien, sin pintarlas a mano.
    --accTx es el color del texto ENCIMA del acento (botones y la barra de
    porcentaje): iba en blanco fijo, y sobre un azul claro no se leia. */
+/* Tema Estadio. Azul noche de base, con DOS acentos y eso es lo importante:
+     --acc  azul acero  = el armazon (botones, pestañas, enlaces, bordes)
+     --hot  ambar       = LA RESPUESTA (barra del %, fila de carreras, pick)
+   Antes el acento era uno solo y estaba en todo, y cuando todo resalta nada
+   resalta: el boton de Cargar pesaba lo mismo que el porcentaje del ganador.
+   Medido, el ambar sale en 9.74 sobre la tarjeta y el azul en 5.21 — o sea
+   que el ojo aterriza en el numero que decide.
+   Contrastes del resto: texto 15.6, secundario 8.1, letra chica 5.3, pie 6.3,
+   texto sobre el boton 5.6, sobre el ambar 9.2. Minimo comodo 4.5.
+   --hotTx es el texto que va ENCIMA del ambar. */
 :root{
  color-scheme:dark;
- --bg:#0D0E10;--bg1:#17181B;--bg2:#1E2024;--bg3:#272A2F;
- --line:#2A2D32;--line2:#3E434A;
- --txt:#F2F3F5;--mut:#B2B7BE;--mut2:#8A9098;
- --acc:#5B9BF5;--acc2:#7FB3FF;--accTx:#0A1220;
- --good:#4ADE80;--bad:#F87171;--info:#5B9BF5;
+ --bg:#0A1119;--bg1:#101A25;--bg2:#16232F;--bg3:#1E2E3C;
+ --line:#1A2B38;--line2:#2B4256;
+ --txt:#EDF2F7;--mut:#A7BCCC;--mut2:#8298A9;
+ --acc:#4F8FD6;--acc2:#6FA6E4;--accTx:#06121C;
+ --hot:#F0B849;--hotTx:#14202B;
+ --good:#4ED88A;--bad:#F5837A;--info:#4F8FD6;
  --cond:'Barlow Condensed','Helvetica Neue',sans-serif;
  --body:system-ui,-apple-system,'Segoe UI',sans-serif;
  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -66,7 +77,7 @@ body{margin:0;color:var(--txt);font-family:var(--body);font-size:15px;line-heigh
 .wrap{max-width:620px;margin:0 auto;padding:0 13px}
 svg.ic{vertical-align:-3px;flex:0 0 auto;stroke-width:1.9}
 
-.topbar{position:sticky;top:0;z-index:20;background:rgba(13,14,16,.95);
+.topbar{position:sticky;top:0;z-index:20;background:rgba(10,17,25,.95);
  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
  border-bottom:1px solid var(--line2);padding-top:env(safe-area-inset-top)}
 .topbar .inner{max-width:620px;margin:0 auto;padding:9px 13px;
@@ -120,8 +131,12 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .status.err{color:var(--bad);background:#2A1A19;border:1px solid #5C2E2A;
  border-radius:var(--r);padding:11px 12px}
 
+/* La tarjeta llevaba solo un borde y quedaba plana contra el fondo. Con la
+   sombra deja de parecer texto pegado a la pantalla y pasa a sentirse como una
+   ficha encima de la mesa. */
 .game{background:var(--bg1);border:1px solid var(--line2);border-radius:var(--r2);
- margin:8px 0;--eq:#3A3A34}
+ margin:10px 0;--eq:#3A3A34;
+ box-shadow:0 1px 3px rgba(0,0,0,.35),0 10px 26px -14px rgba(0,0,0,.7)}
 .game.open{border-color:var(--acc)}
 .head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
  cursor:pointer;padding:13px}
@@ -170,7 +185,7 @@ th .eq{justify-content:flex-end}
  margin:2px 0 12px;border:1px solid var(--line2)}
 .bar span{display:flex;align-items:center;font-family:var(--mono);font-size:14px;
  font-weight:600;padding:0 10px;transition:flex-grow .45s ease;min-width:0;overflow:hidden;gap:7px}
-.bar .lead{background:var(--acc);color:var(--accTx)}
+.bar .lead{background:var(--hot);color:var(--hotTx)}
 .bar .trail{background:var(--bg2);color:var(--mut);justify-content:flex-end}
 .bar .esc{width:18px;height:18px}
 
@@ -191,8 +206,8 @@ th{font-size:12.5px;font-weight:600;color:var(--txt);border-bottom:1px solid var
 td.n{font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums}
 td small{font-family:var(--mono);font-size:11px;color:var(--mut2);margin-left:5px}
 tr:last-child td{border-bottom:0}
-tr.usa td{color:var(--acc);font-weight:600}
-tr.usa td:first-child{color:var(--acc)}
+tr.usa td{color:var(--hot);font-weight:600}
+tr.usa td:first-child{color:var(--hot)}
 table.log{font-size:12.5px}
 table.log td,table.log th{padding:6px 0}
 table.log td.n{font-size:13px}
@@ -211,7 +226,7 @@ footer details summary:before{content:none}
  font-variant-numeric:tabular-nums}
 .calc .tot{border-top:1px solid var(--line2);margin-top:7px;padding-top:9px;color:var(--txt)}
 
-.pick{background:var(--bg1);border:1px solid var(--line2);border-left:3px solid var(--acc);
+.pick{background:var(--bg1);border:1px solid var(--line2);border-left:3px solid var(--hot);
  border-radius:0 var(--r) var(--r) 0;padding:12px 14px;margin:12px 0 8px}
 .pick .q{font-size:17px;font-weight:600;line-height:1.25;display:flex;align-items:center;gap:8px}
 .pick .r{font-size:12.5px;color:var(--mut);margin-top:5px;line-height:1.55}
@@ -412,13 +427,39 @@ footer summary{font-size:14px;color:var(--mut);padding:9px 0;display:flex;
 .navbar button:active{transform:none;opacity:.6}
 body{padding-bottom:calc(env(safe-area-inset-bottom) + 66px)}
 .fab{bottom:calc(env(safe-area-inset-bottom) + 74px)}
-@media (prefers-reduced-motion:reduce){.pane.on{animation:none}}
+.vacio{display:flex;flex-direction:column;align-items:center;text-align:center;
+ padding:42px 22px;margin:14px 0;background:var(--bg1);border:1px solid var(--line2);
+ border-radius:var(--r2);color:var(--mut);font-size:13px;line-height:1.6;
+ box-shadow:0 1px 3px rgba(0,0,0,.35),0 8px 22px -12px rgba(0,0,0,.6);
+ animation:entrapane .34s ease}
+.vacio .vico{position:relative;width:64px;height:64px;display:flex;
+ align-items:center;justify-content:center;margin-bottom:13px}
+.vacio .vico svg{width:34px;height:34px;color:var(--hot);stroke-width:1.5;
+ animation:flota 3.4s ease-in-out infinite}
+.vacio .anillo{position:absolute;inset:0;border-radius:50%;
+ border:1px solid var(--line2);animation:late 3.4s ease-in-out infinite}
+.vacio b{display:block;color:var(--txt);font-size:16px;font-weight:600;margin-bottom:5px}
+.vacio.off{display:none}
+@keyframes flota{0%,100%{transform:translateY(-2px)}50%{transform:translateY(3px)}}
+@keyframes late{0%,100%{transform:scale(1);opacity:.75}50%{transform:scale(1.09);opacity:.35}}
+/* Las tarjetas suben en cascada cuando entra la lista, en vez de aparecer de golpe. */
+@keyframes sube{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+#slate .game{animation:sube .34s cubic-bezier(.22,.7,.3,1) backwards}
+#slate .game:nth-child(2){animation-delay:.04s}
+#slate .game:nth-child(3){animation-delay:.08s}
+#slate .game:nth-child(4){animation-delay:.12s}
+#slate .game:nth-child(5){animation-delay:.16s}
+#slate .game:nth-child(6){animation-delay:.2s}
+#slate .game:nth-child(7){animation-delay:.24s}
+#slate .game:nth-child(n+8){animation-delay:.28s}
+@media (prefers-reduced-motion:reduce){
+ .pane.on,.vacio,#slate .game,.vacio .vico svg,.vacio .anillo{animation:none}}
 </style>
 </head>
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v27</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v29</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -3468,12 +3509,23 @@ try{
   if(cg){ fila.appendChild(cg); cg.textContent='Cargar partidos'; }
   mover('#status','juegos');
   mover('#slate','juegos');
-  mover('.controls','gane');
+  /* Ojo con esto: hay VARIOS .controls en la pagina y el primero en el orden
+     del documento es el de «Borrar cache», que vive dentro de Ajustes. Usar
+     querySelector('.controls') movia ese y dejaba el del ranking donde estaba.
+     Se mueve el BOTON por su id, en un contenedor nuevo, y el que queda vacio
+     se retira. */
+  var cbox=document.createElement('div');
+  cbox.className='controls';
+  pane.gane.appendChild(cbox);
+  var bg=document.getElementById('algane_btn');
+  if(bg){
+    var viejo=bg.parentNode;
+    cbox.appendChild(bg);
+    if(viejo&&viejo.classList&&viejo.classList.contains('controls')&&
+       !viejo.querySelector('button')&&viejo.parentNode)
+      viejo.parentNode.removeChild(viejo);
+  }
   mover('#gane_zona','gane');
-  var pista=document.createElement('div');
-  pista.className='flag';
-  pista.innerHTML='Si no sale nada, primero carga la fecha en <b>Juegos</b>.';
-  pane.gane.appendChild(pista);
   mover('.registro','picks');
   var aj=mover('.ajustes','ajustes');
   if(aj) aj.setAttribute('open','');
@@ -3500,6 +3552,32 @@ try{
     });
     window.scrollTo({top:0,behavior:'auto'});
   }
+  /* Sin partidos cargados la ventana quedaba como un hueco negro de media
+     pantalla. Esto pone una tarjeta centrada con la pelota flotando, que se
+     quita sola en cuanto entra contenido y vuelve si se queda vacia otra vez. */
+  var hacerVacio=function(dib,tit,txt2){
+    var d=document.createElement('div');
+    d.className='vacio';
+    d.innerHTML='<div class="vico"><span class="anillo"></span>'+
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '+
+      'stroke-linecap="round" stroke-linejoin="round">'+dib+'</svg></div>'+
+      '<b>'+tit+'</b>'+txt2;
+    return d;
+  };
+  var vacJ=hacerVacio(ico.juegos,'Listo para el primer pitcheo',
+    'Escoge la fecha arriba y dale a <b>Cargar partidos</b>.');
+  pane.juegos.appendChild(vacJ);
+  var vacG=hacerVacio(ico.gane,'Sin ranking todavía',
+    'Carga la fecha en <b>Juegos</b> y después dale a <b>Ranking al gane</b>.');
+  pane.gane.appendChild(vacG);
+  var vigilar=function(cont,caja){
+    if(!cont||!caja||!window.MutationObserver) return;
+    var act=function(){ caja.classList.toggle('off', cont.children.length>0); };
+    act();
+    new MutationObserver(act).observe(cont,{childList:true});
+  };
+  vigilar(document.getElementById('slate'), vacJ);
+  vigilar(document.getElementById('algane'), vacG);
   ir('juegos');
   /* La cabecera del juego y la barra de pestañas se pegan debajo de la barra
      de arriba. Como acaba de encoger (le quitamos la fecha y el boton), se
