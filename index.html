@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#EFEBE3">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0D0E10">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -37,12 +37,23 @@
    justo el texto que dice si una cuota tiene valor. Los azules, verdes y rojos
    no se tocan: solo se oscurecen los grises y el fondo se separa del blanco de
    la tarjeta, que antes se distinguian apenas (1.06 de razon, ahora 1.19). */
+/* Tema Grafito. Gris neutro sin tinte azul. Contrastes medidos con la formula
+   estandar, en los sitios donde el CSS usa cada variable:
+     texto principal   16.0    letra chica       5.1
+     secundario         8.8    pie               5.9
+     acento             6.3    texto del boton   6.7
+   El minimo comodo es 4.5 y el de leer con sol encima es 7.
+   color-scheme:dark hace que el selector de fecha, las casillas y las barras
+   de scroll del iPhone salgan oscuras tambien, sin pintarlas a mano.
+   --accTx es el color del texto ENCIMA del acento (botones y la barra de
+   porcentaje): iba en blanco fijo, y sobre un azul claro no se leia. */
 :root{
- --bg:#EFEBE3;--bg1:#FFFFFF;--bg2:#F7F4EE;--bg3:#E4DED2;
- --line:#E0DACE;--line2:#BEB5A4;
- --txt:#14120F;--mut:#4A453C;--mut2:#6B655A;
- --acc:#0F4C96;--acc2:#1B5FBF;
- --good:#1E6B3E;--bad:#A32B1E;--info:#0F4C96;
+ color-scheme:dark;
+ --bg:#0D0E10;--bg1:#17181B;--bg2:#1E2024;--bg3:#272A2F;
+ --line:#2A2D32;--line2:#3E434A;
+ --txt:#F2F3F5;--mut:#B2B7BE;--mut2:#8A9098;
+ --acc:#5B9BF5;--acc2:#7FB3FF;--accTx:#0A1220;
+ --good:#4ADE80;--bad:#F87171;--info:#5B9BF5;
  --cond:'Barlow Condensed','Helvetica Neue',sans-serif;
  --body:system-ui,-apple-system,'Segoe UI',sans-serif;
  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -55,7 +66,7 @@ body{margin:0;color:var(--txt);font-family:var(--body);font-size:15px;line-heigh
 .wrap{max-width:620px;margin:0 auto;padding:0 13px}
 svg.ic{vertical-align:-3px;flex:0 0 auto;stroke-width:1.9}
 
-.topbar{position:sticky;top:0;z-index:20;background:rgba(239,235,227,.95);
+.topbar{position:sticky;top:0;z-index:20;background:rgba(13,14,16,.95);
  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
  border-bottom:1px solid var(--line2);padding-top:env(safe-area-inset-top)}
 .topbar .inner{max-width:620px;margin:0 auto;padding:9px 13px;
@@ -79,7 +90,7 @@ select{background-image:linear-gradient(45deg,transparent 50%,var(--mut) 50%),
  linear-gradient(135deg,var(--mut) 50%,transparent 50%);
  background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;
  background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:32px}
-button{background:var(--acc);color:#fff;border:0;border-radius:var(--r);
+button{background:var(--acc);color:var(--accTx);border:0;border-radius:var(--r);
  padding:10px 16px;font-family:var(--body);font-weight:600;font-size:15px;cursor:pointer;
  display:inline-flex;align-items:center;gap:7px}
 button:active{transform:translateY(1px)}
@@ -106,7 +117,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .modo select,.modo input{flex:1 1 auto;width:100%}
 
 .status{color:var(--mut);font-size:13px;padding:10px 2px}
-.status.err{color:var(--bad);background:#FBEDEA;border:1px solid #EBC8C1;
+.status.err{color:var(--bad);background:#2A1A19;border:1px solid #5C2E2A;
  border-radius:var(--r);padding:11px 12px}
 
 .game{background:var(--bg1);border:1px solid var(--line2);border-radius:var(--r2);
@@ -129,7 +140,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .wm{position:absolute;top:0;left:0;right:0;height:230px;overflow:hidden;
  z-index:0;pointer-events:none;border-radius:0 0 var(--r2) var(--r2)}
 .wm img{position:absolute;top:6px;right:-30px;width:180px;height:180px;
- object-fit:contain;opacity:.09}
+ object-fit:contain;opacity:.14}
 
 .game.open .head{position:sticky;top:var(--barra);z-index:9;
  background:var(--eq);border-bottom:0;border-radius:var(--r2) var(--r2) 0 0;color:#fff}
@@ -159,7 +170,7 @@ th .eq{justify-content:flex-end}
  margin:2px 0 12px;border:1px solid var(--line2)}
 .bar span{display:flex;align-items:center;font-family:var(--mono);font-size:14px;
  font-weight:600;padding:0 10px;transition:flex-grow .45s ease;min-width:0;overflow:hidden;gap:7px}
-.bar .lead{background:var(--acc);color:#fff}
+.bar .lead{background:var(--acc);color:var(--accTx)}
 .bar .trail{background:var(--bg2);color:var(--mut);justify-content:flex-end}
 .bar .esc{width:18px;height:18px}
 
@@ -207,9 +218,9 @@ footer details summary:before{content:none}
 .pick.no{border-left-color:var(--line2);background:var(--bg2);border-color:transparent;
  padding-left:12px}
 .pick.no .q{color:var(--mut);font-size:15px}
-.pick.big{border-left-color:var(--good);background:#EFF5E6;border-color:#CFE0B8}
-.pick.big .q{color:#2F5A0C}
-.pick.alerta{border-left-color:var(--bad);background:#FBEDEA;border-color:#EBC8C1}
+.pick.big{border-left-color:var(--good);background:#16251A;border-color:#2E5136}
+.pick.big .q{color:#7EE3A0}
+.pick.alerta{border-left-color:var(--bad);background:#2A1A19;border-color:#5C2E2A}
 .pick.alerta .q{color:var(--bad);font-size:16px}
 
 .flag{font-size:12.5px;color:var(--mut);padding:5px 0;line-height:1.55}
@@ -242,10 +253,10 @@ footer details summary:before{content:none}
 .receta li{margin:4px 0}
 
 .aviso{width:100%;font-size:12.5px;line-height:1.55;color:var(--bad);
- background:#FBEDEA;border:1px solid #EBC8C1;border-radius:var(--r);
+ background:#2A1A19;border:1px solid #5C2E2A;border-radius:var(--r);
  padding:10px 12px;margin-top:9px}
 .aviso:empty{display:none}
-.aviso b{color:#7E2417;font-weight:600}
+.aviso b{color:#FCA5A5;font-weight:600}
 
 .cal{display:flex;align-items:center;gap:11px;background:var(--bg2);border-radius:var(--r);
  padding:10px 12px;margin:12px 0}
@@ -259,8 +270,8 @@ footer details summary:before{content:none}
 
 .medido{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;
  letter-spacing:.3px;border-radius:4px;padding:2px 6px;margin-left:6px;vertical-align:middle}
-.medido.ok{background:#E7F0DA;color:#2F5A0C}
-.medido.flojo{background:#FBE3DE;color:#8A2A1F}
+.medido.ok{background:#16281C;color:#7EE3A0}
+.medido.flojo{background:#2C1A18;color:#F0A29A}
 .medido.gris{background:var(--bg3);color:var(--mut)}
 
 .row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:10px 0;
@@ -269,7 +280,7 @@ footer details summary:before{content:none}
 .row label{font-size:12px;color:var(--mut)}
 .out{font-size:12.5px;width:100%;line-height:1.55;color:var(--mut)}
 .out:empty{display:none}
-.out.si{color:#2F5A0C;font-weight:500}
+.out.si{color:#7EE3A0;font-weight:500}
 .out.no{color:var(--mut2)}
 .lu-out{font-size:12.5px}
 
@@ -278,8 +289,8 @@ footer details summary:before{content:none}
  color:var(--mut2);padding-bottom:6px}
 .row.hcrow .par{display:flex;align-items:center;gap:10px;border-radius:6px;padding:8px 10px;
  margin:5px 0;border:1px solid transparent}
-.row.hcrow .par.pv{background:#EFF5E6;border-color:#CFE0B8}
-.row.hcrow .par.pr{background:#FBEDEA;border-color:#EBC8C1}
+.row.hcrow .par.pv{background:#16251A;border-color:#2E5136}
+.row.hcrow .par.pr{background:#2A1A19;border-color:#5C2E2A}
 .row.hcrow .par label{flex:1;min-width:0;font-size:13px;color:var(--txt);
  display:flex;align-items:center;gap:7px;line-height:1.3}
 .row.hcrow .par label i{font-style:normal;color:var(--mut2)}
@@ -295,10 +306,10 @@ footer details summary:before{content:none}
 .teq{background:var(--bg1);color:var(--mut);border:1px solid var(--line2);border-radius:20px;
  padding:6px 13px;font-size:13px;font-weight:600;min-height:42px;
  display:inline-flex;align-items:center;gap:6px}
-.teq.on{background:#E8F1FA;color:var(--acc);border-color:var(--acc)}
+.teq.on{background:#16263A;color:var(--acc);border-color:var(--acc)}
 .pt{width:12px;height:12px;border-radius:50%;flex:0 0 12px;display:inline-block}
-.pt.verde{background:#639922}
-.pt.rojo{background:#C0453A}
+.pt.verde{background:#4ADE80}
+.pt.rojo{background:#F87171}
 .pk button,.pick button{min-height:38px}
 
 .manual,.registro,.gane{margin-top:28px;border-top:1px solid var(--line2);padding-top:18px}
@@ -318,8 +329,8 @@ footer details summary:before{content:none}
 .pk .acc input{width:76px}
 .pk button{padding:7px 12px;font-size:13px}
 .pk .res{font-family:var(--mono);font-size:12px;border-radius:4px;padding:2px 7px}
-.pk .res.g{color:#2F5A0C;background:#E7F0DA}
-.pk .res.p{color:#8A2A1F;background:#FBE3DE}
+.pk .res.g{color:#7EE3A0;background:#16281C}
+.pk .res.p{color:#F0A29A;background:#2C1A18}
 
 .tarj{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:12px 0}
 .tarj div{background:var(--bg2);border-radius:var(--r);padding:11px 10px}
@@ -374,12 +385,40 @@ footer summary{font-size:14px;color:var(--mut);padding:9px 0;display:flex;
  .grid{grid-template-columns:1fr 70px 70px}
 }
 @media (prefers-reduced-motion:reduce){.bar span{transition:none}}
+
+/* ---------- ventanas ----------
+   Las secciones no se reescriben: se mueven a su panel con JS al cargar. Aqui
+   solo va como se ven y como entran. */
+.pane{display:none}
+.pane.on{display:block;animation:entrapane .24s cubic-bezier(.22,.7,.3,1)}
+@keyframes entrapane{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.pane>.registro,.pane>.manual,.pane>.gane{margin-top:0;border-top:0;padding-top:4px}
+.cargafila{display:flex;gap:8px;align-items:center;margin:14px 0 4px}
+.cargafila input[type=date]{flex:1;min-width:0}
+.cargafila button{flex:0 0 auto;white-space:nowrap}
+#pane-ajustes .ajustes{border:0;background:transparent;margin:0}
+#pane-ajustes .ajustes>summary{display:none}
+#pane-ajustes .ajustes .cuerpo{padding:0;border-top:0}
+.navbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;
+ background:rgba(13,14,16,.97);-webkit-backdrop-filter:blur(14px);
+ backdrop-filter:blur(14px);border-top:1px solid var(--line2);
+ padding-bottom:env(safe-area-inset-bottom)}
+.navbar button{flex:1;width:auto;margin:0;background:transparent;border:0;
+ border-radius:0;color:var(--mut2);padding:8px 3px 7px;font-size:10.5px;
+ font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;
+ box-shadow:none;transition:color .18s}
+.navbar button.on{color:var(--acc)}
+.navbar button svg{width:21px;height:21px;stroke-width:1.7}
+.navbar button:active{transform:none;opacity:.6}
+body{padding-bottom:calc(env(safe-area-inset-bottom) + 66px)}
+.fab{bottom:calc(env(safe-area-inset-bottom) + 74px)}
+@media (prefers-reduced-motion:reduce){.pane.on{animation:none}}
 </style>
 </head>
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v25</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v27</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -3386,6 +3425,93 @@ if(typeof pintar==='function'){
     }catch(err){}
   };
 }
+})();
+</script>
+<script>
+/* ---------- ventanas ----------
+   La app era una sola pagina larga: para ver los picks habia que bajar por
+   toda la lista de juegos. Aqui se parte en cuatro pantallas con una barra
+   fija abajo.
+   No se reescribe nada del HTML: se MUEVEN las secciones que ya existen con
+   appendChild, que traslada el nodo sin clonarlo — asi conserva todos sus
+   escuchadores y ningun boton deja de funcionar. Va todo dentro de un try:
+   si faltara alguna pieza, la app se queda como estaba en vez de romperse. */
+(function(){
+try{
+  var wrap=document.querySelector('.wrap');
+  if(!wrap||document.querySelector('.navbar')) return;
+  var ico={
+    juegos:'<circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/>',
+    gane:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5.2v1.6A3.2 3.2 0 0 0 8.4 11M16 6h2.8v1.6A3.2 3.2 0 0 1 15.6 11M10.4 17h3.2M9 20h6"/>',
+    picks:'<path d="M5 4.5h11.5a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2z"/><path d="M5 16.5h13.5"/>',
+    ajustes:'<circle cx="12" cy="12" r="3"/><path d="M12 3.2v2M12 18.8v2M3.2 12h2M18.8 12h2M5.8 5.8l1.4 1.4M16.8 16.8l1.4 1.4M18.2 5.8L16.8 7.2M7.2 16.8l-1.4 1.4"/>'
+  };
+  var SEC=[['juegos','Juegos'],['gane','Al gane'],['picks','Mis picks'],['ajustes','Ajustes']];
+  var pane={};
+  SEC.forEach(function(s){
+    var d=document.createElement('section');
+    d.className='pane'; d.id='pane-'+s[0];
+    pane[s[0]]=d; wrap.appendChild(d);
+  });
+  var mover=function(sel,dest){
+    var el=(typeof sel==='string')?document.querySelector(sel):sel;
+    if(el&&pane[dest]) pane[dest].appendChild(el);
+    return el;
+  };
+  /* La fecha y el boton de cargar salen de la barra de arriba y se van a
+     Juegos, que es donde se usan y donde hay sitio. */
+  var fila=document.createElement('div');
+  fila.className='cargafila';
+  pane.juegos.appendChild(fila);
+  var fe=document.getElementById('fecha'), cg=document.getElementById('cargar');
+  if(fe){ fe.style.maxWidth=''; fila.appendChild(fe); }
+  if(cg){ fila.appendChild(cg); cg.textContent='Cargar partidos'; }
+  mover('#status','juegos');
+  mover('#slate','juegos');
+  mover('.controls','gane');
+  mover('#gane_zona','gane');
+  var pista=document.createElement('div');
+  pista.className='flag';
+  pista.innerHTML='Si no sale nada, primero carga la fecha en <b>Juegos</b>.';
+  pane.gane.appendChild(pista);
+  mover('.registro','picks');
+  var aj=mover('.ajustes','ajustes');
+  if(aj) aj.setAttribute('open','');
+  mover('header.hero','ajustes');
+  mover('.manual','ajustes');
+  mover('footer','ajustes');
+  /* barra de abajo */
+  var nav=document.createElement('nav');
+  nav.className='navbar';
+  SEC.forEach(function(s){
+    var b=document.createElement('button');
+    b.dataset.p=s[0];
+    b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '+
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+ico[s[0]]+
+      '</svg><span>'+s[1]+'</span>';
+    b.addEventListener('click',function(){ ir(s[0]); });
+    nav.appendChild(b);
+  });
+  document.body.appendChild(nav);
+  function ir(id){
+    SEC.forEach(function(s){ pane[s[0]].classList.toggle('on', s[0]===id); });
+    nav.querySelectorAll('button').forEach(function(b){
+      b.classList.toggle('on', b.dataset.p===id);
+    });
+    window.scrollTo({top:0,behavior:'auto'});
+  }
+  ir('juegos');
+  /* La cabecera del juego y la barra de pestañas se pegan debajo de la barra
+     de arriba. Como acaba de encoger (le quitamos la fecha y el boton), se
+     vuelve a medir en vez de dejar el valor fijo del CSS. */
+  var medirBarra=function(){
+    var t=document.querySelector('.topbar');
+    if(t) document.documentElement.style.setProperty('--barra', t.offsetHeight+'px');
+  };
+  medirBarra();
+  window.addEventListener('resize',medirBarra,{passive:true});
+  window.addEventListener('orientationchange',medirBarra,{passive:true});
+}catch(e){}
 })();
 </script>
 </body>
