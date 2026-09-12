@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parche OVA v31</title>
+<style>
+:root{color-scheme:dark}
+body{margin:0;background:#0A1119;color:#EDF2F7;font-family:-apple-system,system-ui,sans-serif;
+ font-size:16px;line-height:1.55;padding:18px 15px 60px}
+h1{font-size:23px;margin:0 0 4px}
+p{color:#A7BCCC;font-size:14px}
+button{background:#4F8FD6;color:#06121C;border:0;border-radius:8px;padding:13px 18px;
+ font-size:16px;font-weight:600;margin:8px 8px 0 0}
+button.g{background:#4ED88A}
+button:disabled{opacity:.45}
+.ok{color:#7EE3A0}.bad{color:#F5837A}
+#log{font-family:ui-monospace,monospace;font-size:12.5px;line-height:1.7;margin-top:16px;
+ background:#101A25;border:1px solid #2B4256;border-radius:10px;padding:12px}
+.n{color:#A7BCCC}
+</style>
+</head>
+<body>
+
+<h1>Parche OVA &rarr; v31</h1>
+<p>Sube este archivo al repo <b>ODDX</b>, al lado del <code>index.html</code>, y &aacute;brelo.
+Coge tu <code>index.html</code>, le aplica los cambios y te devuelve el archivo nuevo.</p>
+
+<button id="ir">Aplicar el parche</button>
+<div id="log"></div>
+<div id="salida"></div>
+
+<script>
+var L=document.getElementById('log');
+function log(t,c){ L.innerHTML+='<div class="'+(c||'n')+'">'+t+'</div>'; }
+
+/* ---------- los cambios ---------- */
+var P=[];
+function add(nombre,de,a){ P.push({n:nombre,de:de,a:a}); }
+
+/* 1. version visible */
+add('Número de versión',
+`<span class="ver">v30</span>`,
+`<span class="ver">v31</span>`);
+
+/* 2. CSS del panel de guardar en Al gane */
+add('Estilos del panel de Al gane',
+`@media (prefers-reduced-motion:reduce){.fab{transition:none}}
+</style>`,
+`@media (prefers-reduced-motion:reduce){.fab{transition:none}}
+/* Panel para guardar un pick desde Al gane. Se abre tocando el nombre del
+   equipo. Antes el unico boton de guardar vivia dentro del ranking, o sea que
+   un juego sin valor no se podia anotar ni queriendo. */
+.ganeacc{display:none;gap:6px;align-items:center;flex-wrap:wrap;
+ background:var(--bg2);border-bottom:1px solid var(--line);padding:9px 10px}
+.ganeacc.on{display:flex}
+.ganeacc label{font-size:12px;color:var(--mut)}
+.ganeacc input{width:88px}
+.ganeacc button{padding:7px 11px;font-size:12.5px;min-height:38px}
+.ganeacc .gmsg{font-size:12px;color:var(--good);flex:1 1 100%}
+.ganeacc .gmsg.bad{color:var(--bad)}
+</style>`);
+
+/* 3. ordenar por PUNTOS y no por EV, con listón de ruido por mercado */
+add('Ordenar por puntos de ventaja',
+`  lista.sort(function(a,b){ return b.v.ev-a.v.ev; });
+  var buenos=lista.filter(function(m){ return m.v.ev>0 && m.v.ventaja>=2; });`,
+`  /* Se ordenaba por EV, y el EV por dolar es la ventaja DIVIDIDA entre el
+     precio: los mismos 7 puntos dan +13% sobre un contrato de 52 centavos y
+     +8.7% sobre uno de 80. O sea que el contrato barato ganaba siempre esa
+     carrera aunque la ventaja fuera identica, y eso no es una senal, es la
+     aritmetica del denominador. Ahora manda la ventaja en puntos, que es
+     cuanto te separas del mercado. El EV sigue impreso en cada linea.
+     UMBRAL es el liston de cada mercado segun lo que dio SU propia medicion:
+     el ganador y el handicap estan calibrados (0.55 de Brier, multiplicador
+     medido) y ahi 2 puntos significan algo; el total, las carreras por equipo
+     y F5 andan en correlacion 0.10-0.16, y con esa precision una ventaja de 3
+     o 4 puntos no se distingue de la formula redondeando. Los ponches nunca se
+     han medido contra nada. Lo que no llega a su liston NO se bota — se marca
+     y cae al final, porque la decision es suya. */
+  var UMBRAL={ok:2, flojo:8, nada:10};
+  var ruidoso=function(m){ return m.v.ventaja < (UMBRAL[m.med]||8); };
+  lista.sort(function(a,b){
+    var ra=ruidoso(a)?1:0, rb=ruidoso(b)?1:0;
+    if(ra!==rb) return ra-rb;
+    return b.v.ventaja-a.v.ventaja;
+  });
+  var buenos=lista.filter(function(m){ return m.v.ev>0 && m.v.ventaja>=2; });`);
+
+/* 4. bandera de ruido */
+add('Bandera de ruido',
+`  var rank=0, hayFlojo=false;`,
+`  var rank=0, hayFlojo=false, hayRuido=false;`);
+
+/* 5. marcar las que no llegan al listón de su mercado */
+add('Marcar «dentro del ruido»',
+`    rank++;
+    if(m.med!=='ok') hayFlojo=true;
+    var medalla=['🥇','🥈','🥉'][rank-1]||(rank+'.');
+    o+='<div class="pick '+nv.c+'"><div class="q">'+medalla+' '+esc(m.m)+' '+esc(fmtOdds(m.am))+
+       marca(m.med)+'</div>'+
+       '<div class="r">'+nv.t+' · tú '+m.p.toFixed(1)+'% contra '+m.v.imp.toFixed(1)+`,
+`    rank++;
+    if(m.med!=='ok') hayFlojo=true;
+    var rd=ruidoso(m), umb=(UMBRAL[m.med]||8);
+    if(rd){ nv={t:'dentro del ruido — este mercado pide '+umb+' puntos', c:'no'}; hayRuido=true; }
+    var medalla=rd?'·':(['🥇','🥈','🥉'][rank-1]||(rank+'.'));
+    o+='<div class="pick '+nv.c+'"><div class="q">'+medalla+' '+esc(m.m)+' '+esc(fmtOdds(m.am))+
+       marca(m.med)+'</div>'+
+       '<div class="r">'+nv.t+' · tú '+m.p.toFixed(1)+'% contra '+m.v.imp.toFixed(1)+`);
+
+/* 6. el ganador SIEMPRE sale, tenga valor o no */
+add('El ganador siempre en el ranking',
+`  var fuera=lista.length-buenos.length;`,
+`  /* El ganador sale SIEMPRE, pase o no el filtro de valor. Hay juegos que se
+     juegan al gane aunque el mercado ya lo tenga descontado, y antes ni se
+     podia guardar el pick: el unico boton de guardar vivia dentro de una
+     tarjeta que solo se pintaba si habia EV positivo. Es ademas el unico
+     mercado calibrado de la app, asi que esconderlo era justo al reves. */
+  var mls=lista.filter(function(m){ return / gana$/.test(m.m); });
+  var yaArriba={};
+  buenos.forEach(function(m){ yaArriba[m.m]=1; });
+  var mlFuera=mls.filter(function(m){ return !yaArriba[m.m]; });
+  if(mlFuera.length){
+    mlFuera.sort(function(a,b){ return b.v.ventaja-a.v.ventaja; });
+    var m0=mlFuera[0];
+    o+='<h3>Al ganador</h3>'+
+       '<div class="pick no"><div class="q">'+esc(m0.m)+' '+esc(fmtOdds(m0.am))+marca('ok')+'</div>'+
+       '<div class="r">No pasa el filtro de valor: tú '+m0.p.toFixed(1)+'% contra '+
+       m0.v.imp.toFixed(1)+'% · '+(m0.v.ventaja>=0?'+':'')+m0.v.ventaja.toFixed(1)+' puntos · EV '+
+       (m0.v.ev>=0?'+':'')+(m0.v.ev*100).toFixed(1)+'% por dólar. Aquí lo tienes igual para que '+
+       'puedas guardarlo si lo quieres jugar al gane. Es el único mercado calibrado de la app, '+
+       'aunque el precio no te regale nada — y jugar sin valor tiene un costo esperado, que es '+
+       'justo ese EV de ahí arriba.</div>'+
+       '<div class="acc" style="margin-top:8px">'+
+       '<button class="ghost gp" data-org="modelo" data-m="'+esc(m0.m)+
+       '" data-p="'+m0.p.toFixed(2)+'" data-am="'+esc(String(m0.am))+'">Guardar · del modelo</button>'+
+       '<button class="ghost gp" data-org="mio" data-m="'+esc(m0.m)+
+       '" data-p="'+m0.p.toFixed(2)+'" data-am="'+esc(String(m0.am))+'">Guardar · mío 👁</button>'+
+       '</div></div>';
+  }
+  var fuera=lista.length-buenos.length;`);
+
+/* 7. avisos: por qué se ordena por puntos, ruido, y picks correlacionados */
+add('Aviso de picks correlacionados',
+`  if(rank>1) o+='<div class="flag">Están ordenadas por EV, que es cuánto esperas ganar por cada dólar. '+
+     'Ojo: los mercados de un mismo juego están correlacionados — si el favorito gana, el Under suele acompañar. '+
+     'Jugar dos de esta lista no es diversificar, es doblar la misma apuesta.</div>';`,
+`  if(hayRuido) o+='<div class="flag">Las marcadas <b>dentro del ruido</b> tienen menos ventaja que el '+
+     'error medido de su propio mercado. El total, las carreras por equipo y F5 andan en correlación '+
+     '0.10–0.16, y con esa precisión 3 o 4 puntos no se distinguen de la fórmula redondeando. Siguen '+
+     'aquí y se pueden guardar — la decisión es tuya — pero van al final y no llevan medalla.</div>';
+  if(rank>1){
+    o+='<div class="flag">Ahora van ordenadas por <b>puntos de ventaja</b>, no por EV. El EV por dólar '+
+       'es la ventaja dividida entre el precio, así que el contrato más barato ganaba siempre esa '+
+       'carrera aunque la ventaja fuera la misma: 7 puntos sobre 52¢ dan +13% y esos mismos 7 puntos '+
+       'sobre 80¢ dan +8.7%. Los puntos miden cuánto te separas del mercado; el EV mide cuánto paga. '+
+       'Los dos siguen en cada línea.</div>';
+    /* Cuatro Unders del mismo juego no son cuatro oportunidades: son una sola
+       proyeccion de carreras que salio por debajo de la del mercado, contada
+       cuatro veces. Si falla, fallan las cuatro juntas. */
+    var lados={};
+    buenos.forEach(function(m){
+      var L=null;
+      if(m.m.indexOf('Under ')===0) L='Under';
+      else if(m.m.indexOf('Over ')===0) L='Over';
+      if(L) lados[L]=(lados[L]||0)+1;
+    });
+    ['Under','Over'].forEach(function(L){
+      if(!(lados[L]>=2)) return;
+      o+='<div class="aviso">⚠️ <b>'+lados[L]+' de estas proposiciones son '+L+'</b> del mismo juego. '+
+         'Eso no son '+lados[L]+' oportunidades: es <b>una sola</b>. Tu proyección de carreras salió '+
+         (L==='Under'?'por debajo':'por encima')+' de la del mercado, y el total, las carreras de cada '+
+         'equipo y las primeras 5 salen todas de ese mismo número — por eso se encienden juntas. Si te '+
+         'equivocas, fallan las '+lados[L]+'. Escoge una y con un solo stake.</div>';
+    });
+  }`);
+
+/* 8. Al gane: panel para guardar el pick */
+add('Panel de guardar en Al gane (pintado)',
+`    o+='<div class="fila'+(alto?' alto':'')+(gris?' gris':'')+'" data-pk="'+m.pk+'">'+
+       '<div class="pos">'+(i+1)+'</div>'+
+       escudo(m.id,26)+
+       '<div class="txt"><b>'+esc(m.gana)+'</b>'+
+       '<span>'+esc(m.juego)+' · ventaja '+m.vc.toFixed(2)+' carreras'+
+       (m.capped?' · tope alcanzado':'')+'</span></div>'+
+       '<div class="pct">'+m.p.toFixed(1)+'%<em>'+american(m.p)+'</em></div>'+
+       '<input type="checkbox" class="chk"'+(COMBI[m.pk]?' checked':'')+'>'+
+       '</div>';`,
+`    o+='<div class="fila'+(alto?' alto':'')+(gris?' gris':'')+'" data-pk="'+m.pk+'">'+
+       '<div class="pos">'+(i+1)+'</div>'+
+       escudo(m.id,26)+
+       '<div class="txt"><b>'+esc(m.gana)+'</b>'+
+       '<span>'+esc(m.juego)+' · ventaja '+m.vc.toFixed(2)+' carreras'+
+       (m.capped?' · tope alcanzado':'')+'</span></div>'+
+       '<div class="pct">'+m.p.toFixed(1)+'%<em>'+american(m.p)+'</em></div>'+
+       '<input type="checkbox" class="chk"'+(COMBI[m.pk]?' checked':'')+'>'+
+       '</div>'+
+       '<div class="ganeacc" data-gana="'+esc(m.gana)+'" data-juego="'+esc(m.juego)+
+       '" data-p="'+m.p.toFixed(2)+'">'+
+       '<label>'+(PLATA==='kalshi'?'Precio':'Cuota')+'</label>'+
+       '<input type="text" class="gc" placeholder="'+ph('-155','58')+'">'+
+       '<button class="ghost gg" data-org="modelo">Guardar · del modelo</button>'+
+       '<button class="ghost gg" data-org="mio">Guardar · mío 👁</button>'+
+       '<span class="gmsg"></span></div>';`);
+
+/* 9. Al gane: aviso de que se puede guardar */
+add('Aviso de guardar en Al gane',
+`  o+='<div class="leyenda">Ordenados por probabilidad, sin mirar cuota. En verde los que pasan '+`,
+`  o+='<div class="flag">Toca el nombre de un equipo para meter la cuota y <b>guardar ese pick al '+
+     'gane</b>, tenga valor o no. Queda en Mis picks con su CLV como cualquier otro, y así puedes '+
+     'medir con tus propios juegos si jugar al favorito sin valor te sale o no te sale.</div>'+
+     '<div class="leyenda">Ordenados por probabilidad, sin mirar cuota. En verde los que pasan '+`);
+
+/* 10. Al gane: conectar el panel */
+add('Panel de guardar en Al gane (conectado)',
+`  pintarCombi();
+}
+
+function pintarCombi(){`,
+`  caja.querySelectorAll('.fila .txt').forEach(function(t){
+    t.style.cursor='pointer';
+    t.addEventListener('click',function(){
+      var f=t.parentNode, g=f?f.nextElementSibling:null;
+      if(g&&g.classList.contains('ganeacc')) g.classList.toggle('on');
+    });
+  });
+  caja.querySelectorAll('.ganeacc').forEach(function(g){
+    var inp=g.querySelector('.gc'), msg=g.querySelector('.gmsg');
+    var di=function(t,mal){ msg.textContent=t; msg.className='gmsg'+(mal?' bad':''); };
+    g.querySelectorAll('.gg').forEach(function(b){
+      b.addEventListener('click',function(){
+        var am=(inp.value||'').trim();
+        if(!am){ di('Falta la cuota.',1); return; }
+        if(impMod(am)==null){ di('Esa cuota no se entiende.',1); return; }
+        var fe=$('fecha');
+        var base={f:(fe&&fe.value)||hoyISO(), juego:g.dataset.juego,
+                  m:g.dataset.gana+' gana', p:+g.dataset.p, am:am, plat:PLATA};
+        if(regExiste(base)){ di('Ya lo tienes guardado ✓'); return; }
+        if(regAdd({f:base.f, juego:base.juego, m:base.m, p:base.p, am:base.am,
+                   plat:base.plat, org:b.dataset.org||'modelo', cierre:null, res:null})){
+          di('Guardado ✓'); pintarRegistro();
+        }else di('No se pudo guardar.',1);
+      });
+    });
+  });
+  pintarCombi();
+}
+
+function pintarCombi(){`);
+
+/* 11. nota técnica del pie */
+add('Nota técnica del pie',
+`  El <b>Ranking del juego</b> ordena por EV todas las proposiciones en las que metiste cuota. Solo entran
+  las que llegan a 2 puntos de ventaja, y esos 2 puntos se cuentan sobre lo que de verdad arriesgas.`,
+`  El <b>Ranking del juego</b> ordena por <b>puntos de ventaja</b> todas las proposiciones en las que
+  metiste cuota. Hasta la v30 ordenaba por EV, y eso tenía un sesgo que nadie escogió: el EV por dólar
+  es la ventaja dividida entre el precio, así que el contrato más barato ganaba siempre la lista aunque
+  la ventaja fuera idéntica — 7 puntos sobre 52¢ dan +13% y esos mismos 7 puntos sobre 80¢ dan +8.7%.
+  Eso no es una señal, es el denominador. Los puntos miden cuánto te separas del mercado y el EV cuánto
+  paga; los dos siguen impresos en cada línea.
+  Entran las que llegan a 2 puntos de ventaja, contados sobre lo que de verdad arriesgas. Las que no
+  llegan al listón de <i>su</i> mercado quedan marcadas <b>dentro del ruido</b> y caen al final, pero no
+  se botan. El listón sale de lo que midió cada uno: 2 puntos para el ganador y el hándicap, que están
+  calibrados; 8 para el total, las carreras por equipo y las primeras 5, que andan en correlación
+  0.10–0.16; 10 para los ponches, que nunca se han medido. Con esa precisión, una ventaja de 3 o 4
+  puntos en un total no se distingue de la fórmula redondeando.
+  El <b>ganador aparece siempre</b>, pase o no el filtro, para que puedas guardarlo cuando quieras jugar
+  al gane — es el único mercado calibrado y antes era el único que no se podía anotar. Lo mismo en el
+  modo Al gane: tocando el nombre de un equipo se abre la casilla de la cuota y el botón de guardar.
+  Y cuando dos o más proposiciones del ranking son del mismo lado (dos Unders, dos Overs), la app lo
+  avisa: no son dos oportunidades, es una sola proyección contada dos veces.`);
+
+/* ===== muestra corta del abridor ===== */
+
+/* 12. traer los hits de temporada (el FIP los ignora a proposito) */
+add('Traer hits y WHIP del abridor',
+`    var hr=+(st.homeRuns||0), bb=+(st.baseOnBalls||0), hbp=+(st.hitByPitch||0), so=+(st.strikeOuts||0);
+    var gs=+(st.gamesStarted||0);
+    var era=(st.era!=null&&st.era!=='-.--')?parseFloat(st.era):null;
+    var out={era:era, ip:ip, so:so, gs:gs,
+      w:+(st.wins||0), l:+(st.losses||0),
+      fip: ip>=10 ? (13*hr+3*(bb+hbp)-2*so)/ip+3.15 : null,
+      k9:  ip>0 ? so*9/ip : null,
+      ipx: gs>0 ? ip/gs : null};`,
+`    var hr=+(st.homeRuns||0), bb=+(st.baseOnBalls||0), hbp=+(st.hitByPitch||0), so=+(st.strikeOuts||0);
+    var gs=+(st.gamesStarted||0);
+    var hh=+(st.hits||0);
+    var era=(st.era!=null&&st.era!=='-.--')?parseFloat(st.era):null;
+    /* Los hits NO entran al calculo, solo se enseñan. El FIP los ignora a
+       proposito porque el BABIP es ruidoso, pero eso deja un hueco: un abridor
+       al que le conectan 9 hits en 10 innings y aun asi tiene 2.54 de ERA esta
+       dejando gente en base y librandola, y ni el ERA ni el FIP lo dicen.
+       Meterlo al calculo con un peso inventado seria repetir el error del
+       multiplicador ×13; enseñarlo no cuesta nada y es lo que falta ver. */
+    var out={era:era, ip:ip, so:so, gs:gs,
+      w:+(st.wins||0), l:+(st.losses||0),
+      fip: ip>=10 ? (13*hr+3*(bb+hbp)-2*so)/ip+3.15 : null,
+      k9:  ip>0 ? so*9/ip : null,
+      h9:  ip>0 ? hh*9/ip : null,
+      whip:ip>0 ? (hh+bb)/ip : null,
+      ipx: gs>0 ? ip/gs : null};`);
+
+/* 13. el prior del ERA pasa a ser ajustable */
+add('Prior del ERA ajustable (variable)',
+`var MULT=6;`,
+`var MULT=6;
+/* Cuantos innings de promedio de liga se le suman al abridor antes de creerle
+   su ERA. Con 40, un novato de 10 innings entra con 20% de su propio numero y
+   80% de la liga. Ese 40 es un SUPUESTO: nunca se midio, a diferencia del ×6.
+   Por eso se puede mover desde Ajustes y por eso el valor por defecto no se
+   toca hasta que haya un backtest que diga cual es. */
+var PRIOR_ERA=40;`);
+
+add('Prior del ERA ajustable (cálculo)',
+`  var s=reg(se.era,se.ip,40,anc), l=reg(l5.era,l5.ip,25,anc), f=reg(se.fip,se.ip,40);`,
+`  var s=reg(se.era,se.ip,PRIOR_ERA,anc), l=reg(l5.era,l5.ip,PRIOR_ERA*0.625,anc),
+      f=reg(se.fip,se.ip,PRIOR_ERA);`);
+
+add('Prior del ERA ajustable (selector)',
+`        <option value="fip">FIP de temporada</option>
+      </select>
+    </div>`,
+`        <option value="fip">FIP de temporada</option>
+      </select>
+    </div>
+
+    <div class="modo">
+      <label for="prior"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.6v16.8M7.4 8.2h9.2M7.4 15.8h9.2"/></svg> Cu&aacute;nto le crees al ERA de un abridor nuevo</label>
+      <select id="prior">
+        <option value="40" selected>Normal &mdash; se jala con 40 innings de liga</option>
+        <option value="80">Desconfiado &mdash; 80 innings</option>
+        <option value="120">Muy desconfiado &mdash; 120 innings</option>
+      </select>
+    </div>`);
+
+add('Prior del ERA ajustable (evento)',
+`$('modo').addEventListener('change',function(){ MODO=this.value; repintarTodo(); });`,
+`$('modo').addEventListener('change',function(){ MODO=this.value; repintarTodo(); });
+$('prior').addEventListener('change',function(){ PRIOR_ERA=+this.value; repintarTodo(); });`);
+
+/* 14. el aviso de muestra corta, en el Veredicto */
+add('Aviso de muestra corta (función)',
+`function ajuste(nombre,crudo,usado){`,
+`/* El modelo YA jala el ERA hacia la liga segun los innings — un novato de 2.54
+   en 10 innings entra al calculo con ~3.77, no con 2.54. Lo que faltaba era
+   enseñarlo DONDE SE DECIDE. El aviso viejo vivia en la pestaña de Numeros y
+   solo salia si el movimiento pasaba de 0.75, asi que en el Veredicto no se
+   veia nada y parecia que el novato entraba con su numero bueno. */
+function avisoMuestra(nA,seA,cA,uA,nH,seH,cH,uH){
+  var f=[];
+  [[nA,seA,cA,uA],[nH,seH,cH,uH]].forEach(function(t){
+    var se=t[1], cr=t[2], us=t[3];
+    if(!se||cr==null||us==null||!isFinite(cr)||!isFinite(us)) return;
+    if(se.ip>=30 && Math.abs(cr-us)<0.60) return;
+    f.push({n:t[0], ip:se.ip, gs:se.gs, cr:cr, us:us, h9:se.h9, whip:se.whip});
+  });
+  if(!f.length) return '';
+  var o='<div class="aviso"><b>⚠️ Muestra corta en el montículo</b><br>';
+  f.forEach(function(p){
+    o+='<b>'+esc(p.n)+'</b> lleva '+num(p.ip,1)+' innings'+(p.gs?' en '+p.gs+' aperturas':'')+
+       '. Su ERA dice '+num(p.cr)+', pero al cálculo entra con <b>'+num(p.us)+'</b>: se jaló hacia el '+
+       'promedio de la liga porque con esos innings ese número todavía no significa nada.';
+    if(p.h9!=null&&isFinite(p.h9)){
+      o+=' Le conectan '+num(p.h9,1)+' hits por 9'+
+         (p.whip!=null&&isFinite(p.whip)?' y su WHIP es '+num(p.whip):'')+'.';
+      if(p.h9>=9.5) o+=' <b>Le están pegando.</b> Lo que lo salva son los corredores que deja en base, '+
+         'y eso no se sostiene: el ERA le va a subir.';
+    }
+    o+='<br>';
+  });
+  o+='Y ojo con la otra mitad: al abridor de enfrente, si lleva 80 o 100 innings, no se le mueve casi '+
+     'nada. Así que la ventaja que ves puede ser sobre todo <b>la diferencia entre lo que sabemos de '+
+     'uno y lo que no sabemos del otro</b>, y no entre los dos pitchers. Este es el juego donde tu ojo '+
+     'pesa más que el número: míralo en Forma, y si lo juegas, guárdalo como <b>pick mío 👁</b> para '+
+     'que el registro pueda decirte después quién acertó.</div>';
+  return o;
+}
+function ajuste(nombre,crudo,usado){`);
+
+add('Aviso de muestra corta (en el Veredicto)',
+`  '<div class="pickbox">'+pick+'</div>'+
+  '<table>'+
+    '<tr><th>Carreras esperadas</th><th>'+thA+'</th><th>'+thH+'</th></tr>'+`,
+`  '<div class="pickbox">'+pick+'</div>'+
+  avisoMuestra(pa.fullName,sea,cA,eA,pih.fullName,seh,cH,eH)+
+  '<table>'+
+    '<tr><th>Carreras esperadas</th><th>'+thA+'</th><th>'+thH+'</th></tr>'+`);
+
+/* 15. hits por 9 y WHIP en la tabla de Números */
+add('Hits por 9 y WHIP en Números',
+`  '<tr><td>FIP temporada</td><td class="n">'+num(sea.fip)+'</td><td class="n">'+num(seh.fip)+'</td></tr>'+`,
+`  '<tr><td>FIP temporada</td><td class="n">'+num(sea.fip)+'</td><td class="n">'+num(seh.fip)+'</td></tr>'+
+  '<tr><td>Hits por 9 (temporada)</td><td class="n">'+num(sea.h9,1)+'</td><td class="n">'+num(seh.h9,1)+'</td></tr>'+
+  '<tr><td>WHIP</td><td class="n">'+num(sea.whip)+'</td><td class="n">'+num(seh.whip)+'</td></tr>'+`);
+
+/* 16. nota técnica */
+add('Nota técnica de la muestra corta',
+`  <b>El descanso del abridor</b> se muestra pero no toca el cálculo, y es deliberado:`,
+`  <b>El abridor con pocos innings.</b> Un novato con 2.54 de ERA en 10 innings y un veterano con 4.30
+  en 98 no son comparables, y la app nunca metió esos números crudos: <code>eraUsado()</code> le suma a
+  cada abridor 40 innings de promedio de liga antes de creerle. Ese novato entra al cálculo con ~3.77 y
+  el veterano con ~4.26, así que la diferencia real baja de 1.76 carreras a 0.49. Lo que faltaba no era
+  el ajuste, era <b>verlo</b>: el aviso vivía escondido en la pestaña de Números y solo salía si el
+  movimiento pasaba de 0.75 carreras. Ahora sale en el Veredicto, con los innings, el ERA crudo, el que
+  de verdad entra, y los <b>hits por 9 y el WHIP</b>, que es justo lo que ni el ERA ni el FIP te dicen:
+  el FIP ignora los hits a propósito, así que un abridor al que le conectan 9 hits en 10 innings y aun
+  así muestra 2.54 se ve limpio en las dos métricas, cuando lo que pasa es que está dejando gente en
+  base y librándola. Los hits <b>no entran al cálculo</b>, solo se enseñan: meterlos con un peso
+  inventado sería repetir el error del multiplicador ×13.
+  El otro lado del problema es asimétrico y conviene tenerlo claro: al abridor con 100 innings no se le
+  mueve nada, así que en esos juegos buena parte de la ventaja que ves es la distancia entre lo que
+  sabemos de uno y lo que no sabemos del otro.
+  El <b>40</b> de ese ajuste es un supuesto, no una medición — a diferencia del ×6 y del ×0.45, que sí
+  se midieron. Por eso está en ⚙️ Ajustes con opciones de 80 y 120 innings para comparar, y por eso el
+  valor por defecto no se mueve hasta que un backtest diga cuál es. Lo que haría falta medir: agrupando
+  los juegos por los innings del abridor, ¿el modelo acierta igual cuando uno de los dos lleva menos de
+  30? Si acierta menos, el listón de esos juegos tiene que subir.
+
+  <b>El descanso del abridor</b> se muestra pero no toca el cálculo, y es deliberado:`);
+
+/* ---------- motor ---------- */
+document.getElementById('ir').addEventListener('click',function(){
+  var b=this; b.disabled=true;
+  L.innerHTML='';
+  log('Buscando tu index.html…');
+  fetch('index.html?t='+Date.now(),{cache:'no-store'}).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }).then(function(txt){
+    log('Leído: '+txt.length.toLocaleString()+' caracteres.');
+    if(txt.indexOf('>v30<')<0)
+      log('⚠️ Ojo: este index.html no dice v30. Revisa que subiste el bueno.','bad');
+    var ok=0, mal=0;
+    P.forEach(function(p){
+      var i=txt.indexOf(p.de);
+      if(i<0){ log('✗ '+p.n+' — no encontrado','bad'); mal++; return; }
+      if(txt.indexOf(p.de,i+1)>=0){ log('✗ '+p.n+' — aparece más de una vez','bad'); mal++; return; }
+      txt=txt.slice(0,i)+p.a+txt.slice(i+p.de.length);
+      log('✓ '+p.n,'ok'); ok++;
+    });
+    log('—');
+    log(ok+' de '+P.length+' cambios aplicados.',(mal?'bad':'ok'));
+    if(mal){
+      log('No bajes el archivo: con cambios sueltos la app queda a medias. Mándame cuáles fallaron.','bad');
+      b.disabled=false;
+      return;
+    }
+    var bl=new Blob([txt],{type:'text/html'});
+    var u=URL.createObjectURL(bl);
+    document.getElementById('salida').innerHTML=
+      '<p>Listo. Baja el archivo, y súbelo a GitHub <b>encima del index.html</b> de siempre.</p>'+
+      '<a href="'+u+'" download="index.html"><button class="g">Bajar index.html (v31)</button></a> '+
+      '<a href="'+u+'" target="_blank"><button>Abrirlo en otra pestaña</button></a>'+
+      '<p>Si el botón de bajar no hace nada en el iPhone, usa el de abrir en otra pestaña, '+
+      'y ahí dale a compartir &rarr; guardar en Archivos.</p>'+
+      '<p>Después de subirlo: borra el icono de OVA de la pantalla de inicio y vuelve a añadirlo, '+
+      'o ábrelo con <code>?v=31</code> al final. Si no, vas a seguir viendo la v30 por caché.</p>';
+  }).catch(function(e){
+    log('✗ No se pudo leer el index.html ('+e.message+').','bad');
+    log('Este archivo tiene que estar en la misma carpeta del repo que el index.html, y hay que '+
+        'abrirlo por su dirección de GitHub Pages, no desde Archivos.','bad');
+    b.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
