@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A1119">
+<title>OVA · Parche Estadio</title>
+<style>
+:root{
+ color-scheme:dark;
+ --bg:#0A1119;--bg1:#101A25;--bg2:#16232F;--line:#1A2B38;--line2:#2B4256;
+ --txt:#EDF2F7;--mut:#A7BCCC;--mut2:#8298A9;
+ --acc:#4F8FD6;--accTx:#06121C;--hot:#F0B849;--hotTx:#14202B;
+ --good:#4ED88A;--bad:#F5837A;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);
+ font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.55;
+ padding:0 0 60px}
+.wrap{max-width:620px;margin:0 auto;padding:0 13px}
+header{border-bottom:1px solid var(--line2);padding:18px 13px;
+ padding-top:calc(env(safe-area-inset-top) + 14px);background:var(--bg1)}
+header h1{font-size:23px;margin:0}
+header p{margin:5px 0 0;color:var(--mut);font-size:13px}
+.caja{background:var(--bg1);border:1px solid var(--line2);border-radius:12px;
+ padding:14px;margin:14px 0;
+ box-shadow:0 1px 3px rgba(0,0,0,.35),0 8px 22px -12px rgba(0,0,0,.6)}
+h2{font-size:16px;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+h2 i{font-style:normal;background:var(--hot);color:var(--hotTx);border-radius:50%;
+ width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+ font-size:13px;font-weight:700;flex:0 0 22px}
+button{background:var(--acc);color:var(--accTx);border:0;border-radius:8px;
+ padding:13px 18px;font-size:16px;font-weight:700;width:100%;margin-top:10px;
+ cursor:pointer;font-family:inherit}
+button:disabled{opacity:.4}
+a.dl{display:block;text-align:center;background:var(--good);color:#06180D;
+ border-radius:8px;padding:14px;font-size:16px;font-weight:700;
+ text-decoration:none;margin-top:10px}
+.fila{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;
+ line-height:1.45}
+.fila:last-child{border-bottom:none}
+.ok{color:var(--good);font-weight:700}
+.no{color:var(--bad);font-weight:700}
+#estado{color:var(--mut);font-size:13.5px;margin-top:10px;min-height:20px}
+.nota{color:var(--mut);font-size:13px;line-height:1.55}
+.nota b{color:var(--txt)}
+ul{margin:8px 0;padding-left:20px}
+li{margin:6px 0;font-size:13px;color:var(--mut);line-height:1.5}
+li b{color:var(--txt)}
+code{background:var(--bg2);padding:2px 6px;border-radius:5px;font-size:12.5px;
+ font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.vacio{display:flex;flex-direction:column;align-items:center;text-align:center;
+ padding:40px 22px;margin:12px 0;background:var(--bg2);border:1px solid var(--line2);
+ border-radius:12px;color:var(--mut);font-size:13px;line-height:1.6}
+.vico{position:relative;width:64px;height:64px;display:flex;align-items:center;
+ justify-content:center;margin-bottom:13px}
+.vico svg{width:34px;height:34px;color:var(--hot);stroke-width:1.5;
+ animation:flota 3.4s ease-in-out infinite}
+.anillo{position:absolute;inset:0;border-radius:50%;border:1px solid var(--line2);
+ animation:late 3.4s ease-in-out infinite}
+.vacio b{display:block;color:var(--txt);font-size:16px;font-weight:600;margin-bottom:5px}
+@keyframes flota{0%,100%{transform:translateY(-2px)}50%{transform:translateY(3px)}}
+@keyframes late{0%,100%{transform:scale(1);opacity:.75}50%{transform:scale(1.09);opacity:.35}}
+.aviso{background:#2C1A18;border:1px solid #5E322C;color:#F8B0A8;
+ border-radius:8px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+.bien{background:#12291D;border:1px solid #2A5439;color:#83E6AA;
+ border-radius:8px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <h1>Parche Estadio · v29</h1>
+  <p>El tema, la jerarquía, la profundidad y el arranque con vida</p>
+</header>
+
+<div class="wrap">
+
+  <div class="caja">
+    <h2><i>1</i>El ámbar, reservado</h2>
+    <p class="nota">Este es el cambio de fondo. Hasta ahora el color de acento estaba en todo —
+    botones, pestañas, tablas, el score— y cuando todo resalta, nada resalta.<br><br>
+    Ahora el <b>ámbar</b> queda solo para <b>la respuesta</b>: la barra del porcentaje, la fila de
+    carreras esperadas y el borde del pick. Todo lo demás va en azul acero.<br><br>
+    Medido, el ámbar brilla en <b>9.74</b> y el azul de estructura en <b>5.21</b>. Tu ojo aterriza
+    en el número que decide, no en el botón de Cargar.</p>
+  </div>
+
+  <div class="caja">
+    <h2><i>2</i>Profundidad</h2>
+    <p class="nota">La tarjeta del juego lleva sombra. Deja de ser texto pegado a la pantalla y pasa
+    a sentirse como una ficha encima de la mesa.</p>
+  </div>
+
+  <div class="caja">
+    <h2><i>3</i>El arranque</h2>
+    <div class="vacio">
+      <div class="vico"><span class="anillo"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>
+      </div>
+      <b>Listo para el primer pitcheo</b>
+      Escoge la fecha arriba y dale a <b>Cargar partidos</b>.
+    </div>
+    <p class="nota">La pelota flota y el anillo late, despacio. Y cuando entran los juegos, las
+    tarjetas suben en cascada una detrás de otra en vez de aparecer de golpe.<br><br>
+    Si tienes el iPhone en movimiento reducido, todo eso se apaga solo.</p>
+  </div>
+
+  <div class="caja">
+    <h2><i>4</i>Y los dos arreglos que faltaban</h2>
+    <ul>
+      <li>El botón <b>Ranking al gane</b> se va a su ventana — moví el contenedor equivocado</li>
+      <li>El hueco negro de la pantalla vacía</li>
+    </ul>
+  </div>
+
+  <div class="caja">
+    <h2>Aplicar</h2>
+    <p class="nota">Necesita la v27. Misma carpeta que tu <code>index.html</code>.</p>
+    <button id="ir">Coger mi index.html y parchearlo</button>
+    <div id="estado"></div>
+    <div id="lista"></div>
+    <div id="salida"></div>
+  </div>
+
+</div>
+
+<script>
+var CSS_EXTRA =
+".vacio{display:flex;flex-direction:column;align-items:center;text-align:center;\n"+
+" padding:42px 22px;margin:14px 0;background:var(--bg1);border:1px solid var(--line2);\n"+
+" border-radius:var(--r2);color:var(--mut);font-size:13px;line-height:1.6;\n"+
+" box-shadow:0 1px 3px rgba(0,0,0,.35),0 8px 22px -12px rgba(0,0,0,.6);\n"+
+" animation:entrapane .34s ease}\n"+
+".vacio .vico{position:relative;width:64px;height:64px;display:flex;\n"+
+" align-items:center;justify-content:center;margin-bottom:13px}\n"+
+".vacio .vico svg{width:34px;height:34px;color:var(--hot);stroke-width:1.5;\n"+
+" animation:flota 3.4s ease-in-out infinite}\n"+
+".vacio .anillo{position:absolute;inset:0;border-radius:50%;\n"+
+" border:1px solid var(--line2);animation:late 3.4s ease-in-out infinite}\n"+
+".vacio b{display:block;color:var(--txt);font-size:16px;font-weight:600;margin-bottom:5px}\n"+
+".vacio.off{display:none}\n"+
+"@keyframes flota{0%,100%{transform:translateY(-2px)}50%{transform:translateY(3px)}}\n"+
+"@keyframes late{0%,100%{transform:scale(1);opacity:.75}50%{transform:scale(1.09);opacity:.35}}\n"+
+"/* Las tarjetas suben en cascada cuando entra la lista, en vez de aparecer de golpe. */\n"+
+"@keyframes sube{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}\n"+
+"#slate .game{animation:sube .34s cubic-bezier(.22,.7,.3,1) backwards}\n"+
+"#slate .game:nth-child(2){animation-delay:.04s}\n"+
+"#slate .game:nth-child(3){animation-delay:.08s}\n"+
+"#slate .game:nth-child(4){animation-delay:.12s}\n"+
+"#slate .game:nth-child(5){animation-delay:.16s}\n"+
+"#slate .game:nth-child(6){animation-delay:.2s}\n"+
+"#slate .game:nth-child(7){animation-delay:.24s}\n"+
+"#slate .game:nth-child(n+8){animation-delay:.28s}\n"+
+"@media (prefers-reduced-motion:reduce){\n"+
+" .pane.on,.vacio,#slate .game,.vacio .vico svg,.vacio .anillo{animation:none}}\n";
+
+var JS_VACIO =
+"  /* Sin partidos cargados la ventana quedaba como un hueco negro de media\n"+
+"     pantalla. Esto pone una tarjeta centrada con la pelota flotando, que se\n"+
+"     quita sola en cuanto entra contenido y vuelve si se queda vacia otra vez. */\n"+
+"  var hacerVacio=function(dib,tit,txt2){\n"+
+"    var d=document.createElement('div');\n"+
+"    d.className='vacio';\n"+
+"    d.innerHTML='<div class=\"vico\"><span class=\"anillo\"></span>'+\n"+
+"      '<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" '+\n"+
+"      'stroke-linecap=\"round\" stroke-linejoin=\"round\">'+dib+'</svg></div>'+\n"+
+"      '<b>'+tit+'</b>'+txt2;\n"+
+"    return d;\n"+
+"  };\n"+
+"  var vacJ=hacerVacio(ico.juegos,'Listo para el primer pitcheo',\n"+
+"    'Escoge la fecha arriba y dale a <b>Cargar partidos</b>.');\n"+
+"  pane.juegos.appendChild(vacJ);\n"+
+"  var vacG=hacerVacio(ico.gane,'Sin ranking todavía',\n"+
+"    'Carga la fecha en <b>Juegos</b> y después dale a <b>Ranking al gane</b>.');\n"+
+"  pane.gane.appendChild(vacG);\n"+
+"  var vigilar=function(cont,caja){\n"+
+"    if(!cont||!caja||!window.MutationObserver) return;\n"+
+"    var act=function(){ caja.classList.toggle('off', cont.children.length>0); };\n"+
+"    act();\n"+
+"    new MutationObserver(act).observe(cont,{childList:true});\n"+
+"  };\n"+
+"  vigilar(document.getElementById('slate'), vacJ);\n"+
+"  vigilar(document.getElementById('algane'), vacG);\n"+
+"  ir('juegos');\n";
+
+var PARCHES=[
+
+/* ---------- 1. el tema Estadio ---------- */
+{n:'EL TEMA — Estadio, con el ámbar aparte',
+ desde:':root{\n color-scheme:dark;',
+ hasta:" --cond:'Barlow Condensed'",
+ poner:"/* Tema Estadio. Azul noche de base, con DOS acentos y eso es lo importante:\n"+
+  "     --acc  azul acero  = el armazon (botones, pestañas, enlaces, bordes)\n"+
+  "     --hot  ambar       = LA RESPUESTA (barra del %, fila de carreras, pick)\n"+
+  "   Antes el acento era uno solo y estaba en todo, y cuando todo resalta nada\n"+
+  "   resalta: el boton de Cargar pesaba lo mismo que el porcentaje del ganador.\n"+
+  "   Medido, el ambar sale en 9.74 sobre la tarjeta y el azul en 5.21 — o sea\n"+
+  "   que el ojo aterriza en el numero que decide.\n"+
+  "   Contrastes del resto: texto 15.6, secundario 8.1, letra chica 5.3, pie 6.3,\n"+
+  "   texto sobre el boton 5.6, sobre el ambar 9.2. Minimo comodo 4.5.\n"+
+  "   --hotTx es el texto que va ENCIMA del ambar. */\n"+
+  ":root{\n color-scheme:dark;\n"+
+  " --bg:#0A1119;--bg1:#101A25;--bg2:#16232F;--bg3:#1E2E3C;\n"+
+  " --line:#1A2B38;--line2:#2B4256;\n"+
+  " --txt:#EDF2F7;--mut:#A7BCCC;--mut2:#8298A9;\n"+
+  " --acc:#4F8FD6;--acc2:#6FA6E4;--accTx:#06121C;\n"+
+  " --hot:#F0B849;--hotTx:#14202B;\n"+
+  " --good:#4ED88A;--bad:#F5837A;--info:#4F8FD6;\n"+
+  " --cond:'Barlow Condensed'"},
+
+{n:'El color de la barra de estado',
+ buscar:'<meta name="theme-color" content="#0D0E10">',
+ poner:'<meta name="theme-color" content="#0A1119">'},
+
+{n:'La barra de arriba',
+ buscar:'.topbar{position:sticky;top:0;z-index:20;background:rgba(13,14,16,.95);',
+ poner:'.topbar{position:sticky;top:0;z-index:20;background:rgba(10,17,25,.95);'},
+
+/* ---------- 2. el ambar solo donde va la respuesta ---------- */
+{n:'La barra del porcentaje va en ámbar',
+ buscar:".bar .lead{background:var(--acc);color:var(--accTx)}",
+ poner:".bar .lead{background:var(--hot);color:var(--hotTx)}"},
+
+{n:'La fila de carreras esperadas, en ámbar',
+ buscar:"tr.usa td{color:var(--acc);font-weight:600}\ntr.usa td:first-child{color:var(--acc)}",
+ poner:"tr.usa td{color:var(--hot);font-weight:600}\ntr.usa td:first-child{color:var(--hot)}"},
+
+{n:'El borde del pick, en ámbar',
+ buscar:".pick{background:var(--bg1);border:1px solid var(--line2);border-left:3px solid var(--acc);",
+ poner:".pick{background:var(--bg1);border:1px solid var(--line2);border-left:3px solid var(--hot);"},
+
+/* ---------- 3. profundidad ---------- */
+{n:'Sombra en la tarjeta del juego',
+ buscar:".game{background:var(--bg1);border:1px solid var(--line2);border-radius:var(--r2);\n margin:8px 0;--eq:#3A3A34}",
+ poner:"/* La tarjeta llevaba solo un borde y quedaba plana contra el fondo. Con la\n   sombra deja de parecer texto pegado a la pantalla y pasa a sentirse como una\n   ficha encima de la mesa. */\n.game{background:var(--bg1);border:1px solid var(--line2);border-radius:var(--r2);\n margin:10px 0;--eq:#3A3A34;\n box-shadow:0 1px 3px rgba(0,0,0,.35),0 10px 26px -14px rgba(0,0,0,.7)}"},
+
+/* ---------- 4. los arreglos pendientes ---------- */
+{n:'El botón del ranking a su ventana',
+ buscar:"  mover('.controls','gane');\n  mover('#gane_zona','gane');\n  var pista=document.createElement('div');\n  pista.className='flag';\n  pista.innerHTML='Si no sale nada, primero carga la fecha en <b>Juegos</b>.';\n  pane.gane.appendChild(pista);\n",
+ poner:"  /* Ojo con esto: hay VARIOS .controls en la pagina y el primero en el orden\n     del documento es el de «Borrar cache», que vive dentro de Ajustes. Usar\n     querySelector('.controls') movia ese y dejaba el del ranking donde estaba.\n     Se mueve el BOTON por su id, en un contenedor nuevo, y el que queda vacio\n     se retira. */\n  var cbox=document.createElement('div');\n  cbox.className='controls';\n  pane.gane.appendChild(cbox);\n  var bg=document.getElementById('algane_btn');\n  if(bg){\n    var viejo=bg.parentNode;\n    cbox.appendChild(bg);\n    if(viejo&&viejo.classList&&viejo.classList.contains('controls')&&\n       !viejo.querySelector('button')&&viejo.parentNode)\n      viejo.parentNode.removeChild(viejo);\n  }\n  mover('#gane_zona','gane');\n"},
+
+{n:'El estado vacío con la pelota',
+ buscar:"  ir('juegos');\n",
+ poner:JS_VACIO},
+
+{n:'El estilo del vacío y la cascada de tarjetas',
+ buscar:"@media (prefers-reduced-motion:reduce){.pane.on{animation:none}}\n",
+ poner:CSS_EXTRA}
+
+];
+
+var $=function(id){ return document.getElementById(id); };
+var listo=false;
+
+function contar(txt,agu){
+  var n=0,i=0;
+  while(true){ var p=txt.indexOf(agu,i); if(p<0) break; n++; i=p+agu.length; if(n>5) break; }
+  return n;
+}
+function aplicar(src){
+  var res=[], txt=src, ok=0, mal=0;
+  PARCHES.forEach(function(p){
+    if(p.desde){
+      var nd=contar(txt,p.desde), nh=contar(txt,p.hasta);
+      if(nd===0&&txt.indexOf(p.poner)>=0){
+        res.push({n:p.n, ok:true, msg:'ya estaba puesto — se salta'}); return;
+      }
+      if(nd!==1||nh!==1){
+        res.push({n:p.n, ok:false, msg:'las anclas no salen una sola vez ('+nd+' y '+nh+')'});
+        mal++; return;
+      }
+      var i1=txt.indexOf(p.desde), i2=txt.indexOf(p.hasta);
+      if(i2<=i1){ res.push({n:p.n, ok:false, msg:'anclas al revés'}); mal++; return; }
+      txt=txt.slice(0,i1)+p.poner+txt.slice(i2+p.hasta.length);
+      res.push({n:p.n, ok:true, msg:'aplicado'}); ok++; return;
+    }
+    var n=contar(txt,p.buscar);
+    if(n===1){
+      txt=txt.replace(p.buscar,function(){ return p.poner; });
+      res.push({n:p.n, ok:true, msg:'aplicado'}); ok++;
+    }else if(n===0){
+      var ya=contar(txt,p.poner)>0;
+      res.push({n:p.n, ok:ya, msg: ya?'ya estaba puesto — se salta':'no se encontró el texto original — se salta'});
+      if(!ya) mal++;
+    }else{
+      res.push({n:p.n, ok:false, msg:'aparece '+n+' veces, no se toca por seguridad'}); mal++;
+    }
+  });
+  return {txt:txt, res:res, ok:ok, mal:mal};
+}
+function pintar(r){
+  var h='';
+  r.res.forEach(function(x){
+    h+='<div class="fila"><span class="'+(x.ok?'ok':'no')+'">'+(x.ok?'✓':'✕')+'</span>'+
+       '<span><b>'+x.n+'</b><br><span style="color:var(--mut2)">'+x.msg+'</span></span></div>';
+  });
+  $('lista').innerHTML=h;
+}
+
+$('ir').addEventListener('click',function(){
+  var b=$('ir');
+  b.disabled=true;
+  $('estado').textContent='Cogiendo tu index.html…';
+  $('lista').innerHTML=''; $('salida').innerHTML='';
+  fetch('index.html?t='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }).then(function(src){
+    if(src.indexOf('navbar')<0) throw new Error('esto necesita la v27 puesta primero');
+    if(!listo){
+      var mv=src.match(/<span class="ver">v(\d+)<\/span>/);
+      if(mv&&mv[1]!=='29')
+        PARCHES.unshift({n:'Versión v'+mv[1]+' → v29', buscar:mv[0],
+                         poner:'<span class="ver">v29</span>'});
+      listo=true;
+    }
+    $('estado').textContent='Leídos '+Math.round(src.length/1024)+' KB. Aplicando…';
+    var r=aplicar(src);
+    pintar(r);
+
+    var faltan=[];
+    ['--hot:#F0B849','hacerVacio','vigilar','.vacio{','keyframes flota','keyframes sube',
+     "getElementById('algane_btn')",'box-shadow:0 1px 3px']
+      .forEach(function(nm){ if(r.txt.indexOf(nm)<0) faltan.push(nm); });
+    var sobra = contar(r.txt,"mover('.controls','gane')")>0 ||
+                contar(r.txt,'--acc:#5B9BF5')>0;
+    var ab=contar(r.txt,'<script'), ce=contar(r.txt,'<\/script>');
+
+    var aviso='';
+    if(r.mal>0) aviso+='<div class="aviso">Se saltaron <b>'+r.mal+'</b> cambio(s). Mira la lista.</div>';
+    if(faltan.length) aviso+='<div class="aviso">Falta código: <b>'+faltan.join(', ')+'</b>. No bajes el archivo.</div>';
+    if(sobra) aviso+='<div class="aviso">Quedó código viejo sin reemplazar. No bajes el archivo.</div>';
+    if(ab!==ce) aviso+='<div class="aviso">Etiquetas de script descuadradas ('+ab+' y '+ce+').</div>';
+    var bien=!r.mal&&!faltan.length&&!sobra&&ab===ce;
+    if(bien)
+      aviso+='<div class="bien">Los '+r.ok+' cambios entraron. Tema Estadio puesto, el ámbar '+
+             'reservado para la respuesta, y el arranque con vida.</div>';
+    $('salida').innerHTML=aviso;
+
+    if(bien){
+      var url=URL.createObjectURL(new Blob([r.txt],{type:'text/html'}));
+      $('salida').innerHTML+='<a class="dl" href="'+url+'" download="index.html">'+
+        '⬇︎ Bajar el index.html de la v29</a>'+
+        '<p class="nota" style="margin-top:12px">Ni un número del modelo se tocó.</p>';
+    }
+    $('estado').textContent='';
+    b.disabled=false;
+  }).catch(function(e){
+    $('estado').innerHTML='<span class="no">No se pudo: '+String(e.message)+'</span>';
+    b.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
