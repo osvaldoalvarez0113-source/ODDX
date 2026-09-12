@@ -24,7 +24,7 @@
 <title>OVA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* Tema Papel. Lo que cambia frente a la v22 son los dos grises de texto y la
    separacion entre el fondo y las tarjetas. Medido con la formula de contraste
@@ -65,14 +65,15 @@
  --acc:#4F8FD6;--acc2:#6FA6E4;--accTx:#06121C;
  --hot:#F0B849;--hotTx:#14202B;
  --good:#4ED88A;--bad:#F5837A;--info:#4F8FD6;
- --cond:'Barlow Condensed','Helvetica Neue',sans-serif;
- --body:system-ui,-apple-system,'Segoe UI',sans-serif;
- --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+ --cond:'Bitter',Georgia,'Times New Roman',serif;
+ --body:'Inter',system-ui,-apple-system,sans-serif;
+ /* Ya no es monoespaciada: los numeros cuadran con cifras tabulares. */
+ --mono:'Inter',system-ui,-apple-system,sans-serif;
  --r:8px;--r2:12px;
  --barra:calc(env(safe-area-inset-top) + 54px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;color:var(--txt);font-family:var(--body);font-size:15px;line-height:1.55;
- background:var(--bg);padding:0 0 76px;
+ background:var(--bg);padding:0 0 76px;font-variant-numeric:tabular-nums;
  padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
 .wrap{max-width:620px;margin:0 auto;padding:0 13px}
 svg.ic{vertical-align:-3px;flex:0 0 auto;stroke-width:1.9}
@@ -140,8 +141,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .game.open{border-color:var(--acc)}
 .head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
  cursor:pointer;padding:13px}
-.match{font-family:var(--cond);font-size:24px;font-weight:600;line-height:1.06;flex:1;
- letter-spacing:.3px}
+.match{font-family:var(--cond);font-size:21px;font-weight:700;line-height:1.16;flex:1;
+ letter-spacing:-.2px}
 .match small{display:block;font-family:var(--body);font-size:11.5px;color:var(--mut);
  font-weight:400;margin-top:5px;line-height:1.4}
 .match .vs{color:var(--mut2);font-weight:400}
@@ -155,7 +156,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .wm{position:absolute;top:0;left:0;right:0;height:230px;overflow:hidden;
  z-index:0;pointer-events:none;border-radius:0 0 var(--r2) var(--r2)}
 .wm img{position:absolute;top:6px;right:-30px;width:180px;height:180px;
- object-fit:contain;opacity:.14}
+ object-fit:contain;opacity:.07}
 
 .game.open .head{position:sticky;top:var(--barra);z-index:9;
  background:var(--eq);border-bottom:0;border-radius:var(--r2) var(--r2) 0 0;color:#fff}
@@ -454,12 +455,33 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 66px)}
 #slate .game:nth-child(n+8){animation-delay:.28s}
 @media (prefers-reduced-motion:reduce){
  .pane.on,.vacio,#slate .game,.vacio .vico svg,.vacio .anillo{animation:none}}
+/* ---------- tipografia Prensa ----------
+   Bitter (serif) en los titulos e Inter en el resto. La monoespaciada se fue:
+   las columnas de numeros cuadran igual con cifras tabulares, que es una
+   propiedad de la letra y no un tipo de letra aparte. */
+h3,.manual h2,.registro h2,.gane h2,.pick .q,.cal .t b,.vacio b{
+ font-family:var(--cond);letter-spacing:-.1px}
+h3{font-size:15.5px}
+.pick .q{font-size:16.5px}
+/* Los iconos a color: la pestaña activa se enciende, las demas van apagadas. */
+svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
+.tb svg.ic[data-ova='1']{opacity:.62;filter:saturate(.9) brightness(.95);
+ transition:opacity .2s,filter .2s,transform .2s}
+.tb.on svg.ic[data-ova='1']{opacity:1;filter:saturate(1.3) brightness(1.08);
+ transform:scale(1.06)}
+.navbar button svg[data-ova='1']{opacity:.6;filter:saturate(.85);transition:all .2s}
+.navbar button.on svg[data-ova='1']{opacity:1;filter:saturate(1.3) brightness(1.08)}
+/* El boton redondo, mas chico y fuera del camino al bajar. */
+.fab{width:40px;height:40px;font-size:14px;opacity:.92;
+ transition:opacity .22s,transform .22s}
+.fab.baja{opacity:0;transform:translateY(14px) scale(.9);pointer-events:none}
+@media (prefers-reduced-motion:reduce){.fab{transition:none}}
 </style>
 </head>
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v29</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v30</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -3589,6 +3611,72 @@ try{
   medirBarra();
   window.addEventListener('resize',medirBarra,{passive:true});
   window.addEventListener('orientationchange',medirBarra,{passive:true});
+}catch(e){}
+})();
+</script>
+<script>
+/* ---------- iconos de beisbol a color ----------
+   Los iconos viejos eran de trazo fino y genericos. Estos se cambian POR EL
+   TEXTO que tienen al lado, no por su dibujo: si se cambiaran por el dibujo,
+   la diana de «Veredicto» y la de «Total del juego» son la misma y acabarian
+   siendo el mismo icono. Lo que no case con ningun nombre se queda como esta
+   — los de Ajustes son chicos y ahi el color no hace falta. */
+(function(){
+try{
+  var IC={"home":"<path d=\"M4.6 3.6h14.8v7.9L12 20.5 4.6 11.5z\" fill=\"#F2EDE4\"/><path d=\"M6.8 5.8h10.4v5L12 17.4 6.8 10.8z\" fill=\"none\" stroke=\"#BDB5A6\" stroke-width=\".9\"/>","ticket":"<path d=\"M3 6.6h18c.9 0 1.6.7 1.6 1.6v1.9a2.2 2.2 0 0 0 0 4.2v1.9c0 .9-.7 1.6-1.6 1.6H3c-.9 0-1.6-.7-1.6-1.6v-1.9a2.2 2.2 0 0 0 0-4.2V8.2c0-.9.7-1.6 1.6-1.6z\" fill=\"#F0B849\"/><path d=\"M8.9 8.8v6.4M15.1 8.8v6.4\" stroke=\"#0A1119\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>","marcador":"<rect x=\"2\" y=\"4.6\" width=\"20\" height=\"14.8\" rx=\"2.4\" fill=\"#22303E\"/><rect x=\"2\" y=\"4.6\" width=\"20\" height=\"14.8\" rx=\"2.4\" fill=\"none\" stroke=\"#3A4D5F\" stroke-width=\"1\"/><path d=\"M5.4 8.4h4v3h-4zM5.4 12.6h4v3h-4z\" fill=\"#F0B849\"/><path d=\"M14.6 8.4h4v3h-4zM14.6 12.6h4v3h-4z\" fill=\"#4F8FD6\"/>","llama":"<path d=\"M12 2.2c3.1 4.5 5.3 6.6 5.3 10.1A5.3 5.3 0 0 1 12 17.6a5.3 5.3 0 0 1-5.3-5.3c0-2.1 1-3.5 2.3-4.5.2 1.3 1.1 2.6 2.2 2.6 0-3.4-1.1-5.6.8-8.2z\" fill=\"#E8763C\"/><path d=\"M12 9.8c1.4 2 2.3 3 2.3 4.4A2.3 2.3 0 0 1 12 16.5a2.3 2.3 0 0 1-2.3-2.3c0-1.1.6-2 1.3-2.6.1.6.5 1.2 1 1.2 0-1.5-.5-2.5 0-3z\" fill=\"#F5CE6B\"/>","diamante":"<path d=\"M12 1.9 22.1 12 12 22.1 1.9 12z\" fill=\"#2F6B3D\"/><path d=\"M12 6.1 17.9 12 12 17.9 6.1 12z\" fill=\"#B4703C\"/><circle cx=\"12\" cy=\"17.6\" r=\"1.35\" fill=\"#F4F1EA\"/><circle cx=\"17.6\" cy=\"12\" r=\"1.1\" fill=\"#F4F1EA\"/><circle cx=\"12\" cy=\"6.4\" r=\"1.1\" fill=\"#F4F1EA\"/><circle cx=\"6.4\" cy=\"12\" r=\"1.1\" fill=\"#F4F1EA\"/><circle cx=\"12\" cy=\"12\" r=\"1.5\" fill=\"#D6A575\"/>","balanza":"<path d=\"M11.1 3.4h1.8v16.8h-1.8z\" fill=\"#93A8BA\"/><path d=\"M6.4 20.2h11.2v1.7H6.4zM3.4 7.7h17.2v1.7H3.4z\" fill=\"#93A8BA\"/><circle cx=\"12\" cy=\"4.2\" r=\"1.5\" fill=\"#C7D3DE\"/><path d=\"M3.6 9.6 1.3 14.5a3 3 0 0 0 5.6 0z\" fill=\"#F0B849\"/><path d=\"M20.4 9.6l2.3 4.9a3 3 0 0 1-5.6 0z\" fill=\"#4F8FD6\"/>","pelota":"<circle cx=\"12\" cy=\"12\" r=\"9.1\" fill=\"#F4F1EA\"/><path d=\"M6.4 5.6c2.6 4.1 2.6 8.7 0 12.8M17.6 5.6c-2.6 4.1-2.6 8.7 0 12.8\" fill=\"none\" stroke=\"#D64545\" stroke-width=\"1.5\" stroke-linecap=\"round\"/><path d=\"M7.6 7.3l1.5.5M7.1 9.6l1.6.3M7 12.4l1.6-.1M7.3 15l1.5-.4M16.4 7.3l-1.5.5M16.9 9.6l-1.6.3M17 12.4l-1.6-.1M16.7 15l-1.5-.4\" stroke=\"#D64545\" stroke-width=\".9\" stroke-linecap=\"round\"/>","k":"<rect x=\"3\" y=\"3.4\" width=\"18\" height=\"17.2\" rx=\"3.2\" fill=\"#22303E\"/><rect x=\"3\" y=\"3.4\" width=\"18\" height=\"17.2\" rx=\"3.2\" fill=\"none\" stroke=\"#3A4D5F\" stroke-width=\"1\"/><path d=\"M7.8 7h2.7v4.4L14.2 7h3.2l-4.4 5 4.6 5.9h-3.3l-3.1-4.2-.7.8V18H7.8z\" fill=\"#F0B849\"/>","cinco":"<rect x=\"3\" y=\"3.4\" width=\"18\" height=\"17.2\" rx=\"3.2\" fill=\"#22303E\"/><rect x=\"3\" y=\"3.4\" width=\"18\" height=\"17.2\" rx=\"3.2\" fill=\"none\" stroke=\"#3A4D5F\" stroke-width=\"1\"/><path d=\"M14.9 7H9.6l-.8 5.2c1.9-.9 5.1-.3 5.1 2.7 0 2.1-1.5 3.6-3.5 3.6-1.6 0-2.7-.8-3.2-1.9\" fill=\"none\" stroke=\"#4F8FD6\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>","trofeo":"<path d=\"M8 3.4h8v5.2a4 4 0 0 1-8 0z\" fill=\"#F0B849\"/><path d=\"M8 5.4H5.4v1.5a3.1 3.1 0 0 0 2.9 3.1M16 5.4h2.6v1.5a3.1 3.1 0 0 1-2.9 3.1\" fill=\"none\" stroke=\"#F0B849\" stroke-width=\"1.5\"/><path d=\"M10.6 13.4h2.8v3.4h-2.8zM8.6 19.4h6.8v1.8H8.6z\" fill=\"#C99A3A\"/>","libreta":"<path d=\"M5.4 3.6h11.4a2.2 2.2 0 0 1 2.2 2.2v14.6H7.6a2.2 2.2 0 0 1-2.2-2.2z\" fill=\"#E9E3D6\"/><path d=\"M5.4 16.6h13.6v3.8H7.6a2.2 2.2 0 0 1-2.2-2.2z\" fill=\"#C9C0AD\"/><path d=\"M8.4 7.4h7.6M8.4 10.4h7.6M8.4 13.4h5\" stroke=\"#8A8271\" stroke-width=\"1.3\" stroke-linecap=\"round\"/>","guante":"<path d=\"M5.6 20.4c-2.1-2.5-2.8-5.3-2.5-8.4.2-2.7 1.4-5.2 3.1-6.9 1-1 2.1-.5 2.1.9v3.5l1-4c.3-1.3 2-1.2 2.1.1l.2 3.8.9-3.5c.3-1.3 2-1.1 2.1.2l.2 3.5.9-2.6c.4-1.2 2.1-.9 2 .5-.2 4.8-.6 8.6-2.7 12.4z\" fill=\"#B5794A\"/><path d=\"M7.2 15.6c2.4-.8 4.9-.8 7.3 0\" fill=\"none\" stroke=\"#8A5730\" stroke-width=\"1.2\" stroke-linecap=\"round\"/>","engrane":"<circle cx=\"12\" cy=\"12\" r=\"8.4\" fill=\"#3A4D5F\"/><path d=\"M12 2.4l1.5 2.2h-3zM12 21.6l-1.5-2.2h3zM2.4 12l2.2-1.5v3zM21.6 12l-2.2 1.5v-3zM5.2 5.2l2.6.5-2.1 2.1zM18.8 18.8l-2.6-.5 2.1-2.1zM18.8 5.2l-.5 2.6-2.1-2.1zM5.2 18.8l.5-2.6 2.1 2.1z\" fill=\"#3A4D5F\"/><circle cx=\"12\" cy=\"12\" r=\"3.4\" fill=\"#0A1119\"/>"};
+  var MAPA=[
+    [/veredicto/i,'home'],
+    [/cuotas|compara con el|compara con kalshi/i,'ticket'],
+    [/n\u00fameros|los n\u00fameros/i,'marcador'],
+    [/^\s*forma|forma y r\u00e9cord/i,'llama'],
+    [/parque/i,'diamante'],
+    [/h\u00e1ndicap/i,'balanza'],
+    [/total del juego|carreras por equipo|juegos$/i,'pelota'],
+    [/ponches/i,'k'],
+    [/primeras 5/i,'cinco'],
+    [/al gane|ranking|c\u00f3mo va quedando/i,'trofeo'],
+    [/mis picks|pendientes|resueltos|c\u00f3mo funciona/i,'libreta'],
+    [/manos y bullpen/i,'guante'],
+    [/ajustes/i,'engrane']
+  ];
+  function cambia(sv){
+    if(!sv||sv.dataset.ova) return;
+    var p=sv.parentNode; if(!p) return;
+    var t=(p.textContent||'').trim();
+    if(!t) return;
+    for(var i=0;i<MAPA.length;i++){
+      if(MAPA[i][0].test(t)){
+        sv.innerHTML=IC[MAPA[i][1]];
+        sv.setAttribute('fill','none');
+        sv.removeAttribute('stroke');
+        sv.removeAttribute('stroke-width');
+        sv.dataset.ova='1';
+        return;
+      }
+    }
+    sv.dataset.ova='0';
+  }
+  function barrer(){ document.querySelectorAll('svg.ic').forEach(cambia); }
+  barrer();
+  /* La app repinta los juegos cada vez que cambias un ajuste o escribes una
+     cuota, asi que hay que volver a barrer. Se agrupa en un frame para no
+     hacerlo mil veces seguidas. */
+  var pend=false;
+  if(window.MutationObserver){
+    new MutationObserver(function(){
+      if(pend) return; pend=true;
+      requestAnimationFrame(function(){ pend=false; barrer(); });
+    }).observe(document.body,{childList:true,subtree:true});
+  }
+  /* El boton redondo tapaba el final de las lineas. Ahora se esconde mientras
+     bajas y vuelve en cuanto subes. */
+  var fab=document.getElementById('arriba'), ultY=0;
+  if(fab) window.addEventListener('scroll',function(){
+    var y=window.pageYOffset;
+    if(y>ultY+6) fab.classList.add('baja');
+    else if(y<ultY-6) fab.classList.remove('baja');
+    ultY=y;
+  },{passive:true});
 }catch(e){}
 })();
 </script>
