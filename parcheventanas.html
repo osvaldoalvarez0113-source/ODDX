@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0D0E10">
+<title>OVA · Parche Grafito + ventanas</title>
+<style>
+:root{
+ color-scheme:dark;
+ --bg:#0D0E10;--bg1:#17181B;--bg2:#1E2024;--line:#2A2D32;--line2:#3E434A;
+ --txt:#F2F3F5;--mut:#B2B7BE;--mut2:#8A9098;--acc:#5B9BF5;--accTx:#0A1220;
+ --good:#4ADE80;--bad:#F87171;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--txt);
+ font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:15px;line-height:1.55;
+ padding:0 0 60px}
+.wrap{max-width:620px;margin:0 auto;padding:0 13px}
+header{border-bottom:1px solid var(--line2);padding:18px 13px;
+ padding-top:calc(env(safe-area-inset-top) + 14px);background:var(--bg1)}
+header h1{font-size:23px;margin:0}
+header p{margin:5px 0 0;color:var(--mut);font-size:13px}
+.caja{background:var(--bg1);border:1px solid var(--line2);border-radius:12px;
+ padding:14px;margin:14px 0}
+h2{font-size:16px;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+h2 i{font-style:normal;background:var(--acc);color:var(--accTx);border-radius:50%;
+ width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+ font-size:13px;font-weight:700;flex:0 0 22px}
+button{background:var(--acc);color:var(--accTx);border:0;border-radius:8px;
+ padding:13px 18px;font-size:16px;font-weight:700;width:100%;margin-top:10px;
+ cursor:pointer;font-family:inherit}
+button:disabled{opacity:.4}
+a.dl{display:block;text-align:center;background:var(--good);color:#0A1A0E;
+ border-radius:8px;padding:14px;font-size:16px;font-weight:700;
+ text-decoration:none;margin-top:10px}
+.fila{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;
+ line-height:1.45}
+.fila:last-child{border-bottom:none}
+.ok{color:var(--good);font-weight:700}
+.no{color:var(--bad);font-weight:700}
+#estado{color:var(--mut);font-size:13.5px;margin-top:10px;min-height:20px}
+.nota{color:var(--mut);font-size:13px;line-height:1.55}
+.nota b{color:var(--txt)}
+ul{margin:8px 0;padding-left:20px}
+li{margin:5px 0;font-size:13px;color:var(--mut);line-height:1.5}
+li b{color:var(--txt)}
+code{background:var(--bg2);padding:2px 6px;border-radius:5px;font-size:12.5px;
+ font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.maq{background:var(--bg2);border-radius:10px;padding:10px;margin:10px 0}
+.maqnav{display:flex;background:var(--bg1);border:1px solid var(--line2);
+ border-radius:8px;overflow:hidden}
+.maqnav div{flex:1;text-align:center;padding:9px 2px;font-size:10px;font-weight:600;
+ color:var(--mut2)}
+.maqnav div.on{color:var(--acc);background:rgba(91,155,245,.1)}
+.aviso{background:#2A1A19;border:1px solid #5C2E2A;color:#FCA5A5;
+ border-radius:8px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+.bien{background:#16251A;border:1px solid #2E5136;color:#7EE3A0;
+ border-radius:8px;padding:11px 13px;font-size:13.5px;line-height:1.5;margin-top:10px}
+</style>
+</head>
+<body>
+
+<header class="wrap">
+  <h1>Grafito + ventanas</h1>
+  <p>Tema oscuro y la app partida en cuatro pantallas · v27</p>
+</header>
+
+<div class="wrap">
+
+  <div class="caja">
+    <h2><i>1</i>Cuatro ventanas</h2>
+    <div class="maq">
+      <div class="maqnav">
+        <div class="on">Juegos</div><div>Al gane</div><div>Mis picks</div><div>Ajustes</div>
+      </div>
+    </div>
+    <ul>
+      <li><b>Juegos</b> — la fecha, el botón <b>Cargar partidos</b> y la lista del día</li>
+      <li><b>Al gane</b> — el ranking por probabilidad y la combinada, con su botón arriba</li>
+      <li><b>Mis picks</b> — el registro entero, sin bajar media pantalla</li>
+      <li><b>Ajustes</b> — el modelo, el cálculo a mano y la nota técnica</li>
+    </ul>
+    <p class="nota">La barra va fija abajo. El selector de fecha y el botón de cargar salen de la
+    barra de arriba y pasan a la ventana de Juegos, donde tienen sitio de sobra.</p>
+  </div>
+
+  <div class="caja">
+    <h2><i>2</i>Cómo se hace, y por qué así</h2>
+    <p class="nota">No se reescribe el HTML: las secciones que ya existen se <b>mueven</b> a su
+    ventana con JavaScript. Mover un nodo conserva todos sus eventos, así que ningún botón deja de
+    funcionar. Si algo faltara, el código va envuelto en una red — la app se queda como está y no
+    se rompe nada.<br><br>
+    Las transiciones son un desvanecido corto al cambiar de ventana. Si tienes el iPhone en modo de
+    movimiento reducido, se apagan solas.</p>
+  </div>
+
+  <div class="caja">
+    <h2><i>3</i>Y todo lo anterior</h2>
+    <p class="nota">Tema Grafito completo, las leyendas plegadas y fuera el botón de Kalshi. Sirve
+    desde la v22 o desde donde estés — lo que ya esté puesto sale como «ya estaba puesto».</p>
+  </div>
+
+  <div class="caja">
+    <h2>Aplicar</h2>
+    <p class="nota">Misma carpeta que tu <code>index.html</code>.</p>
+    <button id="ir">Coger mi index.html y parchearlo</button>
+    <div id="estado"></div>
+    <div id="lista"></div>
+    <div id="salida"></div>
+  </div>
+
+</div>
+
+<script>
+var CSS_VENTANAS =
+"\n/* ---------- ventanas ----------\n"+
+"   Las secciones no se reescriben: se mueven a su panel con JS al cargar. Aqui\n"+
+"   solo va como se ven y como entran. */\n"+
+".pane{display:none}\n"+
+".pane.on{display:block;animation:entrapane .24s cubic-bezier(.22,.7,.3,1)}\n"+
+"@keyframes entrapane{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}\n"+
+".pane>.registro,.pane>.manual,.pane>.gane{margin-top:0;border-top:0;padding-top:4px}\n"+
+".cargafila{display:flex;gap:8px;align-items:center;margin:14px 0 4px}\n"+
+".cargafila input[type=date]{flex:1;min-width:0}\n"+
+".cargafila button{flex:0 0 auto;white-space:nowrap}\n"+
+"#pane-ajustes .ajustes{border:0;background:transparent;margin:0}\n"+
+"#pane-ajustes .ajustes>summary{display:none}\n"+
+"#pane-ajustes .ajustes .cuerpo{padding:0;border-top:0}\n"+
+".navbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;\n"+
+" background:rgba(13,14,16,.97);-webkit-backdrop-filter:blur(14px);\n"+
+" backdrop-filter:blur(14px);border-top:1px solid var(--line2);\n"+
+" padding-bottom:env(safe-area-inset-bottom)}\n"+
+".navbar button{flex:1;width:auto;margin:0;background:transparent;border:0;\n"+
+" border-radius:0;color:var(--mut2);padding:8px 3px 7px;font-size:10.5px;\n"+
+" font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;\n"+
+" box-shadow:none;transition:color .18s}\n"+
+".navbar button.on{color:var(--acc)}\n"+
+".navbar button svg{width:21px;height:21px;stroke-width:1.7}\n"+
+".navbar button:active{transform:none;opacity:.6}\n"+
+"body{padding-bottom:calc(env(safe-area-inset-bottom) + 66px)}\n"+
+".fab{bottom:calc(env(safe-area-inset-bottom) + 74px)}\n"+
+"@media (prefers-reduced-motion:reduce){.pane.on{animation:none}}\n";
+
+var JS_VENTANAS =
+"<script>\n"+
+"/* ---------- ventanas ----------\n"+
+"   La app era una sola pagina larga: para ver los picks habia que bajar por\n"+
+"   toda la lista de juegos. Aqui se parte en cuatro pantallas con una barra\n"+
+"   fija abajo.\n"+
+"   No se reescribe nada del HTML: se MUEVEN las secciones que ya existen con\n"+
+"   appendChild, que traslada el nodo sin clonarlo — asi conserva todos sus\n"+
+"   escuchadores y ningun boton deja de funcionar. Va todo dentro de un try:\n"+
+"   si faltara alguna pieza, la app se queda como estaba en vez de romperse. */\n"+
+"(function(){\n"+
+"try{\n"+
+"  var wrap=document.querySelector('.wrap');\n"+
+"  if(!wrap||document.querySelector('.navbar')) return;\n"+
+"  var ico={\n"+
+"    juegos:'<circle cx=\"12\" cy=\"12\" r=\"8\"/><path d=\"M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6\"/>',\n"+
+"    gane:'<path d=\"M8 4h8v5a4 4 0 0 1-8 0z\"/><path d=\"M8 6H5.2v1.6A3.2 3.2 0 0 0 8.4 11M16 6h2.8v1.6A3.2 3.2 0 0 1 15.6 11M10.4 17h3.2M9 20h6\"/>',\n"+
+"    picks:'<path d=\"M5 4.5h11.5a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2z\"/><path d=\"M5 16.5h13.5\"/>',\n"+
+"    ajustes:'<circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 3.2v2M12 18.8v2M3.2 12h2M18.8 12h2M5.8 5.8l1.4 1.4M16.8 16.8l1.4 1.4M18.2 5.8L16.8 7.2M7.2 16.8l-1.4 1.4\"/>'\n"+
+"  };\n"+
+"  var SEC=[['juegos','Juegos'],['gane','Al gane'],['picks','Mis picks'],['ajustes','Ajustes']];\n"+
+"  var pane={};\n"+
+"  SEC.forEach(function(s){\n"+
+"    var d=document.createElement('section');\n"+
+"    d.className='pane'; d.id='pane-'+s[0];\n"+
+"    pane[s[0]]=d; wrap.appendChild(d);\n"+
+"  });\n"+
+"  var mover=function(sel,dest){\n"+
+"    var el=(typeof sel==='string')?document.querySelector(sel):sel;\n"+
+"    if(el&&pane[dest]) pane[dest].appendChild(el);\n"+
+"    return el;\n"+
+"  };\n"+
+"  /* La fecha y el boton de cargar salen de la barra de arriba y se van a\n"+
+"     Juegos, que es donde se usan y donde hay sitio. */\n"+
+"  var fila=document.createElement('div');\n"+
+"  fila.className='cargafila';\n"+
+"  pane.juegos.appendChild(fila);\n"+
+"  var fe=document.getElementById('fecha'), cg=document.getElementById('cargar');\n"+
+"  if(fe){ fe.style.maxWidth=''; fila.appendChild(fe); }\n"+
+"  if(cg){ fila.appendChild(cg); cg.textContent='Cargar partidos'; }\n"+
+"  mover('#status','juegos');\n"+
+"  mover('#slate','juegos');\n"+
+"  mover('.controls','gane');\n"+
+"  mover('#gane_zona','gane');\n"+
+"  var pista=document.createElement('div');\n"+
+"  pista.className='flag';\n"+
+"  pista.innerHTML='Si no sale nada, primero carga la fecha en <b>Juegos</b>.';\n"+
+"  pane.gane.appendChild(pista);\n"+
+"  mover('.registro','picks');\n"+
+"  var aj=mover('.ajustes','ajustes');\n"+
+"  if(aj) aj.setAttribute('open','');\n"+
+"  mover('header.hero','ajustes');\n"+
+"  mover('.manual','ajustes');\n"+
+"  mover('footer','ajustes');\n"+
+"  /* barra de abajo */\n"+
+"  var nav=document.createElement('nav');\n"+
+"  nav.className='navbar';\n"+
+"  SEC.forEach(function(s){\n"+
+"    var b=document.createElement('button');\n"+
+"    b.dataset.p=s[0];\n"+
+"    b.innerHTML='<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" '+\n"+
+"      'stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">'+ico[s[0]]+\n"+
+"      '</svg><span>'+s[1]+'</span>';\n"+
+"    b.addEventListener('click',function(){ ir(s[0]); });\n"+
+"    nav.appendChild(b);\n"+
+"  });\n"+
+"  document.body.appendChild(nav);\n"+
+"  function ir(id){\n"+
+"    SEC.forEach(function(s){ pane[s[0]].classList.toggle('on', s[0]===id); });\n"+
+"    nav.querySelectorAll('button').forEach(function(b){\n"+
+"      b.classList.toggle('on', b.dataset.p===id);\n"+
+"    });\n"+
+"    window.scrollTo({top:0,behavior:'auto'});\n"+
+"  }\n"+
+"  ir('juegos');\n"+
+"  /* La cabecera del juego y la barra de pestañas se pegan debajo de la barra\n"+
+"     de arriba. Como acaba de encoger (le quitamos la fecha y el boton), se\n"+
+"     vuelve a medir en vez de dejar el valor fijo del CSS. */\n"+
+"  var medirBarra=function(){\n"+
+"    var t=document.querySelector('.topbar');\n"+
+"    if(t) document.documentElement.style.setProperty('--barra', t.offsetHeight+'px');\n"+
+"  };\n"+
+"  medirBarra();\n"+
+"  window.addEventListener('resize',medirBarra,{passive:true});\n"+
+"  window.addEventListener('orientationchange',medirBarra,{passive:true});\n"+
+"}catch(e){}\n"+
+"})();\n"+
+"<\/script>\n";
+
+var PARCHES=[
+
+/* ---------- colores base ---------- */
+{n:'Barra de estado del iPhone en oscuro',
+ desde:'<meta name="apple-mobile-web-app-status-bar-style"',
+ hasta:'<meta http-equiv="Cache-Control"',
+ poner:'<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n<meta name="theme-color" content="#0D0E10">\n<meta http-equiv="Cache-Control"'},
+
+{n:'EL TEMA — los colores de Grafito',
+ desde:':root{\n --bg:',
+ hasta:" --cond:'Barlow Condensed'",
+ poner:"/* Tema Grafito. Gris neutro sin tinte azul. Contrastes medidos con la formula\n   estandar, en los sitios donde el CSS usa cada variable:\n     texto principal   16.0    letra chica       5.1\n     secundario         8.8    pie               5.9\n     acento             6.3    texto del boton   6.7\n   El minimo comodo es 4.5 y el de leer con sol encima es 7.\n   color-scheme:dark hace que el selector de fecha, las casillas y las barras\n   de scroll del iPhone salgan oscuras tambien, sin pintarlas a mano.\n   --accTx es el color del texto ENCIMA del acento (botones y la barra de\n   porcentaje): iba en blanco fijo, y sobre un azul claro no se leia. */\n:root{\n color-scheme:dark;\n --bg:#0D0E10;--bg1:#17181B;--bg2:#1E2024;--bg3:#272A2F;\n --line:#2A2D32;--line2:#3E434A;\n --txt:#F2F3F5;--mut:#B2B7BE;--mut2:#8A9098;\n --acc:#5B9BF5;--acc2:#7FB3FF;--accTx:#0A1220;\n --good:#4ADE80;--bad:#F87171;--info:#5B9BF5;\n" + " --cond:'Barlow Condensed'"},
+
+{n:'La barra de arriba',
+ desde:'.topbar{position:sticky;top:0;z-index:20;background:rgba(',
+ hasta:'-webkit-backdrop-filter:blur(10px);',
+ poner:'.topbar{position:sticky;top:0;z-index:20;background:rgba(13,14,16,.95);\n -webkit-backdrop-filter:blur(10px);'},
+
+{n:'Texto de los botones, legible sobre el azul',
+ buscar:"button{background:var(--acc);color:#fff;border:0;border-radius:var(--r);",
+ poner:"button{background:var(--acc);color:var(--accTx);border:0;border-radius:var(--r);"},
+
+{n:'Texto de la barra de porcentaje',
+ buscar:".bar .lead{background:var(--acc);color:#fff}",
+ poner:".bar .lead{background:var(--acc);color:var(--accTx)}"},
+
+{n:'Aviso de error de carga',
+ buscar:".status.err{color:var(--bad);background:#FBEDEA;border:1px solid #EBC8C1;",
+ poner:".status.err{color:var(--bad);background:#2A1A19;border:1px solid #5C2E2A;"},
+
+{n:'Pick de valor fuerte y de alerta',
+ buscar:".pick.big{border-left-color:var(--good);background:#EFF5E6;border-color:#CFE0B8}\n.pick.big .q{color:#2F5A0C}\n.pick.alerta{border-left-color:var(--bad);background:#FBEDEA;border-color:#EBC8C1}",
+ poner:".pick.big{border-left-color:var(--good);background:#16251A;border-color:#2E5136}\n.pick.big .q{color:#7EE3A0}\n.pick.alerta{border-left-color:var(--bad);background:#2A1A19;border-color:#5C2E2A}"},
+
+{n:'Caja de aviso',
+ buscar:" background:#FBEDEA;border:1px solid #EBC8C1;border-radius:var(--r);\n padding:10px 12px;margin-top:9px}",
+ poner:" background:#2A1A19;border:1px solid #5C2E2A;border-radius:var(--r);\n padding:10px 12px;margin-top:9px}"},
+
+{n:'Negrita dentro del aviso',
+ buscar:".aviso b{color:#7E2417;font-weight:600}",
+ poner:".aviso b{color:#FCA5A5;font-weight:600}"},
+
+{n:'Sellos de medido y medido flojo',
+ buscar:".medido.ok{background:#E7F0DA;color:#2F5A0C}\n.medido.flojo{background:#FBE3DE;color:#8A2A1F}",
+ poner:".medido.ok{background:#16281C;color:#7EE3A0}\n.medido.flojo{background:#2C1A18;color:#F0A29A}"},
+
+{n:'Texto verde de «hay valor»',
+ buscar:".out.si{color:#2F5A0C;font-weight:500}",
+ poner:".out.si{color:#7EE3A0;font-weight:500}"},
+
+{n:'Casillas verde y roja del hándicap',
+ buscar:".row.hcrow .par.pv{background:#EFF5E6;border-color:#CFE0B8}\n.row.hcrow .par.pr{background:#FBEDEA;border-color:#EBC8C1}",
+ poner:".row.hcrow .par.pv{background:#16251A;border-color:#2E5136}\n.row.hcrow .par.pr{background:#2A1A19;border-color:#5C2E2A}"},
+
+{n:'Equipo seleccionado en el hándicap',
+ buscar:".teq.on{background:#E8F1FA;color:var(--acc);border-color:var(--acc)}",
+ poner:".teq.on{background:#16263A;color:var(--acc);border-color:var(--acc)}"},
+
+{n:'Los puntos verde y rojo',
+ buscar:".pt.verde{background:#639922}\n.pt.rojo{background:#C0453A}",
+ poner:".pt.verde{background:#4ADE80}\n.pt.rojo{background:#F87171}"},
+
+{n:'Etiquetas de ganó y perdió en el registro',
+ buscar:".pk .res.g{color:#2F5A0C;background:#E7F0DA}\n.pk .res.p{color:#8A2A1F;background:#FBE3DE}",
+ poner:".pk .res.g{color:#7EE3A0;background:#16281C}\n.pk .res.p{color:#F0A29A;background:#2C1A18}"},
+
+{n:'El escudo de marca de agua, más visible en oscuro',
+ buscar:" object-fit:contain;opacity:.09}",
+ poner:" object-fit:contain;opacity:.14}"},
+
+/* ---------- ventanas ---------- */
+{n:'LAS VENTANAS — el CSS',
+ buscar:"@media (prefers-reduced-motion:reduce){.bar span{transition:none}}\n</style>",
+ poner:"@media (prefers-reduced-motion:reduce){.bar span{transition:none}}\n"+CSS_VENTANAS+"</style>"},
+
+{n:'LAS VENTANAS — mover las secciones y la barra de abajo',
+ buscar:"})();\n</script>\n</body>\n</html>",
+ poner:"})();\n<\/script>\n"+JS_VENTANAS+"</body>\n</html>"},
+
+/* ---------- lo de antes, por si faltaba ---------- */
+{n:'Leyendas plegadas (si faltaba)',
+ buscar:".leyenda,.receta{position:relative;font-size:12px;color:var(--mut);line-height:1.55;\n background:var(--bg2);border-radius:var(--r);padding:10px 36px 10px 11px;margin:8px 0;\n cursor:pointer;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;\n overflow:hidden}",
+ poner:"/* Cerrada, la leyenda ya no enseña un pedazo del texto. Antes iba con\n   -webkit-line-clamp:2 y cortaba donde cayera — a media palabra la mayoria de\n   las veces — y eso parece un error de la app, no un resumen. Ahora queda una\n   barrita con la etiqueta y la «i», y el texto entero sale al tocarla. */\n.leyenda,.receta{position:relative;font-size:12px;color:var(--mut);line-height:1.55;\n background:var(--bg2);border-radius:var(--r);padding:10px 38px 10px 11px;margin:8px 0;\n cursor:pointer;display:block}\n.leyenda:not(.abierta):not(.err),.receta:not(.abierta){\n height:38px;overflow:hidden;font-size:0;line-height:0;padding:0 38px 0 11px}\n.leyenda:not(.abierta):not(.err):before,.receta:not(.abierta):before{\n content:'Nota · toca para leer';position:absolute;left:11px;top:0;height:38px;\n display:flex;align-items:center;font-size:12.5px;line-height:1.2;\n color:var(--mut);font-weight:600}\n.receta:not(.abierta):before{content:'Paso a paso · toca para leer'}"},
+
+{n:'Leyenda abierta (si faltaba)',
+ buscar:".leyenda.abierta,.receta.abierta{display:block;-webkit-line-clamp:none;overflow:visible}",
+ poner:".leyenda.abierta,.receta.abierta{display:block;overflow:visible;height:auto}"},
+
+{n:'Fuera el botón de Kalshi (si faltaba)',
+ buscar:"  <button class=\"ghost\" id=\"kalshi\"><svg class=\"ic\" width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 12.5V20M8.5 8.5a5 5 0 0 1 7 0M5.5 5.5a9 9 0 0 1 13 0\"/><circle cx=\"12\" cy=\"11\" r=\"1.4\"/></svg> Traer precios de Kalshi</button>\n</div>\n<div id=\"kstatus\" class=\"leyenda\">Con el modo <b>Kalshi</b> puesto en &#9881;&#65039; Ajustes, este bot&oacute;n\nllena solo el precio del ganador de cada juego abierto. Kalshi bloquea las llamadas directas desde el\nnavegador, as&iacute; que se intenta por varios relevos hasta que uno pase. El resto de mercados\nsiguen a mano: Kalshi no los lista por juego.</div>",
+ poner:"</div>"},
+
+{n:'Fuera la maquinaria de fetch (si faltaba)',
+ desde:"/* ---------- Kalshi ---------- */",
+ hasta:"/* ---------- datos ---------- */",
+ poner:"/* El boton de traer precios de Kalshi se quito en la v25: nunca llego a\n   funcionar. Kalshi bloquea las llamadas desde el navegador y ninguno de los\n   cuatro relevos que se probaron paso una sola vez, asi que aqui vivian unas\n   130 lineas que no daban ningun precio y un boton que solo daba error.\n   El MODO Kalshi se queda entero: precios en centavos, la comision de\n   0.07 × (1 − precio) descontada del EV y del Kelly, y los ejemplos en\n   centavos. Los precios se copian a mano, que es como se venian metiendo. */\n\n/* ---------- datos ---------- */"},
+
+{n:'Fuera la llamada suelta (si faltaba)',
+ buscar:"  rellenarKalshi(el);\n  medirHead(el);",
+ poner:"  medirHead(el);"},
+
+{n:'Fuera el escuchador del botón (si faltaba)',
+ buscar:"$('cargar').addEventListener('click',cargar);\n$('kalshi').addEventListener('click',traerKalshi);\n$('algane_btn').addEventListener('click',correrAlGane);",
+ poner:"$('cargar').addEventListener('click',cargar);\n$('algane_btn').addEventListener('click',correrAlGane);"}
+
+];
+
+var $=function(id){ return document.getElementById(id); };
+var listo=false;
+
+function contar(txt,agu){
+  var n=0,i=0;
+  while(true){ var p=txt.indexOf(agu,i); if(p<0) break; n++; i=p+agu.length; if(n>5) break; }
+  return n;
+}
+function aplicar(src){
+  var res=[], txt=src, ok=0, mal=0;
+  PARCHES.forEach(function(p){
+    if(p.desde){
+      var nd=contar(txt,p.desde), nh=contar(txt,p.hasta);
+      if(nd===0&&txt.indexOf(p.poner)>=0){
+        res.push({n:p.n, ok:true, msg:'ya estaba puesto — se salta'}); return;
+      }
+      if(nd!==1||nh!==1){
+        res.push({n:p.n, ok:false, msg:'las anclas no salen una sola vez ('+nd+' y '+nh+') — se salta'});
+        mal++; return;
+      }
+      var i1=txt.indexOf(p.desde), i2=txt.indexOf(p.hasta);
+      if(i2<=i1){ res.push({n:p.n, ok:false, msg:'anclas al revés — se salta'}); mal++; return; }
+      txt=txt.slice(0,i1)+p.poner+txt.slice(i2+p.hasta.length);
+      res.push({n:p.n, ok:true, msg:'aplicado'}); ok++; return;
+    }
+    var n=contar(txt,p.buscar);
+    if(n===1){
+      txt=txt.replace(p.buscar,function(){ return p.poner; });
+      res.push({n:p.n, ok:true, msg:'aplicado'}); ok++;
+    }else if(n===0){
+      var ya=contar(txt,p.poner)>0;
+      res.push({n:p.n, ok:ya, msg: ya?'ya estaba puesto — se salta':'no se encontró el texto original — se salta'});
+      if(!ya) mal++;
+    }else{
+      res.push({n:p.n, ok:false, msg:'aparece '+n+' veces, no se toca por seguridad'}); mal++;
+    }
+  });
+  return {txt:txt, res:res, ok:ok, mal:mal};
+}
+function pintar(r){
+  var h='';
+  r.res.forEach(function(x){
+    h+='<div class="fila"><span class="'+(x.ok?'ok':'no')+'">'+(x.ok?'✓':'✕')+'</span>'+
+       '<span><b>'+x.n+'</b><br><span style="color:var(--mut2)">'+x.msg+'</span></span></div>';
+  });
+  $('lista').innerHTML=h;
+}
+
+$('ir').addEventListener('click',function(){
+  var b=$('ir');
+  b.disabled=true;
+  $('estado').textContent='Cogiendo tu index.html…';
+  $('lista').innerHTML=''; $('salida').innerHTML='';
+  fetch('index.html?t='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }).then(function(src){
+    if(src.indexOf('pagoMod')<0) throw new Error('ese archivo no parece el index.html de OVA');
+    if(!listo){
+      var mv=src.match(/<span class="ver">v(\d+)<\/span>/);
+      if(mv&&mv[1]!=='27')
+        PARCHES.unshift({n:'Versión v'+mv[1]+' → v27', buscar:mv[0],
+                         poner:'<span class="ver">v27</span>'});
+      listo=true;
+    }
+    $('estado').textContent='Leídos '+Math.round(src.length/1024)+' KB. Aplicando…';
+    var r=aplicar(src);
+    pintar(r);
+
+    var sueltos=[];
+    ['traerKalshi','rellenarKalshi','kEstado','kPreciosJuego','KMKT','KCODE','kstatus']
+      .forEach(function(nm){ if(r.txt.indexOf(nm)>=0) sueltos.push(nm); });
+    var claros=[];
+    ['#FBEDEA','#EBC8C1','#EFF5E6','#CFE0B8','#2F5A0C','#E7F0DA','#FBE3DE','#8A2A1F',
+     '#E8F1FA','#7E2417','#FAF8F4','#EFEBE3']
+      .forEach(function(c){ if(r.txt.indexOf(c)>=0) claros.push(c); });
+    var faltan=[];
+    ['navbar','cargafila','Cargar partidos','entrapane','medirBarra']
+      .forEach(function(nm){ if(r.txt.indexOf(nm)<0) faltan.push(nm); });
+    /* Las etiquetas de script tienen que quedar balanceadas o la pagina no abre. */
+    var ab=contar(r.txt,'<script'), ce=contar(r.txt,'<\/script>');
+
+    var aviso='';
+    if(r.mal>0)
+      aviso+='<div class="aviso">Se saltaron <b>'+r.mal+'</b> cambio(s). Mira la lista.</div>';
+    if(sueltos.length)
+      aviso+='<div class="aviso">Referencias sueltas a: <b>'+sueltos.join(', ')+'</b>. No bajes el archivo.</div>';
+    if(claros.length)
+      aviso+='<div class="aviso">Colores de tema claro sin convertir: <b>'+claros.join(', ')+'</b>.</div>';
+    if(faltan.length)
+      aviso+='<div class="aviso">Falta el código de ventanas: <b>'+faltan.join(', ')+'</b>.</div>';
+    if(ab!==ce)
+      aviso+='<div class="aviso">Las etiquetas de script quedaron descuadradas ('+ab+' y '+ce+'). No bajes el archivo.</div>';
+    var bien=!r.mal&&!sueltos.length&&!claros.length&&!faltan.length&&ab===ce;
+    if(bien)
+      aviso+='<div class="bien">Los '+r.ok+' cambios entraron. Cuatro ventanas puestas, sin '+
+             'referencias sueltas, sin colores claros y con las etiquetas cuadradas. '+
+             Math.round(r.txt.length/1024)+' KB.</div>';
+    $('salida').innerHTML=aviso;
+
+    if(bien){
+      var url=URL.createObjectURL(new Blob([r.txt],{type:'text/html'}));
+      $('salida').innerHTML+='<a class="dl" href="'+url+'" download="index.html">'+
+        '⬇︎ Bajar el index.html de la v27</a>'+
+        '<p class="nota" style="margin-top:12px">Ni un número del modelo se tocó. El historial del '+
+        'archivo en GitHub te guarda todas las versiones anteriores por si acaso.</p>';
+    }
+    $('estado').textContent='';
+    b.disabled=false;
+  }).catch(function(e){
+    $('estado').innerHTML='<span class="no">No se pudo: '+String(e.message)+'</span>';
+    b.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
