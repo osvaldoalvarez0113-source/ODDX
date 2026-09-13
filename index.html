@@ -492,7 +492,7 @@ svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v31</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v32</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -667,9 +667,7 @@ svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
   De esa medición sí salió un arreglo concreto, y está aplicado: la fracción de las primeras 5 estaba
   en 0.53 por suposición y medida da 0.56, lo que estaba costando 0.14 carreras de proyección por
   equipo en cada juego.
-  Los <b>ponches</b> siguen sin medirse contra nada, y por eso son los únicos que quedan marcados
-  <b>«sin medir»</b>. Los demás van marcados <b>«medido: flojo»</b>, que es peor de leer pero mejor
-  de saber: ya no es que no sepamos, es que sabemos cuánto es poco.
+  Los <b>ponches</b> ya se midieron: backtestk.html corrió 3,569 salidas de 2025 y 3,592 de 2026, proyectando con K/9 acumulado antes de cada salida × innings por salida × ajuste por el K% del rival. Correlación <b>0.379 en 2025 y 0.375 en 2026</b> — dos temporadas independientes casi en el mismo número, igual de firme que las otras constantes medidas de esta app. El ajuste por K% del rival sí aporta: sin él la correlación baja a 0.338 y 0.348. Esto pone a los ponches muy por encima del total (0.16), las carreras por equipo (0.11) y las primeras 5 (0.10) — tiene sentido, porque el K/9 de un abridor es una habilidad mucho más estable de un año a otro que las carreras permitidas, que dependen de defensa y suerte de secuencia. Quedan marcados <b>«medido: flojo»</b> como los otros tres, aunque de los cuatro son el que mejor se defiende.
 
   <b>La forma de la distribución, y por qué viene apagada.</b> Todo lo que no es el ganador sale de
   una Poisson montada sobre las carreras esperadas. Poisson tiene una propiedad que nadie escogió:
@@ -2219,8 +2217,8 @@ function recolectar(root){
     if(!isFinite(L)) return;
     var p=pOver(L,+b.dataset.k);
     var q=b.dataset.n||'abridor';
-    meter(q+' Over '+L+' K',  p.over*100,  p.push*100, b.querySelector('.ko').value, 'nada');
-    meter(q+' Under '+L+' K', p.under*100, p.push*100, b.querySelector('.ku').value, 'nada');
+    meter(q+' Over '+L+' K',  p.over*100,  p.push*100, b.querySelector('.ko').value, 'flojo');
+    meter(q+' Under '+L+' K', p.under*100, p.push*100, b.querySelector('.ku').value, 'flojo');
   });
   return out;
 }
@@ -2513,7 +2511,7 @@ function avisoMuestra(nA,seA,cA,uA,nH,seH,cH,uH){
   [[nA,seA,cA,uA],[nH,seH,cH,uH]].forEach(function(t){
     var se=t[1], cr=t[2], us=t[3];
     if(!se||cr==null||us==null||!isFinite(cr)||!isFinite(us)) return;
-    if(se.ip>=30 && Math.abs(cr-us)<0.60) return;
+    if(se.ip>=30) return;
     f.push({n:t[0], ip:se.ip, gs:se.gs, cr:cr, us:us, h9:se.h9, whip:se.whip});
   });
   if(!f.length) return '';
@@ -2982,7 +2980,7 @@ function detalle(x){
   'el bullpen; eso se cancela con que en las primeras 5 batea el tope de la alineación completo. Ese '+
   '0.53 estaba proyectando 0.14 carreras de menos por equipo en cada juego.</div>'+
 
-  '<h3><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.6v14M6.4 13.2l5.6 5.6 5.6-5.6"/></svg>Ponches del abridor '+marca('nada')+'</h3>'+
+  '<h3><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.6v14M6.4 13.2l5.6 5.6 5.6-5.6"/></svg>Ponches del abridor '+marca('flojo')+'</h3>'+
   kBloque(pa,nomA,idA,sea,oh,nomH,l5a)+
   kBloque(pih,nomH,idH,seh,oa,nomA,l5h)+
 
