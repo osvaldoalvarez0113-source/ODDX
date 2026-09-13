@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parche v32</title>
+<style>
+body{background:#0A1119;color:#EDF2F7;font-family:system-ui,-apple-system,sans-serif;
+ padding:16px;line-height:1.55;max-width:640px;margin:0 auto}
+button{background:#4F8FD6;color:#06121C;border:0;border-radius:8px;padding:10px 16px;
+ font-weight:600;font-size:15px;cursor:pointer;margin-top:10px}
+#log{font-size:13px;white-space:pre-wrap;margin-top:14px;background:#101A25;padding:12px;
+ border-radius:8px;line-height:1.7}
+.ok{color:#7EE3A0}.bad{color:#F5837A}
+</style></head>
+<body>
+<h1 style="font-size:19px">Parche v32 — ponches medidos</h1>
+<p style="color:#A7BCCC;font-size:13.5px">Sube esto al repo ODDX junto a tu <code>index.html</code>,
+ábrelo desde Safari y dale al botón. Lee tu <code>index.html</code> del mismo repo, le aplica cuatro
+cambios y te da un archivo nuevo para descargar y subir encima del viejo.</p>
+<button id="ir">Aplicar parche y descargar index.html</button>
+<div id="log"></div>
+<script>
+function linea(t,ok){
+  var d=document.getElementById('log');
+  var s=document.createElement('div');
+  s.className=ok?'ok':'bad';
+  s.textContent=(ok?'✓ ':'✗ ')+t;
+  d.appendChild(s);
+}
+document.getElementById('ir').addEventListener('click',function(){
+  document.getElementById('log').innerHTML='';
+  fetch('./index.html').then(function(r){
+    if(!r.ok) throw new Error('No se pudo leer index.html ('+r.status+')');
+    return r.text();
+  }).then(function(html){
+    var original=html;
+
+    // 1. Version
+    var h2=html.replace('<span class="ver">v31</span>','<span class="ver">v32</span>');
+    linea('Versión v31 → v32', h2!==html); html=h2;
+
+    // 2. Marca de ponches: 'nada' -> 'flojo' (dos líneas de recolectar())
+    var h3=html.replace(
+      "meter(q+' Over '+L+' K',  p.over*100,  p.push*100, b.querySelector('.ko').value, 'nada');",
+      "meter(q+' Over '+L+' K',  p.over*100,  p.push*100, b.querySelector('.ko').value, 'flojo');"
+    );
+    linea('Marca del Over de ponches → flojo', h3!==html); html=h3;
+
+    var h4=html.replace(
+      "meter(q+' Under '+L+' K', p.under*100, p.push*100, b.querySelector('.ku').value, 'nada');",
+      "meter(q+' Under '+L+' K', p.under*100, p.push*100, b.querySelector('.ku').value, 'flojo');"
+    );
+    linea('Marca del Under de ponches → flojo', h4!==html); html=h4;
+
+    // 3. Encabezado de la sección Ponches
+    var h5=html.replace(
+      "Ponches del abridor '+marca('nada')+'</h3>'",
+      "Ponches del abridor '+marca('flojo')+'</h3>'"
+    );
+    linea('Encabezado "Ponches del abridor" → medido: flojo', h5!==html); html=h5;
+
+    // 4. Footer: texto de ponches sin medir -> resultados reales del backtest
+    var re=/Los <b>ponches<\/b> siguen sin medirse contra nada[\s\S]*?es que sabemos cuánto es poco\./;
+    var nuevoTexto =
+      'Los <b>ponches</b> ya se midieron: backtestk.html corrió 3,569 salidas de 2025 y 3,592 '+
+      'de 2026, proyectando con K/9 acumulado antes de cada salida × innings por salida × ajuste '+
+      'por el K% del rival. Correlación <b>0.379 en 2025 y 0.375 en 2026</b> — dos temporadas '+
+      'independientes casi en el mismo número, igual de firme que las otras constantes medidas de '+
+      'esta app. El ajuste por K% del rival sí aporta: sin él la correlación baja a 0.338 y 0.348. '+
+      'Esto pone a los ponches muy por encima del total (0.16), las carreras por equipo (0.11) y '+
+      'las primeras 5 (0.10) — tiene sentido, porque el K/9 de un abridor es una habilidad mucho '+
+      'más estable de un año a otro que las carreras permitidas, que dependen de defensa y suerte '+
+      'de secuencia. Quedan marcados <b>«medido: flojo»</b> como los otros tres, aunque de los '+
+      'cuatro son el que mejor se defiende.';
+    var h6=html.replace(re,nuevoTexto);
+    linea('Footer: párrafo de ponches actualizado con los resultados reales', h6!==html); html=h6;
+
+    // 5. Bug del aviso de muestra corta: disparaba con muestra grande si el
+    //    ERA-FIP se separaba, aunque no fuera un problema de muestra.
+    var h7=html.replace(
+      'if(se.ip>=30 && Math.abs(cr-us)<0.60) return;',
+      'if(se.ip>=30) return;'
+    );
+    linea('Bug del aviso "muestra corta" arreglado (falso positivo con muestra grande)', h7!==html); html=h7;
+
+    if(html===original){ linea('Nada cambió — revisa los que salieron en rojo arriba.',false); return; }
+
+    var blob=new Blob([html],{type:'text/html'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='index.html';
+    document.body.appendChild(a);
+    a.click();
+    linea('Descarga lista. Súbela al repo ODDX encima del index.html viejo.',true);
+  }).catch(function(e){
+    linea('Error: '+e.message,false);
+  });
+});
+</script>
+</body>
+</html>
