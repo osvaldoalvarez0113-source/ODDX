@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Poner la clave</title>
+<style>
+body{background:#0A1119;color:#EDF2F7;font-family:system-ui,-apple-system,sans-serif;
+ padding:16px;line-height:1.55;max-width:640px;margin:0 auto}
+input{width:100%;background:#101A25;border:1px solid #2B4256;color:#EDF2F7;border-radius:8px;
+ padding:12px;font-size:15px;font-family:ui-monospace,monospace;margin-top:8px;
+ -webkit-appearance:none;box-sizing:border-box}
+button{background:#4F8FD6;color:#06121C;border:0;border-radius:8px;padding:12px 18px;
+ font-weight:600;font-size:15px;margin-top:12px;width:100%}
+#log{font-size:13px;white-space:pre-wrap;margin-top:14px;background:#101A25;padding:12px;
+ border-radius:8px;line-height:1.7}
+.ok{color:#7EE3A0}.bad{color:#F5837A}
+code{background:#16232F;padding:1px 5px;border-radius:4px}
+</style></head>
+<body>
+<h1 style="font-size:19px">Poner la clave en OVA</h1>
+<p style="color:#A7BCCC;font-size:13.5px">Pega tu clave de API aqui abajo y dale al boton. Lee tu
+<code>index.html</code> del mismo repo, le mete la clave en el sitio correcto, y te descarga el
+archivo listo para subir encima del viejo.</p>
+<input type="text" id="k" placeholder="sk-ant-api03-..." autocapitalize="off" autocorrect="off" spellcheck="false">
+<button id="ir">Poner la clave y descargar index.html</button>
+<div id="log"></div>
+<script>
+function linea(t,ok){
+  var d=document.getElementById('log');
+  var s=document.createElement('div');
+  s.className=ok?'ok':'bad';
+  s.textContent=(ok?'\u2713 ':'\u2717 ')+t;
+  d.appendChild(s);
+}
+document.getElementById('ir').addEventListener('click',function(){
+  document.getElementById('log').innerHTML='';
+  var k=(document.getElementById('k').value||'').trim();
+  if(!k){ linea('Falta pegar la clave.',false); return; }
+  if(k.indexOf('sk-ant-')!==0){ linea('Esa clave no empieza con sk-ant- . Revisa que la copiaste completa.',false); return; }
+  if(k.indexOf("'")>=0||k.indexOf('"')>=0){ linea('La clave trae comillas pegadas. Copiala sin comillas.',false); return; }
+  fetch('./index.html').then(function(r){
+    if(!r.ok) throw new Error('No se pudo leer index.html ('+r.status+')');
+    return r.text();
+  }).then(function(html){
+    if(html.indexOf('CLAUDE_KEY')<0){
+      linea('Este index.html no tiene el parche v33 aplicado (no aparece CLAUDE_KEY).',false);
+      return;
+    }
+    var re=/var CLAUDE_KEY='[^']*';/;
+    if(!re.test(html)){ linea('No se encontro la linea de la clave con el formato esperado.',false); return; }
+    var yaTenia=!/var CLAUDE_KEY='PEGA_AQUI_TU_CLAVE_DE_API';/.test(html);
+    html=html.replace(re,"var CLAUDE_KEY='"+k+"';");
+    linea(yaTenia?'Clave reemplazada (ya habia una puesta)':'Clave puesta en CLAUDE_KEY',true);
+    var blob=new Blob([html],{type:'text/html'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download='index.html';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    linea('index.html descargado \u2014 subelo al repo encima del viejo',true);
+  }).catch(function(e){ linea('Error: '+e.message,false); });
+});
+</script>
+</body>
+</html>
