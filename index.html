@@ -64,7 +64,7 @@
  --txt:#EDF2F7;--mut:#A7BCCC;--mut2:#8298A9;
  --acc:#4F8FD6;--acc2:#6FA6E4;--accTx:#06121C;
  --hot:#F0B849;--hotTx:#14202B;
- --good:#4ED88A;--bad:#F5837A;--info:#4F8FD6;
+ --good:#4ED88A;--bad:#F5837A;--info:#4F8FD6;--ia:#2FD9C4;
  --cond:'Bitter',Georgia,'Times New Roman',serif;
  --body:'Inter',system-ui,-apple-system,sans-serif;
  /* Ya no es monoespaciada: los numeros cuadran con cifras tabulares. */
@@ -487,12 +487,16 @@ svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
 .ganeacc button{padding:7px 11px;font-size:12.5px;min-height:38px}
 .ganeacc .gmsg{font-size:12px;color:var(--good);flex:1 1 100%}
 .ganeacc .gmsg.bad{color:var(--bad)}
+.iabox{margin:12px 0 4px}
+.iabox button{width:100%;justify-content:center}
+.pick.ia{border-left-color:var(--ia);background:#0F2426;border-color:#1D4A47}
+.pick.ia .q{color:var(--ia)}
 </style>
 </head>
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v32</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v33</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -835,6 +839,8 @@ svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
   Los mercados de un mismo juego están correlacionados, así que jugar dos del ranking no diversifica.
   El tope del porcentaje es 22–78%; si un juego lo toca, el moneyline sale del ranking.
 
+  <b>El botón 🦈 Verificar con IA.</b> Manda tu ranking a un modelo de lenguaje con acceso a internet para que busque lineup, lesiones y noticias del día y te diga si eso cambia el pick. No reemplaza el modelo de la app — lo complementa con lo que un número solo no puede ver. La clave de API vive en el código de este archivo (variable <code>CLAUDE_KEY</code>): si compartes el link del repo, compartes esa clave, y cada toque del botón gasta crédito de tu cuenta de Anthropic. Ponle un límite de gasto mensual en console.anthropic.com.
+
 </details>
 </footer>
 
@@ -882,6 +888,80 @@ var EV_IMPOSIBLE=0.20;
    (-0.142 en 2026, -0.168 en 2025). Arreglar la fraccion arregla el sesgo. */
 var F5_FRAC=0.56;
 var ULTIMO=null;
+
+/* ---------- IA verificadora (v33) ----------
+   Segundo filtro, no matematico: le manda el ranking de la app a un modelo de
+   lenguaje con acceso a internet para que busque lineup, lesiones y noticias
+   del dia y diga si eso cambia el pick. La clave va pegada en el codigo
+   porque el repo es publico -- es decision tuya, ponle limite de gasto en
+   console.anthropic.com. */
+var CLAUDE_KEY='PEGA_AQUI_TU_CLAVE_DE_API';
+var CLAUDE_MODEL='claude-sonnet-5';
+function llamarIA(prompt){
+  if(!CLAUDE_KEY||CLAUDE_KEY.indexOf('PEGA_AQUI')===0)
+    return Promise.reject(new Error('Falta poner tu clave de API en CLAUDE_KEY'));
+  return fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'content-type':'application/json',
+      'x-api-key':CLAUDE_KEY,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({
+      model:CLAUDE_MODEL,
+      max_tokens:1800,
+      messages:[{role:'user',content:prompt}],
+      tools:[{type:'web_search_20250305',name:'web_search',max_uses:5}]
+    })
+  }).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+' -- '+t.slice(0,180)); });
+    return r.json();
+  }).then(function(d){
+    if(d.error) throw new Error(d.error.message||'Error de la API');
+    var partes=(d.content||[]).filter(function(c){ return c.type==='text'; }).map(function(c){ return c.text; });
+    var t=partes.join('\n\n');
+    return t||'Sin respuesta de texto.';
+  });
+}
+function iaHtml(texto){
+  var t=esc(texto);
+  t=t.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  t=t.replace(/\n/g,'<br>');
+  return t;
+}
+function promptJuego(juego,fecha,buenos,mlPick){
+  var l=buenos.slice(0,5).map(function(m){
+    return '- '+m.m+': tu modelo dice '+m.p.toFixed(1)+'%, ventaja '+m.v.ventaja.toFixed(1)+
+      ' puntos, EV '+(m.v.ev*100).toFixed(1)+'% ('+m.med+')';
+  }).join('\n');
+  var ml=mlPick?('\nGanador segun el modelo, sin filtrar por valor: '+mlPick.m+' '+mlPick.p.toFixed(1)+'%.'):'';
+  return 'Eres un analista de apuestas de MLB, directo y esceptico. Juego: '+juego+' el '+fecha+
+    '. Mi modelo matematico (ERA, carreras por juego, ERA de bullpen) da este ranking de valor '+
+    'para este partido:\n'+l+ml+
+    '\n\nBusca en internet informacion de HOY sobre este juego: lineup confirmado, lesiones de '+
+    'ultima hora, cambio de abridor, uso reciente del bullpen, y clima si es relevante. Con eso, '+
+    'responde en espanol, corto y directo (maximo 150 palabras, sin relleno ni disculpas):\n'+
+    '1) El pick de ganador del modelo, sigue siendo el mejor o hay algo que lo cambia?\n'+
+    '2) De los mercados de valor de arriba, cual jugarias tu y cual evitarias, y por que?\n'+
+    'Si no encuentras nada nuevo que cambie el panorama, dilo directamente en vez de rellenar.';
+}
+function promptDia(lista){
+  var top=lista.slice(0,8);
+  var l=top.map(function(m,i){
+    return (i+1)+'. '+m.juego+' -- modelo: '+m.gana+' '+m.p.toFixed(1)+'% (ventaja '+m.vc.toFixed(2)+' carreras)';
+  }).join('\n');
+  return 'Eres un analista de apuestas de MLB, directo y esceptico. Este es el ranking de mi '+
+    'modelo matematico (ERA, carreras por juego, ERA de bullpen) para HOY, ordenado por '+
+    'probabilidad pura de ganar, sin mirar cuotas:\n'+l+
+    '\n\nBusca en internet informacion de HOY de estos juegos: lineups confirmados, lesiones o '+
+    'bajas de ultima hora, cambios de abridor, y cualquier otra cosa que cambie la probabilidad '+
+    'real. Con eso, en espanol, corto y directo (maximo 200 palabras):\n'+
+    '1) De esta lista, cuales 3 o 4 tienen mas chance real de ganar, considerando lo que '+
+    'encontraste y no solo el numero del modelo?\n'+
+    '2) Hay algun juego donde la informacion que encontraste contradiga al modelo? Dilo.\n'+
+    'Si no encuentras nada que cambie el panorama, dilo directamente.';
+}
 
 var PARK={
  19:   ['Coors Field',1.28,'abierto'],
@@ -2383,6 +2463,8 @@ function actualizarRanking(root){
      'el porcentaje del modelo chocó con el tope de 22–78% y ya no es comparable contra la cuota. '+
      'El hándicap sale de repartir ese mismo porcentaje, así que arrastra el mismo problema.</div>';
   var juego=caja.dataset.juego||'—', fecha=caja.dataset.fecha||hoyISO();
+  o+='<div class="iabox"><button class="ghost iabtn">🦈 Verificar con IA</button>'+
+     '<div class="iaout"></div></div>';
   cajas.forEach(function(c){
     c.innerHTML=o;
     c.querySelectorAll('button.gp').forEach(function(b){
@@ -2395,6 +2477,18 @@ function actualizarRanking(root){
         if(id){ pintarRegistro(); actualizarRanking(root); }
         else if(regExiste(base)){ b.textContent='Ya guardado ✓'; b.disabled=true; }
         else { b.textContent='No se pudo guardar'; }
+      });
+    });
+    var iab=c.querySelector('.iabtn'), iao=c.querySelector('.iaout');
+    if(iab) iab.addEventListener('click',function(){
+      iab.disabled=true; iab.textContent='Buscando…';
+      iao.innerHTML='<div class="flag">Buscando lineup, lesiones y noticias de este juego…</div>';
+      llamarIA(promptJuego(juego,fecha,buenos,mlFuera[0]||null)).then(function(txt){
+        iao.innerHTML='<div class="pick ia"><div class="q">🦈 Verificado por IA</div><div class="r">'+iaHtml(txt)+'</div></div>';
+        iab.textContent='🦈 Verificar de nuevo'; iab.disabled=false;
+      }).catch(function(e){
+        iao.innerHTML='<div class="status err">No se pudo verificar: '+esc(e.message)+'. Revisa la clave de API y que tenga crédito.</div>';
+        iab.textContent='🦈 Reintentar'; iab.disabled=false;
       });
     });
   });
@@ -3456,7 +3550,21 @@ function pintarAlGane(){
      CORTE_GRIS.toFixed(2)+'. En el backtest, con el multiplicador en 6, el único tramo donde el modelo '+
      'entregó lo que prometía fue el de 60% para arriba — los de abajo son casi moneda al aire por más '+
      'que salgan primeros en la lista.</div>';
+  o+='<div class="iabox"><button class="ghost" id="iadia_btn">🦈 Verificar el día con IA</button>'+
+     '<div class="iaout" id="iadia_out"></div></div>';
   caja.innerHTML=o;
+  var iabd=document.getElementById('iadia_btn'), iaod=document.getElementById('iadia_out');
+  if(iabd) iabd.addEventListener('click',function(){
+    iabd.disabled=true; iabd.textContent='Buscando…';
+    iaod.innerHTML='<div class="flag">Revisando lineups, lesiones y noticias de los juegos de hoy…</div>';
+    llamarIA(promptDia(lista)).then(function(txt){
+      iaod.innerHTML='<div class="pick ia"><div class="q">🦈 Ranking verificado por IA</div><div class="r">'+iaHtml(txt)+'</div></div>';
+      iabd.textContent='🦈 Verificar de nuevo'; iabd.disabled=false;
+    }).catch(function(e){
+      iaod.innerHTML='<div class="status err">No se pudo verificar: '+esc(e.message)+'.</div>';
+      iabd.textContent='🦈 Reintentar'; iabd.disabled=false;
+    });
+  });
   caja.querySelectorAll('.fila').forEach(function(f){
     var pk=f.dataset.pk;
     var chk=f.querySelector('.chk');
