@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parche v33</title>
+<style>
+body{background:#0A1119;color:#EDF2F7;font-family:system-ui,-apple-system,sans-serif;
+ padding:16px;line-height:1.55;max-width:640px;margin:0 auto}
+button{background:#4F8FD6;color:#06121C;border:0;border-radius:8px;padding:10px 16px;
+ font-weight:600;font-size:15px;cursor:pointer;margin-top:10px}
+#log{font-size:13px;white-space:pre-wrap;margin-top:14px;background:#101A25;padding:12px;
+ border-radius:8px;line-height:1.7}
+.ok{color:#7EE3A0}.bad{color:#F5837A}
+code{background:#16232F;padding:1px 5px;border-radius:4px}
+</style></head>
+<body>
+<h1 style="font-size:19px">Parche v33 — 🦈 filtro de verificación por IA</h1>
+<p style="color:#A7BCCC;font-size:13.5px">Sube esto al repo ODDX junto a tu <code>index.html</code>,
+ábrelo desde Safari y dale al botón. Lee tu <code>index.html</code> del mismo repo, le agrega el
+botón "🦈 Verificar con IA" en cada juego y en Al gane, y te da un archivo nuevo para descargar y
+subir encima del viejo.</p>
+<p style="color:#F0A29A;font-size:13.5px">⚠️ Después de subir el archivo nuevo, tienes que abrir
+ese <code>index.html</code> y pegar tu clave de API de Anthropic en la variable
+<code>CLAUDE_KEY</code>, cerca del principio del script. Sin eso el botón no funciona. Ponle un
+límite de gasto mensual en console.anthropic.com — el repo es público, así que esa clave queda
+visible para cualquiera que lo abra.</p>
+<button id="ir">Aplicar parche y descargar index.html</button>
+<div id="log"></div>
+<script>
+function linea(t,ok){
+  var d=document.getElementById('log');
+  var s=document.createElement('div');
+  s.className=ok?'ok':'bad';
+  s.textContent=(ok?'✓ ':'✗ ')+t;
+  d.appendChild(s);
+}
+document.getElementById('ir').addEventListener('click',function(){
+  document.getElementById('log').innerHTML='';
+  fetch('./index.html').then(function(r){
+    if(!r.ok) throw new Error('No se pudo leer index.html ('+r.status+')');
+    return r.text();
+  }).then(function(html){
+
+    // 1. Version
+    var h1=html.replace('<span class="ver">v32</span>','<span class="ver">v33</span>');
+    linea('Versión v32 → v33', h1!==html); html=h1;
+
+    // 2. Variable de color para la IA
+    var h2=html.replace(
+      '--good:#4ED88A;--bad:#F5837A;--info:#4F8FD6;',
+      '--good:#4ED88A;--bad:#F5837A;--info:#4F8FD6;--ia:#2FD9C4;'
+    );
+    linea('Variable de color --ia agregada', h2!==html); html=h2;
+
+    // 3. CSS del botón y de la tarjeta de la IA
+    var cssIA =
+`.iabox{margin:12px 0 4px}
+.iabox button{width:100%;justify-content:center}
+.pick.ia{border-left-color:var(--ia);background:#0F2426;border-color:#1D4A47}
+.pick.ia .q{color:var(--ia)}
+</style>`;
+    var h3=html.replace('</style>', cssIA);
+    linea('CSS de la tarjeta 🦈 agregado', h3!==html); html=h3;
+
+    // 4. Funciones globales: llamarIA, iaHtml, promptJuego, promptDia
+    var bloqueJS =
+`var ULTIMO=null;
+
+/* ---------- IA verificadora (v33) ----------
+   Segundo filtro, no matematico: le manda el ranking de la app a un modelo de
+   lenguaje con acceso a internet para que busque lineup, lesiones y noticias
+   del dia y diga si eso cambia el pick. La clave va pegada en el codigo
+   porque el repo es publico -- es decision tuya, ponle limite de gasto en
+   console.anthropic.com. */
+var CLAUDE_KEY='PEGA_AQUI_TU_CLAVE_DE_API';
+var CLAUDE_MODEL='claude-sonnet-5';
+function llamarIA(prompt){
+  if(!CLAUDE_KEY||CLAUDE_KEY.indexOf('PEGA_AQUI')===0)
+    return Promise.reject(new Error('Falta poner tu clave de API en CLAUDE_KEY'));
+  return fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'content-type':'application/json',
+      'x-api-key':CLAUDE_KEY,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({
+      model:CLAUDE_MODEL,
+      max_tokens:1800,
+      messages:[{role:'user',content:prompt}],
+      tools:[{type:'web_search_20250305',name:'web_search',max_uses:5}]
+    })
+  }).then(function(r){
+    if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+' -- '+t.slice(0,180)); });
+    return r.json();
+  }).then(function(d){
+    if(d.error) throw new Error(d.error.message||'Error de la API');
+    var partes=(d.content||[]).filter(function(c){ return c.type==='text'; }).map(function(c){ return c.text; });
+    var t=partes.join('\\n\\n');
+    return t||'Sin respuesta de texto.';
+  });
+}
+function iaHtml(texto){
+  var t=esc(texto);
+  t=t.replace(/\\*\\*(.+?)\\*\\*/g,'<b>$1</b>');
+  t=t.replace(/\\n/g,'<br>');
+  return t;
+}
+function promptJuego(juego,fecha,buenos,mlPick){
+  var l=buenos.slice(0,5).map(function(m){
+    return '- '+m.m+': tu modelo dice '+m.p.toFixed(1)+'%, ventaja '+m.v.ventaja.toFixed(1)+
+      ' puntos, EV '+(m.v.ev*100).toFixed(1)+'% ('+m.med+')';
+  }).join('\\n');
+  var ml=mlPick?('\\nGanador segun el modelo, sin filtrar por valor: '+mlPick.m+' '+mlPick.p.toFixed(1)+'%.'):'';
+  return 'Eres un analista de apuestas de MLB, directo y esceptico. Juego: '+juego+' el '+fecha+
+    '. Mi modelo matematico (ERA, carreras por juego, ERA de bullpen) da este ranking de valor '+
+    'para este partido:\\n'+l+ml+
+    '\\n\\nBusca en internet informacion de HOY sobre este juego: lineup confirmado, lesiones de '+
+    'ultima hora, cambio de abridor, uso reciente del bullpen, y clima si es relevante. Con eso, '+
+    'responde en espanol, corto y directo (maximo 150 palabras, sin relleno ni disculpas):\\n'+
+    '1) El pick de ganador del modelo, sigue siendo el mejor o hay algo que lo cambia?\\n'+
+    '2) De los mercados de valor de arriba, cual jugarias tu y cual evitarias, y por que?\\n'+
+    'Si no encuentras nada nuevo que cambie el panorama, dilo directamente en vez de rellenar.';
+}
+function promptDia(lista){
+  var top=lista.slice(0,8);
+  var l=top.map(function(m,i){
+    return (i+1)+'. '+m.juego+' -- modelo: '+m.gana+' '+m.p.toFixed(1)+'% (ventaja '+m.vc.toFixed(2)+' carreras)';
+  }).join('\\n');
+  return 'Eres un analista de apuestas de MLB, directo y esceptico. Este es el ranking de mi '+
+    'modelo matematico (ERA, carreras por juego, ERA de bullpen) para HOY, ordenado por '+
+    'probabilidad pura de ganar, sin mirar cuotas:\\n'+l+
+    '\\n\\nBusca en internet informacion de HOY de estos juegos: lineups confirmados, lesiones o '+
+    'bajas de ultima hora, cambios de abridor, y cualquier otra cosa que cambie la probabilidad '+
+    'real. Con eso, en espanol, corto y directo (maximo 200 palabras):\\n'+
+    '1) De esta lista, cuales 3 o 4 tienen mas chance real de ganar, considerando lo que '+
+    'encontraste y no solo el numero del modelo?\\n'+
+    '2) Hay algun juego donde la informacion que encontraste contradiga al modelo? Dilo.\\n'+
+    'Si no encuentras nada que cambie el panorama, dilo directamente.';
+}`;
+    var h4=html.replace('var ULTIMO=null;', bloqueJS);
+    linea('Funciones de la IA agregadas (llamarIA, promptJuego, promptDia)', h4!==html); html=h4;
+
+    // 5. Botón 🦈 dentro del ranking de cada juego
+    var h5=html.replace(
+`  cajas.forEach(function(c){
+    c.innerHTML=o;`,
+`  o+='<div class="iabox"><button class="ghost iabtn">🦈 Verificar con IA</button>'+
+     '<div class="iaout"></div></div>';
+  cajas.forEach(function(c){
+    c.innerHTML=o;`
+    );
+    linea('Botón 🦈 agregado al ranking del juego', h5!==html); html=h5;
+
+    // 6. Conecta el botón del ranking del juego
+    var h6=html.replace(
+`        else { b.textContent='No se pudo guardar'; }
+      });
+    });
+  });
+}`,
+`        else { b.textContent='No se pudo guardar'; }
+      });
+    });
+    var iab=c.querySelector('.iabtn'), iao=c.querySelector('.iaout');
+    if(iab) iab.addEventListener('click',function(){
+      iab.disabled=true; iab.textContent='Buscando…';
+      iao.innerHTML='<div class="flag">Buscando lineup, lesiones y noticias de este juego…</div>';
+      llamarIA(promptJuego(juego,fecha,buenos,mlFuera[0]||null)).then(function(txt){
+        iao.innerHTML='<div class="pick ia"><div class="q">🦈 Verificado por IA</div><div class="r">'+iaHtml(txt)+'</div></div>';
+        iab.textContent='🦈 Verificar de nuevo'; iab.disabled=false;
+      }).catch(function(e){
+        iao.innerHTML='<div class="status err">No se pudo verificar: '+esc(e.message)+'. Revisa la clave de API y que tenga crédito.</div>';
+        iab.textContent='🦈 Reintentar'; iab.disabled=false;
+      });
+    });
+  });
+}`
+    );
+    linea('Botón 🦈 del juego conectado', h6!==html); html=h6;
+
+    // 7. Botón 🦈 dentro de Al gane
+    var h7=html.replace(
+      "'que salgan primeros en la lista.</div>';\n  caja.innerHTML=o;",
+      "'que salgan primeros en la lista.</div>';\n  o+='<div class=\"iabox\"><button class=\"ghost\" id=\"iadia_btn\">🦈 Verificar el día con IA</button>'+\n     '<div class=\"iaout\" id=\"iadia_out\"></div></div>';\n  caja.innerHTML=o;"
+    );
+    linea('Botón 🦈 agregado a Al gane', h7!==html); html=h7;
+
+    // 8. Conecta el botón de Al gane
+    var h8=html.replace(
+`  caja.innerHTML=o;
+  caja.querySelectorAll('.fila').forEach(function(f){`,
+`  caja.innerHTML=o;
+  var iabd=document.getElementById('iadia_btn'), iaod=document.getElementById('iadia_out');
+  if(iabd) iabd.addEventListener('click',function(){
+    iabd.disabled=true; iabd.textContent='Buscando…';
+    iaod.innerHTML='<div class="flag">Revisando lineups, lesiones y noticias de los juegos de hoy…</div>';
+    llamarIA(promptDia(lista)).then(function(txt){
+      iaod.innerHTML='<div class="pick ia"><div class="q">🦈 Ranking verificado por IA</div><div class="r">'+iaHtml(txt)+'</div></div>';
+      iabd.textContent='🦈 Verificar de nuevo'; iabd.disabled=false;
+    }).catch(function(e){
+      iaod.innerHTML='<div class="status err">No se pudo verificar: '+esc(e.message)+'.</div>';
+      iabd.textContent='🦈 Reintentar'; iabd.disabled=false;
+    });
+  });
+  caja.querySelectorAll('.fila').forEach(function(f){`
+    );
+    linea('Botón 🦈 de Al gane conectado', h8!==html); html=h8;
+
+    // 9. Nota en el pie de página
+    var h9=html.replace(
+      'El tope del porcentaje es 22–78%; si un juego lo toca, el moneyline sale del ranking.\n\n</details>',
+      'El tope del porcentaje es 22–78%; si un juego lo toca, el moneyline sale del ranking.\n\n' +
+      '  <b>El botón 🦈 Verificar con IA.</b> Manda tu ranking a un modelo de lenguaje con acceso a ' +
+      'internet para que busque lineup, lesiones y noticias del día y te diga si eso cambia el pick. ' +
+      'No reemplaza el modelo de la app — lo complementa con lo que un número solo no puede ver. La ' +
+      'clave de API vive en el código de este archivo (variable <code>CLAUDE_KEY</code>): si compartes ' +
+      'el link del repo, compartes esa clave, y cada toque del botón gasta crédito de tu cuenta de ' +
+      'Anthropic. Ponle un límite de gasto mensual en console.anthropic.com.\n\n</details>'
+    );
+    linea('Nota del pie de página agregada', h9!==html); html=h9;
+
+    var blob=new Blob([html],{type:'text/html'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download='index.html';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    linea('index.html nuevo descargado — súbelo al repo encima del viejo', true);
+  }).catch(function(e){
+    linea('Error: '+e.message, false);
+  });
+});
+</script>
+</body>
+</html>
