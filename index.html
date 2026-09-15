@@ -496,7 +496,7 @@ svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v33</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v34</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -991,6 +991,13 @@ var PARK={
  12:   ['Tropicana Field',0.96,'techo']
 };
 var SUAVE=0.6;
+var ORIENT={
+ 19:0, 3313:67.5, 3:45, 17:45, 31:112.5, 2680:0, 2395:112.5, 22:22.5,
+ 2602:112.5, 4169:112.5, 3289:22.5, 2681:22.5, 3312:90, 1:45, 2392:67.5,
+ 680:45, 14:337.5, 15:0, 2394:157.5, 7:45, 3309:22.5, 2:22.5, 5325:67.5,
+ 4705:157.5, 2889:45, 32:135, 4:112.5, 5:0, 12:45
+};
+var WIND_COEF=0.06;
 
 /* ---------- imagenes ---------- */
 function escudo(id,t){
@@ -2559,7 +2566,7 @@ function veredictoEV(pA,pH,amA,amH,nomA,nomH,vc){
   return o;
 }
 
-function contexto(x,pfv,Tbase,T,notaTemp,Tcrudo){
+function contexto(x,pfv,Tbase,T,notaTemp,Tcrudo,notaViento){
   var o='<table>';
   o+='<tr><td>Parque</td><td class="n" colspan="2">'+esc(x.venue||'—')+'</td></tr>';
   o+='<tr><td>Factor de carreras</td><td class="n" colspan="2">'+pfv.toFixed(2)+(pfv>1.03?' (favorece anotar)':pfv<0.97?' (favorece pitcheo)':' (neutral)')+'</td></tr>';
@@ -2568,7 +2575,7 @@ function contexto(x,pfv,Tbase,T,notaTemp,Tcrudo){
     o+='<tr><td>Techo</td><td class="n" colspan="2">cerrado — no aplica clima</td></tr>';
   }else if(x.cl){
     o+='<tr><td>Temperatura</td><td class="n" colspan="2">'+Math.round(x.cl.temp)+'°F'+(notaTemp?' ('+notaTemp+' al total)':'')+'</td></tr>';
-    o+='<tr><td>Viento</td><td class="n" colspan="2">'+Math.round(x.cl.viento)+' mph del '+rumbo(x.cl.dir)+'</td></tr>';
+    o+='<tr><td>Viento</td><td class="n" colspan="2">'+Math.round(x.cl.viento)+' mph del '+rumbo(x.cl.dir)+(notaViento?' ('+notaViento+' al total)':'')+'</td></tr>';
   }else{
     o+='<tr><td>Clima</td><td class="n" colspan="2">no disponible</td></tr>';
   }
@@ -2587,7 +2594,8 @@ function contexto(x,pfv,Tbase,T,notaTemp,Tcrudo){
     o+='<div class="aviso">⚠️ Tienes el encogimiento apagado. La proyección del total va a exagerar '+
        'en los extremos y a sacarte ventajas que el backtest mostró que no existen. Solo déjalo así '+
        'para comparar.</div>';
-  if(x.cl&&x.cl.viento>=12) o+='<div class="flag">Viento de '+Math.round(x.cl.viento)+' mph. No lo meto en el cálculo porque haría falta saber hacia dónde apunta el jardín central de este parque, y ese dato no lo tengo confiable. Míralo tú: soplando hacia los jardines empuja el total para arriba, hacia el plato lo baja.</div>';
+  if(x.cl&&x.cl.viento>=8&&ORIENT[x.venueId]!=null) o+='<div class="flag">El viento '+(notaViento?('mueve el total '+notaViento):'está casi cruzado, sin efecto claro')+'. Sale de comparar la dirección del viento contra hacia dónde apunta el jardín central de este parque (dato de Clem\'s Baseball). Es un <b>supuesto</b> de cuánto pesa (±6% con viento de cola de 20 mph), no algo medido con un backtest — a diferencia del ×6 y el ×0.45.</div>';
+  else if(x.cl&&x.cl.viento>=12) o+='<div class="flag">Viento de '+Math.round(x.cl.viento)+' mph. Este parque no está en la tabla de orientación, así que no se puede calcular el efecto — míralo tú.</div>';
   return o;
 }
 /* El modelo YA jala el ERA hacia la liga segun los innings — un novato de 2.54
@@ -2843,7 +2851,18 @@ function detalle(x){
     if(t>=90) fTemp=1.05; else if(t>=80) fTemp=1.02; else if(t<=55) fTemp=0.96;
     if(fTemp!==1) notaTemp=((fTemp-1)>=0?'+':'')+((fTemp-1)*100).toFixed(1)+'%';
   }
-  var bruto=pfv*fTemp;
+  var fWind=1, notaViento='';
+  var orient=ORIENT[x.venueId];
+  if(x.cl&&x.cl.viento!=null&&orient!=null&&!x.cerrado){
+    var haciaFuera=(orient+180)%360;
+    var diff=Math.abs(x.cl.dir-haciaFuera);
+    if(diff>180) diff=360-diff;
+    var comp=Math.cos(diff*Math.PI/180);
+    var mag=Math.min(x.cl.viento,20)/20;
+    fWind=1+comp*mag*WIND_COEF;
+    if(Math.abs(fWind-1)>=0.003) notaViento=((fWind-1)>=0?'+':'')+((fWind-1)*100).toFixed(1)+'%';
+  }
+  var bruto=pfv*fTemp*fWind;
   var fSuave=1+(bruto-1)*SUAVE;
   var Tbase=T;
   var T9=T*fSuave;
@@ -3143,7 +3162,7 @@ function detalle(x){
   /* ---------- pestana PARQUE ---------- */
   var tPar=
 '<h3><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="10" rx="9" ry="4.6"/><path d="M3 10v6a9 4.6 0 0 0 18 0v-6"/></svg>Contexto del parque</h3>'+
-  contexto(x,pfv,Tbase,T,notaTemp,Tcrudo)+
+  contexto(x,pfv,Tbase,T,notaTemp,Tcrudo,notaViento)+
   '<h3><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v6.2l-5 8.8a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-8.8V3M9 3h6"/></svg>Calidad de los datos</h3>'+
   '<div class="calwrap">'+calBloque(cal)+'</div>'+
   '<div class="leyenda">El score suma: muestra de temporada de los abridores (22), salidas recientes '+
@@ -3699,6 +3718,7 @@ $('enco').addEventListener('change',function(){ ENCOGE=+this.value; repintarTodo
 $('modo').addEventListener('change',function(){ MODO=this.value; repintarTodo(); });
 $('prior').addEventListener('change',function(){ PRIOR_ERA=+this.value; repintarTodo(); });
 $('off').addEventListener('change',function(){ OFF=this.value; repintarTodo(); });
+$('viento') && $('viento').addEventListener('change',function(){ WIND_COEF=+this.value; repintarTodo(); });
 $('plata').addEventListener('change',function(){
   PLATA=this.value;
   LIMPIAR=true;
