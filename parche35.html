@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parche 35 — Corrige el viento</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0A1119;color:#EDF2F7;padding:20px;line-height:1.6}
+button{background:#4F8FD6;color:#06121C;border:0;border-radius:8px;padding:14px 20px;font-size:16px;font-weight:600;width:100%;margin:10px 0}
+pre{background:#16232F;padding:12px;border-radius:8px;overflow-x:auto;font-size:13px;white-space:pre-wrap}
+.ok{color:#4ED88A}.bad{color:#F5837A}.warn{color:#F0B849}
+</style>
+</head>
+<body>
+<h2>Parche 35 — Corrige el viento (v34 → v35)</h2>
+<p>Arregla tres cosas de la auditoría:</p>
+<ol>
+<li>El viento se amortiguaba dos veces (llegaba a ±3.6% real en vez de ±6%). Ahora el coeficiente sube para que el efecto REAL al total sí llegue a ±6% con viento de cola de 20 mph, tal como dice la nota.</li>
+<li>Nota técnica del footer actualizada (ya no dice "el viento no se calcula").</li>
+<li>Se agrega el selector "Efecto del viento" en ⚙️ Ajustes, que ya tenías cableado en el código pero sin control visual.</li>
+</ol>
+<button id="ir">Aplicar parche y descargar</button>
+<pre id="log">Esperando...</pre>
+
+<script>
+var RAW='https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/main/index.html?t='+Date.now();
+var log=document.getElementById('log');
+function w(t,cls){ log.innerHTML+='\n'+(cls?'<span class="'+cls+'">':'')+t+(cls?'</span>':''); }
+
+document.getElementById('ir').addEventListener('click',function(){
+  log.textContent='Descargando index.html actual de GitHub...';
+  fetch(RAW).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }).then(function(html){
+    w('Archivo bajado ('+html.length+' caracteres). Aplicando ediciones...');
+    var cambios=0, faltos=[];
+    function aplicar(nombre,buscar,reemplazar){
+      if(html.indexOf(buscar)===-1){ faltos.push(nombre); return; }
+      html=html.replace(buscar,reemplazar);
+      cambios++;
+      w('✓ '+nombre,'ok');
+    }
+
+    // 1. Versión v34 -> v35
+    aplicar('Versión a v35',
+      'OVA <span class="ver">v34</span>',
+      'OVA <span class="ver">v35</span>');
+
+    // 2. Corregir la doble amortiguación: WIND_COEF sube de 0.06 a 0.10 para
+    //    que, DESPUÉS de pasar por SUAVE (×0.6), el efecto real al total sí
+    //    llegue a ±6% con viento de cola de 20 mph, tal como dice la nota.
+    //    0.10 * 0.6 = 0.06 -> el numero que la gente lee (±6%) ahora es real.
+    aplicar('Coeficiente de viento corregido (doble amortiguación)',
+      "var WIND_COEF=0.06;",
+      "var WIND_COEF=0.10; // 0.10 x SUAVE(0.6) = 0.06 real -- antes se amortiguaba dos veces");
+
+    // 3. El selector de Ajustes tenía que mandar el valor YA compensado por
+    //    SUAVE, para que las opciones sigan significando lo que dicen (±6%,
+    //    ±3%, apagado) en el efecto REAL sobre el total.
+    aplicar('Selector de "Efecto del viento" en Ajustes',
+      '<div class="controls" style="margin-bottom:0">\n\n<button class="ghost" id="limpiar">',
+      '<div class="modo">\n\n<label for="viento">Efecto del viento en el total</label>\n\n<select id="viento">\n\n<option value="0.10" selected>Normal — hasta ±6% real con viento de cola de 20 mph</option>\n\n<option value="0.05">Conservador — hasta ±3% real</option>\n\n<option value="0">Apagado — como antes de la v34</option>\n\n</select>\n\n</div>\n\n<div class="controls" style="margin-bottom:0">\n\n<button class="ghost" id="limpiar">');
+
+    // 4. Fila "× parque y clima" -> "× parque, clima y viento" en el desglose
+    aplicar('Etiqueta del desglose ("Cómo salió el número")',
+      "'<div><span>× parque y clima (amortiguado al 60%)</span><b>'+num(T9,2)+'</b></div>'+",
+      "'<div><span>× parque, clima y viento (amortiguado al 60%)</span><b>'+num(T9,2)+'</b></div>'+");
+
+    // 5. Nota técnica del footer: ya no dice que el viento no se calcula
+    aplicar('Nota técnica del footer',
+      "Las carreras esperadas de cada equipo salen de multiplicar su ofensiva por lo que permite el staff rival\n\n  y dividir entre el promedio de la liga, no de promediar los dos números. El viento se muestra pero no se\n\n  calcula: hace falta la orientación del jardín central de cada parque.",
+      "Las carreras esperadas de cada equipo salen de multiplicar su ofensiva por lo que permite el staff rival\n\n  y dividir entre el promedio de la liga, no de promediar los dos números.\n\n  <b>El viento por orientación del parque.</b> Cada parque tiene una orientación de jardín central\n\n  distinta (dato de Clem's Baseball, la referencia estándar de arquitectura de estadios). Comparando esa\n\n  orientación contra la dirección del viento del pronóstico, la app sabe si el viento sopla hacia\n\n  fuera (ayuda al total) o hacia adentro (lo frena), y mueve el total hasta un ±6% REAL con viento de\n\n  cola de 20 mph — ya contando la amortiguación del 60% que también reciben el parque y el clima. Es un\n\n  <b>supuesto</b>, no una medición — a diferencia del ×6 y el ×0.45 — así que se puede ajustar o apagar\n\n  en ⚙️ Ajustes. No cubre Sutter Health Park (parque temporal de Oakland), porque no hay dato publicado\n\n  de su orientación.");
+
+    w('\nTotal: '+cambios+' cambios aplicados.', cambios>=4?'ok':'warn');
+    if(faltos.length){
+      w('\n⚠️ No se encontraron '+faltos.length+' de los puntos a cambiar:','warn');
+      faltos.forEach(function(f){ w('  · '+f,'bad'); });
+    } else {
+      w('\n✓ Todos los cambios se aplicaron limpio. Descargando index.html...','ok');
+    }
+
+    var blob=new Blob([html],{type:'text/html'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='index.html';
+    document.body.appendChild(a);
+    a.click();
+    w('\nDescargado. Súbelo a tu repo ODDX en GitHub reemplazando el index.html actual.','ok');
+  }).catch(function(e){
+    w('\n✗ Error: '+e.message,'bad');
+    w('Prueba abrir este archivo en Safari en vez de en la app de Claude.','warn');
+  });
+});
+</script>
+</body>
+</html>
