@@ -370,7 +370,22 @@ footer details summary:before{content:none}
 .tarj .p b{color:var(--bad)}
 
 .fila{display:flex;align-items:center;gap:10px;background:var(--bg1);
- border-bottom:1px solid var(--line);border-radius:0;padding:11px 4px;margin:0}
+ border-bottom:1px solid var(--line);border-radius:0;padding:11px 4px;margin:0;
+ opacity:0;transform:translateX(-8px);animation:caefila .4s ease forwards}
+#algane .fila:nth-child(1){animation-delay:.02s}
+#algane .fila:nth-child(2){animation-delay:.06s}
+#algane .fila:nth-child(3){animation-delay:.10s}
+#algane .fila:nth-child(4){animation-delay:.14s}
+#algane .fila:nth-child(5){animation-delay:.18s}
+#algane .fila:nth-child(n+6){animation-delay:.22s}
+@keyframes caefila{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.fila{animation:none;opacity:1;transform:none}}
+.fila .track{position:relative;width:56px;height:6px;background:var(--bg3);
+ border-radius:4px;overflow:hidden;flex:0 0 auto}
+.fila .track i{position:absolute;inset:0 auto 0 0;border-radius:4px;
+ background:linear-gradient(90deg,var(--acc),var(--acc2));width:0;
+ transition:width .8s cubic-bezier(.16,1,.3,1)}
+.fila.alto .track i{background:linear-gradient(90deg,#D89626,var(--hot))}
 .fila .pos{font-family:var(--mono);font-size:13px;color:var(--mut2);width:18px;flex:0 0 18px}
 .fila .esc{width:25px;height:25px}
 .fila .txt{flex:1;min-width:0}
@@ -515,7 +530,7 @@ svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v37</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v38</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -3563,6 +3578,7 @@ function pintarAlGane(){
        '<div class="txt"><b>'+esc(m.gana)+'</b>'+
        '<span>'+esc(m.juego)+' · ventaja '+m.vc.toFixed(2)+' carreras'+
        (m.capped?' · tope alcanzado':'')+'</span></div>'+
+       '<div class="track"><i style="width:'+m.p.toFixed(1)+'%"></i></div>'+
        '<div class="pct">'+m.p.toFixed(1)+'%<em>'+american(m.p)+'</em></div>'+
        '<input type="checkbox" class="chk"'+(COMBI[m.pk]?' checked':'')+'>'+
        '</div>'+
