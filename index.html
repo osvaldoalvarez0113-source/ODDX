@@ -895,21 +895,16 @@ var ULTIMO=null;
    del dia y diga si eso cambia el pick. La clave va pegada en el codigo
    porque el repo es publico -- es decision tuya, ponle limite de gasto en
    console.anthropic.com. */
-var CLAUDE_KEY='PEGA_AQUI_TU_CLAVE_DE_API';
-var CLAUDE_MODEL='claude-sonnet-5';
+ var WORKER_URL='https://ova-ia.osvaldoalvarez0113.workers.dev';
 function llamarIA(prompt){
-  if(!CLAUDE_KEY||CLAUDE_KEY.indexOf('PEGA_AQUI')===0)
-    return Promise.reject(new Error('Falta poner tu clave de API en CLAUDE_KEY'));
-  return fetch('https://api.anthropic.com/v1/messages',{
+  return fetch(WORKER_URL,{
     method:'POST',
     headers:{
       'content-type':'application/json',
-      'x-api-key':CLAUDE_KEY,
       'anthropic-version':'2023-06-01',
       'anthropic-dangerous-direct-browser-access':'true'
     },
     body:JSON.stringify({
-      model:CLAUDE_MODEL,
       max_tokens:1800,
       messages:[{role:'user',content:prompt}],
       tools:[{type:'web_search_20250305',name:'web_search',max_uses:5}]
