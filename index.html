@@ -59,12 +59,12 @@
    --hotTx es el texto que va ENCIMA del ambar. */
 :root{
  color-scheme:dark;
- --bg:#0A1119;--bg1:#101A25;--bg2:#16232F;--bg3:#1E2E3C;
- --line:#1A2B38;--line2:#2B4256;
- --txt:#EDF2F7;--mut:#A7BCCC;--mut2:#8298A9;
- --acc:#4F8FD6;--acc2:#6FA6E4;--accTx:#06121C;
- --hot:#F0B849;--hotTx:#14202B;
- --good:#4ED88A;--bad:#F5837A;--info:#4F8FD6;--ia:#2FD9C4;
+ --bg:#070B12;--bg1:#0D1420;--bg2:#131D2C;--bg3:#1B2838;
+ --line:#1C2838;--line2:#2A3E56;
+ --txt:#F1F5FB;--mut:#9DB2C8;--mut2:#6D8299;
+ --acc:#3B82F6;--acc2:#60A5FA;--accTx:#020509;
+ --hot:#FBBF24;--hotTx:#1A1305;
+ --good:#34D399;--bad:#F87171;--info:#3B82F6;--ia:#22D3EE;
  --cond:'Bitter',Georgia,'Times New Roman',serif;
  --body:'Inter',system-ui,-apple-system,sans-serif;
  /* Ya no es monoespaciada: los numeros cuadran con cifras tabulares. */
@@ -137,7 +137,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
    ficha encima de la mesa. */
 .game{background:var(--bg1);border:1px solid var(--line2);border-radius:var(--r2);
  margin:10px 0;--eq:#3A3A34;
- box-shadow:0 1px 3px rgba(0,0,0,.35),0 10px 26px -14px rgba(0,0,0,.7)}
+ box-shadow:0 1px 3px rgba(0,0,0,.5),0 24px 48px -20px rgba(0,0,0,.9)}
 .game.open{border-color:var(--acc)}
 .head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
  cursor:pointer;padding:13px}
@@ -159,7 +159,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
  object-fit:contain;opacity:.07}
 
 .game.open .head{position:sticky;top:var(--barra);z-index:9;
- background:var(--eq);border-bottom:0;border-radius:var(--r2) var(--r2) 0 0;color:#fff}
+ background:var(--eq);border-bottom:0;border-radius:var(--r2) var(--r2) 0 0;color:#fff;
+ box-shadow:0 0 40px -8px rgba(59,130,246,.35) inset}
 .game.open .match small{color:rgba(255,255,255,.8)}
 .game.open .match .vs{color:rgba(255,255,255,.6)}
 .game.open .clock{color:#fff;border-color:rgba(255,255,255,.4);background:rgba(0,0,0,.18)}
@@ -186,7 +187,8 @@ th .eq{justify-content:flex-end}
  margin:2px 0 12px;border:1px solid var(--line2)}
 .bar span{display:flex;align-items:center;font-family:var(--mono);font-size:14px;
  font-weight:600;padding:0 10px;transition:flex-grow .45s ease;min-width:0;overflow:hidden;gap:7px}
-.bar .lead{background:var(--hot);color:var(--hotTx)}
+.bar .lead{background:linear-gradient(90deg,#D89626,var(--hot));color:var(--hotTx);
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 0 22px -4px rgba(251,191,36,.55)}
 .bar .trail{background:var(--bg2);color:var(--mut);justify-content:flex-end}
 .bar .esc{width:18px;height:18px}
 
@@ -228,7 +230,13 @@ footer details summary:before{content:none}
 .calc .tot{border-top:1px solid var(--line2);margin-top:7px;padding-top:9px;color:var(--txt)}
 
 .pick{background:var(--bg1);border:1px solid var(--line2);border-left:3px solid var(--hot);
- border-radius:0 var(--r) var(--r) 0;padding:12px 14px;margin:12px 0 8px}
+ border-radius:0 var(--r) var(--r) 0;padding:12px 14px;margin:12px 0 8px;
+ animation:entrapick .45s cubic-bezier(.22,.7,.3,1) backwards}
+@keyframes entrapick{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@keyframes pulsopick{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55)}70%{box-shadow:0 0 0 8px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}
+.pick:not(.no):not(.alerta) .q::before{content:'';width:7px;height:7px;border-radius:50%;
+ background:currentColor;display:inline-block;flex:0 0 auto;animation:pulsopick 1.8s infinite}
+@media (prefers-reduced-motion:reduce){.pick,.pick .q::before{animation:none}}
 .pick .q{font-size:17px;font-weight:600;line-height:1.25;display:flex;align-items:center;gap:8px}
 .pick .r{font-size:12.5px;color:var(--mut);margin-top:5px;line-height:1.55}
 .pick.no{border-left-color:var(--line2);background:var(--bg2);border-color:transparent;
@@ -488,7 +496,12 @@ svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
 .ganeacc .gmsg{font-size:12px;color:var(--good);flex:1 1 100%}
 .ganeacc .gmsg.bad{color:var(--bad)}
 .iabox{margin:12px 0 4px}
-.iabox button{width:100%;justify-content:center}
+.iabox button{width:100%;justify-content:center;position:relative;overflow:hidden}
+.iabox button::after{content:'';position:absolute;inset:0;
+ background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.28) 35%,transparent 50%);
+ transform:translateX(-100%);animation:brilloia 3.4s ease-in-out infinite}
+@keyframes brilloia{60%{transform:translateX(-100%)}100%{transform:translateX(140%)}}
+@media (prefers-reduced-motion:reduce){.iabox button::after{animation:none}}
 .pick.ia{border-left-color:var(--ia);background:#0F2426;border-color:#1D4A47}
 .pick.ia .q{color:var(--ia)}
 </style>
@@ -496,7 +509,7 @@ svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v35</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v36</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
