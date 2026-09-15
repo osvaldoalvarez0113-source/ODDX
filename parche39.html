@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parche 39 — Pantalla vacía con más vida</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0A1119;color:#EDF2F7;padding:20px;line-height:1.6}
+button{background:#3B82F6;color:#020509;border:0;border-radius:8px;padding:14px 20px;font-size:16px;font-weight:600;width:100%;margin:10px 0}
+pre{background:#131D2C;padding:12px;border-radius:8px;overflow-x:auto;font-size:13px;white-space:pre-wrap}
+.ok{color:#34D399}.bad{color:#F87171}.warn{color:#FBBF24}
+</style>
+</head>
+<body>
+<h2>Parche 39 — Pantalla vacía con más vida</h2>
+<p>Le agrega un resplandor ámbar detrás del ícono, lo agranda, y le da un degradado sutil a la
+tarjeta de "Listo para el primer pitcheo" (y la de "Sin ranking todavía"). Solo CSS.</p>
+<button id="ir">Aplicar parche y descargar</button>
+<pre id="log">Esperando...</pre>
+
+<script>
+var RAW='https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/main/index.html?t='+Date.now();
+var log=document.getElementById('log');
+function w(t,cls){ log.innerHTML+='\n'+(cls?'<span class="'+cls+'">':'')+t+(cls?'</span>':''); }
+
+document.getElementById('ir').addEventListener('click',function(){
+  log.textContent='Descargando index.html actual de GitHub...';
+  fetch(RAW).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }).then(function(html){
+    w('Archivo bajado ('+html.length+' caracteres). Aplicando ediciones...');
+    var cambios=0, faltos=[];
+    function aplicar(nombre,buscar,reemplazar){
+      if(html.indexOf(buscar)===-1){ faltos.push(nombre); return; }
+      html=html.replace(buscar,reemplazar);
+      cambios++;
+      w('✓ '+nombre,'ok');
+    }
+    function versionActual(){
+      var m=html.match(/OVA <span class="ver">v(\d+)<\/span>/);
+      return m?m[1]:null;
+    }
+
+    var vActual=versionActual();
+    if(vActual){
+      aplicar('Versión a v'+(+vActual+1),
+        'OVA <span class="ver">v'+vActual+'</span>',
+        'OVA <span class="ver">v'+(+vActual+1)+'</span>');
+    }
+
+    // 1. Tarjeta vacia con degradado sutil en vez de fondo solido
+    aplicar('Degradado en la tarjeta vacía',
+      ".vacio{display:flex;flex-direction:column;align-items:center;text-align:center;\n padding:42px 22px;margin:14px 0;background:var(--bg1);border:1px solid var(--line2);\n border-radius:var(--r2);color:var(--mut);font-size:13px;line-height:1.6;\n box-shadow:0 1px 3px rgba(0,0,0,.35),0 8px 22px -12px rgba(0,0,0,.6);\n animation:entrapane .34s ease}",
+      ".vacio{display:flex;flex-direction:column;align-items:center;text-align:center;\n padding:48px 22px;margin:14px 0;background:linear-gradient(180deg,var(--bg1),var(--bg2));\n border:1px solid var(--line2);\n border-radius:var(--r2);color:var(--mut);font-size:13px;line-height:1.6;\n box-shadow:0 1px 3px rgba(0,0,0,.4),0 20px 40px -18px rgba(0,0,0,.7);\n animation:entrapane .34s ease}");
+
+    // 2. Icono mas grande, con resplandor ambar detras
+    aplicar('Ícono más grande con resplandor',
+      ".vacio .vico{position:relative;width:64px;height:64px;display:flex;\n align-items:center;justify-content:center;margin-bottom:13px}",
+      ".vacio .vico{position:relative;width:88px;height:88px;display:flex;\n align-items:center;justify-content:center;margin-bottom:16px}\n.vacio .vico::before{content:'';position:absolute;inset:-14px;border-radius:50%;\n background:radial-gradient(circle,rgba(251,191,36,.22),transparent 70%);z-index:-1}");
+
+    aplicar('Tamaño del ícono dentro del resplandor',
+      ".vacio .vico svg{width:34px;height:34px;color:var(--hot);stroke-width:1.5;\n animation:flota 3.4s ease-in-out infinite}",
+      ".vacio .vico svg{width:42px;height:42px;color:var(--hot);stroke-width:1.4;\n animation:flota 3.4s ease-in-out infinite}");
+
+    // 3. Titulo mas grande dentro de la tarjeta vacia
+    aplicar('Título más grande en la tarjeta vacía',
+      ".vacio b{display:block;color:var(--txt);font-size:16px;font-weight:600;margin-bottom:5px}",
+      ".vacio b{display:block;color:var(--txt);font-size:19px;font-weight:700;margin-bottom:6px}");
+
+    w('\nTotal: '+cambios+' cambios aplicados.', cambios>=4?'ok':'warn');
+    if(faltos.length){
+      w('\n⚠️ No se encontraron '+faltos.length+' de los puntos a cambiar:','warn');
+      faltos.forEach(function(f){ w('  · '+f,'bad'); });
+    } else {
+      w('\n✓ Todos los cambios se aplicaron limpio. Descargando index.html...','ok');
+    }
+
+    var blob=new Blob([html],{type:'text/html'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='index.html';
+    document.body.appendChild(a);
+    a.click();
+    w('\nDescargado. Súbelo a tu repo ODDX en GitHub reemplazando el index.html actual.','ok');
+  }).catch(function(e){
+    w('\n✗ Error: '+e.message,'bad');
+    w('Prueba abrir este archivo en Safari en vez de en la app de Claude.','warn');
+  });
+});
+</script>
+</body>
+</html>
