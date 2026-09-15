@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auto-parche OVA</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.6}
+input[type=password]{width:100%;background:#131D2C;border:1px solid #2A3E56;color:#F1F5FB;
+ border-radius:8px;padding:12px;font-size:15px;box-sizing:border-box;margin:8px 0 4px}
+button{background:#3B82F6;color:#020509;border:0;border-radius:8px;padding:14px 20px;
+ font-size:16px;font-weight:700;width:100%;margin:10px 0;cursor:pointer}
+button:disabled{opacity:.5}
+pre{background:#131D2C;padding:12px;border-radius:8px;overflow-x:auto;font-size:12.5px;
+ white-space:pre-wrap;max-height:60vh;overflow-y:auto}
+.ok{color:#34D399}.bad{color:#F87171}.warn{color:#FBBF24}
+label{font-size:13px;color:#9DB2C8}
+.note{font-size:12.5px;color:#6D8299;margin-top:4px}
+</style>
+</head>
+<body>
+<h2>Auto-parche OVA</h2>
+<p>Se conecta directo a tu repo <b>ODDX</b> en GitHub, baja el <code>index.html</code> real (no una
+copia en caché), aplica todo lo pendiente de los parches 35 a 39, y lo sube él mismo. Nada que
+descargar ni subir a mano.</p>
+
+<label for="tok">Token de GitHub (solo se usa en este momento, nunca se guarda)</label>
+<input type="password" id="tok" placeholder="github_pat_...">
+<div class="note">Se pega cada vez que uses esta página — no queda guardado en ningún archivo.</div>
+
+<button id="ir">Aplicar todo y subir a GitHub</button>
+<pre id="log">Esperando...</pre>
+
+<script>
+var OWNER='osvaldoalvarez0113-source', REPO='ODDX', PATH='index.html';
+var log=document.getElementById('log');
+function w(t,cls){ log.innerHTML+='\n'+(cls?'<span class="'+cls+'">':'')+t+(cls?'</span>':''); }
+
+function b64dec(s){ return decodeURIComponent(atob(s).split('').map(function(c){
+  return '%'+('00'+c.charCodeAt(0).toString(16)).slice(-2); }).join('')); }
+function b64enc(s){ return btoa(encodeURIComponent(s).replace(/%([0-9A-F]{2})/g,function(m,p1){
+  return String.fromCharCode('0x'+p1); })); }
+
+document.getElementById('ir').addEventListener('click',function(){
+  var tok=document.getElementById('tok').value.trim();
+  if(!tok){ w('Falta el token.','bad'); return; }
+  document.getElementById('ir').disabled=true;
+  log.textContent='Bajando index.html real desde GitHub (vía API, sin caché)...';
+
+  var API='https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/'+PATH;
+  var HDR={'Authorization':'token '+tok,'Accept':'application/vnd.github+json'};
+
+  fetch(API,{headers:HDR}).then(function(r){
+    if(!r.ok) throw new Error('No se pudo leer el archivo (HTTP '+r.status+'). Revisa el token y sus permisos.');
+    return r.json();
+  }).then(function(d){
+    var html=b64dec(d.content.replace(/\n/g,''));
+    var sha=d.sha;
+    w('Archivo real bajado ('+html.length+' caracteres). Aplicando todo lo pendiente...','ok');
+
+    var cambios=0, faltos=[];
+    function aplicar(nombre,buscar,reemplazar){
+      if(html.indexOf(buscar)===-1){ faltos.push(nombre); return; }
+      html=html.replace(buscar,reemplazar);
+      cambios++;
+      w('✓ '+nombre,'ok');
+    }
+    function yaAplicado(nombre,marcador){
+      if(html.indexOf(marcador)!==-1){ w('· '+nombre+' (ya estaba)','warn'); return true; }
+      return false;
+    }
+
+    // Version: subir siempre al numero mas alto que aparezca + 1
+    var vs=html.match(/OVA <span class="ver">v(\d+)<\/span>/);
+    var vActual=vs?+vs[1]:0;
+    var vNueva=Math.max(vActual+1, 40);
+    if(vs) html=html.replace(vs[0], 'OVA <span class="ver">v'+vNueva+'</span>');
+    w('✓ Versión a v'+vNueva,'ok');
+
+    // ---- Parche 35: viento ----
+    aplicar('Coeficiente de viento (0.06→0.10)',
+      "var WIND_COEF=0.06;",
+      "var WIND_COEF=0.10; // 0.10 x SUAVE(0.6) = 0.06 real -- antes se amortiguaba dos veces");
+
+    if(!yaAplicado('Selector de viento en Ajustes','id="viento"')){
+      aplicar('Selector de viento en Ajustes',
+        '<div class="controls" style="margin-bottom:0">\n\n<button class="ghost" id="limpiar">',
+        '<div class="modo">\n\n<label for="viento">Efecto del viento en el total</label>\n\n<select id="viento">\n\n<option value="0.10" selected>Normal — hasta ±6% real con viento de cola de 20 mph</option>\n\n<option value="0.05">Conservador — hasta ±3% real</option>\n\n<option value="0">Apagado — como antes de la v34</option>\n\n</select>\n\n</div>\n\n<div class="controls" style="margin-bottom:0">\n\n<button class="ghost" id="limpiar">');
+    }
+
+    aplicar('Etiqueta del desglose con viento',
+      "× parque y clima (amortiguado al 60%)",
+      "× parque, clima y viento (amortiguado al 60%)");
+
+    if(!yaAplicado('Nota técnica del viento','El viento por orientación del parque.')){
+      aplicar('Nota técnica del viento actualizada',
+        "El viento se muestra pero no se\n\n  calcula: hace falta la orientación del jardín central de cada parque.",
+        "<b>El viento por orientación del parque.</b> Cada parque tiene una orientación de jardín central\n\n  distinta (dato de Clem's Baseball). Comparando esa orientación contra la dirección del viento del\n\n  pronóstico, la app sabe si el viento sopla hacia fuera (ayuda al total) o hacia adentro (lo frena),\n\n  y mueve el total hasta un ±6% REAL con viento de cola de 20 mph. Es un <b>supuesto</b>, no una\n\n  medición, así que se puede ajustar o apagar en ⚙️ Ajustes.");
+    }
+
+    // ---- Parche 36: Estadio Nocturno ----
+    aplicar('Paleta Estadio Nocturno',
+      "--bg:#0A1119;--bg1:#101A25;--bg2:#16232F;--bg3:#1E2E3C;\n --line:#1A2B38;--line2:#2B4256;\n --txt:#EDF2F7;--mut:#A7BCCC;--mut2:#8298A9;\n --acc:#4F8FD6;--acc2:#6FA6E4;--accTx:#06121C;\n --hot:#F0B849;--hotTx:#14202B;\n --good:#4ED88A;--bad:#F5837A;--info:#4F8FD6;--ia:#2FD9C4;",
+      "--bg:#070B12;--bg1:#0D1420;--bg2:#131D2C;--bg3:#1B2838;\n --line:#1C2838;--line2:#2A3E56;\n --txt:#F1F5FB;--mut:#9DB2C8;--mut2:#6D8299;\n --acc:#3B82F6;--acc2:#60A5FA;--accTx:#020509;\n --hot:#FBBF24;--hotTx:#1A1305;\n --good:#34D399;--bad:#F87171;--info:#3B82F6;--ia:#22D3EE;");
+
+    aplicar('Sombra más profunda en tarjetas',
+      "box-shadow:0 1px 3px rgba(0,0,0,.35),0 10px 26px -14px rgba(0,0,0,.7)}",
+      "box-shadow:0 1px 3px rgba(0,0,0,.5),0 24px 48px -20px rgba(0,0,0,.9)}");
+
+    if(!yaAplicado('Resplandor en cabecera abierta','rgba(59,130,246,.35) inset')){
+      aplicar('Resplandor en cabecera abierta',
+        "background:var(--eq);border-bottom:0;border-radius:var(--r2) var(--r2) 0 0;color:#fff}",
+        "background:var(--eq);border-bottom:0;border-radius:var(--r2) var(--r2) 0 0;color:#fff;\n box-shadow:0 0 40px -8px rgba(59,130,246,.35) inset}");
+    }
+
+    aplicar('Brillo en barra del ganador',
+      ".bar .lead{background:var(--hot);color:var(--hotTx)}",
+      ".bar .lead{background:linear-gradient(90deg,#D89626,var(--hot));color:var(--hotTx);\n box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 0 22px -4px rgba(251,191,36,.55)}");
+
+    if(!yaAplicado('Animación y punto pulsante en pick','entrapick')){
+      aplicar('Animación y punto pulsante en pick',
+        ".pick{background:var(--bg1);border:1px solid var(--line2);border-left:3px solid var(--hot);\n border-radius:0 var(--r) var(--r) 0;padding:12px 14px;margin:12px 0 8px}",
+        ".pick{background:var(--bg1);border:1px solid var(--line2);border-left:3px solid var(--hot);\n border-radius:0 var(--r) var(--r) 0;padding:12px 14px;margin:12px 0 8px;\n animation:entrapick .45s cubic-bezier(.22,.7,.3,1) backwards}\n@keyframes entrapick{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}\n@keyframes pulsopick{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55)}70%{box-shadow:0 0 0 8px rgba(52,211,153,0)}100%{box-shadow:0 0 0 0 rgba(52,211,153,0)}}\n.pick:not(.no):not(.alerta) .q::before{content:'';width:7px;height:7px;border-radius:50%;\n background:currentColor;display:inline-block;flex:0 0 auto;animation:pulsopick 1.8s infinite}\n@media (prefers-reduced-motion:reduce){.pick,.pick .q::before{animation:none}}");
+    }
+
+    if(!yaAplicado('Brillo botón IA','brilloia')){
+      aplicar('Brillo botón IA',
+        ".iabox button{width:100%;justify-content:center}",
+        ".iabox button{width:100%;justify-content:center;position:relative;overflow:hidden}\n.iabox button::after{content:'';position:absolute;inset:0;\n background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.28) 35%,transparent 50%);\n transform:translateX(-100%);animation:brilloia 3.4s ease-in-out infinite}\n@keyframes brilloia{60%{transform:translateX(-100%)}100%{transform:translateX(140%)}}\n@media (prefers-reduced-motion:reduce){.iabox button::after{animation:none}}");
+    }
+
+    // ---- Parche 37: layout del demo ----
+    aplicar('Radios globales más redondeados',
+      " --r:8px;--r2:12px;\n --barra:calc(env(safe-area-inset-top) + 54px)}",
+      " --r:10px;--r2:18px;\n --barra:calc(env(safe-area-inset-top) + 54px)}");
+
+    if(!yaAplicado('Pestañas en píldora','background:var(--bg1);padding:2px 0 8px')){
+      aplicar('Barra de pestañas en píldora',
+        ".tabs{position:sticky;top:calc(var(--barra) + var(--headh,74px));z-index:8;\n display:flex;gap:0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;\n scrollbar-width:none;background:var(--bg1);padding:0;margin:0 0 6px;\n border-bottom:1px solid var(--line2)}",
+        ".tabs{position:sticky;top:calc(var(--barra) + var(--headh,74px));z-index:8;\n display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;\n scrollbar-width:none;background:var(--bg1);padding:2px 0 8px;margin:0 0 6px;\n border-bottom:0}");
+    }
+    aplicar('Cada pestaña en píldora',
+      ".tb{background:transparent;color:var(--mut);border:0;border-bottom:2px solid transparent;\n border-radius:0;padding:11px 12px;font-size:13px;font-weight:600;white-space:nowrap;\n flex:0 0 auto;min-height:42px;display:inline-flex;align-items:center;gap:6px}",
+      ".tb{background:var(--bg2);color:var(--mut);border:0;border-bottom:0;\n border-radius:9px;padding:9px 13px;font-size:12.5px;font-weight:700;white-space:nowrap;\n flex:0 0 auto;min-height:38px;display:inline-flex;align-items:center;gap:6px;\n transition:background .25s,color .25s}");
+    aplicar('Pestaña activa rellena',
+      ".tb.on{color:var(--acc);border-bottom-color:var(--acc)}",
+      ".tb.on{color:#fff;background:var(--acc)}");
+    aplicar('Barra de % más alta',
+      ".bar{height:34px;display:flex;border-radius:var(--r);overflow:hidden;background:var(--bg2);\n margin:2px 0 12px;border:1px solid var(--line2)}",
+      ".bar{height:46px;display:flex;border-radius:12px;overflow:hidden;background:var(--bg2);\n margin:2px 0 12px;border:1px solid var(--line2)}");
+    aplicar('Números de barra tipo marcador',
+      ".bar span{display:flex;align-items:center;font-family:var(--mono);font-size:14px;\n font-weight:600;padding:0 10px;transition:flex-grow .45s ease;min-width:0;overflow:hidden;gap:7px}",
+      ".bar span{display:flex;align-items:center;font-family:var(--cond);font-size:18px;\n font-weight:800;padding:0 12px;transition:flex-grow .6s cubic-bezier(.16,1,.3,1);min-width:0;overflow:hidden;gap:7px}");
+    aplicar('Números de resumen más grandes',
+      ".kpi b{display:block;font-family:var(--mono);font-size:21px;font-weight:600;line-height:1.15;\n font-variant-numeric:tabular-nums}",
+      ".kpi b{display:block;font-family:var(--cond);font-size:26px;font-weight:800;line-height:1.15;\n font-variant-numeric:tabular-nums}");
+    aplicar('Degradado en pick grande',
+      ".pick.big{border-left-color:var(--good);background:#16251A;border-color:#2E5136}",
+      ".pick.big{border-left-color:var(--good);\n background:linear-gradient(135deg,rgba(52,211,153,.16),rgba(52,211,153,.04));\n border-color:rgba(52,211,153,.35)}");
+    if(!yaAplicado('Resplandor detrás del contenido del juego','radial-gradient(ellipse at top,rgba(59,130,246,.14)')){
+      aplicar('Resplandor detrás del contenido del juego',
+        ".body>*{position:relative;z-index:1}",
+        ".body>*{position:relative;z-index:1}\n.game.open .body::before{content:'';position:absolute;top:-30%;left:50%;width:160%;height:60%;\n transform:translateX(-50%);pointer-events:none;z-index:0;\n background:radial-gradient(ellipse at top,rgba(59,130,246,.14),transparent 60%)}");
+    }
+
+    // ---- Parche 38: barras del ranking ----
+    if(!yaAplicado('Barra de progreso en el ranking','class="track"')){
+      aplicar('Barra de progreso en cada fila del ranking',
+        "'<div class=\"pct\">'+m.p.toFixed(1)+'%<em>'+american(m.p)+'</em></div>'+",
+        "'<div class=\"track\"><i style=\"width:'+m.p.toFixed(1)+'%\"></i></div>'+\n       '<div class=\"pct\">'+m.p.toFixed(1)+'%<em>'+american(m.p)+'</em></div>'+");
+      aplicar('CSS de la barra de progreso y cascada',
+        ".fila{display:flex;align-items:center;gap:10px;background:var(--bg1);\n border-bottom:1px solid var(--line);border-radius:0;padding:11px 4px;margin:0}",
+        ".fila{display:flex;align-items:center;gap:10px;background:var(--bg1);\n border-bottom:1px solid var(--line);border-radius:0;padding:11px 4px;margin:0;\n opacity:0;transform:translateX(-8px);animation:caefila .4s ease forwards}\n#algane .fila:nth-child(1){animation-delay:.02s}\n#algane .fila:nth-child(2){animation-delay:.06s}\n#algane .fila:nth-child(3){animation-delay:.10s}\n#algane .fila:nth-child(4){animation-delay:.14s}\n#algane .fila:nth-child(5){animation-delay:.18s}\n#algane .fila:nth-child(n+6){animation-delay:.22s}\n@keyframes caefila{to{opacity:1;transform:none}}\n@media (prefers-reduced-motion:reduce){.fila{animation:none;opacity:1;transform:none}}\n.fila .track{position:relative;width:56px;height:6px;background:var(--bg3);\n border-radius:4px;overflow:hidden;flex:0 0 auto}\n.fila .track i{position:absolute;inset:0 auto 0 0;border-radius:4px;\n background:linear-gradient(90deg,var(--acc),var(--acc2));width:0;\n transition:width .8s cubic-bezier(.16,1,.3,1)}\n.fila.alto .track i{background:linear-gradient(90deg,#D89626,var(--hot))}");
+    }
+
+    // ---- Parche 39: pantalla vacia ----
+    aplicar('Degradado en tarjeta vacía',
+      "padding:42px 22px;margin:14px 0;background:var(--bg1);border:1px solid var(--line2);\n border-radius:var(--r2);color:var(--mut);font-size:13px;line-height:1.6;\n box-shadow:0 1px 3px rgba(0,0,0,.35),0 8px 22px -12px rgba(0,0,0,.6);\n animation:entrapane .34s ease}",
+      "padding:48px 22px;margin:14px 0;background:linear-gradient(180deg,var(--bg1),var(--bg2));\n border:1px solid var(--line2);\n border-radius:var(--r2);color:var(--mut);font-size:13px;line-height:1.6;\n box-shadow:0 1px 3px rgba(0,0,0,.4),0 20px 40px -18px rgba(0,0,0,.7);\n animation:entrapane .34s ease}");
+    if(!yaAplicado('Ícono vacío con resplandor','.vacio .vico::before')){
+      aplicar('Ícono vacío más grande con resplandor',
+        ".vacio .vico{position:relative;width:64px;height:64px;display:flex;\n align-items:center;justify-content:center;margin-bottom:13px}",
+        ".vacio .vico{position:relative;width:88px;height:88px;display:flex;\n align-items:center;justify-content:center;margin-bottom:16px}\n.vacio .vico::before{content:'';position:absolute;inset:-14px;border-radius:50%;\n background:radial-gradient(circle,rgba(251,191,36,.22),transparent 70%);z-index:-1}");
+    }
+    aplicar('Tamaño del ícono vacío',
+      ".vacio .vico svg{width:34px;height:34px;color:var(--hot);stroke-width:1.5;\n animation:flota 3.4s ease-in-out infinite}",
+      ".vacio .vico svg{width:42px;height:42px;color:var(--hot);stroke-width:1.4;\n animation:flota 3.4s ease-in-out infinite}");
+    aplicar('Título más grande en tarjeta vacía',
+      ".vacio b{display:block;color:var(--txt);font-size:16px;font-weight:600;margin-bottom:5px}",
+      ".vacio b{display:block;color:var(--txt);font-size:19px;font-weight:700;margin-bottom:6px}");
+
+    w('\nTotal: '+cambios+' cambios nuevos aplicados en esta pasada.', 'ok');
+    if(faltos.length){
+      w('\n⚠️ '+faltos.length+' puntos no se encontraron (puede que ya estuvieran distintos):','warn');
+      faltos.forEach(function(f){ w('  · '+f,'bad'); });
+    }
+
+    w('\nSubiendo a GitHub...','ok');
+    return fetch(API,{
+      method:'PUT',
+      headers:Object.assign({'Content-Type':'application/json'},HDR),
+      body:JSON.stringify({
+        message:'Auto-parche v'+vNueva+' (viento, estilo, ranking, pantalla vacía)',
+        content:b64enc(html),
+        sha:sha
+      })
+    }).then(function(r){
+      if(!r.ok) return r.text().then(function(t){ throw new Error('GitHub rechazó la subida (HTTP '+r.status+'): '+t.slice(0,200)); });
+      return r.json();
+    }).then(function(){
+      w('\n✓ Subido a GitHub directamente. Ya está publicándose en GitHub Pages (dale 1-2 minutos).','ok');
+      document.getElementById('ir').disabled=false;
+    });
+  }).catch(function(e){
+    w('\n✗ Error: '+e.message,'bad');
+    document.getElementById('ir').disabled=false;
+  });
+});
+</script>
+</body>
+</html>
