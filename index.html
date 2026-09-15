@@ -496,7 +496,7 @@ svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v34</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v35</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -997,7 +997,7 @@ var ORIENT={
  680:45, 14:337.5, 15:0, 2394:157.5, 7:45, 3309:22.5, 2:22.5, 5325:67.5,
  4705:157.5, 2889:45, 32:135, 4:112.5, 5:0, 12:45
 };
-var WIND_COEF=0.06;
+var WIND_COEF=0.10; // 0.10 x SUAVE(0.6) = 0.06 real -- antes se amortiguaba dos veces
 
 /* ---------- imagenes ---------- */
 function escudo(id,t){
@@ -3126,7 +3126,7 @@ function detalle(x){
   desglose(r,nomA,nomH)+
   '<div class="calc">'+
     '<div><span>Total crudo (ofensiva × staff rival)</span><b>'+num(Tbase,2)+'</b></div>'+
-    '<div><span>× parque y clima (amortiguado al 60%)</span><b>'+num(T9,2)+'</b></div>'+
+    '<div><span>× parque, clima y viento (amortiguado al 60%)</span><b>'+num(T9,2)+'</b></div>'+
     '<div><span>+ innings extra</span><b>'+num(Tcrudo,2)+'</b></div>'+
     (ENCOGE!==1?'<div class="tot"><span>Encogido ×'+ENCOGE.toFixed(2)+' hacia el promedio de la liga ('+num(mLiga,1)+')</span><b>'+num(T,2)+'</b></div>'
               :'<div class="tot"><span>Sin encoger</span><b>'+num(T,2)+'</b></div>')+
