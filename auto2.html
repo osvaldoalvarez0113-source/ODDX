@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auto-parche OVA v41</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.6}
+input[type=password]{width:100%;background:#131D2C;border:1px solid #2A3E56;color:#F1F5FB;
+ border-radius:8px;padding:12px;font-size:15px;box-sizing:border-box;margin:8px 0 4px}
+button{background:#3B82F6;color:#020509;border:0;border-radius:8px;padding:14px 20px;
+ font-size:16px;font-weight:700;width:100%;margin:10px 0;cursor:pointer}
+button:disabled{opacity:.5}
+pre{background:#131D2C;padding:12px;border-radius:8px;overflow-x:auto;font-size:12.5px;
+ white-space:pre-wrap;max-height:60vh;overflow-y:auto}
+.ok{color:#34D399}.bad{color:#F87171}.warn{color:#FBBF24}
+label{font-size:13px;color:#9DB2C8}
+.note{font-size:12.5px;color:#6D8299;margin-top:4px}
+</style>
+</head>
+<body>
+<h2>Auto-parche OVA — v41</h2>
+<p>Suaviza el bloque sólido del color del equipo en la cabecera (ahora con un velo oscuro encima,
+como el demo), le da más aire a las tarjetas, hace los títulos de partido más grandes, y separa
+más los elementos. Sube directo a GitHub con tu token, igual que la vez pasada.</p>
+
+<label for="tok">Token de GitHub</label>
+<input type="password" id="tok" placeholder="github_pat_...">
+<div class="note">Se pega cada vez — no queda guardado en ningún archivo.</div>
+
+<button id="ir">Aplicar y subir a GitHub</button>
+<pre id="log">Esperando...</pre>
+
+<script>
+var OWNER='osvaldoalvarez0113-source', REPO='ODDX', PATH='index.html';
+var log=document.getElementById('log');
+function w(t,cls){ log.innerHTML+='\n'+(cls?'<span class="'+cls+'">':'')+t+(cls?'</span>':''); }
+function b64dec(s){ return decodeURIComponent(atob(s).split('').map(function(c){
+  return '%'+('00'+c.charCodeAt(0).toString(16)).slice(-2); }).join('')); }
+function b64enc(s){ return btoa(encodeURIComponent(s).replace(/%([0-9A-F]{2})/g,function(m,p1){
+  return String.fromCharCode('0x'+p1); })); }
+
+document.getElementById('ir').addEventListener('click',function(){
+  var tok=document.getElementById('tok').value.trim();
+  if(!tok){ w('Falta el token.','bad'); return; }
+  document.getElementById('ir').disabled=true;
+  log.textContent='Bajando index.html real desde GitHub (vía API, sin caché)...';
+
+  var API='https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/'+PATH;
+  var HDR={'Authorization':'Bearer '+tok,'Accept':'application/vnd.github+json'};
+
+  fetch(API,{headers:HDR}).then(function(r){
+    if(!r.ok) throw new Error('No se pudo leer el archivo (HTTP '+r.status+').');
+    return r.json();
+  }).then(function(d){
+    var html=b64dec(d.content.replace(/\n/g,''));
+    var sha=d.sha;
+    w('Archivo real bajado ('+html.length+' caracteres). Aplicando...','ok');
+
+    var cambios=0, faltos=[];
+    function aplicar(nombre,buscar,reemplazar){
+      if(html.indexOf(buscar)===-1){ faltos.push(nombre); return; }
+      html=html.replace(buscar,reemplazar);
+      cambios++;
+      w('✓ '+nombre,'ok');
+    }
+
+    var vs=html.match(/OVA <span class="ver">v(\d+)<\/span>/);
+    var vActual=vs?+vs[1]:0;
+    var vNueva=vActual+1;
+    if(vs) html=html.replace(vs[0], 'OVA <span class="ver">v'+vNueva+'</span>');
+    w('✓ Versión a v'+vNueva,'ok');
+
+    aplicar('Cabecera con más aire',
+      ".head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;\n cursor:pointer;padding:13px}",
+      ".head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;\n cursor:pointer;padding:18px 16px}");
+
+    aplicar('Título de partido más grande',
+      ".match{font-family:var(--cond);font-size:21px;font-weight:700;line-height:1.16;flex:1;\n letter-spacing:-.2px}",
+      ".match{font-family:var(--cond);font-size:23px;font-weight:800;line-height:1.16;flex:1;\n letter-spacing:-.2px}");
+
+    aplicar('Más separación entre tarjetas de juego',
+      "margin:10px 0;--eq:#3A3A34;",
+      "margin:16px 0;--eq:#3A3A34;");
+
+    aplicar('Más aire dentro del contenido del juego',
+      ".body{display:none;padding:0 13px 16px;position:relative}",
+      ".body{display:none;padding:4px 16px 20px;position:relative}");
+
+    aplicar('Velo oscuro sobre el color del equipo (menos bloque plano)',
+      "background:var(--eq);border-bottom:0;border-radius:var(--r2) var(--r2) 0 0;color:#fff;\n box-shadow:0 0 40px -8px rgba(59,130,246,.35) inset}",
+      "background:linear-gradient(135deg,rgba(7,11,18,.4),rgba(7,11,18,.08)),var(--eq);\n border-bottom:0;border-radius:var(--r2) var(--r2) 0 0;color:#fff;\n box-shadow:0 0 40px -8px rgba(59,130,246,.35) inset}");
+
+    aplicar('Más aire entre tarjetas de resumen',
+      ".kpi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:12px 0}",
+      ".kpi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}");
+
+    aplicar('Tarjetas de resumen más espaciosas',
+      ".kpi div{background:var(--bg2);border-radius:var(--r);padding:10px 11px}",
+      ".kpi div{background:var(--bg2);border-radius:var(--r);padding:13px 14px}");
+
+    aplicar('Pick más espacioso',
+      "padding:12px 14px;margin:12px 0 8px;\n animation:entrapick",
+      "padding:16px 18px;margin:14px 0 10px;\n animation:entrapick");
+
+    w('\nTotal: '+cambios+' cambios aplicados.', cambios>=5?'ok':'warn');
+    if(faltos.length){
+      w('\n⚠️ '+faltos.length+' no se encontraron:','warn');
+      faltos.forEach(function(f){ w('  · '+f,'bad'); });
+    }
+
+    w('\nSubiendo a GitHub...','ok');
+    return fetch(API,{
+      method:'PUT',
+      headers:Object.assign({'Content-Type':'application/json'},HDR),
+      body:JSON.stringify({
+        message:'Auto-parche v'+vNueva+' (cabecera, aire, tipografía)',
+        content:b64enc(html),
+        sha:sha
+      })
+    }).then(function(r){
+      if(!r.ok) return r.text().then(function(t){ throw new Error('GitHub rechazó (HTTP '+r.status+'): '+t.slice(0,200)); });
+      return r.json();
+    }).then(function(){
+      w('\n✓ Subido a GitHub. Dale 1-2 minutos y refresca la app.','ok');
+      document.getElementById('ir').disabled=false;
+    });
+  }).catch(function(e){
+    w('\n✗ Error: '+e.message,'bad');
+    document.getElementById('ir').disabled=false;
+  });
+});
+</script>
+</body>
+</html>
