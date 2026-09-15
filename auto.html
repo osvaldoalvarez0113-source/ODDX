@@ -48,7 +48,7 @@ document.getElementById('ir').addEventListener('click',function(){
   log.textContent='Bajando index.html real desde GitHub (vía API, sin caché)...';
 
   var API='https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/'+PATH;
-  var HDR={'Authorization':'token '+tok,'Accept':'application/vnd.github+json'};
+  var HDR={'Authorization':'Bearer '+tok,'Accept':'application/vnd.github+json'};
 
   fetch(API,{headers:HDR}).then(function(r){
     if(!r.ok) throw new Error('No se pudo leer el archivo (HTTP '+r.status+'). Revisa el token y sus permisos.');
