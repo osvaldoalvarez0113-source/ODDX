@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parche 34 — Viento por orientación</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0A1119;color:#EDF2F7;padding:20px;line-height:1.6}
+button{background:#4F8FD6;color:#06121C;border:0;border-radius:8px;padding:14px 20px;font-size:16px;font-weight:600;width:100%;margin:10px 0}
+pre{background:#16232F;padding:12px;border-radius:8px;overflow-x:auto;font-size:13px;white-space:pre-wrap}
+.ok{color:#4ED88A}.bad{color:#F5837A}.warn{color:#F0B849}
+li{margin:6px 0}
+</style>
+</head>
+<body>
+<h2>Parche 34 — Viento por orientación</h2>
+<p>Este parche baja tu <code>index.html</code> actual de GitHub, le agrega el cálculo de viento por
+orientación del jardín central (usando la tabla ORIENT ya medida de Clem's Baseball) y sube la
+versión a v34. Luego descarga el archivo nuevo para que lo subas tú a GitHub.</p>
+<button id="ir">Aplicar parche y descargar</button>
+<pre id="log">Esperando...</pre>
+
+<script>
+var RAW='https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/main/index.html?t='+Date.now();
+var log=document.getElementById('log');
+function w(t,cls){ log.innerHTML+='\n'+(cls?'<span class="'+cls+'">':'')+t+(cls?'</span>':''); }
+
+document.getElementById('ir').addEventListener('click',function(){
+  log.textContent='Descargando index.html actual de GitHub...';
+  fetch(RAW).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.text();
+  }).then(function(html){
+    w('Archivo bajado ('+html.length+' caracteres). Aplicando ediciones...');
+    var cambios=0, faltos=[];
+    function aplicar(nombre,buscar,reemplazar){
+      if(html.indexOf(buscar)===-1){ faltos.push(nombre); return; }
+      html=html.replace(buscar,reemplazar);
+      cambios++;
+      w('✓ '+nombre,'ok');
+    }
+
+    // 1. Versión v33 -> v34
+    aplicar('Versión a v34',
+      'OVA <span class="ver">v33</span>',
+      'OVA <span class="ver">v34</span>');
+
+    // 2. Tabla de orientación + coeficiente de viento, justo después de SUAVE
+    aplicar('Tabla ORIENT + WIND_COEF',
+      "var SUAVE=0.6;",
+      "var SUAVE=0.6;\n" +
+      "var ORIENT={\n" +
+      " 19:0, 3313:67.5, 3:45, 17:45, 31:112.5, 2680:0, 2395:112.5, 22:22.5,\n" +
+      " 2602:112.5, 4169:112.5, 3289:22.5, 2681:22.5, 3312:90, 1:45, 2392:67.5,\n" +
+      " 680:45, 14:337.5, 15:0, 2394:157.5, 7:45, 3309:22.5, 2:22.5, 5325:67.5,\n" +
+      " 4705:157.5, 2889:45, 32:135, 4:112.5, 5:0, 12:45\n" +
+      "};\n" +
+      "var WIND_COEF=0.06;");
+
+    // 3. Cálculo del factor de viento antes del total crudo
+    aplicar('Cálculo de fWind en el total',
+      "var bruto=pfv*fTemp;",
+      "var fWind=1, notaViento='';\n" +
+      "  var orient=ORIENT[x.venueId];\n" +
+      "  if(x.cl&&x.cl.viento!=null&&orient!=null&&!x.cerrado){\n" +
+      "    var haciaFuera=(orient+180)%360;\n" +
+      "    var diff=Math.abs(x.cl.dir-haciaFuera);\n" +
+      "    if(diff>180) diff=360-diff;\n" +
+      "    var comp=Math.cos(diff*Math.PI/180);\n" +
+      "    var mag=Math.min(x.cl.viento,20)/20;\n" +
+      "    fWind=1+comp*mag*WIND_COEF;\n" +
+      "    if(Math.abs(fWind-1)>=0.003) notaViento=((fWind-1)>=0?'+':'')+((fWind-1)*100).toFixed(1)+'%';\n" +
+      "  }\n" +
+      "  var bruto=pfv*fTemp*fWind;");
+
+    // 4. Firma de contexto() para recibir notaViento
+    aplicar('Firma de contexto()',
+      "function contexto(x,pfv,Tbase,T,notaTemp,Tcrudo){",
+      "function contexto(x,pfv,Tbase,T,notaTemp,Tcrudo,notaViento){");
+
+    // 5. Llamada a contexto() con el nuevo parámetro
+    aplicar('Llamada a contexto() con notaViento',
+      "contexto(x,pfv,Tbase,T,notaTemp,Tcrudo)+",
+      "contexto(x,pfv,Tbase,T,notaTemp,Tcrudo,notaViento)+");
+
+    // 6. Fila de viento en la tabla de contexto, con nota de impacto
+    aplicar('Fila de viento con nota de impacto',
+      "'<tr><td>Viento</td><td class=\"n\" colspan=\"2\">'+Math.round(x.cl.viento)+' mph del '+rumbo(x.cl.dir)+'</td></tr>';",
+      "'<tr><td>Viento</td><td class=\"n\" colspan=\"2\">'+Math.round(x.cl.viento)+' mph del '+rumbo(x.cl.dir)+(notaViento?' ('+notaViento+' al total)':'')+'</td></tr>';");
+
+    // 7. Reemplazar el aviso viejo de "no lo meto en el cálculo" por el nuevo explicando el efecto
+    aplicar('Aviso de viento actualizado',
+      "if(x.cl&&x.cl.viento>=12) o+='<div class=\"flag\">Viento de '+Math.round(x.cl.viento)+' mph. No lo meto en el cálculo porque haría falta saber hacia dónde apunta el jardín central de este parque, y ese dato no lo tengo confiable. Míralo tú: soplando hacia los jardines empuja el total para arriba, hacia el plato lo baja.</div>';",
+      "if(x.cl&&x.cl.viento>=8&&ORIENT[x.venueId]!=null) o+='<div class=\"flag\">El viento '+(notaViento?('mueve el total '+notaViento):'está casi cruzado, sin efecto claro')+'. Sale de comparar la dirección del viento contra hacia dónde apunta el jardín central de este parque (dato de Clem\\'s Baseball). Es un <b>supuesto</b> de cuánto pesa (±6% con viento de cola de 20 mph), no algo medido con un backtest — a diferencia del ×6 y el ×0.45.</div>';\n" +
+      "  else if(x.cl&&x.cl.viento>=12) o+='<div class=\"flag\">Viento de '+Math.round(x.cl.viento)+' mph. Este parque no está en la tabla de orientación, así que no se puede calcular el efecto — míralo tú.</div>';");
+
+    // 8. Nota técnica del footer
+    aplicar('Nota técnica del footer',
+      "Las carreras esperadas de cada equipo salen de multiplicar su ofensiva por lo que permite el staff rival\n\n  y dividir entre el promedio de la liga, no de promediar los dos números. El viento se muestra pero no se\n\n  calcula: hace falta la orientación del jardín central de cada parque.",
+      "Las carreras esperadas de cada equipo salen de multiplicar su ofensiva por lo que permite el staff rival\n\n  y dividir entre el promedio de la liga, no de promediar los dos números.\n\n  <b>El viento por orientación del parque.</b> Cada parque tiene una orientación de jardín central\n\n  distinta (dato de Clem's Baseball, la referencia estándar de arquitectura de estadios). Comparando esa\n\n  orientación contra la dirección del viento del pronóstico, la app ya sabe si el viento sopla hacia\n\n  fuera (ayuda al total) o hacia adentro (lo frena), y mueve el total hasta un ±6% con viento de cola de\n\n  20 mph. Es un <b>supuesto</b>, no una medición — a diferencia del ×6 y el ×0.45 — así que se puede\n\n  ajustar o apagar en ⚙️ Ajustes. No cubre Sutter Health Park (parque temporal de Oakland), porque no hay\n\n  dato publicado de su orientación.");
+
+    // 9. Selector de "Efecto del viento" en Ajustes
+    aplicar('Selector de viento en Ajustes',
+      '<div class="controls" style="margin-bottom:0">\n\n<button class="ghost" id="limpiar">',
+      '<div class="modo">\n\n<label for="viento">Efecto del viento en el total</label>\n\n<select id="viento">\n\n<option value="0.06" selected>Normal — hasta ±6% con viento de cola de 20 mph</option>\n\n<option value="0.03">Conservador — hasta ±3%</option>\n\n<option value="0">Apagado — como estaba antes</option>\n\n</select>\n\n</div>\n\n<div class="controls" style="margin-bottom:0">\n\n<button class="ghost" id="limpiar">');
+
+    // 10. Listener del selector de viento
+    aplicar('Listener del selector de viento',
+      "$('off').addEventListener('change',function(){ OFF=this.value; repintarTodo(); });",
+      "$('off').addEventListener('change',function(){ OFF=this.value; repintarTodo(); });\n" +
+      "$('viento') && $('viento').addEventListener('change',function(){ WIND_COEF=+this.value; repintarTodo(); });");
+
+    w('\nTotal: '+cambios+' cambios aplicados.', cambios>=8?'ok':'warn');
+    if(faltos.length){
+      w('\n⚠️ No se encontraron '+faltos.length+' de los puntos a cambiar (puede que el archivo ya tenga otra estructura):','warn');
+      faltos.forEach(function(f){ w('  · '+f,'bad'); });
+      w('\nRevisa esos puntos a mano si hace falta — el resto del parche sí se aplicó.','warn');
+    } else {
+      w('\n✓ Todos los cambios se aplicaron limpio. Descargando index.html...','ok');
+    }
+
+    var blob=new Blob([html],{type:'text/html'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='index.html';
+    document.body.appendChild(a);
+    a.click();
+    w('\nDescargado. Súbelo a tu repo ODDX en GitHub reemplazando el index.html actual.','ok');
+  }).catch(function(e){
+    w('\n✗ Error: '+e.message,'bad');
+    w('Puede que GitHub esté bloqueando la descarga desde aquí. Prueba abrir este archivo en Safari en vez de en la app.','warn');
+  });
+});
+</script>
+</body>
+</html>
