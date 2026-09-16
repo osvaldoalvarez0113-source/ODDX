@@ -1,0 +1,25 @@
+{
+  "liga": "Ligue 1",
+  "temporada": "2026-27",
+  "actualizado": "2026-09-15 (jornada 4)",
+  "equipos": [
+    {"nombre":"Lille OSC","abr":"LIL","pj":4,"gf":7,"gc":2},
+    {"nombre":"AS Monaco","abr":"MON","pj":4,"gf":6,"gc":2},
+    {"nombre":"Stade Rennais","abr":"REN","pj":4,"gf":8,"gc":5},
+    {"nombre":"Olympique Lyonnais","abr":"LYO","pj":4,"gf":6,"gc":2},
+    {"nombre":"Paris FC","abr":"PFC","pj":4,"gf":6,"gc":2},
+    {"nombre":"Racing Strasbourg","abr":"STR","pj":4,"gf":9,"gc":8},
+    {"nombre":"Paris Saint-Germain","abr":"PSG","pj":4,"gf":6,"gc":6},
+    {"nombre":"Stade Brestois 29","abr":"BRE","pj":4,"gf":6,"gc":6},
+    {"nombre":"FC Lorient","abr":"LOR","pj":4,"gf":4,"gc":4},
+    {"nombre":"RC Lens","abr":"LEN","pj":4,"gf":8,"gc":7},
+    {"nombre":"Angers SCO","abr":"ANG","pj":4,"gf":4,"gc":5},
+    {"nombre":"ES Troyes AC","abr":"TRO","pj":4,"gf":4,"gc":9},
+    {"nombre":"Olympique de Marseille","abr":"MAR","pj":4,"gf":6,"gc":6},
+    {"nombre":"Le Mans FC","abr":"LEM","pj":4,"gf":7,"gc":8},
+    {"nombre":"AJ Auxerre","abr":"AUX","pj":4,"gf":5,"gc":11},
+    {"nombre":"Havre AC","abr":"HAC","pj":4,"gf":2,"gc":4},
+    {"nombre":"Toulouse FC","abr":"TOU","pj":4,"gf":4,"gc":7},
+    {"nombre":"OGC Nice","abr":"NIC","pj":4,"gf":1,"gc":5}
+  ]
+}

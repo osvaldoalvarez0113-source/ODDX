@@ -1,0 +1,27 @@
+{
+  "liga": "Serie A",
+  "temporada": "2026-27",
+  "actualizado": "2026-09-15 (jornada 3-4)",
+  "equipos": [
+    {"nombre":"AS Roma","abr":"ROM","pj":4,"gf":10,"gc":1},
+    {"nombre":"Lazio Roma","abr":"LAZ","pj":4,"gf":6,"gc":3},
+    {"nombre":"Inter","abr":"INT","pj":3,"gf":8,"gc":3},
+    {"nombre":"Cagliari Calcio","abr":"CAG","pj":4,"gf":4,"gc":2},
+    {"nombre":"Como 1907","abr":"COM","pj":4,"gf":7,"gc":3},
+    {"nombre":"AC Milan","abr":"MIL","pj":4,"gf":7,"gc":4},
+    {"nombre":"Frosinone Calcio","abr":"FRO","pj":4,"gf":7,"gc":4},
+    {"nombre":"Juventus","abr":"JUV","pj":4,"gf":6,"gc":4},
+    {"nombre":"US Sassuolo","abr":"SAS","pj":4,"gf":8,"gc":7},
+    {"nombre":"SSC Napoli","abr":"NAP","pj":4,"gf":6,"gc":5},
+    {"nombre":"Atalanta","abr":"ATA","pj":4,"gf":5,"gc":5},
+    {"nombre":"US Lecce","abr":"LEC","pj":4,"gf":5,"gc":7},
+    {"nombre":"Udinese Calcio","abr":"UDI","pj":3,"gf":5,"gc":5},
+    {"nombre":"Torino FC","abr":"TOR","pj":4,"gf":4,"gc":5},
+    {"nombre":"ACF Fiorentina","abr":"FIO","pj":4,"gf":5,"gc":11},
+    {"nombre":"Parma Calcio 1913","abr":"PAR","pj":4,"gf":1,"gc":4},
+    {"nombre":"Bologna FC","abr":"BOL","pj":4,"gf":2,"gc":5},
+    {"nombre":"AC Monza","abr":"MON","pj":4,"gf":6,"gc":11},
+    {"nombre":"Genoa CFC","abr":"GEN","pj":4,"gf":2,"gc":8},
+    {"nombre":"Venezia FC","abr":"VEN","pj":4,"gf":4,"gc":11}
+  ]
+}

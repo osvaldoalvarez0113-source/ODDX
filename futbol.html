@@ -50,7 +50,15 @@ button{background:var(--acc);color:var(--accTx);border:0;border-radius:var(--r);
 <body>
 <header>
  <h1>⚽ FÚTBOL</h1>
- <span class="liga">Premier League 2026-27</span>
+ <select id="ligaSel" style="background:var(--bg2);border:1px solid var(--line2);color:var(--txt);
+  border-radius:20px;padding:6px 10px;font-size:12px">
+  <option value="datos_pl.json">Premier League</option>
+  <option value="datos_laliga.json">La Liga</option>
+  <option value="datos_seriea.json">Serie A</option>
+  <option value="datos_bundesliga.json">Bundesliga</option>
+  <option value="datos_ligue1.json">Ligue 1</option>
+  <option value="datos_cl.json">Champions League</option>
+ </select>
 </header>
 <main>
  <div class="card">
@@ -76,33 +84,42 @@ button{background:var(--acc);color:var(--accTx);border:0;border-radius:var(--r);
    <div><b id="kUnder">—</b><small>Menos de 2.5</small></div>
    <div><b id="kBtts">—</b><small>Ambos anotan</small></div>
   </div>
-  <div class="nota">Modelo Poisson usando goles a favor/en contra de la temporada 2026-27
-   (jornada 4) contra el promedio de la liga, con ventaja de local estándar. Con solo 4 juegos
-   por equipo, la muestra es chica — trátalo como orientación, no como certeza, hasta que
-   avancen más jornadas.</div>
+  <div class="nota">Modelo Poisson con encogimiento estadístico (igual que en el de MLB): con pocos
+   partidos jugados, el número de cada equipo se jala hacia el promedio de la liga, para que un
+   arranque extremo no dispare el resultado. Se suaviza solo según avancen más jornadas.</div>
  </div>
 </main>
 
 <script>
 var DATOS = null;
 
-fetch('datos_pl.json?v=' + Date.now()).then(function(r){
-  if(!r.ok) throw new Error('HTTP '+r.status+' al pedir datos_pl.json');
-  return r.json();
-}).then(function(d){
-  DATOS = d;
-  var sL=document.getElementById('local'), sV=document.getElementById('visita');
-  d.equipos.forEach(function(e,i){
-    var o1=document.createElement('option'); o1.value=i; o1.textContent=e.nombre;
-    var o2=document.createElement('option'); o2.value=i; o2.textContent=e.nombre;
-    sL.appendChild(o1); sV.appendChild(o2);
+function cargarLiga(archivo){
+  document.getElementById('estado').textContent='Cargando...';
+  document.getElementById('estado').style.color='var(--mut)';
+  document.getElementById('resultado').style.display='none';
+  fetch(archivo + '?v=' + Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status+' al pedir '+archivo);
+    return r.json();
+  }).then(function(d){
+    DATOS = d;
+    var sL=document.getElementById('local'), sV=document.getElementById('visita');
+    sL.innerHTML=''; sV.innerHTML='';
+    d.equipos.forEach(function(e,i){
+      var o1=document.createElement('option'); o1.value=i; o1.textContent=e.nombre;
+      var o2=document.createElement('option'); o2.value=i; o2.textContent=e.nombre;
+      sL.appendChild(o1); sV.appendChild(o2);
+    });
+    sV.selectedIndex=1;
+    document.getElementById('estado').textContent='✓ '+d.equipos.length+' equipos de '+d.liga+' cargados ('+d.actualizado+').';
+    document.getElementById('estado').style.color='#34D399';
+  }).catch(function(e){
+    document.getElementById('estado').textContent='✗ Error cargando datos: '+e.message;
+    document.getElementById('estado').style.color='#F87171';
   });
-  sV.selectedIndex=1;
-  document.getElementById('estado').textContent='✓ '+d.equipos.length+' equipos cargados ('+d.actualizado+').';
-  document.getElementById('estado').style.color='#34D399';
-}).catch(function(e){
-  document.getElementById('estado').textContent='✗ Error cargando datos: '+e.message;
-  document.getElementById('estado').style.color='#F87171';
+}
+cargarLiga(document.getElementById('ligaSel').value);
+document.getElementById('ligaSel').addEventListener('change', function(){
+  cargarLiga(this.value);
 });
 
 function poissonProb(k,lambda){
@@ -122,12 +139,19 @@ document.getElementById('ir').addEventListener('click', function(){
   DATOS.equipos.forEach(function(e){ totalGF+=e.gf; totalPJ+=e.pj; });
   var ligaProm = totalGF / totalPJ; // goles por equipo por partido, promedio liga
 
+  // Encogimiento: con pocos partidos, se jala hacia el promedio de la liga.
+  // K=6 equivale a mezclar con 6 "partidos fantasma" de nivel liga — mientras
+  // menos partidos reales tenga el equipo, más pesa el promedio.
+  var K_ENCOGIMIENTO = 6;
+  function gfAjustado(e){ return (e.gf + K_ENCOGIMIENTO*ligaProm) / (e.pj + K_ENCOGIMIENTO); }
+  function gcAjustado(e){ return (e.gc + K_ENCOGIMIENTO*ligaProm) / (e.pj + K_ENCOGIMIENTO); }
+
   var HOME_ADV = 1.35;
 
-  var atkL = (eL.gf/eL.pj) / ligaProm;
-  var defL = (eL.gc/eL.pj) / ligaProm;
-  var atkV = (eV.gf/eV.pj) / ligaProm;
-  var defV = (eV.gc/eV.pj) / ligaProm;
+  var atkL = gfAjustado(eL) / ligaProm;
+  var defL = gcAjustado(eL) / ligaProm;
+  var atkV = gfAjustado(eV) / ligaProm;
+  var defV = gcAjustado(eV) / ligaProm;
 
   var lamL = ligaProm * atkL * defV * HOME_ADV;
   var lamV = ligaProm * atkV * defL / HOME_ADV;

@@ -1,0 +1,25 @@
+{
+  "liga": "Bundesliga",
+  "temporada": "2026-27",
+  "actualizado": "2026-09-15 (jornada 2-3)",
+  "equipos": [
+    {"nombre":"FC Augsburg","abr":"AUG","pj":2,"gf":7,"gc":1},
+    {"nombre":"SC Freiburg","abr":"FRE","pj":2,"gf":5,"gc":1},
+    {"nombre":"Borussia Dortmund","abr":"BVB","pj":2,"gf":5,"gc":2},
+    {"nombre":"SV 07 Elversberg","abr":"ELV","pj":2,"gf":7,"gc":5},
+    {"nombre":"1. FSV Mainz 05","abr":"M05","pj":2,"gf":5,"gc":0},
+    {"nombre":"Bayern Munich","abr":"BAY","pj":2,"gf":5,"gc":1},
+    {"nombre":"Bayer Leverkusen","abr":"B04","pj":2,"gf":6,"gc":3},
+    {"nombre":"RB Leipzig","abr":"RBL","pj":2,"gf":4,"gc":3},
+    {"nombre":"VfB Stuttgart","abr":"VFB","pj":2,"gf":5,"gc":6},
+    {"nombre":"Werder Bremen","abr":"SVW","pj":2,"gf":4,"gc":5},
+    {"nombre":"1. FC Köln","abr":"KOE","pj":2,"gf":4,"gc":6},
+    {"nombre":"SC Paderborn 07","abr":"PAD","pj":2,"gf":0,"gc":1},
+    {"nombre":"Eintracht Frankfurt","abr":"SGE","pj":2,"gf":4,"gc":7},
+    {"nombre":"FC Schalke 04","abr":"S04","pj":2,"gf":0,"gc":3},
+    {"nombre":"1. FC Union Berlin","abr":"FCU","pj":2,"gf":3,"gc":7},
+    {"nombre":"TSG Hoffenheim","abr":"TSG","pj":2,"gf":4,"gc":6},
+    {"nombre":"Bor. Mönchengladbach","abr":"BMG","pj":2,"gf":3,"gc":7},
+    {"nombre":"Hamburger SV","abr":"HSV","pj":2,"gf":0,"gc":7}
+  ]
+}
