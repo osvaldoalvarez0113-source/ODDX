@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inspector OVA 5</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.5}
+button{background:#3B82F6;color:#020509;border:0;border-radius:8px;padding:14px 20px;
+ font-size:16px;font-weight:700;width:100%;margin:10px 0;cursor:pointer}
+pre{background:#131D2C;padding:10px;border-radius:8px;overflow-x:auto;font-size:10.5px;
+ white-space:pre-wrap;max-height:75vh;overflow-y:auto}
+</style>
+</head>
+<body>
+<h2>Inspector 5 — refrescarCal completo</h2>
+<button id="ir">Buscar</button>
+<pre id="log">Esperando...</pre>
+<script>
+var log=document.getElementById('log');
+function w(t){ log.textContent+='\n'+t; }
+document.getElementById('ir').addEventListener('click',function(){
+  log.textContent='Bajando...';
+  fetch('https://api.github.com/repos/osvaldoalvarez0113-source/ODDX/contents/index.html',
+    {headers:{'Accept':'application/vnd.github.raw+json'}})
+  .then(function(r){ return r.text(); })
+  .then(function(html){
+    w('Archivo: '+html.length+' caracteres.\n');
+    var i = html.indexOf('function refrescarCal(');
+    if(i===-1){ w('NO ENCONTRADO'); return; }
+    // Extraer el bloque completo contando llaves
+    var start = html.indexOf('{', i);
+    var depth = 0, j = start;
+    for(; j<html.length; j++){
+      if(html[j]==='{') depth++;
+      if(html[j]==='}'){ depth--; if(depth===0) break; }
+    }
+    w(html.slice(i, j+1));
+    w('\n\n=== donde se LLAMA refrescarCal( ===');
+    var k = html.indexOf('refrescarCal(', i+20);
+    w(k===-1?'no se llama en otro lado':html.slice(Math.max(0,k-200), k+300));
+    w('\n\n=== donde se construye x._ca (guarda el resultado de detalle) ===');
+    var m = html.indexOf('._ca=');
+    w(m===-1?'no encontrado':html.slice(Math.max(0,m-300), m+300));
+  }).catch(function(e){ w('Error: '+e.message); });
+});
+</script>
+</body>
+</html>
