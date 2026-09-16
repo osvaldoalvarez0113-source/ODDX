@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inspector OVA</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.5}
+button{background:#3B82F6;color:#020509;border:0;border-radius:8px;padding:14px 20px;
+ font-size:16px;font-weight:700;width:100%;margin:10px 0;cursor:pointer}
+pre{background:#131D2C;padding:10px;border-radius:8px;overflow-x:auto;font-size:11px;
+ white-space:pre-wrap;max-height:70vh;overflow-y:auto}
+.tag{color:#FBBF24;font-weight:700}
+</style>
+</head>
+<body>
+<h2>Inspector — solo lectura</h2>
+<p>No cambia nada. Solo busca en tu index.html real las partes relacionadas a lineups y catchers,
+para que Claude vea los nombres exactos y pueda escribir el parche real.</p>
+<button id="ir">Buscar</button>
+<pre id="log">Esperando...</pre>
+<script>
+var log=document.getElementById('log');
+function w(t){ log.textContent+='\n'+t; }
+
+document.getElementById('ir').addEventListener('click',function(){
+  log.textContent='Bajando index.html público...';
+  fetch('https://api.github.com/repos/osvaldoalvarez0113-source/ODDX/contents/index.html',
+    {headers:{'Accept':'application/vnd.github.raw+json'}})
+  .then(function(r){ return r.text(); })
+  .then(function(html){
+    w('Archivo bajado: '+html.length+' caracteres.\n');
+    var terminos=['catcher','Catcher','battingOrder','lineup','Lineup','boxscore','Boxscore',
+      'probablePitcher','fieldingSummary','position.abbreviation','"2"'];
+    terminos.forEach(function(t){
+      var i = html.indexOf(t);
+      if(i===-1){ w('✗ "'+t+'" — no aparece'); return; }
+      var conteo=0, pos=-1;
+      while((pos=html.indexOf(t,pos+1))!==-1) conteo++;
+      var ctx = html.slice(Math.max(0,i-80), i+180).replace(/\n/g,' ⏎ ');
+      w('\n✓ "'+t+'" — aparece '+conteo+' veces. Primera vez:');
+      w('  ...'+ctx+'...');
+    });
+  }).catch(function(e){ w('Error: '+e.message); });
+});
+</script>
+</body>
+</html>
