@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verificar futbol.html</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.5}
+button{background:#3B82F6;color:#020509;border:0;border-radius:8px;padding:14px 20px;
+ font-size:16px;font-weight:700;width:100%;margin:10px 0;cursor:pointer}
+pre{background:#131D2C;padding:10px;border-radius:8px;overflow-x:auto;font-size:11px;
+ white-space:pre-wrap;max-height:70vh;overflow-y:auto}
+.ok{color:#34D399}.bad{color:#F87171}
+</style>
+</head>
+<body>
+<h2>Verificar qué hay de verdad en futbol.html</h2>
+<button id="ir">Verificar</button>
+<pre id="log">Esperando...</pre>
+<script>
+var log=document.getElementById('log');
+function w(t,cls){ log.innerHTML+='\n'+(cls?'<span class="'+cls+'">':'')+t+(cls?'</span>':''); }
+
+document.getElementById('ir').addEventListener('click',function(){
+  log.textContent='Bajando el archivo real de GitHub (no la página publicada)...';
+  fetch('https://api.github.com/repos/osvaldoalvarez0113-source/ODDX/contents/futbol.html?t=' + Date.now(),
+    {headers:{'Accept':'application/vnd.github.raw+json'}})
+  .then(function(r){ return r.text(); })
+  .then(function(html){
+    w('Archivo real en GitHub: '+html.length+' caracteres.\n');
+    var tieneEnVivo = html.indexOf('en vivo') !== -1;
+    var tieneWorldfootball = html.indexOf('worldfootball.net') !== -1;
+    var tieneJSON = html.indexOf('datos_pl.json') !== -1;
+    w(tieneEnVivo ? '✓ Contiene "en vivo" — ES la versión nueva.' : '✗ NO contiene "en vivo" — es la versión VIEJA.', tieneEnVivo?'ok':'bad');
+    w(tieneWorldfootball ? '✓ Contiene "worldfootball.net" (fuente en vivo).' : '✗ NO contiene "worldfootball.net".', tieneWorldfootball?'ok':'bad');
+    w(tieneJSON ? '⚠ Todavía menciona "datos_pl.json" (rastro de la version vieja).' : '✓ No menciona archivos JSON viejos.', tieneJSON?'bad':'ok');
+    w('\nPrimeros 300 caracteres del archivo real:');
+    w(html.slice(0,300));
+  }).catch(function(e){ w('Error: '+e.message,'bad'); });
+});
+</script>
+</body>
+</html>
