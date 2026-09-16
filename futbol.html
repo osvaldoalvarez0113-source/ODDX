@@ -54,6 +54,7 @@ button{background:var(--acc);color:var(--accTx);border:0;border-radius:var(--r);
 </header>
 <main>
  <div class="card">
+  <div id="estado" style="font-size:13px;color:var(--mut);margin-bottom:12px">Cargando datos de la Premier League...</div>
   <label for="local">Equipo local</label>
   <select id="local"></select>
   <div class="vs">vs</div>
@@ -85,7 +86,10 @@ button{background:var(--acc);color:var(--accTx);border:0;border-radius:var(--r);
 <script>
 var DATOS = null;
 
-fetch('datos_pl.json').then(function(r){ return r.json(); }).then(function(d){
+fetch('datos_pl.json?v=' + Date.now()).then(function(r){
+  if(!r.ok) throw new Error('HTTP '+r.status+' al pedir datos_pl.json');
+  return r.json();
+}).then(function(d){
   DATOS = d;
   var sL=document.getElementById('local'), sV=document.getElementById('visita');
   d.equipos.forEach(function(e,i){
@@ -94,6 +98,11 @@ fetch('datos_pl.json').then(function(r){ return r.json(); }).then(function(d){
     sL.appendChild(o1); sV.appendChild(o2);
   });
   sV.selectedIndex=1;
+  document.getElementById('estado').textContent='✓ '+d.equipos.length+' equipos cargados ('+d.actualizado+').';
+  document.getElementById('estado').style.color='#34D399';
+}).catch(function(e){
+  document.getElementById('estado').textContent='✗ Error cargando datos: '+e.message;
+  document.getElementById('estado').style.color='#F87171';
 });
 
 function poissonProb(k,lambda){
