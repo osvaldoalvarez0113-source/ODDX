@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inspector OVA 2</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.5}
+button{background:#3B82F6;color:#020509;border:0;border-radius:8px;padding:14px 20px;
+ font-size:16px;font-weight:700;width:100%;margin:10px 0;cursor:pointer}
+pre{background:#131D2C;padding:10px;border-radius:8px;overflow-x:auto;font-size:10.5px;
+ white-space:pre-wrap;max-height:75vh;overflow-y:auto}
+h3{color:#FBBF24;font-size:13px;margin:14px 0 4px}
+</style>
+</head>
+<body>
+<h2>Inspector 2 — bloques completos</h2>
+<button id="ir">Buscar</button>
+<pre id="log">Esperando...</pre>
+<script>
+var log=document.getElementById('log');
+function w(t){ log.textContent+='\n'+t; }
+
+document.getElementById('ir').addEventListener('click',function(){
+  log.textContent='Bajando...';
+  fetch('https://api.github.com/repos/osvaldoalvarez0113-source/ODDX/contents/index.html',
+    {headers:{'Accept':'application/vnd.github.raw+json'}})
+  .then(function(r){ return r.text(); })
+  .then(function(html){
+    w('Archivo: '+html.length+' caracteres.\n');
+
+    function bloque(nombre, buscar, antes, despues){
+      var i = html.indexOf(buscar);
+      if(i===-1){ w('\n=== '+nombre+' === NO ENCONTRADO'); return; }
+      w('\n=== '+nombre+' ===');
+      w(html.slice(Math.max(0,i-(antes||0)), i+(despues||1200)));
+    }
+
+    bloque('BOX_FIELDS (definición completa)', "BOX_FIELDS=", 20, 400);
+    bloque('function boxscore', "function boxscore(", 0, 900);
+    bloque('boton lineups (class=\"ghost lu\")', 'class="ghost lu"', 300, 100);
+    bloque('uso de .battingOrder tras el fetch', '.battingOrder', 200, 500);
+    bloque('funcion revisarLineups o click lu', "'.lu'", 0, 900);
+  }).catch(function(e){ w('Error: '+e.message); });
+});
+</script>
+</body>
+</html>
