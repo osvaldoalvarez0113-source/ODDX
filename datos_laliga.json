@@ -1,0 +1,27 @@
+{
+  "liga": "La Liga",
+  "temporada": "2026-27",
+  "actualizado": "2026-09-15 (jornada 5-6)",
+  "equipos": [
+    {"nombre":"FC Barcelona","abr":"BAR","pj":5,"gf":21,"gc":4},
+    {"nombre":"Real Madrid","abr":"RMA","pj":5,"gf":14,"gc":4},
+    {"nombre":"Real Betis","abr":"BET","pj":5,"gf":7,"gc":6},
+    {"nombre":"CD Alavés","abr":"ALA","pj":5,"gf":11,"gc":5},
+    {"nombre":"Atlético Madrid","abr":"ATM","pj":5,"gf":10,"gc":6},
+    {"nombre":"Sevilla FC","abr":"SEV","pj":5,"gf":8,"gc":6},
+    {"nombre":"Deportivo A Coruña","abr":"DEP","pj":5,"gf":9,"gc":6},
+    {"nombre":"RCD Espanyol","abr":"ESP","pj":5,"gf":8,"gc":5},
+    {"nombre":"Athletic Club","abr":"ATH","pj":5,"gf":7,"gc":6},
+    {"nombre":"Racing Santander","abr":"RAC","pj":5,"gf":9,"gc":9},
+    {"nombre":"CA Osasuna","abr":"OSA","pj":5,"gf":5,"gc":8},
+    {"nombre":"Real Sociedad","abr":"RSO","pj":6,"gf":6,"gc":11},
+    {"nombre":"Levante UD","abr":"LEV","pj":5,"gf":7,"gc":9},
+    {"nombre":"Getafe CF","abr":"GET","pj":5,"gf":3,"gc":6},
+    {"nombre":"Celta de Vigo","abr":"CEL","pj":6,"gf":3,"gc":6},
+    {"nombre":"Rayo Vallecano","abr":"RAY","pj":5,"gf":8,"gc":14},
+    {"nombre":"Málaga CF","abr":"MAL","pj":5,"gf":2,"gc":8},
+    {"nombre":"Villarreal CF","abr":"VIL","pj":5,"gf":7,"gc":10},
+    {"nombre":"Elche CF","abr":"ELC","pj":5,"gf":6,"gc":13},
+    {"nombre":"Valencia CF","abr":"VCF","pj":5,"gf":1,"gc":10}
+  ]
+}
