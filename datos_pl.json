@@ -1,0 +1,27 @@
+{
+  "liga": "Premier League",
+  "temporada": "2026-27",
+  "actualizado": "2026-09-15 (jornada 4)",
+  "equipos": [
+    {"nombre":"Arsenal FC","abr":"ARS","pj":4,"gf":8,"gc":1},
+    {"nombre":"Manchester City","abr":"MCI","pj":4,"gf":8,"gc":2},
+    {"nombre":"Leeds United","abr":"LEE","pj":4,"gf":7,"gc":3},
+    {"nombre":"Hull City","abr":"HUL","pj":4,"gf":5,"gc":2},
+    {"nombre":"Brighton & Hove Albion","abr":"BHA","pj":4,"gf":13,"gc":5},
+    {"nombre":"Chelsea FC","abr":"CHE","pj":4,"gf":10,"gc":9},
+    {"nombre":"Brentford FC","abr":"BRE","pj":4,"gf":7,"gc":4},
+    {"nombre":"Liverpool FC","abr":"LIV","pj":4,"gf":6,"gc":4},
+    {"nombre":"Everton FC","abr":"EVE","pj":4,"gf":5,"gc":3},
+    {"nombre":"Ipswich Town","abr":"IPS","pj":4,"gf":7,"gc":10},
+    {"nombre":"Nottingham Forest","abr":"NFO","pj":4,"gf":4,"gc":4},
+    {"nombre":"Newcastle United","abr":"NEW","pj":4,"gf":7,"gc":8},
+    {"nombre":"Manchester United","abr":"MUN","pj":4,"gf":7,"gc":7},
+    {"nombre":"Sunderland AFC","abr":"SUN","pj":4,"gf":3,"gc":5},
+    {"nombre":"AFC Bournemouth","abr":"BOU","pj":4,"gf":6,"gc":7},
+    {"nombre":"Crystal Palace","abr":"CRY","pj":4,"gf":6,"gc":11},
+    {"nombre":"Tottenham Hotspur","abr":"TOT","pj":4,"gf":0,"gc":5},
+    {"nombre":"Fulham FC","abr":"FUL","pj":4,"gf":4,"gc":7},
+    {"nombre":"Aston Villa","abr":"AVL","pj":4,"gf":1,"gc":7},
+    {"nombre":"Coventry City","abr":"COV","pj":4,"gf":0,"gc":10}
+  ]
+}
