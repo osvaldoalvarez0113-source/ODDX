@@ -297,9 +297,14 @@ function extraerPerfil(html, nombrePropio){
     if(perfil.noticias.length>=3) return;
     var t = a.textContent.trim();
     if(!t || t.length<12) return;
-    // algunos titulos vienen duplicados pegados (mismo texto dos veces seguidas)
-    var mitad = Math.floor(t.length/2);
-    if(t.length%2===0 && t.slice(0,mitad)===t.slice(mitad)) t = t.slice(0,mitad);
+    // el titulo a veces viene repetido al inicio, con la hora pegada despues
+    // (ej: "TituloTitulo10.09. 08:53"). Se busca la repeticion mas larga posible.
+    for(var L=Math.floor(t.length/2); L>=8; L--){
+      if(t.slice(0,L) === t.slice(L, 2*L)){ t = t.slice(0,L) + t.slice(2*L); break; }
+    }
+    t = t.trim();
+    // separar visualmente el titulo de la fecha pegada (ej: "Titulo10.09. 08:53")
+    t = t.replace(/([a-zà-ÿ?!.])(\d{1,2}\.\d{2}\.?\s*\d{0,2}:?\d{0,2})$/i, '$1 · $2');
     if(vistosN[t]) return;
     vistosN[t]=true;
     perfil.noticias.push(t);
