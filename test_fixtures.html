@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba: calendario y escudos</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.5}
+button{background:#3B82F6;color:#020509;border:0;border-radius:8px;padding:14px 20px;
+ font-size:16px;font-weight:700;width:100%;margin:10px 0;cursor:pointer}
+pre{background:#131D2C;padding:10px;border-radius:8px;overflow-x:auto;font-size:11px;
+ white-space:pre-wrap;max-height:50vh;overflow-y:auto}
+.ok{color:#34D399}.bad{color:#F87171}
+.fila{display:flex;align-items:center;gap:10px;background:#131D2C;border-radius:10px;
+ padding:10px;margin:8px 0}
+img{width:28px;height:28px;object-fit:contain;background:#fff;border-radius:6px}
+</style>
+</head>
+<body>
+<h2>Prueba: calendario de hoy + escudos</h2>
+<button id="ir">Probar ahora</button>
+<pre id="log">Esperando...</pre>
+<div id="partidos"></div>
+<script>
+var log=document.getElementById('log');
+function w(t,cls){ log.innerHTML+='\n'+(cls?'<span class="'+cls+'">':'')+t+(cls?'</span>':''); }
+
+document.getElementById('ir').addEventListener('click',function(){
+  log.textContent='Bajando la página de resultados/calendario de Premier League...';
+  document.getElementById('partidos').innerHTML='';
+  fetch('https://www.worldfootball.net/competition/co91/england-premier-league/results-and-standings/?v='+Date.now())
+    .then(function(r){ return r.text(); })
+    .then(function(html){
+      w('Página bajada: '+html.length+' caracteres.\n');
+      var doc = new DOMParser().parseFromString(html, 'text/html');
+
+      // Buscar escudos (imagenes con "emblem" en el src)
+      var escudos = doc.querySelectorAll('img[src*="emblem"]');
+      w('Encontrados '+escudos.length+' escudos de equipo.', escudos.length?'ok':'bad');
+      if(escudos.length) w('Ejemplo de URL de escudo: '+escudos[0].src);
+
+      // Buscar partidos: bloques que tengan dos nombres de equipo y una hora tipo "18:45" o "21:00"
+      var enlaces = doc.querySelectorAll('a[href*="match-report"]');
+      w('\nEncontrados '+enlaces.length+' enlaces de partidos.', enlaces.length?'ok':'bad');
+
+      // Intentar armar una lista de partidos usando los enlaces de match-report (cada partido tiene varios enlaces iguales, los agrupamos por href)
+      var vistos = {};
+      var partidos = [];
+      enlaces.forEach(function(a){
+        var href = a.getAttribute('href');
+        if(vistos[href]) return;
+        vistos[href] = true;
+        // subir al contenedor padre razonable y sacar texto
+        var cont = a.closest('div') || a.parentElement;
+        var txt = cont ? cont.parentElement.textContent.replace(/\s+/g,' ').trim() : '';
+        partidos.push(txt.slice(0,140));
+      });
+      w('\nPrimeros 5 bloques de texto alrededor de esos enlaces (para ver si tienen equipos+hora):');
+      partidos.slice(0,5).forEach(function(p,i){ w((i+1)+') '+p); });
+
+      // Mostrar escudos de muestra
+      var html2 = '';
+      Array.from(escudos).slice(0,10).forEach(function(im){
+        html2 += '<img src="'+im.src+'">';
+      });
+      document.getElementById('partidos').innerHTML = html2;
+    })
+    .catch(function(e){ w('✗ Error: '+e.message,'bad'); });
+});
+</script>
+</body>
+</html>
