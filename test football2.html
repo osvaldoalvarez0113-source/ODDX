@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba 2: fuentes alternas de futbol</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.6}
+input[type=password]{width:100%;background:#131D2C;border:1px solid #2A3E56;color:#F1F5FB;
+ border-radius:8px;padding:12px;font-size:15px;box-sizing:border-box;margin:8px 0 4px}
+button{background:#3B82F6;color:#020509;border:0;border-radius:8px;padding:14px 20px;
+ font-size:16px;font-weight:700;width:100%;margin:10px 0;cursor:pointer}
+pre{background:#131D2C;padding:12px;border-radius:8px;overflow-x:auto;font-size:11px;
+ white-space:pre-wrap;max-height:65vh;overflow-y:auto}
+.ok{color:#34D399}.bad{color:#F87171}.warn{color:#FBBF24}
+label{font-size:13px;color:#9DB2C8}
+</style>
+</head>
+<body>
+<h2>Prueba 2: TheSportsDB y proxy CORS</h2>
+<label for="tok">Tu API token de football-data.org (para el proxy)</label>
+<input type="password" id="tok" placeholder="a3bbb12866ce461b9e1b1cc7517a9bbd">
+<button id="ir">Probar ahora</button>
+<pre id="log">Esperando...</pre>
+<script>
+var log=document.getElementById('log');
+function w(t,cls){ log.innerHTML+='\n'+(cls?'<span class="'+cls+'">':'')+t+(cls?'</span>':''); }
+
+document.getElementById('ir').addEventListener('click',function(){
+  var tok=document.getElementById('tok').value.trim();
+  log.textContent='Probando...';
+
+  var pruebas=[
+    {nombre:'TheSportsDB — tabla Premier League', url:'https://www.thesportsdb.com/api/v1/json/3/lookuptable.php?l=4328&s=2025-2026', opts:{}},
+    {nombre:'TheSportsDB — eventos de hoy', url:'https://www.thesportsdb.com/api/v1/json/3/eventsday.php?d='+new Date().toISOString().slice(0,10)+'&l=English%20Premier%20League', opts:{}},
+    {nombre:'football-data.org via proxy allorigins', url:'https://api.allorigins.win/raw?url='+encodeURIComponent('https://api.football-data.org/v4/competitions/PL/standings'), opts:{headers:{'X-Auth-Token':tok}}}
+  ];
+
+  function correr(i){
+    if(i>=pruebas.length){ w('\nListo.','ok'); return; }
+    var p=pruebas[i];
+    if(p.nombre.indexOf('proxy')>-1 && !tok){ w('\n(saltando prueba de proxy, falta token)','warn'); correr(i+1); return; }
+    w('\nProbando: '+p.nombre);
+    fetch(p.url, p.opts)
+      .then(function(r){
+        w('  → HTTP '+r.status, r.ok?'ok':'bad');
+        return r.text();
+      })
+      .then(function(t){
+        w('  Llegaron '+t.length+' caracteres. Primeros 250:');
+        w('  '+t.slice(0,250));
+        correr(i+1);
+      })
+      .catch(function(e){
+        w('  ✗ BLOQUEADO o falló: '+e.message,'bad');
+        correr(i+1);
+      });
+  }
+  correr(0);
+});
+</script>
+</body>
+</html>
