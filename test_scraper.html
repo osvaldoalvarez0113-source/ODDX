@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba: leer tabla en vivo</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.5}
+button{background:#3B82F6;color:#020509;border:0;border-radius:8px;padding:14px 20px;
+ font-size:16px;font-weight:700;width:100%;margin:10px 0;cursor:pointer}
+pre{background:#131D2C;padding:10px;border-radius:8px;overflow-x:auto;font-size:11px;
+ white-space:pre-wrap;max-height:70vh;overflow-y:auto}
+.ok{color:#34D399}.bad{color:#F87171}.warn{color:#FBBF24}
+table{width:100%;border-collapse:collapse;font-size:12px}
+td{border-bottom:1px solid #2A3E56;padding:4px}
+</style>
+</head>
+<body>
+<h2>Prueba: leer la tabla de Premier League en vivo</h2>
+<p>Esto descarga la página real y trata de encontrar la tabla de posiciones dentro del HTML,
+igual que lo haría tu ojo viendo la pantalla. Si funciona bien, vas a ver los 20 equipos con
+sus goles abajo.</p>
+<button id="ir">Probar ahora</button>
+<pre id="log">Esperando...</pre>
+<div id="tabla"></div>
+<script>
+var log=document.getElementById('log');
+function w(t,cls){ log.innerHTML+='\n'+(cls?'<span class="'+cls+'">':'')+t+(cls?'</span>':''); }
+
+function extraerTabla(html){
+  var doc = new DOMParser().parseFromString(html, 'text/html');
+  var tablas = doc.querySelectorAll('table');
+  w('Encontradas '+tablas.length+' tablas en la página.');
+  var mejor = null, mejorCuenta = 0;
+  tablas.forEach(function(t, i){
+    var filas = t.querySelectorAll('tr');
+    var cuenta = 0;
+    filas.forEach(function(f){
+      var txt = f.textContent;
+      if(/\d+\s*:\s*\d+/.test(txt)) cuenta++;
+    });
+    if(cuenta > mejorCuenta){ mejorCuenta = cuenta; mejor = t; }
+  });
+  if(!mejor){ return null; }
+  w('La tabla más prometedora tiene '+mejorCuenta+' filas con formato "gol:gol".','ok');
+
+  var equipos = [];
+  mejor.querySelectorAll('tr').forEach(function(fila){
+    var celdas = fila.querySelectorAll('td');
+    if(celdas.length < 5) return;
+    var textoFila = Array.from(celdas).map(function(c){ return c.textContent.trim(); });
+    // buscar el nombre del equipo: el link mas largo dentro de la fila
+    var links = fila.querySelectorAll('a');
+    var nombre = null, mejorLargo = 0;
+    links.forEach(function(a){
+      var t = a.textContent.trim();
+      if(t.length > mejorLargo && !/^\d+$/.test(t)){ mejorLargo = t.length; nombre = t; }
+    });
+    if(!nombre) return;
+    // buscar el marcador "gol:gol"
+    var marcador = null;
+    textoFila.forEach(function(t){ if(/^\d+\s*:\s*\d+$/.test(t)) marcador = t; });
+    if(!marcador) return;
+    var partes = marcador.split(':').map(function(s){ return +s.trim(); });
+    // buscar M (partidos jugados) - primer numero pequeño (0-40) que no sea el marcador
+    var pj = null;
+    for(var i=0;i<textoFila.length;i++){
+      var n = +textoFila[i];
+      if(Number.isInteger(n) && n>=0 && n<=40 && textoFila[i]===String(n)){ pj = n; break; }
+    }
+    equipos.push({nombre:nombre, pj:pj, gf:partes[0], gc:partes[1]});
+  });
+  return equipos;
+}
+
+document.getElementById('ir').addEventListener('click',function(){
+  log.textContent='Bajando página real de Premier League...';
+  document.getElementById('tabla').innerHTML='';
+  fetch('https://www.worldfootball.net/competition/co91/england-premier-league/team-statistics-overview/')
+    .then(function(r){ return r.text(); })
+    .then(function(html){
+      w('Página bajada: '+html.length+' caracteres.\n');
+      var equipos = extraerTabla(html);
+      if(!equipos || !equipos.length){ w('\n✗ No se pudo extraer ninguna tabla útil.','bad'); return; }
+      w('\n✓ Extraídos '+equipos.length+' equipos:','ok');
+      var t = '<table><tr><td><b>Equipo</b></td><td><b>PJ</b></td><td><b>GF</b></td><td><b>GC</b></td></tr>';
+      equipos.forEach(function(e){
+        t += '<tr><td>'+e.nombre+'</td><td>'+e.pj+'</td><td>'+e.gf+'</td><td>'+e.gc+'</td></tr>';
+      });
+      t += '</table>';
+      document.getElementById('tabla').innerHTML = t;
+    })
+    .catch(function(e){ w('✗ Error: '+e.message,'bad'); });
+});
+</script>
+</body>
+</html>
