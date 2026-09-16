@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba: football-data.org CORS</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.6}
+input[type=password]{width:100%;background:#131D2C;border:1px solid #2A3E56;color:#F1F5FB;
+ border-radius:8px;padding:12px;font-size:15px;box-sizing:border-box;margin:8px 0 4px}
+button{background:#3B82F6;color:#020509;border:0;border-radius:8px;padding:14px 20px;
+ font-size:16px;font-weight:700;width:100%;margin:10px 0;cursor:pointer}
+pre{background:#131D2C;padding:12px;border-radius:8px;overflow-x:auto;font-size:11.5px;
+ white-space:pre-wrap;max-height:65vh;overflow-y:auto}
+.ok{color:#34D399}.bad{color:#F87171}.warn{color:#FBBF24}
+label{font-size:13px;color:#9DB2C8}
+</style>
+</head>
+<body>
+<h2>Prueba: ¿football-data.org deja llamadas desde el navegador?</h2>
+<p>No toca ninguna app real. Solo prueba si el navegador bloquea la llamada (CORS) o si los
+datos llegan bien.</p>
+<label for="tok">Tu API token de football-data.org</label>
+<input type="password" id="tok" placeholder="a3bbb12866ce461b9e1b1cc7517a9bbd">
+<button id="ir">Probar ahora</button>
+<pre id="log">Esperando...</pre>
+<script>
+var log=document.getElementById('log');
+function w(t,cls){ log.innerHTML+='\n'+(cls?'<span class="'+cls+'">':'')+t+(cls?'</span>':''); }
+
+document.getElementById('ir').addEventListener('click',function(){
+  var tok=document.getElementById('tok').value.trim();
+  if(!tok){ w('Falta el token.','bad'); return; }
+  log.textContent='Probando...';
+
+  var pruebas=[
+    {nombre:'Standings Premier League', url:'https://api.football-data.org/v4/competitions/PL/standings'},
+    {nombre:'Lista de competiciones', url:'https://api.football-data.org/v4/competitions'},
+    {nombre:'Partidos de hoy (Champions)', url:'https://api.football-data.org/v4/competitions/CL/matches'}
+  ];
+
+  function correr(i){
+    if(i>=pruebas.length){ w('\nListo — revisa arriba cuáles pasaron.','ok'); return; }
+    var p=pruebas[i];
+    w('\nProbando: '+p.nombre+' ('+p.url+')');
+    fetch(p.url, {headers:{'X-Auth-Token':tok}})
+      .then(function(r){
+        w('  → HTTP '+r.status+' · tipo: '+r.headers.get('content-type'), r.ok?'ok':'bad');
+        return r.text();
+      })
+      .then(function(t){
+        w('  Llegaron '+t.length+' caracteres. Primeros 200:');
+        w('  '+t.slice(0,200));
+        correr(i+1);
+      })
+      .catch(function(e){
+        w('  ✗ BLOQUEADO o falló (probable CORS): '+e.message,'bad');
+        correr(i+1);
+      });
+  }
+  correr(0);
+});
+</script>
+</body>
+</html>
