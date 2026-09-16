@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba: Catcher Framing</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.6}
+button{background:#3B82F6;color:#020509;border:0;border-radius:8px;padding:14px 20px;
+ font-size:16px;font-weight:700;width:100%;margin:10px 0;cursor:pointer}
+pre{background:#131D2C;padding:12px;border-radius:8px;overflow-x:auto;font-size:12px;
+ white-space:pre-wrap;max-height:60vh;overflow-y:auto}
+.ok{color:#34D399}.bad{color:#F87171}.warn{color:#FBBF24}
+</style>
+</head>
+<body>
+<h2>Prueba: ¿se puede traer Catcher Framing?</h2>
+<p>Esto NO toca tu app real. Solo intenta llamar a Baseball Savant desde el navegador y te dice
+si el dato llega o si el navegador lo bloquea (CORS).</p>
+<button id="ir">Probar ahora</button>
+<pre id="log">Esperando...</pre>
+<script>
+var log=document.getElementById('log');
+function w(t,cls){ log.innerHTML+='\n'+(cls?'<span class="'+cls+'">':'')+t+(cls?'</span>':''); }
+
+document.getElementById('ir').addEventListener('click',function(){
+  log.textContent='Probando...';
+  var urls=[
+    'https://baseballsavant.mlb.com/leaderboard/catcher-framing?year=2026&team=&min=1&csv=true',
+    'https://baseballsavant.mlb.com/leaderboard/catcher-framing?year=2026&team=&min=1'
+  ];
+  var probar=function(i){
+    if(i>=urls.length){ w('\nSe probaron todas las variantes sin éxito.','bad'); return; }
+    var u=urls[i];
+    w('\nProbando: '+u);
+    fetch(u).then(function(r){
+      w('  → HTTP '+r.status+' · tipo: '+r.headers.get('content-type'), r.ok?'ok':'bad');
+      if(!r.ok) throw new Error('no ok');
+      return r.text();
+    }).then(function(t){
+      w('  ✓ Llegaron '+t.length+' caracteres. Primeros 200:','ok');
+      w(t.slice(0,200));
+      w('\n✓✓ FUNCIONA. Sí se puede usar esta fuente.','ok');
+    }).catch(function(e){
+      w('  ✗ Bloqueado o falló: '+e.message,'bad');
+      probar(i+1);
+    });
+  };
+  probar(0);
+});
+</script>
+</body>
+</html>
