@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fútbol — Premier League</title>
+<title>Fútbol — OVA</title>
 <style>
 :root{
  --bg:#070B12;--bg1:#0D1420;--bg2:#131D2C;--bg3:#1B2838;
@@ -18,9 +18,8 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);
  padding-bottom:40px}
-header{padding:18px 16px 10px;display:flex;align-items:center;gap:10px}
+header{padding:18px 16px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 header h1{font-size:22px;margin:0;font-weight:700;letter-spacing:2px}
-header .liga{font-size:12px;color:var(--mut);background:var(--bg2);padding:4px 10px;border-radius:20px}
 main{padding:0 16px}
 .card{background:var(--bg1);border:1px solid var(--line2);border-radius:var(--r2);
  padding:16px;margin:14px 0;box-shadow:0 1px 3px rgba(0,0,0,.4),0 20px 40px -18px rgba(0,0,0,.7)}
@@ -30,6 +29,7 @@ select{width:100%;background:var(--bg2);border:1px solid var(--line2);color:var(
 .vs{text-align:center;color:var(--mut2);font-size:13px;margin:-6px 0 10px}
 button{background:var(--acc);color:var(--accTx);border:0;border-radius:var(--r);
  padding:14px;font-size:16px;font-weight:700;width:100%;cursor:pointer}
+button:disabled{opacity:.5}
 .res{display:none}
 .bar{height:40px;display:flex;border-radius:12px;overflow:hidden;background:var(--bg2);
  margin:14px 0;border:1px solid var(--line2)}
@@ -45,30 +45,40 @@ button{background:var(--acc);color:var(--accTx);border:0;border-radius:var(--r);
 .nota{font-size:11.5px;color:var(--mut2);line-height:1.5;margin-top:10px}
 .egol{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin:4px 0}
 .egol b{color:var(--txt)}
+h3{font-size:13px;color:var(--mut);margin:16px 0 8px;font-weight:700;text-transform:uppercase;
+ letter-spacing:.5px}
+.marcadores{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.marcadores div{background:var(--bg2);border-radius:var(--r);padding:10px 6px;text-align:center}
+.marcadores b{display:block;font-family:var(--cond);font-size:17px;font-weight:800}
+.marcadores small{color:var(--mut);font-size:10.5px}
+.lineas{display:flex;flex-direction:column;gap:6px}
+.linea{display:flex;justify-content:space-between;align-items:center;background:var(--bg2);
+ border-radius:var(--r);padding:9px 12px;font-size:13px}
+.linea b{font-family:var(--cond)}
 </style>
 </head>
 <body>
 <header>
  <h1>⚽ FÚTBOL</h1>
  <select id="ligaSel" style="background:var(--bg2);border:1px solid var(--line2);color:var(--txt);
-  border-radius:20px;padding:6px 10px;font-size:12px">
-  <option value="datos_pl.json">Premier League</option>
-  <option value="datos_laliga.json">La Liga</option>
-  <option value="datos_seriea.json">Serie A</option>
-  <option value="datos_bundesliga.json">Bundesliga</option>
-  <option value="datos_ligue1.json">Ligue 1</option>
-  <option value="datos_cl.json">Champions League</option>
+  border-radius:20px;padding:6px 10px;font-size:12px;flex:1;min-width:140px">
+  <option value="pl">Premier League</option>
+  <option value="laliga">La Liga</option>
+  <option value="seriea">Serie A</option>
+  <option value="bundesliga">Bundesliga</option>
+  <option value="ligue1">Ligue 1</option>
+  <option value="cl">Champions League</option>
  </select>
 </header>
 <main>
  <div class="card">
-  <div id="estado" style="font-size:13px;color:var(--mut);margin-bottom:12px">Cargando datos de la Premier League...</div>
+  <div id="estado" style="font-size:13px;color:var(--mut);margin-bottom:12px">Cargando datos en vivo...</div>
   <label for="local">Equipo local</label>
   <select id="local"></select>
   <div class="vs">vs</div>
   <label for="visita">Equipo visitante</label>
   <select id="visita"></select>
-  <button id="ir">Calcular</button>
+  <button id="ir" disabled>Calcular</button>
  </div>
 
  <div class="card res" id="resultado">
@@ -84,46 +94,117 @@ button{background:var(--acc);color:var(--accTx);border:0;border-radius:var(--r);
    <div><b id="kUnder">—</b><small>Menos de 2.5</small></div>
    <div><b id="kBtts">—</b><small>Ambos anotan</small></div>
   </div>
+
+  <h3>Marcadores más probables</h3>
+  <div class="marcadores" id="marcadores"></div>
+
+  <h3>Otras líneas de goles</h3>
+  <div class="lineas" id="lineas"></div>
+
   <div class="nota">Modelo Poisson con encogimiento estadístico (igual que en el de MLB): con pocos
-   partidos jugados, el número de cada equipo se jala hacia el promedio de la liga, para que un
-   arranque extremo no dispare el resultado. Se suaviza solo según avancen más jornadas.</div>
+   partidos jugados, el número de cada equipo se jala hacia el promedio de la liga. Datos jalados
+   en vivo de worldfootball.net cada vez que abres o cambias de liga.</div>
  </div>
 </main>
 
 <script>
 var DATOS = null;
 
-function cargarLiga(archivo){
-  document.getElementById('estado').textContent='Cargando...';
-  document.getElementById('estado').style.color='var(--mut)';
-  document.getElementById('resultado').style.display='none';
-  fetch(archivo + '?v=' + Date.now()).then(function(r){
-    if(!r.ok) throw new Error('HTTP '+r.status+' al pedir '+archivo);
-    return r.json();
-  }).then(function(d){
-    DATOS = d;
-    var sL=document.getElementById('local'), sV=document.getElementById('visita');
-    sL.innerHTML=''; sV.innerHTML='';
-    d.equipos.forEach(function(e,i){
-      var o1=document.createElement('option'); o1.value=i; o1.textContent=e.nombre;
-      var o2=document.createElement('option'); o2.value=i; o2.textContent=e.nombre;
-      sL.appendChild(o1); sV.appendChild(o2);
+var LIGAS = {
+  pl:  {nombre:'Premier League', url:'https://www.worldfootball.net/competition/co91/england-premier-league/team-statistics-overview/'},
+  laliga: {nombre:'La Liga', url:'https://www.worldfootball.net/competition/co97/spain-primera-division/team-statistics-overview/'},
+  seriea: {nombre:'Serie A', url:'https://www.worldfootball.net/competition/co111/italy-serie-a/team-statistics-overview/'},
+  bundesliga: {nombre:'Bundesliga', url:'https://www.worldfootball.net/competition/co12/germany-bundesliga/team-statistics-overview/'},
+  ligue1: {nombre:'Ligue 1', url:'https://www.worldfootball.net/competition/co71/france-ligue-1/team-statistics-overview/'},
+  cl: {nombre:'Champions League', url:'https://www.worldfootball.net/competition/co19/uefa-champions-league/results-and-standings/'}
+};
+
+function extraerTabla(html){
+  var doc = new DOMParser().parseFromString(html, 'text/html');
+  var tablas = doc.querySelectorAll('table');
+  var mejor = null, mejorCuenta = 0;
+  tablas.forEach(function(t){
+    var cuenta = 0;
+    t.querySelectorAll('tr').forEach(function(f){
+      if(/\d+\s*:\s*\d+/.test(f.textContent)) cuenta++;
     });
-    sV.selectedIndex=1;
-    document.getElementById('estado').textContent='✓ '+d.equipos.length+' equipos de '+d.liga+' cargados ('+d.actualizado+').';
-    document.getElementById('estado').style.color='#34D399';
-  }).catch(function(e){
-    document.getElementById('estado').textContent='✗ Error cargando datos: '+e.message;
-    document.getElementById('estado').style.color='#F87171';
+    if(cuenta > mejorCuenta){ mejorCuenta = cuenta; mejor = t; }
   });
+  if(!mejor) return [];
+
+  var equipos = [];
+  mejor.querySelectorAll('tr').forEach(function(fila){
+    var celdas = fila.querySelectorAll('td');
+    if(celdas.length < 5) return;
+    var textoFila = Array.from(celdas).map(function(c){ return c.textContent.trim(); });
+    var links = fila.querySelectorAll('a');
+    var nombre = null, mejorLargo = 0;
+    links.forEach(function(a){
+      var t = a.textContent.trim();
+      if(t.length > mejorLargo && !/^\d+$/.test(t)){ mejorLargo = t.length; nombre = t; }
+    });
+    if(!nombre) return;
+    var marcador = null, idxMarcador = -1;
+    for(var i=0;i<textoFila.length;i++){
+      if(/^\d+\s*:\s*\d+$/.test(textoFila[i])){ marcador = textoFila[i]; idxMarcador = i; break; }
+    }
+    if(!marcador) return;
+    var partes = marcador.split(':').map(function(s){ return +s.trim(); });
+    var pj = null;
+    if(idxMarcador>=4){
+      var candidato = textoFila[idxMarcador-4];
+      if(/^\d+$/.test(candidato)) pj = +candidato;
+    }
+    if(!pj) return; // sin partidos jugados no sirve para el modelo
+    if(equipos.some(function(e){ return e.nombre===nombre; })) return; // evita duplicados de sub-tablas
+    equipos.push({nombre:nombre, pj:pj, gf:partes[0], gc:partes[1]});
+  });
+  return equipos;
 }
+
+function cargarLiga(clave){
+  var liga = LIGAS[clave];
+  var estado = document.getElementById('estado');
+  estado.textContent = 'Bajando '+liga.nombre+' en vivo...';
+  estado.style.color = 'var(--mut)';
+  document.getElementById('resultado').style.display='none';
+  document.getElementById('ir').disabled = true;
+
+  fetch(liga.url + '?v=' + Date.now())
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.text();
+    })
+    .then(function(html){
+      var equipos = extraerTabla(html);
+      if(!equipos.length) throw new Error('no se encontró tabla de posiciones');
+      DATOS = {liga: liga.nombre, equipos: equipos};
+      var sL=document.getElementById('local'), sV=document.getElementById('visita');
+      sL.innerHTML=''; sV.innerHTML='';
+      equipos.forEach(function(e,i){
+        var o1=document.createElement('option'); o1.value=i; o1.textContent=e.nombre;
+        var o2=document.createElement('option'); o2.value=i; o2.textContent=e.nombre;
+        sL.appendChild(o1); sV.appendChild(o2);
+      });
+      sV.selectedIndex=Math.min(1, equipos.length-1);
+      var ahora = new Date().toLocaleString('es', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
+      estado.textContent = '✓ '+equipos.length+' equipos de '+liga.nombre+' — en vivo ('+ahora+').';
+      estado.style.color = '#34D399';
+      document.getElementById('ir').disabled = false;
+    })
+    .catch(function(e){
+      estado.textContent = '✗ No se pudo cargar '+liga.nombre+' en vivo: '+e.message;
+      estado.style.color = '#F87171';
+    });
+}
+
 cargarLiga(document.getElementById('ligaSel').value);
 document.getElementById('ligaSel').addEventListener('change', function(){
   cargarLiga(this.value);
 });
 
 function poissonProb(k,lambda){
-  var l=Math.exp(-lambda), p=l, num=1;
+  var l=Math.exp(-lambda), num=1;
   for(var i=1;i<=k;i++){ num*=lambda/i; }
   return l*num;
 }
@@ -137,40 +218,36 @@ document.getElementById('ir').addEventListener('click', function(){
 
   var totalGF=0, totalPJ=0;
   DATOS.equipos.forEach(function(e){ totalGF+=e.gf; totalPJ+=e.pj; });
-  var ligaProm = totalGF / totalPJ; // goles por equipo por partido, promedio liga
+  var ligaProm = totalGF / totalPJ;
 
-  // Encogimiento: con pocos partidos, se jala hacia el promedio de la liga.
-  // K=6 equivale a mezclar con 6 "partidos fantasma" de nivel liga — mientras
-  // menos partidos reales tenga el equipo, más pesa el promedio.
   var K_ENCOGIMIENTO = 6;
   function gfAjustado(e){ return (e.gf + K_ENCOGIMIENTO*ligaProm) / (e.pj + K_ENCOGIMIENTO); }
   function gcAjustado(e){ return (e.gc + K_ENCOGIMIENTO*ligaProm) / (e.pj + K_ENCOGIMIENTO); }
 
   var HOME_ADV = 1.35;
-
-  var atkL = gfAjustado(eL) / ligaProm;
-  var defL = gcAjustado(eL) / ligaProm;
-  var atkV = gfAjustado(eV) / ligaProm;
-  var defV = gcAjustado(eV) / ligaProm;
+  var atkL = gfAjustado(eL) / ligaProm, defL = gcAjustado(eL) / ligaProm;
+  var atkV = gfAjustado(eV) / ligaProm, defV = gcAjustado(eV) / ligaProm;
 
   var lamL = ligaProm * atkL * defV * HOME_ADV;
   var lamV = ligaProm * atkV * defL / HOME_ADV;
 
   var MAXG=8;
-  var pL=0,pD=0,pV=0,pOver=0,pBtts=0;
-  var matriz=[];
+  var pL=0,pD=0,pV=0;
+  var overLineas = {1.5:0, 2.5:0, 3.5:0};
+  var pBtts=0;
+  var marcadores=[];
   for(var i=0;i<=MAXG;i++){
-    matriz[i]=[];
     for(var j=0;j<=MAXG;j++){
       var p = poissonProb(i,lamL)*poissonProb(j,lamV);
-      matriz[i][j]=p;
       if(i>j) pL+=p; else if(i===j) pD+=p; else pV+=p;
-      if(i+j>=3) pOver+=p;
+      [1.5,2.5,3.5].forEach(function(lin){ if(i+j>lin) overLineas[lin]+=p; });
       if(i>=1 && j>=1) pBtts+=p;
+      marcadores.push({i:i, j:j, p:p});
     }
   }
   var suma=pL+pD+pV;
   pL/=suma; pD/=suma; pV/=suma;
+  marcadores.sort(function(a,b){ return b.p-a.p; });
 
   document.getElementById('nomL').textContent=eL.nombre;
   document.getElementById('nomV').textContent=eV.nombre;
@@ -182,9 +259,21 @@ document.getElementById('ir').addEventListener('click', function(){
   pd.style.flexGrow=Math.max(pD,0.06); pd.textContent=(pD*100).toFixed(1)+'%';
   pa.style.flexGrow=Math.max(pV,0.06); pa.textContent=(pV*100).toFixed(1)+'%';
 
-  document.getElementById('kOver').textContent=(pOver*100).toFixed(1)+'%';
-  document.getElementById('kUnder').textContent=((1-pOver)*100).toFixed(1)+'%';
+  document.getElementById('kOver').textContent=(overLineas[2.5]*100).toFixed(1)+'%';
+  document.getElementById('kUnder').textContent=((1-overLineas[2.5])*100).toFixed(1)+'%';
   document.getElementById('kBtts').textContent=(pBtts*100).toFixed(1)+'%';
+
+  var mHtml='';
+  marcadores.slice(0,6).forEach(function(m){
+    mHtml += '<div><b>'+m.i+'-'+m.j+'</b><small>'+(m.p*100).toFixed(1)+'%</small></div>';
+  });
+  document.getElementById('marcadores').innerHTML = mHtml;
+
+  var lHtml='';
+  [1.5,2.5,3.5].forEach(function(lin){
+    lHtml += '<div class="linea"><span>Más de '+lin+' goles</span><b>'+(overLineas[lin]*100).toFixed(1)+'%</b></div>';
+  });
+  document.getElementById('lineas').innerHTML = lHtml;
 
   document.getElementById('resultado').style.display='block';
 });
