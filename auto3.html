@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auto-parche OVA — Catcher Framing</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.6}
+input[type=password]{width:100%;background:#131D2C;border:1px solid #2A3E56;color:#F1F5FB;
+ border-radius:8px;padding:12px;font-size:15px;box-sizing:border-box;margin:8px 0 4px}
+button{background:#3B82F6;color:#020509;border:0;border-radius:8px;padding:14px 20px;
+ font-size:16px;font-weight:700;width:100%;margin:10px 0;cursor:pointer}
+button:disabled{opacity:.5}
+pre{background:#131D2C;padding:12px;border-radius:8px;overflow-x:auto;font-size:12px;
+ white-space:pre-wrap;max-height:60vh;overflow-y:auto}
+.ok{color:#34D399}.bad{color:#F87171}.warn{color:#FBBF24}
+label{font-size:13px;color:#9DB2C8}
+.note{font-size:12.5px;color:#6D8299;margin-top:4px}
+</style>
+</head>
+<body>
+<h2>Auto-parche — Catcher Framing (informativo)</h2>
+<p>Añade: (1) detección del catcher titular cuando confirmas lineups, (2) traer los números de
+framing de Baseball Savant, (3) mostrarlos como nota informativa junto al panel de "Datos
+completos". <b>No toca el cálculo del % de ganador</b> — es solo información extra para ti.</p>
+
+<label for="tok">Token de GitHub</label>
+<input type="password" id="tok" placeholder="github_pat_...">
+<div class="note">Se pega cada vez — no queda guardado.</div>
+
+<button id="ir">Aplicar y subir a GitHub</button>
+<pre id="log">Esperando...</pre>
+
+<script>
+var OWNER='osvaldoalvarez0113-source', REPO='ODDX', PATH='index.html';
+var log=document.getElementById('log');
+function w(t,cls){ log.innerHTML+='\n'+(cls?'<span class="'+cls+'">':'')+t+(cls?'</span>':''); }
+function b64dec(s){ return decodeURIComponent(atob(s).split('').map(function(c){
+  return '%'+('00'+c.charCodeAt(0).toString(16)).slice(-2); }).join('')); }
+function b64enc(s){ return btoa(encodeURIComponent(s).replace(/%([0-9A-F]{2})/g,function(m,p1){
+  return String.fromCharCode('0x'+p1); })); }
+
+document.getElementById('ir').addEventListener('click',function(){
+  var tok=document.getElementById('tok').value.trim();
+  if(!tok){ w('Falta el token.','bad'); return; }
+  document.getElementById('ir').disabled=true;
+  log.textContent='Bajando index.html real...';
+
+  var API='https://api.github.com/repos/'+OWNER+'/'+REPO+'/contents/'+PATH;
+  var HDR={'Authorization':'Bearer '+tok,'Accept':'application/vnd.github+json'};
+
+  fetch(API,{headers:HDR}).then(function(r){
+    if(!r.ok) throw new Error('No se pudo leer (HTTP '+r.status+').');
+    return r.json();
+  }).then(function(d){
+    var html=b64dec(d.content.replace(/\n/g,''));
+    var sha=d.sha;
+    w('Archivo bajado ('+html.length+' caracteres). Aplicando...','ok');
+
+    var cambios=0, faltos=[];
+    function aplicar(nombre,buscar,reemplazar){
+      if(html.indexOf(buscar)===-1){ faltos.push(nombre); return; }
+      html=html.replace(buscar,reemplazar);
+      cambios++;
+      w('✓ '+nombre,'ok');
+    }
+
+    var vs=html.match(/OVA <span class="ver">v(\d+)<\/span>/);
+    var vNueva=vs?(+vs[1]+1):42;
+    if(vs) html=html.replace(vs[0], 'OVA <span class="ver">v'+vNueva+'</span>');
+    w('✓ Versión a v'+vNueva,'ok');
+
+    // 1) BOX_FIELDS: pedir posición del jugador
+    aplicar('BOX_FIELDS incluye posición',
+      "gamesStarted,battingOrder';",
+      "gamesStarted,battingOrder,position,abbreviation';");
+
+    // 2) lineup(): detectar catcher titular
+    aplicar('Detección de catcher titular en lineup()',
+      "o[l]={n:ord.length, ids:ord.slice(), nombres:nombres, ok:ord.length>=9};",
+      "var catcherName=null; ord.forEach(function(pid){ var pl=eq.players&&eq.players['ID'+pid]; if(pl&&pl.position&&pl.position.abbreviation==='C') catcherName=pl.person.fullName; }); o[l]={n:ord.length, ids:ord.slice(), nombres:nombres, ok:ord.length>=9, catcher:catcherName};");
+
+    // 3) Funciones de framing, insertadas antes de refrescarCal
+    if(html.indexOf('function framingMap(')===-1){
+      var funcs =
+        "var FRAMING_CACHE=null;\n"+
+        "function framingMap(){\n"+
+        "  if(FRAMING_CACHE) return Promise.resolve(FRAMING_CACHE);\n"+
+        "  return fetch('https://baseballsavant.mlb.com/leaderboard/catcher-framing?year='+new Date().getFullYear()+'&team=&min=1&csv=true')\n"+
+        "    .then(function(r){ if(!r.ok) throw 0; return r.text(); })\n"+
+        "    .then(function(csv){\n"+
+        "      var map={}; var lineas=csv.split('\\n');\n"+
+        "      for(var i=1;i<lineas.length;i++){\n"+
+        "        try{\n"+
+        "          var m=lineas[i].match(/^([0-9]+),\"([^\"]*)\",(.*)$/);\n"+
+        "          if(!m) continue;\n"+
+        "          var rest=m[3].split(',');\n"+
+        "          var rv=parseFloat(rest[1]);\n"+
+        "          if(!isFinite(rv)) continue;\n"+
+        "          var partes=m[2].split(',');\n"+
+        "          var norm=(partes.length===2?(partes[1].trim()+' '+partes[0].trim()):m[2]).toLowerCase().trim();\n"+
+        "          map[norm]=rv;\n"+
+        "        }catch(e){}\n"+
+        "      }\n"+
+        "      FRAMING_CACHE=map; return map;\n"+
+        "    }).catch(function(){ return {}; });\n"+
+        "}\n"+
+        "function framingRuns(map,fullName){\n"+
+        "  if(!fullName) return null;\n"+
+        "  var k=fullName.toLowerCase().trim();\n"+
+        "  return map[k]!=null ? map[k]/162 : null;\n"+
+        "}\n";
+      aplicar('Funciones de framing (framingMap/framingRuns)',
+        "function refrescarCal(root,x){",
+        funcs+"function refrescarCal(root,x){");
+    } else {
+      w('· Funciones de framing (ya estaban)','warn');
+    }
+
+    // 4) refrescarCal(): mostrar la nota informativa
+    if(html.indexOf('framing-nota')===-1){
+      aplicar('Nota de framing en el panel de Datos completos',
+        "root.querySelectorAll('.calwrap').forEach(function(w){ w.innerHTML=calBloque(c); });",
+        "root.querySelectorAll('.calwrap').forEach(function(w){ w.innerHTML=calBloque(c); });\n"+
+        "  if(x._lu){\n"+
+        "    var eqA=x._lu.away, eqH=x._lu.home;\n"+
+        "    if((eqA&&eqA.catcher)||(eqH&&eqH.catcher)){\n"+
+        "      framingMap().then(function(map){\n"+
+        "        var fA=eqA&&eqA.catcher?framingRuns(map,eqA.catcher):null;\n"+
+        "        var fH=eqH&&eqH.catcher?framingRuns(map,eqH.catcher):null;\n"+
+        "        if(fA==null&&fH==null) return;\n"+
+        "        var txt='<div class=\"framing-nota\" style=\"margin-top:8px;padding:8px 10px;background:var(--bg2);border-radius:8px;font-size:11.5px;color:var(--mut)\">'+\n"+
+        "          '<b style=\"color:var(--txt)\">Catcher framing (informativo, no mueve el %):</b><br>'+\n"+
+        "          (eqA&&eqA.catcher&&fA!=null?esc(eqA.catcher)+' ahorra '+fA.toFixed(2)+' carr/juego':'')+\n"+
+        "          (eqA&&eqA.catcher&&fA!=null&&eqH&&eqH.catcher&&fH!=null?' · ':'')+\n"+
+        "          (eqH&&eqH.catcher&&fH!=null?esc(eqH.catcher)+' ahorra '+fH.toFixed(2)+' carr/juego':'')+\n"+
+        "          '</div>';\n"+
+        "        root.querySelectorAll('.calwrap').forEach(function(w2){\n"+
+        "          var old=w2.querySelector('.framing-nota'); if(old) old.remove();\n"+
+        "          w2.insertAdjacentHTML('beforeend', txt);\n"+
+        "        });\n"+
+        "      });\n"+
+        "    }\n"+
+        "  }\n");
+    } else {
+      w('· Nota de framing en el panel (ya estaba)','warn');
+    }
+
+    w('\nTotal: '+cambios+' cambios aplicados.', cambios>=1?'ok':'bad');
+    if(faltos.length){
+      w('\n⚠️ '+faltos.length+' no se encontraron (no se tocó nada de eso):','warn');
+      faltos.forEach(function(f){ w('  · '+f,'bad'); });
+    }
+
+    w('\nSubiendo a GitHub...','ok');
+    return fetch(API,{
+      method:'PUT',
+      headers:Object.assign({'Content-Type':'application/json'},HDR),
+      body:JSON.stringify({
+        message:'Auto-parche v'+vNueva+' (catcher framing informativo)',
+        content:b64enc(html),
+        sha:sha
+      })
+    }).then(function(r){
+      if(!r.ok) return r.text().then(function(t){ throw new Error('GitHub rechazó (HTTP '+r.status+'): '+t.slice(0,200)); });
+      return r.json();
+    }).then(function(){
+      w('\n✓ Subido. Dale 1-2 minutos, abre un juego, toca "Revisar lineups", y busca la nota de framing debajo de "Datos completos".','ok');
+      document.getElementById('ir').disabled=false;
+    });
+  }).catch(function(e){
+    w('\n✗ Error: '+e.message,'bad');
+    document.getElementById('ir').disabled=false;
+  });
+});
+</script>
+</body>
+</html>
