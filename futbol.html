@@ -28,6 +28,9 @@ select#ligaSel{background:var(--bg2);border:1px solid var(--line2);color:var(--t
 .tb{flex:1;background:var(--bg2);color:var(--mut);border:0;border-radius:9px;padding:9px 8px;
  font-size:12.5px;font-weight:700;cursor:pointer}
 .tb.on{background:var(--acc);color:var(--accTx)}
+header .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+header .tabs::-webkit-scrollbar{display:none}
+header .tabs .tb{flex:0 0 auto;padding:9px 13px;white-space:nowrap}
 main{padding:0 14px}
 .vista{display:none}
 .vista.on{display:block}
@@ -43,7 +46,7 @@ main{padding:0 14px}
 .eq img{width:24px;height:24px;object-fit:contain;background:#fff;border-radius:5px;flex:0 0 auto}
 .eq span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hora{font-size:11.5px;color:var(--mut);background:var(--bg2);border:1px solid var(--line2);
- border-radius:20px;padding:5px 10px;flex:0 0 auto;white-space:nowrap}
+ border-radius:20px;padding:5px 10px;flex:0 0 auto;white-space:nowrap;text-align:right}
 .chev{color:var(--mut2);font-size:18px;flex:0 0 auto;transition:transform .2s}
 .game.open .chev{transform:rotate(180deg)}
 .body{display:none;padding:0 14px 16px}
@@ -126,6 +129,8 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 .observ{background:var(--bg2);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--mut);
  margin:5px 0}
 .observ b{color:var(--txt)}
+.aviso{border-left:3px solid var(--hot);background:rgba(251,191,36,.08);border-radius:0 var(--r) var(--r) 0;
+ padding:9px 12px;font-size:11.5px;color:var(--hot);margin:0 0 10px}
 
 /* pestañas dentro de cada juego */
 .body .tabs{display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding-bottom:2px}
@@ -142,12 +147,21 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 .fila-rank img{width:22px;height:22px;object-fit:contain;background:#fff;border-radius:5px}
 .fila-rank .nom{flex:1;font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fila-rank .pct{font-family:var(--cond);font-weight:800;font-size:15px;color:var(--hot)}
+
+/* botones chicos de guardar/combinar */
+.filaCuota{display:flex;justify-content:space-between;align-items:center;margin:6px 0;gap:8px}
+.filaCuota .txt{flex:1;min-width:0}
+.btnChico{flex:0 0 auto;background:var(--bg3);color:var(--txt);border:1px solid var(--line2);
+ border-radius:7px;padding:7px 10px;font-size:12px;cursor:pointer}
+.btnAncho{width:100%;background:var(--acc);color:var(--accTx);border:0;border-radius:10px;
+ padding:12px;font-weight:700;margin:12px 0;cursor:pointer}
+.btnAncho.sec{background:var(--bg2);color:var(--mut);border:1px solid var(--line2)}
 </style>
 </head>
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL</h1>
+  <h1>⚽ FÚTBOL <span style="font-size:10px;color:var(--mut);font-weight:400">v2</span></h1>
   <select id="ligaSel">
    <option value="pl">Premier League</option>
    <option value="laliga">La Liga</option>
@@ -160,6 +174,9 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
  <div class="tabs">
   <button class="tb on" data-vista="juegos">Juegos</button>
   <button class="tb" data-vista="algane">Al gane</button>
+  <button class="tb" data-vista="backtest">Backtest</button>
+  <button class="tb" data-vista="registro">Registro</button>
+  <button class="tb" data-vista="combinada">Combinada</button>
  </div>
 </header>
 <main>
@@ -172,11 +189,29 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
  <div class="vista" id="vistaAlgane">
   <div id="algane"></div>
  </div>
+
+ <div class="vista" id="vistaBacktest">
+  <div class="nota" style="margin:12px 2px 0">Corre el modelo sobre los partidos ya terminados de la liga que tengas cargada ahora mismo y compara la predicción contra el resultado real.</div>
+  <button id="btnCorrerBacktest" class="btnAncho">Medir esta liga</button>
+  <div id="backtestOut"></div>
+ </div>
+
+ <div class="vista" id="vistaRegistro">
+  <button id="btnVerificarRegistro" class="btnAncho">Verificar picks pendientes</button>
+  <div id="registro"></div>
+ </div>
+
+ <div class="vista" id="vistaCombinada">
+  <div id="combinada"></div>
+ </div>
 </main>
 
 <script>
 var EQUIPOS = null;
 var PARTIDOS = null;
+var PENDIENTES_TODOS = [];
+var TERMINADOS = [];
+var MOSTRANDO_TODOS = false;
 var LIGA_ACTUAL = null;
 var CACHE_PERFIL = {};
 
@@ -188,6 +223,36 @@ var LIGAS = {
   ligue1: {nombre:'Ligue 1', url:'https://www.worldfootball.net/competition/co71/france-ligue-1/team-statistics-overview/', urlPartidos:'https://www.worldfootball.net/competition/co71/france-ligue-1/results-and-standings/'},
   cl: {nombre:'Champions League', url:'https://www.worldfootball.net/competition/co19/uefa-champions-league/results-and-standings/', urlPartidos:'https://www.worldfootball.net/competition/co19/uefa-champions-league/results-and-standings/'}
 };
+
+// ---------- utilidades ----------
+function normalizarNombre(s){
+  return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+}
+function parseFecha(f){
+  if(!f) return null;
+  var m = f.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+  if(!m) return null;
+  var d=+m[1], mo=+m[2], y=+m[3]; if(y<100) y+=2000;
+  var t = new Date(y, mo-1, d).getTime();
+  return isNaN(t) ? null : t;
+}
+function compararFecha(a,b){
+  var ta=parseFecha(a), tb=parseFecha(b);
+  if(ta===null && tb===null) return 0;
+  if(ta===null) return 1;
+  if(tb===null) return -1;
+  return ta-tb;
+}
+function decimalDeAmericana(odd){
+  odd = +odd;
+  if(!odd) return null;
+  return odd>0 ? (odd/100+1) : (100/(-odd)+1);
+}
+function cuotaJustaAmericana(prob){
+  if(!prob || prob<=0 || prob>=1) return null;
+  if(prob>=0.5) return Math.round(-(prob/(1-prob))*100);
+  return Math.round(((1-prob)/prob)*100);
+}
 
 // ---------- tabla de posiciones ----------
 function extraerTabla(html){
@@ -227,7 +292,7 @@ function extraerTabla(html){
   return equipos;
 }
 
-// ---------- partidos por jugar ----------
+// ---------- partidos (proximos Y terminados) ----------
 function extraerPartidos(html){
   var doc = new DOMParser().parseFromString(html, 'text/html');
   var enlaces = doc.querySelectorAll('a[href*="match-report"]');
@@ -247,63 +312,67 @@ function extraerPartidos(html){
     var nombreVisita = escudos[1].getAttribute('alt') || escudos[1].getAttribute('title');
     if(!nombreLocal || !nombreVisita) return;
     var texto = cont.textContent.replace(/\s+/g,' ');
-    if(/Ended/i.test(texto)) return;
+    var esFinal = /Ended/i.test(texto);
     var horaM = texto.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
     var hora = horaM ? horaM[0] : '';
-    var clave = nombreLocal+'|'+nombreVisita;
+    var fechaM = texto.match(/\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b/);
+    var fecha = fechaM ? fechaM[0] : '';
+    var golesLocal=null, golesVisita=null;
+    if(esFinal){
+      var scoreM = texto.match(/\b(\d{1,2})\s*:\s*(\d{1,2})\b/);
+      if(scoreM){ golesLocal=+scoreM[1]; golesVisita=+scoreM[2]; }
+    }
+    var clave = nombreLocal+'|'+nombreVisita+'|'+fecha+'|'+hora;
     if(partidos.some(function(p){ return p.clave===clave; })) return;
     partidos.push({
       clave: clave, local: nombreLocal, visita: nombreVisita,
       escudoLocal: escudos[0].src, escudoVisita: escudos[1].src,
       hrefLocal: escudos[0].closest('a') ? escudos[0].closest('a').getAttribute('href') : null,
       hrefVisita: escudos[1].closest('a') ? escudos[1].closest('a').getAttribute('href') : null,
-      hora: hora
+      hora: hora, fecha: fecha, terminado: esFinal,
+      golesLocal: golesLocal, golesVisita: golesVisita
     });
   });
-  return partidos.slice(0,15);
+  return partidos;
 }
 
-// ---------- perfil de un equipo (forma, estadio, goleador, noticias) ----------
-function extraerPerfil(html, nombrePropio){
-  var doc = new DOMParser().parseFromString(html, 'text/html');
-  var perfil = {estadio:null, capacidad:null, forma:[], goleador:null, noticias:[]};
+function filtrarJornadaActual(pendientes){
+  if(!pendientes.length) return pendientes;
+  var minT = parseFecha(pendientes[0].fecha);
+  if(minT===null) return pendientes.slice(0,15);
+  var ventana = minT + 4*24*60*60*1000;
+  var actuales = pendientes.filter(function(p){
+    var t = parseFecha(p.fecha);
+    return t!==null && t<=ventana;
+  });
+  return actuales.length ? actuales : pendientes.slice(0,15);
+}
 
-  // estadio / capacidad: texto plano del bloque "Profile"
+// ---------- perfil de un equipo (estadio, goleador, noticias) ----------
+function extraerPerfil(html){
+  var doc = new DOMParser().parseFromString(html, 'text/html');
+  var perfil = {estadio:null, capacidad:null, goleador:null, noticias:[]};
+
   var textoCompleto = doc.body.textContent;
   var mEst = textoCompleto.match(/Stadium\s*\n?\s*([^\n]{3,60}?)\s*\n?\s*Capacity/);
   if(mEst) perfil.estadio = mEst[1].trim();
   var mCap = textoCompleto.match(/Capacity\s*\n?\s*([\d.,]{3,10})/);
   if(mCap) perfil.capacidad = mCap[1].trim();
 
-  // forma: DESACTIVADA por ahora -- la extraccion de resultados via texto plano
-  // no es confiable (confunde goles con jornada/fecha). Se deja el arreglo vacio
-  // a proposito para no mostrar datos incorrectos.
-  perfil.forma = [];
-
-  // goleador: primer enlace a /person/ dentro de una tabla con "Topscorer" cerca
   var linkJugador = doc.querySelector('a[href*="/person/"]');
   if(linkJugador){
-    var fila = linkJugador.closest('tr');
-    if(fila){
-      var txt = fila.textContent.replace(/\s+/g,' ').trim();
-      var m = txt.match(/([A-ZÀ-Ý][\wÀ-ÿ.'-]+(?:\s+[A-ZÀ-Ýa-zà-ÿ.'-]+){0,3})/);
-      perfil.goleador = linkJugador.textContent.trim();
-    }
+    perfil.goleador = linkJugador.textContent.trim();
   }
 
-  // noticias: enlaces a /news/
   var vistosN = {};
   doc.querySelectorAll('a[href*="/news/"]').forEach(function(a){
     if(perfil.noticias.length>=3) return;
     var t = a.textContent.trim();
     if(!t || t.length<12) return;
-    // el titulo a veces viene repetido al inicio, con la hora pegada despues
-    // (ej: "TituloTitulo10.09. 08:53"). Se busca la repeticion mas larga posible.
     for(var L=Math.floor(t.length/2); L>=8; L--){
       if(t.slice(0,L) === t.slice(L, 2*L)){ t = t.slice(0,L) + t.slice(2*L); break; }
     }
     t = t.trim();
-    // separar visualmente el titulo de la fecha pegada (ej: "Titulo10.09. 08:53")
     t = t.replace(/([a-zà-ÿ?!.])(\d{1,2}\.\d{2}\.?\s*\d{0,2}:?\d{0,2})$/i, '$1 · $2');
     if(vistosN[t]) return;
     vistosN[t]=true;
@@ -319,10 +388,46 @@ function cargarPerfil(nombreEquipo, href){
   var url = href.indexOf('http')===0 ? href : 'https://www.worldfootball.net'+href;
   return fetch(url+'?v='+Date.now()).then(function(r){ return r.text(); })
     .then(function(html){
-      var p = extraerPerfil(html, nombreEquipo);
+      var p = extraerPerfil(html);
       CACHE_PERFIL[nombreEquipo] = p;
       return p;
     }).catch(function(){ return null; });
+}
+
+// ---------- forma y cara a cara (calculados de los partidos ya terminados, sin fetch extra) ----------
+function calcularForma(nombreEquipo){
+  if(!TERMINADOS || !TERMINADOS.length) return [];
+  var n = normalizarNombre(nombreEquipo);
+  var juegos = TERMINADOS.filter(function(p){
+    return normalizarNombre(p.local)===n || normalizarNombre(p.visita)===n;
+  });
+  juegos.sort(function(a,b){ return compararFecha(b.fecha,a.fecha); });
+  return juegos.slice(0,5).map(function(p){
+    var esLocal = normalizarNombre(p.local)===n;
+    var gf = esLocal?p.golesLocal:p.golesVisita;
+    var gc = esLocal?p.golesVisita:p.golesLocal;
+    if(gf>gc) return 'V';
+    if(gf<gc) return 'D';
+    return 'E';
+  });
+}
+
+function calcularH2H(nombreL, nombreV){
+  if(!TERMINADOS || !TERMINADOS.length) return null;
+  var nl=normalizarNombre(nombreL), nv=normalizarNombre(nombreV);
+  var juegos = TERMINADOS.filter(function(p){
+    var pl=normalizarNombre(p.local), pv=normalizarNombre(p.visita);
+    return (pl===nl&&pv===nv)||(pl===nv&&pv===nl);
+  });
+  if(!juegos.length) return null;
+  var vL=0,vV=0,e=0;
+  juegos.forEach(function(p){
+    var pl=normalizarNombre(p.local);
+    var golesA = pl===nl?p.golesLocal:p.golesVisita;
+    var golesB = pl===nl?p.golesVisita:p.golesLocal;
+    if(golesA>golesB) vL++; else if(golesA<golesB) vV++; else e++;
+  });
+  return {juegos:juegos.length, vL:vL, vV:vV, e:e};
 }
 
 function poissonProb(k,lambda){
@@ -331,11 +436,18 @@ function poissonProb(k,lambda){
   return l*num;
 }
 
+// ---------- cruce de nombres (mas robusto, avisa si no fue exacto) ----------
 function buscarEquipo(nombre){
   if(!EQUIPOS) return null;
-  var e = EQUIPOS.find(function(x){ return x.nombre===nombre; });
-  if(e) return e;
-  return EQUIPOS.find(function(x){ return x.nombre.indexOf(nombre)>-1 || nombre.indexOf(x.nombre)>-1; }) || null;
+  var n = normalizarNombre(nombre);
+  var exacto = EQUIPOS.find(function(x){ return normalizarNombre(x.nombre)===n; });
+  if(exacto) return {eq:exacto, exacto:true};
+  var parcial = EQUIPOS.find(function(x){
+    var xn = normalizarNombre(x.nombre);
+    return xn.indexOf(n)>-1 || n.indexOf(xn)>-1;
+  });
+  if(parcial) return {eq:parcial, exacto:false};
+  return null;
 }
 
 function calcular(eL, eV){
@@ -373,8 +485,6 @@ function impProb(americana){
 }
 
 function tablaPosicionesHtml(eL, eV){
-  var copia = EQUIPOS.slice().sort(function(a,b){ return b.pj===a.pj ? (b.gf-b.gc)-(a.gf-a.gc) : 0; });
-  // usar posicion real ya calculada al extraer
   var ordenada = EQUIPOS.slice(0, EQUIPOS.length);
   var html = '<table class="tabpos">';
   ordenada.forEach(function(e){
@@ -431,6 +541,17 @@ function bloqueBase(eL, eV, nombreLmostrar, nombreVmostrar){
   };
 }
 
+function pintarForma(elId, nombreEquipo){
+  var el = document.getElementById(elId);
+  if(!el) return;
+  var forma = calcularForma(nombreEquipo);
+  if(!forma.length){
+    el.innerHTML = '<span class="nota" style="margin:0">Sin partidos terminados medidos todavía esta temporada.</span>';
+    return;
+  }
+  el.innerHTML = forma.map(function(r){ return '<span class="'+r+'">'+r+'</span>'; }).join('');
+}
+
 function pintarGameBody(bodyEl, p, eL, eV){
   var base = bloqueBase(eL, eV, p.local, p.visita);
   var id = 'g'+Math.random().toString(36).slice(2);
@@ -462,10 +583,14 @@ function pintarGameBody(bodyEl, p, eL, eV){
       '<h3>Tabla de posiciones</h3>' + tablaPosicionesHtml(eL, eV) +
     '</div>' +
     '<div class="pane" id="'+id+'for">' +
+      '<h3>Forma reciente</h3>' +
+      '<div class="observ"><b>'+p.local+'</b></div>' +
+      '<div class="forma" id="'+id+'formaL"></div>' +
+      '<div class="observ"><b>'+p.visita+'</b></div>' +
+      '<div class="forma" id="'+id+'formaV"></div>' +
       '<div id="'+id+'perfilL" class="nota">Cargando '+p.local+'...</div>' +
       '<div id="'+id+'perfilV" class="nota">Cargando '+p.visita+'...</div>' +
-      '<h3>Cara a cara</h3><div id="'+id+'h2h" class="nota">'+
-        'El cruce directo se activa junto con la forma en el próximo ajuste.</div>' +
+      '<h3>Cara a cara esta temporada</h3><div id="'+id+'h2h" class="nota"></div>' +
       '<h3>Últimas noticias</h3><div id="'+id+'noticias" class="nota">Buscando noticias...</div>' +
     '</div>';
 
@@ -485,9 +610,9 @@ function pintarGameBody(bodyEl, p, eL, eV){
     var oV=document.getElementById(id+'oddV').value;
     var out = document.getElementById(id+'verC');
     var filas = [
-      {nom:p.local, odd:oL, modelo:base.r.pL},
-      {nom:'Empate', odd:oD, modelo:base.r.pD},
-      {nom:p.visita, odd:oV, modelo:base.r.pV}
+      {mercado:'1X2', sel:p.local, odd:oL, modelo:base.r.pL},
+      {mercado:'1X2', sel:'Empate', odd:oD, modelo:base.r.pD},
+      {mercado:'1X2', sel:p.visita, odd:oV, modelo:base.r.pV}
     ];
     var html = '';
     filas.forEach(function(f){
@@ -495,12 +620,45 @@ function pintarGameBody(bodyEl, p, eL, eV){
       if(imp===null){ return; }
       var diff = (f.modelo - imp)*100;
       var hayValor = diff >= 3;
-      html += '<div style="margin:6px 0">'+f.nom+': modelo '+(f.modelo*100).toFixed(1)+'% vs cuota implica '+(imp*100).toFixed(1)+'% — '+
-        (hayValor ? '<span class="si">hay valor (+'+diff.toFixed(1)+' pts)</span>' : '<span class="no">sin valor ('+diff.toFixed(1)+' pts)</span>')+
+      html += '<div class="filaCuota"><span class="txt">'+f.sel+': modelo '+(f.modelo*100).toFixed(1)+'% vs cuota '+(imp*100).toFixed(1)+'% — '+
+        (hayValor ? '<span class="si">valor +'+diff.toFixed(1)+'</span>' : '<span class="no">sin valor '+diff.toFixed(1)+'</span>')+
+        '</span>'+
+        '<button class="btnChico guardarPick" data-mercado="'+f.mercado+'" data-sel="'+f.sel+'" data-odd="'+f.odd+'" data-prob="'+f.modelo+'">💾</button>'+
+        '<button class="btnChico agregarCombinada" data-sel="'+f.sel+'" data-prob="'+f.modelo+'">🔗</button>'+
         '</div>';
     });
     out.innerHTML = html || 'Mete al menos una cuota.';
+    out.querySelectorAll('.guardarPick').forEach(function(btnG){
+      btnG.addEventListener('click', function(){
+        guardarPick({
+          liga: LIGA_ACTUAL, local:p.local, visita:p.visita, fecha:p.fecha||'',
+          mercado: btnG.dataset.mercado, seleccion: btnG.dataset.sel,
+          probModelo: +btnG.dataset.prob, cuota: btnG.dataset.odd
+        });
+        btnG.textContent = '✓';
+        btnG.disabled = true;
+      });
+    });
+    out.querySelectorAll('.agregarCombinada').forEach(function(btnC){
+      btnC.addEventListener('click', function(){
+        agregarACombinada({
+          local: p.local, visita: p.visita,
+          seleccion: btnC.dataset.sel, prob: +btnC.dataset.prob
+        });
+        btnC.textContent = '✓';
+      });
+    });
   });
+
+  pintarForma(id+'formaL', p.local);
+  pintarForma(id+'formaV', p.visita);
+  var h2h = calcularH2H(p.local, p.visita);
+  var h2hEl = document.getElementById(id+'h2h');
+  if(h2hEl){
+    h2hEl.textContent = h2h ?
+      ('Esta temporada: '+h2h.juegos+' partido(s) — '+p.local+' '+h2h.vL+' · Empates '+h2h.e+' · '+p.visita+' '+h2h.vV) :
+      'Todavía no se han enfrentado esta temporada (solo se mide dentro de la misma temporada, no historial completo).';
+  }
 
   cargarPerfil(p.local, p.hrefLocal).then(function(perf){
     var el = document.getElementById(id+'perfilL');
@@ -508,8 +666,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
     if(!perf){ el.textContent = 'No se pudo cargar la información de '+p.local+'.'; return; }
     el.innerHTML = '<b>'+p.local+'</b>' +
       (perf.estadio ? '<div class="estadio">🏟️ <b>'+perf.estadio+'</b>'+(perf.capacidad?' · '+perf.capacidad+' asientos':'')+'</div>' : '') +
-      (perf.goleador ? '<div class="observ">Goleador del equipo: <b>'+perf.goleador+'</b></div>' : '') +
-      '<div class="nota">Forma (últimos partidos) en revisión — se activa en el próximo ajuste.</div>';
+      (perf.goleador ? '<div class="observ">Goleador del equipo: <b>'+perf.goleador+'</b></div>' : '');
     if(perf.noticias.length){
       var nEl = document.getElementById(id+'noticias');
       if(nEl) nEl.innerHTML = perf.noticias.map(function(n){ return '<div class="noticia">'+n+'</div>'; }).join('');
@@ -521,8 +678,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
     if(!perf){ el.textContent = 'No se pudo cargar la información de '+p.visita+'.'; return; }
     el.innerHTML = '<b>'+p.visita+'</b>' +
       (perf.estadio ? '<div class="estadio">🏟️ <b>'+perf.estadio+'</b>'+(perf.capacidad?' · '+perf.capacidad+' asientos':'')+'</div>' : '') +
-      (perf.goleador ? '<div class="observ">Goleador del equipo: <b>'+perf.goleador+'</b></div>' : '') +
-      '<div class="nota">Forma (últimos partidos) en revisión — se activa en el próximo ajuste.</div>';
+      (perf.goleador ? '<div class="observ">Goleador del equipo: <b>'+perf.goleador+'</b></div>' : '');
   });
 }
 
@@ -533,6 +689,7 @@ function pintarJuegos(partidos){
     return;
   }
   cont.innerHTML = partidos.map(function(p, idx){
+    var horaTxt = p.fecha ? (p.fecha + (p.hora?' · '+p.hora:'')) : p.hora;
     return '' +
     '<div class="game" data-idx="'+idx+'">'+
       '<div class="head">'+
@@ -540,7 +697,7 @@ function pintarJuegos(partidos){
           '<div class="eq"><img src="'+p.escudoLocal+'"><span>'+p.local+'</span></div>'+
           '<div class="eq"><img src="'+p.escudoVisita+'"><span>'+p.visita+'</span></div>'+
         '</div>'+
-        (p.hora?'<div class="hora">'+p.hora+'</div>':'')+
+        (horaTxt?'<div class="hora">'+horaTxt+'</div>':'')+
         '<div class="chev">▾</div>'+
       '</div>'+
       '<div class="body"></div>'+
@@ -556,30 +713,47 @@ function pintarJuegos(partidos){
       var body = gameEl.querySelector('.body');
       if(!body.dataset.pintado){
         var p = partidos[idx];
-        var eL = buscarEquipo(p.local), eV = buscarEquipo(p.visita);
-        if(!eL || !eV){
+        var mL = buscarEquipo(p.local), mV = buscarEquipo(p.visita);
+        if(!mL || !mV){
           body.innerHTML = '<div class="nota">No se pudieron cruzar los nombres de este partido con la tabla de posiciones.</div>';
         } else {
-          pintarGameBody(body, p, eL, eV);
+          pintarGameBody(body, p, mL.eq, mV.eq);
+          if(!mL.exacto || !mV.exacto){
+            body.insertAdjacentHTML('afterbegin',
+              '<div class="aviso">⚠️ El nombre de al menos un equipo no calzó exacto con la tabla de posiciones — revisa que la info sea del equipo correcto.</div>');
+          }
         }
         body.dataset.pintado = '1';
       }
     });
   });
+
+  if(PENDIENTES_TODOS.length > partidos.length || (MOSTRANDO_TODOS && PENDIENTES_TODOS.length)){
+    var btnTxt = MOSTRANDO_TODOS ? 'Ver solo próxima jornada' : 'Ver todos los próximos partidos ('+PENDIENTES_TODOS.length+')';
+    cont.insertAdjacentHTML('beforeend', '<button id="btnToggleJornada" class="btnAncho sec">'+btnTxt+'</button>');
+    var btnT = document.getElementById('btnToggleJornada');
+    if(btnT){
+      btnT.addEventListener('click', function(){
+        MOSTRANDO_TODOS = !MOSTRANDO_TODOS;
+        PARTIDOS = MOSTRANDO_TODOS ? PENDIENTES_TODOS : filtrarJornadaActual(PENDIENTES_TODOS);
+        pintarJuegos(PARTIDOS);
+      });
+    }
+  }
 }
 
 function pintarAlGane(partidos){
   var cont = document.getElementById('algane');
   var filas = [];
   partidos.forEach(function(p){
-    var eL = buscarEquipo(p.local), eV = buscarEquipo(p.visita);
-    if(!eL || !eV) return;
-    var r = calcular(eL, eV);
+    var mL = buscarEquipo(p.local), mV = buscarEquipo(p.visita);
+    if(!mL || !mV) return;
+    var r = calcular(mL.eq, mV.eq);
     var mejor = Math.max(r.pL, r.pV);
     var esLocal = mejor===r.pL;
     filas.push({
       nombre: esLocal?p.local:p.visita, rival: esLocal?p.visita:p.local,
-      escudo: esLocal?p.escudoLocal:p.escudoVisita, pct: mejor, hora:p.hora
+      escudo: esLocal?p.escudoLocal:p.escudoVisita, pct: mejor, hora:p.fecha||p.hora
     });
   });
   filas.sort(function(a,b){ return b.pct-a.pct; });
@@ -590,27 +764,207 @@ function pintarAlGane(partidos){
   }).join('');
 }
 
+// ---------- backtest ----------
+function correrBacktest(){
+  var out = document.getElementById('backtestOut');
+  if(!EQUIPOS || !TERMINADOS || TERMINADOS.length < 10){
+    out.innerHTML = '<div class="estado bad">No hay suficientes partidos terminados en esta liga todavía para medir (mínimo 10). Espera a que avance la temporada.</div>';
+    return;
+  }
+  var acierto1x2=0, aciertoOU=0, aciertoBtts=0, medidos=0;
+  TERMINADOS.forEach(function(p){
+    if(p.golesLocal===null || p.golesVisita===null) return;
+    var mL = buscarEquipo(p.local), mV = buscarEquipo(p.visita);
+    if(!mL || !mV) return;
+    var r = calcular(mL.eq, mV.eq);
+    medidos++;
+    var predicho = (r.pL>=r.pD && r.pL>=r.pV) ? 'L' : (r.pV>=r.pD ? 'V' : 'D');
+    var real = p.golesLocal>p.golesVisita ? 'L' : (p.golesLocal<p.golesVisita ? 'V' : 'D');
+    if(predicho===real) acierto1x2++;
+    var totalReal = p.golesLocal+p.golesVisita;
+    var prediceOver = r.overLin[2.5] >= 0.5;
+    var esOver = totalReal > 2.5;
+    if(prediceOver===esOver) aciertoOU++;
+    var predBtts = r.pBtts >= 0.5;
+    var realBtts = p.golesLocal>=1 && p.golesVisita>=1;
+    if(predBtts===realBtts) aciertoBtts++;
+  });
+  if(!medidos){
+    out.innerHTML = '<div class="estado bad">No se pudo medir ningún partido (falló el cruce de nombres).</div>';
+    return;
+  }
+  out.innerHTML =
+    '<div class="kpi">'+
+      '<div><b>'+(acierto1x2/medidos*100).toFixed(1)+'%</b><small>Acierto 1X2</small></div>'+
+      '<div><b>'+(aciertoOU/medidos*100).toFixed(1)+'%</b><small>Acierto Más/Menos 2.5</small></div>'+
+      '<div><b>'+(aciertoBtts/medidos*100).toFixed(1)+'%</b><small>Acierto Ambos anotan</small></div>'+
+    '</div>'+
+    '<div class="nota">Medido sobre '+medidos+' partidos terminados de esta liga y temporada. '+
+    'Ojo: esto usa las estadísticas de TODA la temporada (incluyendo partidos que ya pasaron), no solo las que había disponibles antes de cada partido — '+
+    'así que el número real prediciendo hacia adelante, en el momento, es más bajo que esto. Sirve para comparar entre mercados y ligas, no como tasa de acierto real a futuro.</div>';
+}
+
+// ---------- registro de picks (localStorage) ----------
+function cargarRegistro(){
+  try{ return JSON.parse(localStorage.getItem('ova_futbol_registro_v1')||'[]'); }
+  catch(e){ return []; }
+}
+function guardarRegistroArr(arr){
+  try{ localStorage.setItem('ova_futbol_registro_v1', JSON.stringify(arr)); }catch(e){}
+}
+function guardarPick(pick){
+  var arr = cargarRegistro();
+  pick.id = Date.now()+'_'+Math.random().toString(36).slice(2);
+  pick.estado = 'pendiente';
+  pick.golesLocalReal = null; pick.golesVisitaReal = null;
+  arr.push(pick);
+  guardarRegistroArr(arr);
+}
+function verificarRegistro(){
+  var arr = cargarRegistro();
+  var cambios = false;
+  arr.forEach(function(pick){
+    if(pick.estado!=='pendiente') return;
+    if(pick.liga !== LIGA_ACTUAL) return;
+    if(!TERMINADOS || !TERMINADOS.length) return;
+    var nl=normalizarNombre(pick.local), nv=normalizarNombre(pick.visita);
+    var match = TERMINADOS.find(function(t){
+      return normalizarNombre(t.local)===nl && normalizarNombre(t.visita)===nv && t.golesLocal!==null;
+    });
+    if(!match) return;
+    pick.golesLocalReal = match.golesLocal; pick.golesVisitaReal = match.golesVisita;
+    if(pick.mercado==='1X2'){
+      var real1x2 = match.golesLocal>match.golesVisita ? pick.local : (match.golesLocal<match.golesVisita ? pick.visita : 'Empate');
+      pick.estado = (pick.seleccion===real1x2) ? 'ganado' : 'perdido';
+      cambios = true;
+    }
+  });
+  if(cambios) guardarRegistroArr(arr);
+  pintarRegistro();
+}
+function pintarRegistro(){
+  var cont = document.getElementById('registro');
+  if(!cont) return;
+  var arr = cargarRegistro().slice().reverse();
+  if(!arr.length){
+    cont.innerHTML = '<div class="estado">Todavía no has guardado ningún pick. Guárdalos con el botón 💾 desde la pestaña Cuotas de cada partido.</div>';
+    return;
+  }
+  var ganados=0, perdidos=0, unidadesNeto=0, pendientes=0;
+  arr.forEach(function(p){
+    if(p.estado==='ganado'){
+      ganados++;
+      var dec = decimalDeAmericana(p.cuota);
+      if(dec) unidadesNeto += (dec-1);
+    } else if(p.estado==='perdido'){ perdidos++; unidadesNeto -= 1; }
+    else pendientes++;
+  });
+  var resumen = '<div class="kpi">'+
+    '<div><b>'+ganados+'-'+perdidos+'</b><small>Récord (G-P)</small></div>'+
+    '<div><b>'+pendientes+'</b><small>Pendientes</small></div>'+
+    '<div><b>'+(unidadesNeto>=0?'+':'')+unidadesNeto.toFixed(2)+'u</b><small>Neto (stake plano 1u)</small></div>'+
+  '</div>';
+  var filas = arr.map(function(p){
+    var color = p.estado==='ganado'?'var(--good)':(p.estado==='perdido'?'var(--bad)':'var(--mut)');
+    return '<div class="linea"><span>'+p.local+' vs '+p.visita+' — '+p.seleccion+' ('+p.cuota+')</span>'+
+      '<b style="color:'+color+'">'+p.estado+'</b></div>';
+  }).join('');
+  cont.innerHTML = resumen + '<div class="lineas" style="margin-top:10px">'+filas+'</div>'+
+    '<div class="nota">No es CLV real — no hay fuente de cuota de cierre conectada. Esto es tu récord de aciertos y ganancia neta a stake plano (1 unidad por pick), y por ahora solo verifica automáticamente picks de mercado 1X2. "Verificar" busca el resultado entre los partidos terminados de la liga que tengas cargada en este momento.</div>';
+}
+
+// ---------- combinada ----------
+function cargarCombinada(){
+  try{ return JSON.parse(localStorage.getItem('ova_futbol_combinada_v1')||'[]'); }
+  catch(e){ return []; }
+}
+function guardarCombinadaArr(arr){
+  try{ localStorage.setItem('ova_futbol_combinada_v1', JSON.stringify(arr)); }catch(e){}
+}
+function agregarACombinada(leg){
+  var arr = cargarCombinada();
+  leg.id = Date.now()+'_'+Math.random().toString(36).slice(2);
+  arr.push(leg);
+  guardarCombinadaArr(arr);
+  pintarCombinada();
+}
+function quitarDeCombinada(id){
+  var arr = cargarCombinada().filter(function(l){ return l.id!==id; });
+  guardarCombinadaArr(arr);
+  pintarCombinada();
+}
+function pintarCombinada(){
+  var cont = document.getElementById('combinada');
+  if(!cont) return;
+  var arr = cargarCombinada();
+  if(!arr.length){
+    cont.innerHTML = '<div class="estado">Agrega selecciones con el botón 🔗 desde la pestaña Cuotas de cualquier partido.</div>';
+    return;
+  }
+  var probCombinada = arr.reduce(function(acc,l){ return acc*l.prob; }, 1);
+  var cuotaJusta = cuotaJustaAmericana(probCombinada);
+  var cuotaJustaTxt = cuotaJusta===null ? '—' : (cuotaJusta>0?'+':'')+cuotaJusta;
+  var filas = arr.map(function(l){
+    return '<div class="linea"><span>'+l.local+' vs '+l.visita+': '+l.seleccion+' ('+(l.prob*100).toFixed(1)+'%)</span>'+
+      '<button data-id="'+l.id+'" class="quitarLeg" style="background:transparent;border:0;color:var(--bad);font-size:16px;cursor:pointer">✕</button></div>';
+  }).join('');
+  cont.innerHTML = '<div class="kpi">'+
+      '<div><b>'+(probCombinada*100).toFixed(1)+'%</b><small>Prob. combinada</small></div>'+
+      '<div><b>'+cuotaJustaTxt+'</b><small>Cuota justa</small></div>'+
+      '<div><b>'+arr.length+'</b><small>Selecciones</small></div>'+
+    '</div>'+
+    '<div class="lineas" style="margin:10px 0">'+filas+'</div>'+
+    '<div class="cuotasbox"><label>Cuota que te ofrece la casa (americana)</label>'+
+    '<input type="number" id="oddCombinada" placeholder="+450">'+
+    '<button id="btnValorCombinada">Ver si hay valor</button>'+
+    '<div id="outValorCombinada" class="veredictoCuota"></div></div>'+
+    '<button id="btnLimpiarCombinada" class="btnAncho sec">Vaciar combinada</button>';
+  cont.querySelectorAll('.quitarLeg').forEach(function(b){
+    b.addEventListener('click', function(){ quitarDeCombinada(b.dataset.id); });
+  });
+  document.getElementById('btnLimpiarCombinada').addEventListener('click', function(){
+    guardarCombinadaArr([]); pintarCombinada();
+  });
+  document.getElementById('btnValorCombinada').addEventListener('click', function(){
+    var odd = document.getElementById('oddCombinada').value;
+    var imp = impProb(odd);
+    var out = document.getElementById('outValorCombinada');
+    if(imp===null){ out.textContent='Mete una cuota válida.'; return; }
+    var diff = (probCombinada - imp)*100;
+    out.innerHTML = 'Modelo: '+(probCombinada*100).toFixed(1)+'% vs cuota implica '+(imp*100).toFixed(1)+'% — '+
+      (diff>=3 ? '<span class="si">hay valor (+'+diff.toFixed(1)+' pts)</span>' : '<span class="no">sin valor ('+diff.toFixed(1)+' pts)</span>');
+  });
+}
+
+// ---------- carga de liga ----------
 function cargarLiga(clave){
   LIGA_ACTUAL = clave;
   CACHE_PERFIL = {};
+  MOSTRANDO_TODOS = false;
   var liga = LIGAS[clave];
   var estado = document.getElementById('estado');
   estado.className = 'estado';
   estado.textContent = 'Bajando '+liga.nombre+' en vivo...';
   document.getElementById('juegos').innerHTML = '';
   document.getElementById('algane').innerHTML = '';
+  document.getElementById('backtestOut').innerHTML = '';
 
   Promise.all([
     fetch(liga.url+'?v='+Date.now()).then(function(r){ return r.text(); }),
     fetch(liga.urlPartidos+'?v='+Date.now()).then(function(r){ return r.text(); })
   ]).then(function(res){
     EQUIPOS = extraerTabla(res[0]);
-    PARTIDOS = extraerPartidos(res[1]);
+    var todos = extraerPartidos(res[1]);
     if(!EQUIPOS.length){ throw new Error('no se pudo leer la tabla de posiciones'); }
+    TERMINADOS = todos.filter(function(p){ return p.terminado && p.golesLocal!==null; });
+    var pendientes = todos.filter(function(p){ return !p.terminado; });
+    pendientes.sort(function(a,b){ return compararFecha(a.fecha,b.fecha) || (a.hora||'').localeCompare(b.hora||''); });
+    PENDIENTES_TODOS = pendientes;
+    PARTIDOS = filtrarJornadaActual(pendientes);
     pintarJuegos(PARTIDOS);
-    pintarAlGane(PARTIDOS);
+    pintarAlGane(PENDIENTES_TODOS.length ? PENDIENTES_TODOS : PARTIDOS);
     var ahora = new Date().toLocaleString('es', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
-    estado.textContent = '✓ '+liga.nombre+' — '+EQUIPOS.length+' equipos, '+PARTIDOS.length+' partidos — en vivo ('+ahora+').';
+    estado.textContent = '✓ '+liga.nombre+' — '+EQUIPOS.length+' equipos, '+PARTIDOS.length+' partidos próxima jornada, '+TERMINADOS.length+' terminados medibles — en vivo ('+ahora+').';
     estado.className = 'estado ok';
   }).catch(function(e){
     estado.textContent = '✗ No se pudo cargar '+liga.nombre+': '+e.message;
@@ -618,14 +972,21 @@ function cargarLiga(clave){
   });
 }
 
-document.querySelectorAll('.tb').forEach(function(btn){
+// ---------- tabs principales ----------
+document.querySelectorAll('header .tabs .tb').forEach(function(btn){
   btn.addEventListener('click', function(){
-    document.querySelectorAll('.tb').forEach(function(b){ b.classList.remove('on'); });
+    document.querySelectorAll('header .tabs .tb').forEach(function(b){ b.classList.remove('on'); });
     btn.classList.add('on');
-    document.querySelectorAll('.vista').forEach(function(v){ v.classList.remove('on'); });
-    document.getElementById('vista'+(btn.dataset.vista==='juegos'?'Juegos':'Algane')).classList.add('on');
+    document.querySelectorAll('main > .vista').forEach(function(v){ v.classList.remove('on'); });
+    var mapa = {juegos:'Juegos', algane:'Algane', backtest:'Backtest', registro:'Registro', combinada:'Combinada'};
+    document.getElementById('vista'+mapa[btn.dataset.vista]).classList.add('on');
+    if(btn.dataset.vista==='registro') pintarRegistro();
+    if(btn.dataset.vista==='combinada') pintarCombinada();
   });
 });
+
+document.getElementById('btnCorrerBacktest').addEventListener('click', correrBacktest);
+document.getElementById('btnVerificarRegistro').addEventListener('click', verificarRegistro);
 
 cargarLiga(document.getElementById('ligaSel').value);
 document.getElementById('ligaSel').addEventListener('change', function(){
