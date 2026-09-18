@@ -404,18 +404,26 @@ function extraerTabla(html){
 }
 
 // ---------- partidos (proximos Y terminados) ----------
-function buscarFechaCercana(nodo){
-  // Plan B: si la fecha no viene dentro del texto del propio partido, es porque
-  // el sitio la pone en una fila aparte arriba del bloque de partidos de ese dia.
-  // Subimos a la fila de tabla mas cercana y vamos mirando filas anteriores
-  // hasta toparnos con una que sea solo una fecha.
-  var fila = (nodo && nodo.closest) ? nodo.closest('tr') : null;
-  var intentos = 0;
-  while(fila && intentos < 10){
-    var m = fila.textContent.match(/\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b/);
-    if(m) return m[0];
-    fila = fila.previousElementSibling;
-    intentos++;
+function buscarFechaCercana(cont){
+  // Plan B: la fecha viene en su propia fila arriba del bloque de partidos de
+  // ese dia (confirmado viendo el sitio real: "18.09.2026 21:00" en una linea,
+  // el partido en la siguiente). No asumimos que sea una tabla <tr> -- puede ser
+  // un <div> o cualquier otra cosa -- asi que caminamos hacia atras por hermanos
+  // anteriores, subiendo de nivel si hace falta, y paramos si nos topamos con
+  // OTRO partido (2 escudos) antes de hallar fecha, para no robarle la fecha
+  // equivocada a otro juego.
+  var nodo = cont, niveles = 0;
+  while(nodo && niveles < 4){
+    var hermano = nodo.previousElementSibling, intentos = 0;
+    while(hermano && intentos < 8){
+      var m = hermano.textContent.match(/\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b/);
+      if(m) return m[0];
+      if(hermano.querySelectorAll && hermano.querySelectorAll('img[src*="emblem"]').length >= 2) break;
+      hermano = hermano.previousElementSibling;
+      intentos++;
+    }
+    nodo = nodo.parentElement;
+    niveles++;
   }
   return '';
 }
@@ -443,7 +451,7 @@ function extraerPartidos(html){
     var horaM = texto.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
     var hora = horaM ? horaM[0] : '';
     var fechaM = texto.match(/\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b/);
-    var fecha = fechaM ? fechaM[0] : buscarFechaCercana(a);
+    var fecha = fechaM ? fechaM[0] : buscarFechaCercana(cont);
     var golesLocal=null, golesVisita=null;
     if(esFinal){
       var scoreM = texto.match(/\b(\d{1,2})\s*:\s*(\d{1,2})\b/);
