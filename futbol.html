@@ -410,14 +410,24 @@ function extraerPartidos(html){
 
 function filtrarJornadaActual(pendientes){
   if(!pendientes.length) return pendientes;
-  var minT = parseFecha(pendientes[0].fecha);
-  if(minT===null) return pendientes.slice(0,15);
-  var ventana = minT + 4*24*60*60*1000;
-  var actuales = pendientes.filter(function(p){
-    var t = parseFecha(p.fecha);
-    return t!==null && t<=ventana;
-  });
-  return actuales.length ? actuales : pendientes.slice(0,15);
+  var conFecha = pendientes.filter(function(p){ return parseFecha(p.fecha)!==null; });
+  if(!conFecha.length) return pendientes.slice(0,15);
+  // Agrupa por huecos entre fechas en vez de una ventana fija: mientras el
+  // siguiente partido este a 3 dias o menos del anterior, es la misma jornada;
+  // un salto mayor (la proxima fecha de juegos) corta el grupo ahi.
+  var grupo = [];
+  var fechaAnterior = null;
+  for(var i=0;i<pendientes.length;i++){
+    var t = parseFecha(pendientes[i].fecha);
+    if(t===null) continue;
+    if(fechaAnterior===null || (t-fechaAnterior)/(24*60*60*1000) <= 3){
+      grupo.push(pendientes[i]);
+      fechaAnterior = t;
+    } else {
+      break;
+    }
+  }
+  return grupo.length ? grupo : pendientes.slice(0,15);
 }
 
 // ---------- perfil de un equipo (estadio, goleador, noticias) ----------
