@@ -156,6 +156,7 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 .btnAncho{width:100%;background:var(--acc);color:var(--accTx);border:0;border-radius:10px;
  padding:12px;font-weight:700;margin:12px 0;cursor:pointer}
 .btnAncho.sec{background:var(--bg2);color:var(--mut);border:1px solid var(--line2)}
+.filaCuota .btnChico{width:auto;padding:7px 10px;margin-top:0;font-size:12px;font-weight:400;background:var(--bg3);color:var(--txt)}
 </style>
 </head>
 <body>
@@ -267,6 +268,18 @@ function cuotaJustaAmericana(prob){
   if(!prob || prob<=0 || prob>=1) return null;
   if(prob>=0.5) return Math.round(-(prob/(1-prob))*100);
   return Math.round(((1-prob)/prob)*100);
+}
+// La cuota americana real nunca cae entre -99 y 99 (el minimo siempre es +-100).
+// Si el numero que metio el usuario esta en ese rango, lo tratamos como centavos
+// de Kalshi (1-99, o sea probabilidad directa) y lo convertimos solos.
+function normalizarEntradaCuota(valor){
+  if(valor===''||valor===null||valor===undefined) return null;
+  var n = +valor;
+  if(isNaN(n) || n===0) return null;
+  if(Math.abs(n) < 100){
+    return cuotaJustaAmericana(Math.abs(n)/100);
+  }
+  return n;
 }
 
 // ---------- Kalshi: buscar el evento del partido y sacar cuotas ----------
@@ -623,9 +636,9 @@ function pintarGameBody(bodyEl, p, eL, eV){
         '<button id="'+id+'btnKalshi" class="btnChico" style="width:100%;margin-bottom:10px;padding:10px">🦈 Traer cuota de Kalshi</button>' +
         '<div id="'+id+'kalshiOut" class="nota" style="margin:0 0 10px"></div>' +
         '<div class="fila">' +
-          '<div style="flex:1"><label>Cuota '+p.local+'</label><input type="number" id="'+id+'oddL" placeholder="-150"></div>' +
-          '<div style="flex:1"><label>Cuota empate</label><input type="number" id="'+id+'oddD" placeholder="+230"></div>' +
-          '<div style="flex:1"><label>Cuota '+p.visita+'</label><input type="number" id="'+id+'oddV" placeholder="+400"></div>' +
+          '<div style="flex:1"><label>Cuota '+p.local+'</label><input type="number" id="'+id+'oddL" placeholder="-150 ó 37¢"></div>' +
+          '<div style="flex:1"><label>Cuota empate</label><input type="number" id="'+id+'oddD" placeholder="+230 ó 28¢"></div>' +
+          '<div style="flex:1"><label>Cuota '+p.visita+'</label><input type="number" id="'+id+'oddV" placeholder="+400 ó 65¢"></div>' +
         '</div>' +
         '<button id="'+id+'btn">Calcular valor</button>' +
         '<div class="veredictoCuota" id="'+id+'verC"></div>' +
@@ -689,9 +702,9 @@ function pintarGameBody(bodyEl, p, eL, eV){
   });
 
   document.getElementById(id+'btn').addEventListener('click', function(){
-    var oL=document.getElementById(id+'oddL').value;
-    var oD=document.getElementById(id+'oddD').value;
-    var oV=document.getElementById(id+'oddV').value;
+    var oL=normalizarEntradaCuota(document.getElementById(id+'oddL').value);
+    var oD=normalizarEntradaCuota(document.getElementById(id+'oddD').value);
+    var oV=normalizarEntradaCuota(document.getElementById(id+'oddV').value);
     var out = document.getElementById(id+'verC');
     var filas = [
       {mercado:'1X2', sel:p.local, odd:oL, modelo:base.r.pL},
@@ -700,6 +713,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
     ];
     var html = '';
     filas.forEach(function(f){
+      if(f.odd===null) return;
       var imp = impProb(f.odd);
       if(imp===null){ return; }
       var diff = (f.modelo - imp)*100;
