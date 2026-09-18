@@ -17,26 +17,35 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);
- padding-bottom:40px}
-header{padding:16px 14px 8px;position:sticky;top:0;background:var(--bg);z-index:9;
+ padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+header{padding:16px 14px 12px;position:sticky;top:0;background:var(--bg);z-index:9;
  border-bottom:1px solid var(--line)}
-header .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+header .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 header h1{font-size:20px;margin:0;font-weight:800;letter-spacing:2px}
+.ver{font-size:10px;color:var(--mut);font-weight:400;margin-left:2px}
 select#ligaSel{background:var(--bg2);border:1px solid var(--line2);color:var(--txt);
  border-radius:20px;padding:7px 12px;font-size:12.5px;flex:1;min-width:130px;-webkit-appearance:none}
+/* barra inferior fija, como la navegacion nativa de iOS */
+.tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--bg1);
+ border-top:1px solid var(--line2);z-index:20;padding-bottom:env(safe-area-inset-bottom)}
+.tbar-btn{flex:1;background:transparent;border:0;color:var(--mut);padding:9px 2px 8px;
+ display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.tbar-btn .ic{font-size:19px;line-height:1;filter:grayscale(1);opacity:.75}
+.tbar-btn .lb{font-size:10px;font-weight:700}
+.tbar-btn.on{color:var(--hot)}
+.tbar-btn.on .ic{filter:none;opacity:1}
+/* pestañas dentro de una vista o de un partido (reutilizadas en varios lados) */
 .tabs{display:flex;gap:6px}
 .tb{flex:1;background:var(--bg2);color:var(--mut);border:0;border-radius:9px;padding:9px 8px;
  font-size:12.5px;font-weight:700;cursor:pointer}
 .tb.on{background:var(--acc);color:var(--accTx)}
-header .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-header .tabs::-webkit-scrollbar{display:none}
-header .tabs .tb{flex:0 0 auto;padding:9px 13px;white-space:nowrap}
 main{padding:0 14px}
 .vista{display:none}
 .vista.on{display:block}
 .estado{font-size:12.5px;color:var(--mut);margin:12px 2px}
 .estado.ok{color:var(--good)}
 .estado.bad{color:var(--bad)}
+.kpi b,.marcadores b,.linea b,.bar span,.fila-rank .pct,.egol b{font-variant-numeric:tabular-nums}
 
 .game{background:var(--bg1);border:1px solid var(--line2);border-radius:var(--r2);
  margin:12px 0;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.4),0 20px 40px -18px rgba(0,0,0,.7)}
@@ -120,8 +129,6 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 .cuotasbox input{flex:1;background:var(--bg1);border:1px solid var(--line2);color:var(--txt);
  border-radius:8px;padding:9px;font-size:13px;text-align:center}
 .cuotasbox label{font-size:10.5px;color:var(--mut);display:block;margin-bottom:3px}
-.cuotasbox button{width:100%;background:var(--acc);color:var(--accTx);border:0;border-radius:8px;
- padding:10px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px}
 .veredictoCuota{margin-top:10px;font-size:12.5px}
 .veredictoCuota .si{color:var(--good);font-weight:700}
 .veredictoCuota .no{color:var(--mut)}
@@ -162,7 +169,7 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL <span style="font-size:10px;color:var(--mut);font-weight:400">v2</span></h1>
+  <h1>⚽ FÚTBOL <span class="ver">v3</span></h1>
   <select id="ligaSel">
    <option value="pl">Premier League</option>
    <option value="laliga">La Liga</option>
@@ -171,13 +178,6 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
    <option value="ligue1">Ligue 1</option>
    <option value="cl">Champions League</option>
   </select>
- </div>
- <div class="tabs">
-  <button class="tb on" data-vista="juegos">Juegos</button>
-  <button class="tb" data-vista="algane">Al gane</button>
-  <button class="tb" data-vista="backtest">Backtest</button>
-  <button class="tb" data-vista="registro">Registro</button>
-  <button class="tb" data-vista="combinada">Combinada</button>
  </div>
 </header>
 <main>
@@ -206,6 +206,15 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
   <div id="combinada"></div>
  </div>
 </main>
+
+<nav class="tabbar">
+ <button class="tbar-btn on" data-vista="juegos"><span class="ic">⚽</span><span class="lb">Juegos</span></button>
+ <button class="tbar-btn" data-vista="algane"><span class="ic">🏆</span><span class="lb">Al gane</span></button>
+ <button class="tbar-btn" data-vista="backtest"><span class="ic">📈</span><span class="lb">Backtest</span></button>
+ <button class="tbar-btn" data-vista="registro"><span class="ic">📒</span><span class="lb">Registro</span></button>
+ <button class="tbar-btn" data-vista="combinada"><span class="ic">🎟️</span><span class="lb">Combina</span></button>
+</nav>
+
 
 <script>
 var EQUIPOS = null;
@@ -633,14 +642,14 @@ function pintarGameBody(bodyEl, p, eL, eV){
     '<div class="pane" id="'+id+'cuo">' +
       '<h3>¿Tienes una cuota? Mira si hay valor</h3>' +
       '<div class="cuotasbox">' +
-        '<button id="'+id+'btnKalshi" class="btnChico" style="width:100%;margin-bottom:10px;padding:10px">🦈 Traer cuota de Kalshi</button>' +
+        '<button id="'+id+'btnKalshi" class="btnAncho sec" style="margin:0 0 10px">🦈 Traer cuota de Kalshi</button>' +
         '<div id="'+id+'kalshiOut" class="nota" style="margin:0 0 10px"></div>' +
         '<div class="fila">' +
           '<div style="flex:1"><label>Cuota '+p.local+'</label><input type="number" id="'+id+'oddL" placeholder="-150 ó 37¢"></div>' +
           '<div style="flex:1"><label>Cuota empate</label><input type="number" id="'+id+'oddD" placeholder="+230 ó 28¢"></div>' +
           '<div style="flex:1"><label>Cuota '+p.visita+'</label><input type="number" id="'+id+'oddV" placeholder="+400 ó 65¢"></div>' +
         '</div>' +
-        '<button id="'+id+'btn">Calcular valor</button>' +
+        '<button id="'+id+'btn" class="btnAncho">Calcular valor</button>' +
         '<div class="veredictoCuota" id="'+id+'verC"></div>' +
       '</div>' +
     '</div>' +
@@ -1014,7 +1023,7 @@ function pintarCombinada(){
     '<div class="lineas" style="margin:10px 0">'+filas+'</div>'+
     '<div class="cuotasbox"><label>Cuota que te ofrece la casa (americana)</label>'+
     '<input type="number" id="oddCombinada" placeholder="+450">'+
-    '<button id="btnValorCombinada">Ver si hay valor</button>'+
+    '<button id="btnValorCombinada" class="btnAncho">Ver si hay valor</button>'+
     '<div id="outValorCombinada" class="veredictoCuota"></div></div>'+
     '<button id="btnLimpiarCombinada" class="btnAncho sec">Vaciar combinada</button>';
   cont.querySelectorAll('.quitarLeg').forEach(function(b){
@@ -1071,9 +1080,9 @@ function cargarLiga(clave){
 }
 
 // ---------- tabs principales ----------
-document.querySelectorAll('header .tabs .tb').forEach(function(btn){
+document.querySelectorAll('.tabbar .tbar-btn').forEach(function(btn){
   btn.addEventListener('click', function(){
-    document.querySelectorAll('header .tabs .tb').forEach(function(b){ b.classList.remove('on'); });
+    document.querySelectorAll('.tabbar .tbar-btn').forEach(function(b){ b.classList.remove('on'); });
     btn.classList.add('on');
     document.querySelectorAll('main > .vista').forEach(function(v){ v.classList.remove('on'); });
     var mapa = {juegos:'Juegos', algane:'Algane', backtest:'Backtest', registro:'Registro', combinada:'Combinada'};
