@@ -374,6 +374,7 @@ function extraerPerfil(html){
     }
     t = t.trim();
     t = t.replace(/([a-zà-ÿ?!.])(\d{1,2}\.\d{2}\.?\s*\d{0,2}:?\d{0,2})$/i, '$1 · $2');
+    if(t.length > 120){ t = t.slice(0,117).replace(/\s+\S*$/,'') + '…'; }
     if(vistosN[t]) return;
     vistosN[t]=true;
     perfil.noticias.push(t);
@@ -546,7 +547,7 @@ function pintarForma(elId, nombreEquipo){
   if(!el) return;
   var forma = calcularForma(nombreEquipo);
   if(!forma.length){
-    el.innerHTML = '<span class="nota" style="margin:0">Sin partidos terminados medidos todavía esta temporada.</span>';
+    el.innerHTML = '<div class="nota" style="margin:0">Sin partidos terminados medidos todavía esta temporada.</div>';
     return;
   }
   el.innerHTML = forma.map(function(r){ return '<span class="'+r+'">'+r+'</span>'; }).join('');
