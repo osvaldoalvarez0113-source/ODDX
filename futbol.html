@@ -155,6 +155,11 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 .fila-rank .nom{flex:1;font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fila-rank .pct{font-family:var(--cond);font-weight:800;font-size:15px;color:var(--hot)}
 
+/* encabezados de dia (Hoy / Mañana / dia fecha) */
+.diaHead{font-size:11.5px;color:var(--mut);font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+ margin:18px 2px 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.diaHead:first-child{margin-top:4px}
+
 /* botones chicos de guardar/combinar */
 .filaCuota{display:flex;justify-content:space-between;align-items:center;margin:6px 0;gap:8px}
 .filaCuota .txt{flex:1;min-width:0}
@@ -171,12 +176,24 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
  <div class="top">
   <h1>⚽ FÚTBOL <span class="ver">v3</span></h1>
   <select id="ligaSel">
-   <option value="pl">Premier League</option>
-   <option value="laliga">La Liga</option>
-   <option value="seriea">Serie A</option>
-   <option value="bundesliga">Bundesliga</option>
-   <option value="ligue1">Ligue 1</option>
-   <option value="cl">Champions League</option>
+   <optgroup label="Ligas">
+    <option value="pl">Premier League</option>
+    <option value="laliga">La Liga</option>
+    <option value="seriea">Serie A</option>
+    <option value="bundesliga">Bundesliga</option>
+    <option value="ligue1">Ligue 1</option>
+   </optgroup>
+   <optgroup label="Copas de Europa">
+    <option value="cl">Champions League</option>
+    <option value="europa">Europa League</option>
+    <option value="conference">Conference League</option>
+   </optgroup>
+   <optgroup label="Copas domésticas (sin modelo)">
+    <option value="facup">FA Cup</option>
+    <option value="dfbpokal">DFB-Pokal</option>
+    <option value="copaitalia">Coppa Italia</option>
+    <option value="coupefrance">Coupe de France</option>
+   </optgroup>
   </select>
  </div>
 </header>
@@ -223,6 +240,7 @@ var PENDIENTES_TODOS = [];
 var TERMINADOS = [];
 var MOSTRANDO_TODOS = false;
 var LIGA_ACTUAL = null;
+var LIGA_ES_COPA = false;
 var CACHE_PERFIL = {};
 
 // ---------- Kalshi (cuotas via Worker de Cloudflare, para esquivar CORS) ----------
@@ -246,7 +264,16 @@ var LIGAS = {
   seriea: {nombre:'Serie A', url:'https://www.worldfootball.net/competition/co111/italy-serie-a/team-statistics-overview/', urlPartidos:'https://www.worldfootball.net/competition/co111/italy-serie-a/results-and-standings/'},
   bundesliga: {nombre:'Bundesliga', url:'https://www.worldfootball.net/competition/co12/germany-bundesliga/team-statistics-overview/', urlPartidos:'https://www.worldfootball.net/competition/co12/germany-bundesliga/results-and-standings/'},
   ligue1: {nombre:'Ligue 1', url:'https://www.worldfootball.net/competition/co71/france-ligue-1/team-statistics-overview/', urlPartidos:'https://www.worldfootball.net/competition/co71/france-ligue-1/results-and-standings/'},
-  cl: {nombre:'Champions League', url:'https://www.worldfootball.net/competition/co19/uefa-champions-league/results-and-standings/', urlPartidos:'https://www.worldfootball.net/competition/co19/uefa-champions-league/results-and-standings/'}
+  cl: {nombre:'Champions League', url:'https://www.worldfootball.net/competition/co19/uefa-champions-league/results-and-standings/', urlPartidos:'https://www.worldfootball.net/competition/co19/uefa-champions-league/results-and-standings/'},
+  europa: {nombre:'Europa League', url:'https://www.worldfootball.net/competition/co132/uefa-europa-league/results-and-standings/', urlPartidos:'https://www.worldfootball.net/competition/co132/uefa-europa-league/results-and-standings/'},
+  conference: {nombre:'Conference League', url:'https://www.worldfootball.net/competition/co6395/results-and-standings/', urlPartidos:'https://www.worldfootball.net/competition/co6395/results-and-standings/'},
+  // Copas de eliminacion directa: no existe tabla de temporada para estas, asi que
+  // van marcadas esCopa:true -- la app no intenta correr el modelo Poisson en ellas,
+  // solo muestra partidos, forma y cara a cara. Solo se cargan resultados/partidos (urlPartidos).
+  facup: {nombre:'FA Cup', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co41/results-and-standings/'},
+  dfbpokal: {nombre:'DFB-Pokal', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co33/results-and-standings/'},
+  copaitalia: {nombre:'Coppa Italia', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co27/results-and-standings/'},
+  coupefrance: {nombre:'Coupe de France', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co29/results-and-standings/'}
 };
 
 // ---------- utilidades ----------
@@ -799,27 +826,69 @@ function pintarGameBody(bodyEl, p, eL, eV){
   });
 }
 
+var MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+var DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+function etiquetaFecha(fechaStr){
+  var t = parseFecha(fechaStr);
+  if(t===null) return 'Fecha por confirmar';
+  var hoy = new Date();
+  var hoyMid = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime();
+  var diffDias = Math.round((t - hoyMid)/(24*60*60*1000));
+  if(diffDias===0) return 'Hoy';
+  if(diffDias===1) return 'Mañana';
+  if(diffDias===-1) return 'Ayer';
+  var d = new Date(t);
+  return DIAS[d.getDay()] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()];
+}
+
+function pintarGameBodyCopa(bodyEl, p){
+  var id = 'c'+Math.random().toString(36).slice(2);
+  bodyEl.innerHTML =
+    '<div class="aviso">🏆 Copa de eliminación directa — no existe tabla de temporada para este tipo de competencia, así que aquí no se corre el modelo Poisson ni se compara contra cuotas. Solo forma reciente y cara a cara dentro de esta copa.</div>' +
+    '<h3>Forma reciente</h3>' +
+    '<div class="observ"><b>'+p.local+'</b></div>' +
+    '<div class="forma" id="'+id+'formaL"></div>' +
+    '<div class="observ"><b>'+p.visita+'</b></div>' +
+    '<div class="forma" id="'+id+'formaV"></div>' +
+    '<h3>Cara a cara en esta copa</h3><div id="'+id+'h2h" class="nota"></div>';
+  pintarForma(id+'formaL', p.local);
+  pintarForma(id+'formaV', p.visita);
+  var h2h = calcularH2H(p.local, p.visita);
+  var h2hEl = document.getElementById(id+'h2h');
+  if(h2hEl){
+    h2hEl.textContent = h2h ?
+      ('Esta edición: '+h2h.juegos+' partido(s) — '+p.local+' '+h2h.vL+' · Empates '+h2h.e+' · '+p.visita+' '+h2h.vV) :
+      'No se han enfrentado todavía en esta edición de la copa.';
+  }
+}
+
 function pintarJuegos(partidos){
   var cont = document.getElementById('juegos');
   if(!partidos.length){
     cont.innerHTML = '<div class="estado bad">No se encontraron partidos por jugar en esta vista.</div>';
     return;
   }
-  cont.innerHTML = partidos.map(function(p, idx){
-    var horaTxt = p.fecha ? (p.fecha + (p.hora?' · '+p.hora:'')) : p.hora;
-    return '' +
+  var html = '';
+  var fechaPrev = null;
+  partidos.forEach(function(p, idx){
+    if(p.fecha !== fechaPrev){
+      html += '<div class="diaHead">'+etiquetaFecha(p.fecha)+'</div>';
+      fechaPrev = p.fecha;
+    }
+    html += '' +
     '<div class="game" data-idx="'+idx+'">'+
       '<div class="head">'+
         '<div class="crestpair">'+
           '<div class="eq"><img src="'+p.escudoLocal+'"><span>'+p.local+'</span></div>'+
           '<div class="eq"><img src="'+p.escudoVisita+'"><span>'+p.visita+'</span></div>'+
         '</div>'+
-        (horaTxt?'<div class="hora">'+horaTxt+'</div>':'')+
+        (p.hora?'<div class="hora">'+p.hora+'</div>':'')+
         '<div class="chev">▾</div>'+
       '</div>'+
       '<div class="body"></div>'+
     '</div>';
-  }).join('');
+  });
+  cont.innerHTML = html;
 
   cont.querySelectorAll('.game').forEach(function(gameEl, idx){
     gameEl.querySelector('.head').addEventListener('click', function(){
@@ -830,14 +899,18 @@ function pintarJuegos(partidos){
       var body = gameEl.querySelector('.body');
       if(!body.dataset.pintado){
         var p = partidos[idx];
-        var mL = buscarEquipo(p.local), mV = buscarEquipo(p.visita);
-        if(!mL || !mV){
-          body.innerHTML = '<div class="nota">No se pudieron cruzar los nombres de este partido con la tabla de posiciones.</div>';
+        if(LIGA_ES_COPA){
+          pintarGameBodyCopa(body, p);
         } else {
-          pintarGameBody(body, p, mL.eq, mV.eq);
-          if(!mL.exacto || !mV.exacto){
-            body.insertAdjacentHTML('afterbegin',
-              '<div class="aviso">⚠️ El nombre de al menos un equipo no calzó exacto con la tabla de posiciones — revisa que la info sea del equipo correcto.</div>');
+          var mL = buscarEquipo(p.local), mV = buscarEquipo(p.visita);
+          if(!mL || !mV){
+            body.innerHTML = '<div class="nota">No se pudieron cruzar los nombres de este partido con la tabla de posiciones.</div>';
+          } else {
+            pintarGameBody(body, p, mL.eq, mV.eq);
+            if(!mL.exacto || !mV.exacto){
+              body.insertAdjacentHTML('afterbegin',
+                '<div class="aviso">⚠️ El nombre de al menos un equipo no calzó exacto con la tabla de posiciones — revisa que la info sea del equipo correcto.</div>');
+            }
           }
         }
         body.dataset.pintado = '1';
@@ -884,6 +957,10 @@ function pintarAlGane(partidos){
 // ---------- backtest ----------
 function correrBacktest(){
   var out = document.getElementById('backtestOut');
+  if(LIGA_ES_COPA){
+    out.innerHTML = '<div class="estado bad">El backtest no aplica a copas de eliminación directa — no hay tabla de temporada para correr el modelo.</div>';
+    return;
+  }
   if(!EQUIPOS || !TERMINADOS || TERMINADOS.length < 10){
     out.innerHTML = '<div class="estado bad">No hay suficientes partidos terminados en esta liga todavía para medir (mínimo 10). Espera a que avance la temporada.</div>';
     return;
@@ -1059,12 +1136,37 @@ function cargarLiga(clave){
   CACHE_PERFIL = {};
   MOSTRANDO_TODOS = false;
   var liga = LIGAS[clave];
+  LIGA_ES_COPA = !!liga.esCopa;
   var estado = document.getElementById('estado');
   estado.className = 'estado';
   estado.textContent = 'Bajando '+liga.nombre+' en vivo...';
   document.getElementById('juegos').innerHTML = '';
   document.getElementById('algane').innerHTML = '';
   document.getElementById('backtestOut').innerHTML = '';
+  EQUIPOS = [];
+
+  if(LIGA_ES_COPA){
+    fetch(liga.urlPartidos+'?v='+Date.now()).then(function(r){ return r.text(); })
+      .then(function(htmlPartidos){
+        var todos = extraerPartidos(htmlPartidos);
+        if(!todos.length){ throw new Error('no se encontraron partidos'); }
+        TERMINADOS = todos.filter(function(p){ return p.terminado && p.golesLocal!==null; });
+        var pendientes = todos.filter(function(p){ return !p.terminado; });
+        pendientes.sort(function(a,b){ return compararFecha(a.fecha,b.fecha) || (a.hora||'').localeCompare(b.hora||''); });
+        PENDIENTES_TODOS = pendientes;
+        PARTIDOS = filtrarJornadaActual(pendientes);
+        pintarJuegos(PARTIDOS);
+        document.getElementById('algane').innerHTML =
+          '<div class="estado">"Al gane" no aplica a copas de eliminación directa — no hay modelo de probabilidad sin tabla de temporada.</div>';
+        var ahora = new Date().toLocaleString('es', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
+        estado.textContent = '✓ '+liga.nombre+' — '+PARTIDOS.length+' partidos próxima ronda, '+TERMINADOS.length+' terminados — en vivo ('+ahora+'). Copa: sin modelo.';
+        estado.className = 'estado ok';
+      }).catch(function(e){
+        estado.textContent = '✗ No se pudo cargar '+liga.nombre+': '+e.message;
+        estado.className = 'estado bad';
+      });
+    return;
+  }
 
   Promise.all([
     fetch(liga.url+'?v='+Date.now()).then(function(r){ return r.text(); }),
