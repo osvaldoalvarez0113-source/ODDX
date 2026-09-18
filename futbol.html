@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fútbol — OVA</title>
+<style>
+:root{
+ --bg:#070B12;--bg1:#0D1420;--bg2:#131D2C;--bg3:#1B2838;
+ --line:#1C2838;--line2:#2A3E56;
+ --txt:#F1F5FB;--mut:#9DB2C8;--mut2:#6D8299;
+ --acc:#3B82F6;--acc2:#60A5FA;--accTx:#020509;
+ --hot:#FBBF24;--hotTx:#1A1305;
+ --good:#34D399;--bad:#F87171;
+ --r:10px;--r2:18px;
+ --cond:system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);
+ padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+header{padding:16px 14px 12px;position:sticky;top:0;background:var(--bg);z-index:9;
+ border-bottom:1px solid var(--line)}
+header .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+header h1{font-size:20px;margin:0;font-weight:800;letter-spacing:2px}
+.ver{font-size:10px;color:var(--mut);font-weight:400;margin-left:2px}
+select#ligaSel{background:var(--bg2);border:1px solid var(--line2);color:var(--txt);
+ border-radius:20px;padding:7px 12px;font-size:12.5px;flex:1;min-width:130px;-webkit-appearance:none}
+/* barra inferior fija, como la navegacion nativa de iOS */
+.tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--bg1);
+ border-top:1px solid var(--line2);z-index:20;padding-bottom:env(safe-area-inset-bottom)}
+.tbar-btn{flex:1;background:transparent;border:0;color:var(--mut);padding:9px 2px 8px;
+ display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.tbar-btn .ic{font-size:19px;line-height:1;filter:grayscale(1);opacity:.75}
+.tbar-btn .lb{font-size:10px;font-weight:700}
+.tbar-btn.on{color:var(--hot)}
+.tbar-btn.on .ic{filter:none;opacity:1}
+/* pestañas dentro de una vista o de un partido (reutilizadas en varios lados) */
+.tabs{display:flex;gap:6px}
+.tb{flex:1;background:var(--bg2);color:var(--mut);border:0;border-radius:9px;padding:9px 8px;
+ font-size:12.5px;font-weight:700;cursor:pointer}
+.tb.on{background:var(--acc);color:var(--accTx)}
+main{padding:0 14px}
+.vista{display:none}
+.vista.on{display:block}
+.estado{font-size:12.5px;color:var(--mut);margin:12px 2px}
+.estado.ok{color:var(--good)}
+.estado.bad{color:var(--bad)}
+.kpi b,.marcadores b,.linea b,.bar span,.fila-rank .pct,.egol b{font-variant-numeric:tabular-nums}
+
+.game{background:var(--bg1);border:1px solid var(--line2);border-radius:var(--r2);
+ margin:12px 0;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.4),0 20px 40px -18px rgba(0,0,0,.7)}
+.head{display:flex;align-items:center;gap:10px;padding:14px;cursor:pointer}
+.crestpair{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.eq{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;min-width:0}
+.eq img{width:24px;height:24px;object-fit:contain;background:#fff;border-radius:5px;flex:0 0 auto}
+.eq span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hora{font-size:11.5px;color:var(--mut);background:var(--bg2);border:1px solid var(--line2);
+ border-radius:20px;padding:5px 10px;flex:0 0 auto;white-space:nowrap;text-align:right}
+.chev{color:var(--mut2);font-size:18px;flex:0 0 auto;transition:transform .2s}
+.game.open .chev{transform:rotate(180deg)}
+.body{display:none;padding:0 14px 16px}
+.game.open .body{display:block}
+
+.egol{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin:4px 0}
+.egol b{color:var(--txt)}
+.bar{height:38px;display:flex;border-radius:12px;overflow:hidden;background:var(--bg2);
+ margin:12px 0;border:1px solid var(--line2)}
+.bar span{display:flex;align-items:center;justify-content:center;font-family:var(--cond);
+ font-size:13.5px;font-weight:800;transition:flex-grow .5s}
+.bar .h{background:linear-gradient(90deg,#D89626,var(--hot));color:var(--hotTx)}
+.bar .d{background:var(--bg3);color:var(--mut)}
+.bar .a{background:linear-gradient(90deg,var(--acc),var(--acc2));color:#fff}
+
+.pick{border-left:3px solid var(--good);background:linear-gradient(135deg,rgba(52,211,153,.16),rgba(52,211,153,.04));
+ border-radius:0 var(--r) var(--r) 0;padding:11px 13px;margin:10px 0;font-size:13px}
+.pick b{display:block;color:var(--good);font-size:14.5px;margin-bottom:2px}
+.pick.no{border-left-color:var(--line2);background:var(--bg2)}
+.pick.no b{color:var(--mut)}
+
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.kpi div{background:var(--bg2);border-radius:var(--r);padding:10px;text-align:center}
+.kpi b{display:block;font-size:17px;font-weight:800;font-family:var(--cond)}
+.kpi small{color:var(--mut);font-size:10.5px}
+
+h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-transform:uppercase;
+ letter-spacing:.5px}
+.marcadores{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.marcadores div{background:var(--bg2);border-radius:var(--r);padding:8px 4px;text-align:center}
+.marcadores b{display:block;font-family:var(--cond);font-size:15px;font-weight:800}
+.marcadores small{color:var(--mut);font-size:10px}
+.lineas{display:flex;flex-direction:column;gap:6px}
+.linea{display:flex;justify-content:space-between;align-items:center;background:var(--bg2);
+ border-radius:var(--r);padding:8px 11px;font-size:12.5px}
+.linea b{font-family:var(--cond)}
+.nota{font-size:10.5px;color:var(--mut2);line-height:1.5;margin-top:12px}
+
+/* tabla de posiciones mini */
+.tabpos{width:100%;border-collapse:collapse;font-size:11.5px}
+.tabpos td{padding:6px 4px;border-bottom:1px solid var(--line)}
+.tabpos tr.destacada td{color:var(--hot);font-weight:700}
+.tabpos .num{color:var(--mut);width:20px}
+
+/* estadio */
+.estadio{display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:var(--r);
+ padding:10px 12px;font-size:12.5px;margin:6px 0}
+.estadio b{color:var(--txt)}
+
+/* forma (ultimos partidos) */
+.forma{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 12px}
+.forma span{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+ font-size:10.5px;font-weight:800;color:#fff}
+.forma .V{background:var(--good)}
+.forma .E{background:var(--mut2)}
+.forma .D{background:var(--bad)}
+
+/* h2h */
+.h2h{display:flex;justify-content:space-around;text-align:center;background:var(--bg2);border-radius:var(--r);
+ padding:10px;margin:6px 0}
+.h2h div b{display:block;font-size:18px;font-weight:800}
+.h2h div small{color:var(--mut);font-size:10px}
+
+/* noticias */
+.noticia{font-size:12px;color:var(--mut);padding:7px 0;border-bottom:1px solid var(--line)}
+.noticia:last-child{border-bottom:0}
+
+/* cuotas manuales */
+.cuotasbox{background:var(--bg2);border-radius:var(--r);padding:12px;margin:6px 0}
+.cuotasbox .fila{display:flex;gap:8px;margin-bottom:8px}
+.cuotasbox input{flex:1;background:var(--bg1);border:1px solid var(--line2);color:var(--txt);
+ border-radius:8px;padding:9px;font-size:13px;text-align:center}
+.cuotasbox label{font-size:10.5px;color:var(--mut);display:block;margin-bottom:3px}
+.veredictoCuota{margin-top:10px;font-size:12.5px}
+.veredictoCuota .si{color:var(--good);font-weight:700}
+.veredictoCuota .no{color:var(--mut)}
+
+.observ{background:var(--bg2);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--mut);
+ margin:5px 0}
+.observ b{color:var(--txt)}
+.aviso{border-left:3px solid var(--hot);background:rgba(251,191,36,.08);border-radius:0 var(--r) var(--r) 0;
+ padding:9px 12px;font-size:11.5px;color:var(--hot);margin:0 0 10px}
+
+/* pestañas dentro de cada juego */
+.body .tabs{display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding-bottom:2px}
+.body .tb{flex:0 0 auto;background:var(--bg2);color:var(--mut);border:0;border-radius:9px;
+ padding:8px 12px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}
+.body .tb.on{background:var(--acc);color:var(--accTx)}
+.body .pane{display:none}
+.body .pane.on{display:block}
+
+/* ranking al gane */
+.fila-rank{display:flex;align-items:center;gap:10px;background:var(--bg1);border:1px solid var(--line2);
+ border-radius:var(--r);padding:11px;margin:8px 0}
+.fila-rank .pos{color:var(--mut);font-size:12px;width:18px;flex:0 0 auto}
+.fila-rank img{width:22px;height:22px;object-fit:contain;background:#fff;border-radius:5px}
+.fila-rank .nom{flex:1;font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fila-rank .pct{font-family:var(--cond);font-weight:800;font-size:15px;color:var(--hot)}
+
+/* encabezados de dia (Hoy / Mañana / dia fecha) */
+.diaHead{font-size:11.5px;color:var(--mut);font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+ margin:18px 2px 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.diaHead:first-child{margin-top:4px}
+
+/* barra de dias arriba (Hoy / Mañana / fecha), como FotMob */
+.diaSelector{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+ margin:14px 0 4px;padding-bottom:2px}
+.diaSelector::-webkit-scrollbar{display:none}
+.diaBtn{flex:0 0 auto;background:var(--bg2);color:var(--mut);border:1px solid var(--line2);border-radius:20px;
+ padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;text-transform:capitalize}
+.diaBtn.on{background:var(--hot);color:var(--hotTx);border-color:var(--hot)}
+
+/* botones chicos de guardar/combinar */
+.filaCuota{display:flex;justify-content:space-between;align-items:center;margin:6px 0;gap:8px}
+.filaCuota .txt{flex:1;min-width:0}
+.btnChico{flex:0 0 auto;background:var(--bg3);color:var(--txt);border:1px solid var(--line2);
+ border-radius:7px;padding:7px 10px;font-size:12px;cursor:pointer}
+.btnAncho{width:100%;background:var(--acc);color:var(--accTx);border:0;border-radius:10px;
+ padding:12px;font-weight:700;margin:12px 0;cursor:pointer}
+.btnAncho.sec{background:var(--bg2);color:var(--mut);border:1px solid var(--line2)}
+.filaCuota .btnChico{width:auto;padding:7px 10px;margin-top:0;font-size:12px;font-weight:400;background:var(--bg3);color:var(--txt)}
+</style>
+</head>
+<body>
+<header>
+ <div class="top">
+  <h1>⚽ FÚTBOL <span class="ver">v3</span></h1>
+  <select id="ligaSel">
+   <optgroup label="Ligas">
+    <option value="pl">Premier League</option>
+    <option value="laliga">La Liga</option>
+    <option value="seriea">Serie A</option>
+    <option value="bundesliga">Bundesliga</option>
+    <option value="ligue1">Ligue 1</option>
+   </optgroup>
+   <optgroup label="Copas de Europa">
+    <option value="cl">Champions League</option>
+    <option value="europa">Europa League</option>
+    <option value="conference">Conference League</option>
+   </optgroup>
+   <optgroup label="Copas domésticas (sin modelo)">
+    <option value="facup">FA Cup</option>
+    <option value="dfbpokal">DFB-Pokal</option>
+    <option value="copaitalia">Coppa Italia</option>
+    <option value="coupefrance">Coupe de France</option>
+    <option value="copadelrey">Copa del Rey</option>
+   </optgroup>
+  </select>
+ </div>
+</header>
+<main>
+ <div class="estado" id="estado">Cargando...</div>
+
+ <div class="vista on" id="vistaJuegos">
+  <div class="diaSelector" id="diaSelector"></div>
+  <div id="juegos"></div>
+ </div>
+
+ <div class="vista" id="vistaAlgane">
+  <div id="algane"></div>
+ </div>
+
+ <div class="vista" id="vistaBacktest">
+  <div class="nota" style="margin:12px 2px 0">Corre el modelo sobre los partidos ya terminados de la liga que tengas cargada ahora mismo y compara la predicción contra el resultado real.</div>
+  <button id="btnCorrerBacktest" class="btnAncho">Medir esta liga</button>
+  <div id="backtestOut"></div>
+ </div>
+
+ <div class="vista" id="vistaRegistro">
+  <button id="btnVerificarRegistro" class="btnAncho">Verificar picks pendientes</button>
+  <div id="registro"></div>
+ </div>
+
+ <div class="vista" id="vistaCombinada">
+  <div id="combinada"></div>
+ </div>
+</main>
+
+<nav class="tabbar">
+ <button class="tbar-btn on" data-vista="juegos"><span class="ic">⚽</span><span class="lb">Juegos</span></button>
+ <button class="tbar-btn" data-vista="algane"><span class="ic">🏆</span><span class="lb">Al gane</span></button>
+ <button class="tbar-btn" data-vista="backtest"><span class="ic">📈</span><span class="lb">Backtest</span></button>
+ <button class="tbar-btn" data-vista="registro"><span class="ic">📒</span><span class="lb">Registro</span></button>
+ <button class="tbar-btn" data-vista="combinada"><span class="ic">🎟️</span><span class="lb">Combina</span></button>
+</nav>
+
+
+<script>
+var EQUIPOS = null;
+var PARTIDOS = null;
+var PENDIENTES_TODOS = [];
+var TERMINADOS = [];
+var MOSTRANDO_TODOS = false;
+var DIA_SELECCIONADO = null;
+var LIGA_ACTUAL = null;
+var LIGA_ES_COPA = false;
+var CACHE_PERFIL = {};
+
+// ---------- Kalshi (cuotas via Worker de Cloudflare, para esquivar CORS) ----------
+// OJO: reemplaza esto por la URL real de tu Worker una vez lo despliegues.
+var KALSHI_PROXY = 'https://kalshi-ova.osvaldoalvarez0113.workers.dev';
+// Confirmados de verdad (fuentes públicas): pl y laliga.
+// El resto son mi mejor intento siguiendo el mismo patrón de nombre — pueden estar mal,
+// pruébalos y si alguno falla seguro me dices cuál para corregirlo.
+var KALSHI_SERIES = {
+  pl: 'KXEPLGAME',
+  laliga: 'KXLALIGAGAME',
+  seriea: 'KXSERIEAGAME',
+  bundesliga: 'KXBUNDESLIGAGAME',
+  ligue1: 'KXLIGUE1GAME',
+  cl: 'KXUCLGAME'
+};
+
+var LIGAS = {
+  pl:  {nombre:'Premier League', url:'https://www.worldfootball.net/competition/co91/england-premier-league/team-statistics-overview/', urlPartidos:'https://www.worldfootball.net/competition/co91/england-premier-league/results-and-standings/'},
+  laliga: {nombre:'La Liga', url:'https://www.worldfootball.net/competition/co97/spain-primera-division/team-statistics-overview/', urlPartidos:'https://www.worldfootball.net/competition/co97/spain-primera-division/results-and-standings/'},
+  seriea: {nombre:'Serie A', url:'https://www.worldfootball.net/competition/co111/italy-serie-a/team-statistics-overview/', urlPartidos:'https://www.worldfootball.net/competition/co111/italy-serie-a/results-and-standings/'},
+  bundesliga: {nombre:'Bundesliga', url:'https://www.worldfootball.net/competition/co12/germany-bundesliga/team-statistics-overview/', urlPartidos:'https://www.worldfootball.net/competition/co12/germany-bundesliga/results-and-standings/'},
+  ligue1: {nombre:'Ligue 1', url:'https://www.worldfootball.net/competition/co71/france-ligue-1/team-statistics-overview/', urlPartidos:'https://www.worldfootball.net/competition/co71/france-ligue-1/results-and-standings/'},
+  cl: {nombre:'Champions League', url:'https://www.worldfootball.net/competition/co19/uefa-champions-league/results-and-standings/', urlPartidos:'https://www.worldfootball.net/competition/co19/uefa-champions-league/results-and-standings/'},
+  europa: {nombre:'Europa League', url:'https://www.worldfootball.net/competition/co132/uefa-europa-league/results-and-standings/', urlPartidos:'https://www.worldfootball.net/competition/co132/uefa-europa-league/results-and-standings/'},
+  conference: {nombre:'Conference League', url:'https://www.worldfootball.net/competition/co6395/results-and-standings/', urlPartidos:'https://www.worldfootball.net/competition/co6395/results-and-standings/'},
+  // Copas de eliminacion directa: no existe tabla de temporada para estas, asi que
+  // van marcadas esCopa:true -- la app no intenta correr el modelo Poisson en ellas,
+  // solo muestra partidos, forma y cara a cara. Solo se cargan resultados/partidos (urlPartidos).
+  facup: {nombre:'FA Cup', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co41/results-and-standings/'},
+  dfbpokal: {nombre:'DFB-Pokal', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co33/results-and-standings/'},
+  copaitalia: {nombre:'Coppa Italia', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co27/results-and-standings/'},
+  coupefrance: {nombre:'Coupe de France', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co29/results-and-standings/'},
+  copadelrey: {nombre:'Copa del Rey', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co23/results-and-standings/'}
+};
+
+// ---------- utilidades ----------
+function normalizarNombre(s){
+  return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+}
+function parseFecha(f){
+  if(!f) return null;
+  var m = f.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+  if(!m) return null;
+  var d=+m[1], mo=+m[2], y=+m[3]; if(y<100) y+=2000;
+  var t = new Date(y, mo-1, d).getTime();
+  return isNaN(t) ? null : t;
+}
+function compararFecha(a,b){
+  var ta=parseFecha(a), tb=parseFecha(b);
+  if(ta===null && tb===null) return 0;
+  if(ta===null) return 1;
+  if(tb===null) return -1;
+  return ta-tb;
+}
+function decimalDeAmericana(odd){
+  odd = +odd;
+  if(!odd) return null;
+  return odd>0 ? (odd/100+1) : (100/(-odd)+1);
+}
+function cuotaJustaAmericana(prob){
+  if(!prob || prob<=0 || prob>=1) return null;
+  if(prob>=0.5) return Math.round(-(prob/(1-prob))*100);
+  return Math.round(((1-prob)/prob)*100);
+}
+// La cuota americana real nunca cae entre -99 y 99 (el minimo siempre es +-100).
+// Si el numero que metio el usuario esta en ese rango, lo tratamos como centavos
+// de Kalshi (1-99, o sea probabilidad directa) y lo convertimos solos.
+function normalizarEntradaCuota(valor){
+  if(valor===''||valor===null||valor===undefined) return null;
+  var n = +valor;
+  if(isNaN(n) || n===0) return null;
+  if(Math.abs(n) < 100){
+    return cuotaJustaAmericana(Math.abs(n)/100);
+  }
+  return n;
+}
+
+// ---------- Kalshi: buscar el evento del partido y sacar cuotas ----------
+function buscarEventoKalshi(seriesTicker, nombreLocal, nombreVisita){
+  var url = KALSHI_PROXY + '/events?series_ticker='+encodeURIComponent(seriesTicker)+'&status=open&with_nested_markets=true';
+  return fetch(url).then(function(r){
+    if(!r.ok) throw new Error('Kalshi respondió '+r.status);
+    return r.json();
+  }).then(function(data){
+    var eventos = (data && data.events) || [];
+    var nl = normalizarNombre(nombreLocal), nv = normalizarNombre(nombreVisita);
+    // clave corta: evita fallar por nombres largos con abreviaturas distintas (ej. "FC", "United")
+    var claveL = nl.length>5 ? nl.slice(0,6) : nl;
+    var claveV = nv.length>5 ? nv.slice(0,6) : nv;
+    var evento = eventos.find(function(ev){
+      var mercados = ev.markets || [];
+      var texto = normalizarNombre(mercados.map(function(m){
+        return (m.yes_sub_title||'')+' '+(m.subtitle||'')+' '+(m.title||'');
+      }).join(' '));
+      return texto.indexOf(claveL)>-1 && texto.indexOf(claveV)>-1;
+    });
+    if(!evento) return null;
+    var out = {local:null, empate:null, visita:null};
+    (evento.markets||[]).forEach(function(m){
+      var etiqueta = normalizarNombre((m.yes_sub_title||'')+' '+(m.subtitle||''));
+      var centavos = (m.yes_ask!=null ? m.yes_ask : (m.yes_bid!=null ? m.yes_bid : m.last_price));
+      if(centavos===undefined || centavos===null) return;
+      var americana = cuotaJustaAmericana(centavos/100);
+      if(americana===null) return;
+      if(/draw|empat|tie/.test(etiqueta)) out.empate = americana;
+      else if(etiqueta.indexOf(claveL)>-1) out.local = americana;
+      else if(etiqueta.indexOf(claveV)>-1) out.visita = americana;
+    });
+    return out;
+  });
+}
+
+// ---------- tabla de posiciones ----------
+function extraerTabla(html){
+  var doc = new DOMParser().parseFromString(html, 'text/html');
+  var tablas = doc.querySelectorAll('table');
+  var mejor = null, mejorCuenta = 0;
+  tablas.forEach(function(t){
+    var cuenta = 0;
+    t.querySelectorAll('tr').forEach(function(f){ if(/\d+\s*:\s*\d+/.test(f.textContent)) cuenta++; });
+    if(cuenta > mejorCuenta){ mejorCuenta = cuenta; mejor = t; }
+  });
+  if(!mejor) return [];
+  var equipos = [];
+  mejor.querySelectorAll('tr').forEach(function(fila){
+    var celdas = fila.querySelectorAll('td');
+    if(celdas.length < 5) return;
+    var textoFila = Array.from(celdas).map(function(c){ return c.textContent.trim(); });
+    var links = fila.querySelectorAll('a');
+    var nombre = null, mejorLargo = 0, href = null;
+    links.forEach(function(a){
+      var t = a.textContent.trim();
+      if(t.length > mejorLargo && !/^\d+$/.test(t)){ mejorLargo = t.length; nombre = t; href = a.getAttribute('href'); }
+    });
+    if(!nombre) return;
+    var marcador = null, idxMarcador = -1;
+    for(var i=0;i<textoFila.length;i++){
+      if(/^\d+\s*:\s*\d+$/.test(textoFila[i])){ marcador = textoFila[i]; idxMarcador = i; break; }
+    }
+    if(!marcador) return;
+    var partes = marcador.split(':').map(function(s){ return +s.trim(); });
+    var pj = null;
+    if(idxMarcador>=4){ var c=textoFila[idxMarcador-4]; if(/^\d+$/.test(c)) pj = +c; }
+    if(!pj) return;
+    if(equipos.some(function(e){ return e.nombre===nombre; })) return;
+    equipos.push({nombre:nombre, pj:pj, gf:partes[0], gc:partes[1], href:href, pos:equipos.length+1});
+  });
+  return equipos;
+}
+
+// ---------- partidos (proximos Y terminados) ----------
+function buscarFechaCercana(nodo){
+  // Plan B: si la fecha no viene dentro del texto del propio partido, es porque
+  // el sitio la pone en una fila aparte arriba del bloque de partidos de ese dia.
+  // Subimos a la fila de tabla mas cercana y vamos mirando filas anteriores
+  // hasta toparnos con una que sea solo una fecha.
+  var fila = (nodo && nodo.closest) ? nodo.closest('tr') : null;
+  var intentos = 0;
+  while(fila && intentos < 10){
+    var m = fila.textContent.match(/\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b/);
+    if(m) return m[0];
+    fila = fila.previousElementSibling;
+    intentos++;
+  }
+  return '';
+}
+
+function extraerPartidos(html){
+  var doc = new DOMParser().parseFromString(html, 'text/html');
+  var enlaces = doc.querySelectorAll('a[href*="match-report"]');
+  var vistos = {}, partidos = [];
+  enlaces.forEach(function(a){
+    var href = a.getAttribute('href');
+    if(vistos[href]) return;
+    vistos[href] = true;
+    var cont = a, escudos = [], intentos = 0;
+    while(cont && intentos < 6){
+      escudos = cont.querySelectorAll ? cont.querySelectorAll('img[src*="emblem"]') : [];
+      if(escudos.length >= 2) break;
+      cont = cont.parentElement; intentos++;
+    }
+    if(!cont || escudos.length < 2) return;
+    var nombreLocal = escudos[0].getAttribute('alt') || escudos[0].getAttribute('title');
+    var nombreVisita = escudos[1].getAttribute('alt') || escudos[1].getAttribute('title');
+    if(!nombreLocal || !nombreVisita) return;
+    var texto = cont.textContent.replace(/\s+/g,' ');
+    var esFinal = /Ended/i.test(texto);
+    var horaM = texto.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+    var hora = horaM ? horaM[0] : '';
+    var fechaM = texto.match(/\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b/);
+    var fecha = fechaM ? fechaM[0] : buscarFechaCercana(a);
+    var golesLocal=null, golesVisita=null;
+    if(esFinal){
+      var scoreM = texto.match(/\b(\d{1,2})\s*:\s*(\d{1,2})\b/);
+      if(scoreM){ golesLocal=+scoreM[1]; golesVisita=+scoreM[2]; }
+    }
+    var clave = nombreLocal+'|'+nombreVisita+'|'+fecha+'|'+hora;
+    if(partidos.some(function(p){ return p.clave===clave; })) return;
+    partidos.push({
+      clave: clave, local: nombreLocal, visita: nombreVisita,
+      escudoLocal: escudos[0].src, escudoVisita: escudos[1].src,
+      hrefLocal: escudos[0].closest('a') ? escudos[0].closest('a').getAttribute('href') : null,
+      hrefVisita: escudos[1].closest('a') ? escudos[1].closest('a').getAttribute('href') : null,
+      hora: hora, fecha: fecha, terminado: esFinal,
+      golesLocal: golesLocal, golesVisita: golesVisita
+    });
+  });
+  return partidos;
+}
+
+function filtrarJornadaActual(pendientes){
+  if(!pendientes.length) return pendientes;
+  var conFecha = pendientes.filter(function(p){ return parseFecha(p.fecha)!==null; });
+  if(!conFecha.length) return pendientes.slice(0,15);
+  // Agrupa por huecos entre fechas en vez de una ventana fija: mientras el
+  // siguiente partido este a 3 dias o menos del anterior, es la misma jornada;
+  // un salto mayor (la proxima fecha de juegos) corta el grupo ahi.
+  var grupo = [];
+  var fechaAnterior = null;
+  for(var i=0;i<pendientes.length;i++){
+    var t = parseFecha(pendientes[i].fecha);
+    if(t===null) continue;
+    if(fechaAnterior===null || (t-fechaAnterior)/(24*60*60*1000) <= 3){
+      grupo.push(pendientes[i]);
+      fechaAnterior = t;
+    } else {
+      break;
+    }
+  }
+  return grupo.length ? grupo : pendientes.slice(0,15);
+}
+
+// ---------- perfil de un equipo (estadio, goleador, noticias) ----------
+function extraerPerfil(html){
+  var doc = new DOMParser().parseFromString(html, 'text/html');
+  var perfil = {estadio:null, capacidad:null, goleador:null, noticias:[]};
+
+  var textoCompleto = doc.body.textContent;
+  var mEst = textoCompleto.match(/Stadium\s*\n?\s*([^\n]{3,60}?)\s*\n?\s*Capacity/);
+  if(mEst) perfil.estadio = mEst[1].trim();
+  var mCap = textoCompleto.match(/Capacity\s*\n?\s*([\d.,]{3,10})/);
+  if(mCap) perfil.capacidad = mCap[1].trim();
+
+  var linkJugador = doc.querySelector('a[href*="/person/"]');
+  if(linkJugador){
+    perfil.goleador = linkJugador.textContent.trim();
+  }
+
+  var vistosN = {};
+  doc.querySelectorAll('a[href*="/news/"]').forEach(function(a){
+    if(perfil.noticias.length>=3) return;
+    var t = a.textContent.trim();
+    if(!t || t.length<12) return;
+    for(var L=Math.floor(t.length/2); L>=8; L--){
+      if(t.slice(0,L) === t.slice(L, 2*L)){ t = t.slice(0,L) + t.slice(2*L); break; }
+    }
+    t = t.trim();
+    t = t.replace(/([a-zà-ÿ?!.])(\d{1,2}\.\d{2}\.?\s*\d{0,2}:?\d{0,2})$/i, '$1 · $2');
+    if(t.length > 120){ t = t.slice(0,117).replace(/\s+\S*$/,'') + '…'; }
+    if(vistosN[t]) return;
+    vistosN[t]=true;
+    perfil.noticias.push(t);
+  });
+
+  return perfil;
+}
+
+function cargarPerfil(nombreEquipo, href){
+  if(CACHE_PERFIL[nombreEquipo]) return Promise.resolve(CACHE_PERFIL[nombreEquipo]);
+  if(!href) return Promise.resolve(null);
+  var url = href.indexOf('http')===0 ? href : 'https://www.worldfootball.net'+href;
+  return fetch(url+'?v='+Date.now()).then(function(r){ return r.text(); })
+    .then(function(html){
+      var p = extraerPerfil(html);
+      CACHE_PERFIL[nombreEquipo] = p;
+      return p;
+    }).catch(function(){ return null; });
+}
+
+// ---------- forma y cara a cara (calculados de los partidos ya terminados, sin fetch extra) ----------
+function calcularForma(nombreEquipo){
+  if(!TERMINADOS || !TERMINADOS.length) return [];
+  var n = normalizarNombre(nombreEquipo);
+  var juegos = TERMINADOS.filter(function(p){
+    return normalizarNombre(p.local)===n || normalizarNombre(p.visita)===n;
+  });
+  juegos.sort(function(a,b){ return compararFecha(b.fecha,a.fecha); });
+  return juegos.slice(0,5).map(function(p){
+    var esLocal = normalizarNombre(p.local)===n;
+    var gf = esLocal?p.golesLocal:p.golesVisita;
+    var gc = esLocal?p.golesVisita:p.golesLocal;
+    if(gf>gc) return 'V';
+    if(gf<gc) return 'D';
+    return 'E';
+  });
+}
+
+function calcularH2H(nombreL, nombreV){
+  if(!TERMINADOS || !TERMINADOS.length) return null;
+  var nl=normalizarNombre(nombreL), nv=normalizarNombre(nombreV);
+  var juegos = TERMINADOS.filter(function(p){
+    var pl=normalizarNombre(p.local), pv=normalizarNombre(p.visita);
+    return (pl===nl&&pv===nv)||(pl===nv&&pv===nl);
+  });
+  if(!juegos.length) return null;
+  var vL=0,vV=0,e=0;
+  juegos.forEach(function(p){
+    var pl=normalizarNombre(p.local);
+    var golesA = pl===nl?p.golesLocal:p.golesVisita;
+    var golesB = pl===nl?p.golesVisita:p.golesLocal;
+    if(golesA>golesB) vL++; else if(golesA<golesB) vV++; else e++;
+  });
+  return {juegos:juegos.length, vL:vL, vV:vV, e:e};
+}
+
+function poissonProb(k,lambda){
+  var l=Math.exp(-lambda), num=1;
+  for(var i=1;i<=k;i++){ num*=lambda/i; }
+  return l*num;
+}
+
+// ---------- cruce de nombres (mas robusto, avisa si no fue exacto) ----------
+function buscarEquipo(nombre){
+  if(!EQUIPOS) return null;
+  var n = normalizarNombre(nombre);
+  var exacto = EQUIPOS.find(function(x){ return normalizarNombre(x.nombre)===n; });
+  if(exacto) return {eq:exacto, exacto:true};
+  var parcial = EQUIPOS.find(function(x){
+    var xn = normalizarNombre(x.nombre);
+    return xn.indexOf(n)>-1 || n.indexOf(xn)>-1;
+  });
+  if(parcial) return {eq:parcial, exacto:false};
+  return null;
+}
+
+function calcular(eL, eV){
+  var totalGF=0, totalPJ=0;
+  EQUIPOS.forEach(function(e){ totalGF+=e.gf; totalPJ+=e.pj; });
+  var ligaProm = totalGF / totalPJ;
+  var K = 6;
+  function gfAj(e){ return (e.gf + K*ligaProm) / (e.pj + K); }
+  function gcAj(e){ return (e.gc + K*ligaProm) / (e.pj + K); }
+  var HOME_ADV = 1.35;
+  var atkL = gfAj(eL)/ligaProm, defL = gcAj(eL)/ligaProm;
+  var atkV = gfAj(eV)/ligaProm, defV = gcAj(eV)/ligaProm;
+  var lamL = ligaProm*atkL*defV*HOME_ADV;
+  var lamV = ligaProm*atkV*defL/HOME_ADV;
+  var MAXG=8, pL=0,pD=0,pV=0,pBtts=0;
+  var overLin={1.5:0,2.5:0,3.5:0};
+  var marcadores=[];
+  for(var i=0;i<=MAXG;i++) for(var j=0;j<=MAXG;j++){
+    var p=poissonProb(i,lamL)*poissonProb(j,lamV);
+    if(i>j) pL+=p; else if(i===j) pD+=p; else pV+=p;
+    [1.5,2.5,3.5].forEach(function(lin){ if(i+j>lin) overLin[lin]+=p; });
+    if(i>=1&&j>=1) pBtts+=p;
+    marcadores.push({i:i,j:j,p:p});
+  }
+  var suma=pL+pD+pV; pL/=suma; pD/=suma; pV/=suma;
+  marcadores.sort(function(a,b){ return b.p-a.p; });
+  return {lamL:lamL, lamV:lamV, pL:pL, pD:pD, pV:pV, overLin:overLin, pBtts:pBtts, marcadores:marcadores};
+}
+
+function impProb(americana){
+  americana = +americana;
+  if(!americana) return null;
+  if(americana>0) return 100/(americana+100);
+  return -americana/(-americana+100);
+}
+
+function tablaPosicionesHtml(eL, eV){
+  var ordenada = EQUIPOS.slice(0, EQUIPOS.length);
+  var html = '<table class="tabpos">';
+  ordenada.forEach(function(e){
+    var destacada = (e.nombre===eL.nombre || e.nombre===eV.nombre);
+    html += '<tr'+(destacada?' class="destacada"':'')+'><td class="num">'+e.pos+'</td><td>'+e.nombre+
+      '</td><td>'+e.pj+'</td><td>'+e.gf+':'+e.gc+'</td></tr>';
+  });
+  html += '</table>';
+  return html;
+}
+
+function bloqueBase(eL, eV, nombreLmostrar, nombreVmostrar){
+  var r = calcular(eL, eV);
+  var favorito, favTxt;
+  var mejor = Math.max(r.pL, r.pD, r.pV);
+  if(mejor===r.pL){ favorito=nombreLmostrar; favTxt=(r.pL*100).toFixed(1)+'%'; }
+  else if(mejor===r.pV){ favorito=nombreVmostrar; favTxt=(r.pV*100).toFixed(1)+'%'; }
+  else { favorito=null; }
+
+  var pickHtml;
+  if(favorito && mejor>=0.45){
+    pickHtml = '<div class="pick"><b>Favorito: '+favorito+'</b>'+favTxt+' de probabilidad — '+
+      (r.overLin[2.5]>=0.55?'tendencia a más de 2.5 goles':'partido más cerrado en goles')+'.</div>';
+  } else {
+    pickHtml = '<div class="pick no"><b>Muy parejo</b>Ningún equipo pasa del 45% — no hay favorito claro.</div>';
+  }
+  var mHtml='';
+  r.marcadores.slice(0,6).forEach(function(m){
+    mHtml += '<div><b>'+m.i+'-'+m.j+'</b><small>'+(m.p*100).toFixed(1)+'%</small></div>';
+  });
+  var lHtml='';
+  [1.5,2.5,3.5].forEach(function(lin){
+    lHtml += '<div class="linea"><span>Más de '+lin+' goles</span><b>'+(r.overLin[lin]*100).toFixed(1)+'%</b></div>';
+  });
+
+  return {r:r,
+    veredictoHtml:'' +
+    '<div class="egol"><span>'+nombreLmostrar+'</span><b>'+r.lamL.toFixed(2)+' goles esp.</b></div>'+
+    '<div class="egol"><span>'+nombreVmostrar+'</span><b>'+r.lamV.toFixed(2)+' goles esp.</b></div>'+
+    '<div class="bar">'+
+      '<span class="h" style="flex-grow:'+Math.max(r.pL,0.06)+'">'+(r.pL*100).toFixed(1)+'%</span>'+
+      '<span class="d" style="flex-grow:'+Math.max(r.pD,0.06)+'">'+(r.pD*100).toFixed(1)+'%</span>'+
+      '<span class="a" style="flex-grow:'+Math.max(r.pV,0.06)+'">'+(r.pV*100).toFixed(1)+'%</span>'+
+    '</div>'+
+    pickHtml+
+    '<div class="kpi">'+
+      '<div><b>'+(r.overLin[2.5]*100).toFixed(1)+'%</b><small>Más de 2.5</small></div>'+
+      '<div><b>'+((1-r.overLin[2.5])*100).toFixed(1)+'%</b><small>Menos de 2.5</small></div>'+
+      '<div><b>'+(r.pBtts*100).toFixed(1)+'%</b><small>Ambos anotan</small></div>'+
+    '</div>',
+    numerosHtml:'' +
+    '<h3>Marcadores más probables</h3><div class="marcadores">'+mHtml+'</div>'+
+    '<h3>Otras líneas de goles</h3><div class="lineas">'+lHtml+'</div>'
+  };
+}
+
+function pintarForma(elId, nombreEquipo){
+  var el = document.getElementById(elId);
+  if(!el) return;
+  var forma = calcularForma(nombreEquipo);
+  if(!forma.length){
+    el.innerHTML = '<div class="nota" style="margin:0">Sin partidos terminados medidos todavía esta temporada.</div>';
+    return;
+  }
+  el.innerHTML = forma.map(function(r){ return '<span class="'+r+'">'+r+'</span>'; }).join('');
+}
+
+function pintarGameBody(bodyEl, p, eL, eV){
+  var base = bloqueBase(eL, eV, p.local, p.visita);
+  var id = 'g'+Math.random().toString(36).slice(2);
+
+  bodyEl.innerHTML =
+    '<div class="tabs" id="'+id+'tabs">' +
+      '<button class="tb on" data-t="ver">Veredicto</button>' +
+      '<button class="tb" data-t="cuo">Cuotas</button>' +
+      '<button class="tb" data-t="num">Números</button>' +
+      '<button class="tb" data-t="for">Forma</button>' +
+    '</div>' +
+    '<div class="pane on" id="'+id+'ver">' + base.veredictoHtml +
+      '<div class="nota">Modelo Poisson con encogimiento estadístico. Datos en vivo de worldfootball.net.</div>' +
+    '</div>' +
+    '<div class="pane" id="'+id+'cuo">' +
+      '<h3>¿Tienes una cuota? Mira si hay valor</h3>' +
+      '<div class="cuotasbox">' +
+        '<button id="'+id+'btnKalshi" class="btnAncho sec" style="margin:0 0 10px">🦈 Traer cuota de Kalshi</button>' +
+        '<div id="'+id+'kalshiOut" class="nota" style="margin:0 0 10px"></div>' +
+        '<div class="fila">' +
+          '<div style="flex:1"><label>Cuota '+p.local+'</label><input type="number" id="'+id+'oddL" placeholder="-150 ó 37¢"></div>' +
+          '<div style="flex:1"><label>Cuota empate</label><input type="number" id="'+id+'oddD" placeholder="+230 ó 28¢"></div>' +
+          '<div style="flex:1"><label>Cuota '+p.visita+'</label><input type="number" id="'+id+'oddV" placeholder="+400 ó 65¢"></div>' +
+        '</div>' +
+        '<button id="'+id+'btn" class="btnAncho">Calcular valor</button>' +
+        '<div class="veredictoCuota" id="'+id+'verC"></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="pane" id="'+id+'num">' +
+      base.numerosHtml +
+      '<h3>Tabla de posiciones</h3>' + tablaPosicionesHtml(eL, eV) +
+    '</div>' +
+    '<div class="pane" id="'+id+'for">' +
+      '<h3>Forma reciente</h3>' +
+      '<div class="observ"><b>'+p.local+'</b></div>' +
+      '<div class="forma" id="'+id+'formaL"></div>' +
+      '<div class="observ"><b>'+p.visita+'</b></div>' +
+      '<div class="forma" id="'+id+'formaV"></div>' +
+      '<div id="'+id+'perfilL" class="nota">Cargando '+p.local+'...</div>' +
+      '<div id="'+id+'perfilV" class="nota">Cargando '+p.visita+'...</div>' +
+      '<h3>Cara a cara esta temporada</h3><div id="'+id+'h2h" class="nota"></div>' +
+      '<h3>Últimas noticias</h3><div id="'+id+'noticias" class="nota">Buscando noticias...</div>' +
+    '</div>';
+
+  bodyEl.querySelectorAll('#'+id+'tabs .tb').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      bodyEl.querySelectorAll('#'+id+'tabs .tb').forEach(function(b){ b.classList.remove('on'); });
+      btn.classList.add('on');
+      bodyEl.querySelectorAll('.pane').forEach(function(pn){ pn.classList.remove('on'); });
+      document.getElementById(id+btn.dataset.t).classList.add('on');
+    });
+  });
+
+  document.getElementById(id+'btnKalshi').addEventListener('click', function(){
+    var btnK = this;
+    var outK = document.getElementById(id+'kalshiOut');
+    var serieTicker = KALSHI_SERIES[LIGA_ACTUAL];
+    if(!serieTicker){ outK.textContent = 'No tengo el ticker de Kalshi para esta liga.'; return; }
+    if(!KALSHI_PROXY || KALSHI_PROXY.indexOf('TU-WORKER')>-1){
+      outK.textContent = 'Falta configurar KALSHI_PROXY con la URL real de tu Worker.';
+      return;
+    }
+    btnK.disabled = true;
+    outK.textContent = 'Buscando en Kalshi...';
+    buscarEventoKalshi(serieTicker, p.local, p.visita).then(function(res){
+      btnK.disabled = false;
+      if(!res){
+        outK.textContent = 'No encontré este partido en Kalshi (puede que no lo liste todavía, o que el ticker de esta liga esté mal).';
+        return;
+      }
+      if(res.local===null && res.empate===null && res.visita===null){
+        outK.textContent = 'Encontré el evento en Kalshi pero no pude leer ningún precio.';
+        return;
+      }
+      if(res.local!==null) document.getElementById(id+'oddL').value = res.local;
+      if(res.empate!==null) document.getElementById(id+'oddD').value = res.empate;
+      if(res.visita!==null) document.getElementById(id+'oddV').value = res.visita;
+      outK.textContent = 'Cuotas de Kalshi cargadas' + (res.empate===null?' (sin mercado de empate detectado)':'') + '. Dale "Calcular valor".';
+    }).catch(function(e){
+      btnK.disabled = false;
+      outK.textContent = 'Kalshi falló: '+e.message+' (revisa que el Worker esté desplegado y la URL en KALSHI_PROXY sea correcta).';
+    });
+  });
+
+  document.getElementById(id+'btn').addEventListener('click', function(){
+    var oL=normalizarEntradaCuota(document.getElementById(id+'oddL').value);
+    var oD=normalizarEntradaCuota(document.getElementById(id+'oddD').value);
+    var oV=normalizarEntradaCuota(document.getElementById(id+'oddV').value);
+    var out = document.getElementById(id+'verC');
+    var filas = [
+      {mercado:'1X2', sel:p.local, odd:oL, modelo:base.r.pL},
+      {mercado:'1X2', sel:'Empate', odd:oD, modelo:base.r.pD},
+      {mercado:'1X2', sel:p.visita, odd:oV, modelo:base.r.pV}
+    ];
+    var html = '';
+    filas.forEach(function(f){
+      if(f.odd===null) return;
+      var imp = impProb(f.odd);
+      if(imp===null){ return; }
+      var diff = (f.modelo - imp)*100;
+      var hayValor = diff >= 3;
+      html += '<div class="filaCuota"><span class="txt">'+f.sel+': modelo '+(f.modelo*100).toFixed(1)+'% vs cuota '+(imp*100).toFixed(1)+'% — '+
+        (hayValor ? '<span class="si">valor +'+diff.toFixed(1)+'</span>' : '<span class="no">sin valor '+diff.toFixed(1)+'</span>')+
+        '</span>'+
+        '<button class="btnChico guardarPick" data-mercado="'+f.mercado+'" data-sel="'+f.sel+'" data-odd="'+f.odd+'" data-prob="'+f.modelo+'">💾</button>'+
+        '<button class="btnChico agregarCombinada" data-sel="'+f.sel+'" data-prob="'+f.modelo+'">🔗</button>'+
+        '</div>';
+    });
+    out.innerHTML = html || 'Mete al menos una cuota.';
+    out.querySelectorAll('.guardarPick').forEach(function(btnG){
+      btnG.addEventListener('click', function(){
+        guardarPick({
+          liga: LIGA_ACTUAL, local:p.local, visita:p.visita, fecha:p.fecha||'',
+          mercado: btnG.dataset.mercado, seleccion: btnG.dataset.sel,
+          probModelo: +btnG.dataset.prob, cuota: btnG.dataset.odd
+        });
+        btnG.textContent = '✓';
+        btnG.disabled = true;
+      });
+    });
+    out.querySelectorAll('.agregarCombinada').forEach(function(btnC){
+      btnC.addEventListener('click', function(){
+        agregarACombinada({
+          local: p.local, visita: p.visita,
+          seleccion: btnC.dataset.sel, prob: +btnC.dataset.prob
+        });
+        btnC.textContent = '✓';
+      });
+    });
+  });
+
+  pintarForma(id+'formaL', p.local);
+  pintarForma(id+'formaV', p.visita);
+  var h2h = calcularH2H(p.local, p.visita);
+  var h2hEl = document.getElementById(id+'h2h');
+  if(h2hEl){
+    h2hEl.textContent = h2h ?
+      ('Esta temporada: '+h2h.juegos+' partido(s) — '+p.local+' '+h2h.vL+' · Empates '+h2h.e+' · '+p.visita+' '+h2h.vV) :
+      'Todavía no se han enfrentado esta temporada (solo se mide dentro de la misma temporada, no historial completo).';
+  }
+
+  cargarPerfil(p.local, p.hrefLocal).then(function(perf){
+    var el = document.getElementById(id+'perfilL');
+    if(!el) return;
+    if(!perf){ el.textContent = 'No se pudo cargar la información de '+p.local+'.'; return; }
+    el.innerHTML = '<b>'+p.local+'</b>' +
+      (perf.estadio ? '<div class="estadio">🏟️ <b>'+perf.estadio+'</b>'+(perf.capacidad?' · '+perf.capacidad+' asientos':'')+'</div>' : '') +
+      (perf.goleador ? '<div class="observ">Goleador del equipo: <b>'+perf.goleador+'</b></div>' : '');
+    if(perf.noticias.length){
+      var nEl = document.getElementById(id+'noticias');
+      if(nEl) nEl.innerHTML = perf.noticias.map(function(n){ return '<div class="noticia">'+n+'</div>'; }).join('');
+    }
+  });
+  cargarPerfil(p.visita, p.hrefVisita).then(function(perf){
+    var el = document.getElementById(id+'perfilV');
+    if(!el) return;
+    if(!perf){ el.textContent = 'No se pudo cargar la información de '+p.visita+'.'; return; }
+    el.innerHTML = '<b>'+p.visita+'</b>' +
+      (perf.estadio ? '<div class="estadio">🏟️ <b>'+perf.estadio+'</b>'+(perf.capacidad?' · '+perf.capacidad+' asientos':'')+'</div>' : '') +
+      (perf.goleador ? '<div class="observ">Goleador del equipo: <b>'+perf.goleador+'</b></div>' : '');
+  });
+}
+
+var MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+var DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+function etiquetaFecha(fechaStr){
+  var t = parseFecha(fechaStr);
+  if(t===null) return 'Fecha por confirmar';
+  var hoy = new Date();
+  var hoyMid = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime();
+  var diffDias = Math.round((t - hoyMid)/(24*60*60*1000));
+  if(diffDias===0) return 'Hoy';
+  if(diffDias===1) return 'Mañana';
+  if(diffDias===-1) return 'Ayer';
+  var d = new Date(t);
+  return DIAS[d.getDay()] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()];
+}
+
+function pintarSelectorDias(){
+  var cont = document.getElementById('diaSelector');
+  var fechas = [];
+  PENDIENTES_TODOS.forEach(function(p){
+    if(p.fecha && fechas.indexOf(p.fecha)===-1) fechas.push(p.fecha);
+  });
+  if(!fechas.length){
+    if(cont) cont.innerHTML = '';
+    DIA_SELECCIONADO = 'TODOS';
+    return;
+  }
+  if(!cont) return;
+  if(!DIA_SELECCIONADO || (DIA_SELECCIONADO!=='TODOS' && fechas.indexOf(DIA_SELECCIONADO)===-1)){
+    DIA_SELECCIONADO = fechas[0];
+  }
+  var botones = fechas.map(function(f){ return {val:f, lbl:etiquetaFecha(f)}; });
+  botones.push({val:'TODOS', lbl:'Todos'});
+  cont.innerHTML = botones.map(function(b){
+    var on = b.val===DIA_SELECCIONADO ? ' on' : '';
+    return '<button class="diaBtn'+on+'" data-fecha="'+b.val+'">'+b.lbl+'</button>';
+  }).join('');
+  cont.querySelectorAll('.diaBtn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      DIA_SELECCIONADO = btn.dataset.fecha;
+      pintarSelectorDias();
+      aplicarSelectorDias();
+    });
+  });
+}
+
+function aplicarSelectorDias(){
+  if(DIA_SELECCIONADO==='TODOS'){
+    PARTIDOS = PENDIENTES_TODOS;
+  } else {
+    PARTIDOS = PENDIENTES_TODOS.filter(function(p){ return p.fecha===DIA_SELECCIONADO; });
+  }
+  pintarJuegos(PARTIDOS);
+}
+
+function pintarGameBodyCopa(bodyEl, p){
+  var id = 'c'+Math.random().toString(36).slice(2);
+  bodyEl.innerHTML =
+    '<div class="aviso">🏆 Copa de eliminación directa — no existe tabla de temporada para este tipo de competencia, así que aquí no se corre el modelo Poisson ni se compara contra cuotas. Solo forma reciente y cara a cara dentro de esta copa.</div>' +
+    '<h3>Forma reciente</h3>' +
+    '<div class="observ"><b>'+p.local+'</b></div>' +
+    '<div class="forma" id="'+id+'formaL"></div>' +
+    '<div class="observ"><b>'+p.visita+'</b></div>' +
+    '<div class="forma" id="'+id+'formaV"></div>' +
+    '<h3>Cara a cara en esta copa</h3><div id="'+id+'h2h" class="nota"></div>';
+  pintarForma(id+'formaL', p.local);
+  pintarForma(id+'formaV', p.visita);
+  var h2h = calcularH2H(p.local, p.visita);
+  var h2hEl = document.getElementById(id+'h2h');
+  if(h2hEl){
+    h2hEl.textContent = h2h ?
+      ('Esta edición: '+h2h.juegos+' partido(s) — '+p.local+' '+h2h.vL+' · Empates '+h2h.e+' · '+p.visita+' '+h2h.vV) :
+      'No se han enfrentado todavía en esta edición de la copa.';
+  }
+}
+
+function pintarJuegos(partidos){
+  var cont = document.getElementById('juegos');
+  if(!partidos.length){
+    cont.innerHTML = '<div class="estado bad">No se encontraron partidos por jugar en esta vista.</div>';
+    return;
+  }
+  var html = '';
+  var fechaPrev = null;
+  partidos.forEach(function(p, idx){
+    if(p.fecha !== fechaPrev){
+      html += '<div class="diaHead">'+etiquetaFecha(p.fecha)+'</div>';
+      fechaPrev = p.fecha;
+    }
+    html += '' +
+    '<div class="game" data-idx="'+idx+'">'+
+      '<div class="head">'+
+        '<div class="crestpair">'+
+          '<div class="eq"><img src="'+p.escudoLocal+'"><span>'+p.local+'</span></div>'+
+          '<div class="eq"><img src="'+p.escudoVisita+'"><span>'+p.visita+'</span></div>'+
+        '</div>'+
+        (p.hora?'<div class="hora">'+p.hora+'</div>':'')+
+        '<div class="chev">▾</div>'+
+      '</div>'+
+      '<div class="body"></div>'+
+    '</div>';
+  });
+  cont.innerHTML = html;
+
+  cont.querySelectorAll('.game').forEach(function(gameEl, idx){
+    gameEl.querySelector('.head').addEventListener('click', function(){
+      var abierto = gameEl.classList.contains('open');
+      cont.querySelectorAll('.game.open').forEach(function(g){ g.classList.remove('open'); });
+      if(abierto) return;
+      gameEl.classList.add('open');
+      var body = gameEl.querySelector('.body');
+      if(!body.dataset.pintado){
+        var p = partidos[idx];
+        if(LIGA_ES_COPA){
+          pintarGameBodyCopa(body, p);
+        } else {
+          var mL = buscarEquipo(p.local), mV = buscarEquipo(p.visita);
+          if(!mL || !mV){
+            body.innerHTML = '<div class="nota">No se pudieron cruzar los nombres de este partido con la tabla de posiciones.</div>';
+          } else {
+            pintarGameBody(body, p, mL.eq, mV.eq);
+            if(!mL.exacto || !mV.exacto){
+              body.insertAdjacentHTML('afterbegin',
+                '<div class="aviso">⚠️ El nombre de al menos un equipo no calzó exacto con la tabla de posiciones — revisa que la info sea del equipo correcto.</div>');
+            }
+          }
+        }
+        body.dataset.pintado = '1';
+      }
+    });
+  });
+}
+
+function pintarAlGane(partidos){
+  var cont = document.getElementById('algane');
+  var filas = [];
+  partidos.forEach(function(p){
+    var mL = buscarEquipo(p.local), mV = buscarEquipo(p.visita);
+    if(!mL || !mV) return;
+    var r = calcular(mL.eq, mV.eq);
+    var mejor = Math.max(r.pL, r.pV);
+    var esLocal = mejor===r.pL;
+    filas.push({
+      nombre: esLocal?p.local:p.visita, rival: esLocal?p.visita:p.local,
+      escudo: esLocal?p.escudoLocal:p.escudoVisita, pct: mejor, hora:p.fecha||p.hora
+    });
+  });
+  filas.sort(function(a,b){ return b.pct-a.pct; });
+  if(!filas.length){ cont.innerHTML = '<div class="estado bad">No hay partidos para calcular el ranking.</div>'; return; }
+  cont.innerHTML = filas.map(function(f,i){
+    return '<div class="fila-rank"><div class="pos">'+(i+1)+'</div><img src="'+f.escudo+'">'+
+      '<div class="nom">'+f.nombre+' vs '+f.rival+'</div><div class="pct">'+(f.pct*100).toFixed(1)+'%</div></div>';
+  }).join('');
+}
+
+// ---------- backtest ----------
+function correrBacktest(){
+  var out = document.getElementById('backtestOut');
+  if(LIGA_ES_COPA){
+    out.innerHTML = '<div class="estado bad">El backtest no aplica a copas de eliminación directa — no hay tabla de temporada para correr el modelo.</div>';
+    return;
+  }
+  if(!EQUIPOS || !TERMINADOS || TERMINADOS.length < 10){
+    out.innerHTML = '<div class="estado bad">No hay suficientes partidos terminados en esta liga todavía para medir (mínimo 10). Espera a que avance la temporada.</div>';
+    return;
+  }
+  var acierto1x2=0, aciertoOU=0, aciertoBtts=0, medidos=0;
+  TERMINADOS.forEach(function(p){
+    if(p.golesLocal===null || p.golesVisita===null) return;
+    var mL = buscarEquipo(p.local), mV = buscarEquipo(p.visita);
+    if(!mL || !mV) return;
+    var r = calcular(mL.eq, mV.eq);
+    medidos++;
+    var predicho = (r.pL>=r.pD && r.pL>=r.pV) ? 'L' : (r.pV>=r.pD ? 'V' : 'D');
+    var real = p.golesLocal>p.golesVisita ? 'L' : (p.golesLocal<p.golesVisita ? 'V' : 'D');
+    if(predicho===real) acierto1x2++;
+    var totalReal = p.golesLocal+p.golesVisita;
+    var prediceOver = r.overLin[2.5] >= 0.5;
+    var esOver = totalReal > 2.5;
+    if(prediceOver===esOver) aciertoOU++;
+    var predBtts = r.pBtts >= 0.5;
+    var realBtts = p.golesLocal>=1 && p.golesVisita>=1;
+    if(predBtts===realBtts) aciertoBtts++;
+  });
+  if(!medidos){
+    out.innerHTML = '<div class="estado bad">No se pudo medir ningún partido (falló el cruce de nombres).</div>';
+    return;
+  }
+  out.innerHTML =
+    '<div class="kpi">'+
+      '<div><b>'+(acierto1x2/medidos*100).toFixed(1)+'%</b><small>Acierto 1X2</small></div>'+
+      '<div><b>'+(aciertoOU/medidos*100).toFixed(1)+'%</b><small>Acierto Más/Menos 2.5</small></div>'+
+      '<div><b>'+(aciertoBtts/medidos*100).toFixed(1)+'%</b><small>Acierto Ambos anotan</small></div>'+
+    '</div>'+
+    '<div class="nota">Medido sobre '+medidos+' partidos terminados de esta liga y temporada. '+
+    'Ojo: esto usa las estadísticas de TODA la temporada (incluyendo partidos que ya pasaron), no solo las que había disponibles antes de cada partido — '+
+    'así que el número real prediciendo hacia adelante, en el momento, es más bajo que esto. Sirve para comparar entre mercados y ligas, no como tasa de acierto real a futuro.</div>';
+}
+
+// ---------- registro de picks (localStorage) ----------
+function cargarRegistro(){
+  try{ return JSON.parse(localStorage.getItem('ova_futbol_registro_v1')||'[]'); }
+  catch(e){ return []; }
+}
+function guardarRegistroArr(arr){
+  try{ localStorage.setItem('ova_futbol_registro_v1', JSON.stringify(arr)); }catch(e){}
+}
+function guardarPick(pick){
+  var arr = cargarRegistro();
+  pick.id = Date.now()+'_'+Math.random().toString(36).slice(2);
+  pick.estado = 'pendiente';
+  pick.golesLocalReal = null; pick.golesVisitaReal = null;
+  arr.push(pick);
+  guardarRegistroArr(arr);
+}
+function verificarRegistro(){
+  var arr = cargarRegistro();
+  var cambios = false;
+  arr.forEach(function(pick){
+    if(pick.estado!=='pendiente') return;
+    if(pick.liga !== LIGA_ACTUAL) return;
+    if(!TERMINADOS || !TERMINADOS.length) return;
+    var nl=normalizarNombre(pick.local), nv=normalizarNombre(pick.visita);
+    var match = TERMINADOS.find(function(t){
+      return normalizarNombre(t.local)===nl && normalizarNombre(t.visita)===nv && t.golesLocal!==null;
+    });
+    if(!match) return;
+    pick.golesLocalReal = match.golesLocal; pick.golesVisitaReal = match.golesVisita;
+    if(pick.mercado==='1X2'){
+      var real1x2 = match.golesLocal>match.golesVisita ? pick.local : (match.golesLocal<match.golesVisita ? pick.visita : 'Empate');
+      pick.estado = (pick.seleccion===real1x2) ? 'ganado' : 'perdido';
+      cambios = true;
+    }
+  });
+  if(cambios) guardarRegistroArr(arr);
+  pintarRegistro();
+}
+function pintarRegistro(){
+  var cont = document.getElementById('registro');
+  if(!cont) return;
+  var arr = cargarRegistro().slice().reverse();
+  if(!arr.length){
+    cont.innerHTML = '<div class="estado">Todavía no has guardado ningún pick. Guárdalos con el botón 💾 desde la pestaña Cuotas de cada partido.</div>';
+    return;
+  }
+  var ganados=0, perdidos=0, unidadesNeto=0, pendientes=0;
+  arr.forEach(function(p){
+    if(p.estado==='ganado'){
+      ganados++;
+      var dec = decimalDeAmericana(p.cuota);
+      if(dec) unidadesNeto += (dec-1);
+    } else if(p.estado==='perdido'){ perdidos++; unidadesNeto -= 1; }
+    else pendientes++;
+  });
+  var resumen = '<div class="kpi">'+
+    '<div><b>'+ganados+'-'+perdidos+'</b><small>Récord (G-P)</small></div>'+
+    '<div><b>'+pendientes+'</b><small>Pendientes</small></div>'+
+    '<div><b>'+(unidadesNeto>=0?'+':'')+unidadesNeto.toFixed(2)+'u</b><small>Neto (stake plano 1u)</small></div>'+
+  '</div>';
+  var filas = arr.map(function(p){
+    var color = p.estado==='ganado'?'var(--good)':(p.estado==='perdido'?'var(--bad)':'var(--mut)');
+    return '<div class="linea"><span>'+p.local+' vs '+p.visita+' — '+p.seleccion+' ('+p.cuota+')</span>'+
+      '<b style="color:'+color+'">'+p.estado+'</b></div>';
+  }).join('');
+  cont.innerHTML = resumen + '<div class="lineas" style="margin-top:10px">'+filas+'</div>'+
+    '<div class="nota">No es CLV real — no hay fuente de cuota de cierre conectada. Esto es tu récord de aciertos y ganancia neta a stake plano (1 unidad por pick), y por ahora solo verifica automáticamente picks de mercado 1X2. "Verificar" busca el resultado entre los partidos terminados de la liga que tengas cargada en este momento.</div>';
+}
+
+// ---------- combinada ----------
+function cargarCombinada(){
+  try{ return JSON.parse(localStorage.getItem('ova_futbol_combinada_v1')||'[]'); }
+  catch(e){ return []; }
+}
+function guardarCombinadaArr(arr){
+  try{ localStorage.setItem('ova_futbol_combinada_v1', JSON.stringify(arr)); }catch(e){}
+}
+function agregarACombinada(leg){
+  var arr = cargarCombinada();
+  leg.id = Date.now()+'_'+Math.random().toString(36).slice(2);
+  arr.push(leg);
+  guardarCombinadaArr(arr);
+  pintarCombinada();
+}
+function quitarDeCombinada(id){
+  var arr = cargarCombinada().filter(function(l){ return l.id!==id; });
+  guardarCombinadaArr(arr);
+  pintarCombinada();
+}
+function pintarCombinada(){
+  var cont = document.getElementById('combinada');
+  if(!cont) return;
+  var arr = cargarCombinada();
+  if(!arr.length){
+    cont.innerHTML = '<div class="estado">Agrega selecciones con el botón 🔗 desde la pestaña Cuotas de cualquier partido.</div>';
+    return;
+  }
+  var probCombinada = arr.reduce(function(acc,l){ return acc*l.prob; }, 1);
+  var cuotaJusta = cuotaJustaAmericana(probCombinada);
+  var cuotaJustaTxt = cuotaJusta===null ? '—' : (cuotaJusta>0?'+':'')+cuotaJusta;
+  var filas = arr.map(function(l){
+    return '<div class="linea"><span>'+l.local+' vs '+l.visita+': '+l.seleccion+' ('+(l.prob*100).toFixed(1)+'%)</span>'+
+      '<button data-id="'+l.id+'" class="quitarLeg" style="background:transparent;border:0;color:var(--bad);font-size:16px;cursor:pointer">✕</button></div>';
+  }).join('');
+  cont.innerHTML = '<div class="kpi">'+
+      '<div><b>'+(probCombinada*100).toFixed(1)+'%</b><small>Prob. combinada</small></div>'+
+      '<div><b>'+cuotaJustaTxt+'</b><small>Cuota justa</small></div>'+
+      '<div><b>'+arr.length+'</b><small>Selecciones</small></div>'+
+    '</div>'+
+    '<div class="lineas" style="margin:10px 0">'+filas+'</div>'+
+    '<div class="cuotasbox"><label>Cuota que te ofrece la casa (americana)</label>'+
+    '<input type="number" id="oddCombinada" placeholder="+450">'+
+    '<button id="btnValorCombinada" class="btnAncho">Ver si hay valor</button>'+
+    '<div id="outValorCombinada" class="veredictoCuota"></div></div>'+
+    '<button id="btnLimpiarCombinada" class="btnAncho sec">Vaciar combinada</button>';
+  cont.querySelectorAll('.quitarLeg').forEach(function(b){
+    b.addEventListener('click', function(){ quitarDeCombinada(b.dataset.id); });
+  });
+  document.getElementById('btnLimpiarCombinada').addEventListener('click', function(){
+    guardarCombinadaArr([]); pintarCombinada();
+  });
+  document.getElementById('btnValorCombinada').addEventListener('click', function(){
+    var odd = document.getElementById('oddCombinada').value;
+    var imp = impProb(odd);
+    var out = document.getElementById('outValorCombinada');
+    if(imp===null){ out.textContent='Mete una cuota válida.'; return; }
+    var diff = (probCombinada - imp)*100;
+    out.innerHTML = 'Modelo: '+(probCombinada*100).toFixed(1)+'% vs cuota implica '+(imp*100).toFixed(1)+'% — '+
+      (diff>=3 ? '<span class="si">hay valor (+'+diff.toFixed(1)+' pts)</span>' : '<span class="no">sin valor ('+diff.toFixed(1)+' pts)</span>');
+  });
+}
+
+// ---------- carga de liga ----------
+function cargarLiga(clave){
+  LIGA_ACTUAL = clave;
+  CACHE_PERFIL = {};
+  MOSTRANDO_TODOS = false;
+  var liga = LIGAS[clave];
+  LIGA_ES_COPA = !!liga.esCopa;
+  var estado = document.getElementById('estado');
+  estado.className = 'estado';
+  estado.textContent = 'Bajando '+liga.nombre+' en vivo...';
+  document.getElementById('juegos').innerHTML = '';
+  document.getElementById('algane').innerHTML = '';
+  document.getElementById('backtestOut').innerHTML = '';
+  EQUIPOS = [];
+
+  if(LIGA_ES_COPA){
+    fetch(liga.urlPartidos+'?v='+Date.now()).then(function(r){ return r.text(); })
+      .then(function(htmlPartidos){
+        var todos = extraerPartidos(htmlPartidos);
+        if(!todos.length){ throw new Error('no se encontraron partidos'); }
+        TERMINADOS = todos.filter(function(p){ return p.terminado && p.golesLocal!==null; });
+        var pendientes = todos.filter(function(p){ return !p.terminado; });
+        pendientes.sort(function(a,b){ return compararFecha(a.fecha,b.fecha) || (a.hora||'').localeCompare(b.hora||''); });
+        PENDIENTES_TODOS = pendientes;
+        DIA_SELECCIONADO = null;
+        pintarSelectorDias();
+        aplicarSelectorDias();
+        document.getElementById('algane').innerHTML =
+          '<div class="estado">"Al gane" no aplica a copas de eliminación directa — no hay modelo de probabilidad sin tabla de temporada.</div>';
+        var ahora = new Date().toLocaleString('es', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
+        estado.textContent = '✓ '+liga.nombre+' — '+PARTIDOS.length+' partidos próxima ronda, '+TERMINADOS.length+' terminados — en vivo ('+ahora+'). Copa: sin modelo.';
+        estado.className = 'estado ok';
+      }).catch(function(e){
+        estado.textContent = '✗ No se pudo cargar '+liga.nombre+': '+e.message;
+        estado.className = 'estado bad';
+      });
+    return;
+  }
+
+  Promise.all([
+    fetch(liga.url+'?v='+Date.now()).then(function(r){ return r.text(); }),
+    fetch(liga.urlPartidos+'?v='+Date.now()).then(function(r){ return r.text(); })
+  ]).then(function(res){
+    EQUIPOS = extraerTabla(res[0]);
+    var todos = extraerPartidos(res[1]);
+    if(!EQUIPOS.length){ throw new Error('no se pudo leer la tabla de posiciones'); }
+    TERMINADOS = todos.filter(function(p){ return p.terminado && p.golesLocal!==null; });
+    var pendientes = todos.filter(function(p){ return !p.terminado; });
+    pendientes.sort(function(a,b){ return compararFecha(a.fecha,b.fecha) || (a.hora||'').localeCompare(b.hora||''); });
+    PENDIENTES_TODOS = pendientes;
+    DIA_SELECCIONADO = null;
+    pintarSelectorDias();
+    aplicarSelectorDias();
+    pintarAlGane(PENDIENTES_TODOS.length ? PENDIENTES_TODOS : PARTIDOS);
+    var ahora = new Date().toLocaleString('es', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
+    estado.textContent = '✓ '+liga.nombre+' — '+EQUIPOS.length+' equipos, '+PARTIDOS.length+' partidos del día, '+TERMINADOS.length+' terminados medibles — en vivo ('+ahora+').';
+    estado.className = 'estado ok';
+  }).catch(function(e){
+    estado.textContent = '✗ No se pudo cargar '+liga.nombre+': '+e.message;
+    estado.className = 'estado bad';
+  });
+}
+
+// ---------- tabs principales ----------
+document.querySelectorAll('.tabbar .tbar-btn').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    document.querySelectorAll('.tabbar .tbar-btn').forEach(function(b){ b.classList.remove('on'); });
+    btn.classList.add('on');
+    document.querySelectorAll('main > .vista').forEach(function(v){ v.classList.remove('on'); });
+    var mapa = {juegos:'Juegos', algane:'Algane', backtest:'Backtest', registro:'Registro', combinada:'Combinada'};
+    document.getElementById('vista'+mapa[btn.dataset.vista]).classList.add('on');
+    if(btn.dataset.vista==='registro') pintarRegistro();
+    if(btn.dataset.vista==='combinada') pintarCombinada();
+  });
+});
+
+document.getElementById('btnCorrerBacktest').addEventListener('click', correrBacktest);
+document.getElementById('btnVerificarRegistro').addEventListener('click', verificarRegistro);
+
+cargarLiga(document.getElementById('ligaSel').value);
+document.getElementById('ligaSel').addEventListener('change', function(){
+  cargarLiga(this.value);
+});
+</script>
+</body>
+</html>
