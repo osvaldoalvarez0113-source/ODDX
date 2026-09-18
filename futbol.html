@@ -215,6 +215,21 @@ var MOSTRANDO_TODOS = false;
 var LIGA_ACTUAL = null;
 var CACHE_PERFIL = {};
 
+// ---------- Kalshi (cuotas via Worker de Cloudflare, para esquivar CORS) ----------
+// OJO: reemplaza esto por la URL real de tu Worker una vez lo despliegues.
+var KALSHI_PROXY = 'https://kalshi-ova.osvaldoalvarez0113.workers.dev';
+// Confirmados de verdad (fuentes públicas): pl y laliga.
+// El resto son mi mejor intento siguiendo el mismo patrón de nombre — pueden estar mal,
+// pruébalos y si alguno falla seguro me dices cuál para corregirlo.
+var KALSHI_SERIES = {
+  pl: 'KXEPLGAME',
+  laliga: 'KXLALIGAGAME',
+  seriea: 'KXSERIEAGAME',
+  bundesliga: 'KXBUNDESLIGAGAME',
+  ligue1: 'KXLIGUE1GAME',
+  cl: 'KXUCLGAME'
+};
+
 var LIGAS = {
   pl:  {nombre:'Premier League', url:'https://www.worldfootball.net/competition/co91/england-premier-league/team-statistics-overview/', urlPartidos:'https://www.worldfootball.net/competition/co91/england-premier-league/results-and-standings/'},
   laliga: {nombre:'La Liga', url:'https://www.worldfootball.net/competition/co97/spain-primera-division/team-statistics-overview/', urlPartidos:'https://www.worldfootball.net/competition/co97/spain-primera-division/results-and-standings/'},
@@ -252,6 +267,41 @@ function cuotaJustaAmericana(prob){
   if(!prob || prob<=0 || prob>=1) return null;
   if(prob>=0.5) return Math.round(-(prob/(1-prob))*100);
   return Math.round(((1-prob)/prob)*100);
+}
+
+// ---------- Kalshi: buscar el evento del partido y sacar cuotas ----------
+function buscarEventoKalshi(seriesTicker, nombreLocal, nombreVisita){
+  var url = KALSHI_PROXY + '/events?series_ticker='+encodeURIComponent(seriesTicker)+'&status=open&with_nested_markets=true';
+  return fetch(url).then(function(r){
+    if(!r.ok) throw new Error('Kalshi respondió '+r.status);
+    return r.json();
+  }).then(function(data){
+    var eventos = (data && data.events) || [];
+    var nl = normalizarNombre(nombreLocal), nv = normalizarNombre(nombreVisita);
+    // clave corta: evita fallar por nombres largos con abreviaturas distintas (ej. "FC", "United")
+    var claveL = nl.length>5 ? nl.slice(0,6) : nl;
+    var claveV = nv.length>5 ? nv.slice(0,6) : nv;
+    var evento = eventos.find(function(ev){
+      var mercados = ev.markets || [];
+      var texto = normalizarNombre(mercados.map(function(m){
+        return (m.yes_sub_title||'')+' '+(m.subtitle||'')+' '+(m.title||'');
+      }).join(' '));
+      return texto.indexOf(claveL)>-1 && texto.indexOf(claveV)>-1;
+    });
+    if(!evento) return null;
+    var out = {local:null, empate:null, visita:null};
+    (evento.markets||[]).forEach(function(m){
+      var etiqueta = normalizarNombre((m.yes_sub_title||'')+' '+(m.subtitle||''));
+      var centavos = (m.yes_ask!=null ? m.yes_ask : (m.yes_bid!=null ? m.yes_bid : m.last_price));
+      if(centavos===undefined || centavos===null) return;
+      var americana = cuotaJustaAmericana(centavos/100);
+      if(americana===null) return;
+      if(/draw|empat|tie/.test(etiqueta)) out.empate = americana;
+      else if(etiqueta.indexOf(claveL)>-1) out.local = americana;
+      else if(etiqueta.indexOf(claveV)>-1) out.visita = americana;
+    });
+    return out;
+  });
 }
 
 // ---------- tabla de posiciones ----------
@@ -570,6 +620,8 @@ function pintarGameBody(bodyEl, p, eL, eV){
     '<div class="pane" id="'+id+'cuo">' +
       '<h3>¿Tienes una cuota? Mira si hay valor</h3>' +
       '<div class="cuotasbox">' +
+        '<button id="'+id+'btnKalshi" class="btnChico" style="width:100%;margin-bottom:10px;padding:10px">🦈 Traer cuota de Kalshi</button>' +
+        '<div id="'+id+'kalshiOut" class="nota" style="margin:0 0 10px"></div>' +
         '<div class="fila">' +
           '<div style="flex:1"><label>Cuota '+p.local+'</label><input type="number" id="'+id+'oddL" placeholder="-150"></div>' +
           '<div style="flex:1"><label>Cuota empate</label><input type="number" id="'+id+'oddD" placeholder="+230"></div>' +
@@ -602,6 +654,37 @@ function pintarGameBody(bodyEl, p, eL, eV){
       btn.classList.add('on');
       bodyEl.querySelectorAll('.pane').forEach(function(pn){ pn.classList.remove('on'); });
       document.getElementById(id+btn.dataset.t).classList.add('on');
+    });
+  });
+
+  document.getElementById(id+'btnKalshi').addEventListener('click', function(){
+    var btnK = this;
+    var outK = document.getElementById(id+'kalshiOut');
+    var serieTicker = KALSHI_SERIES[LIGA_ACTUAL];
+    if(!serieTicker){ outK.textContent = 'No tengo el ticker de Kalshi para esta liga.'; return; }
+    if(!KALSHI_PROXY || KALSHI_PROXY.indexOf('TU-WORKER')>-1){
+      outK.textContent = 'Falta configurar KALSHI_PROXY con la URL real de tu Worker.';
+      return;
+    }
+    btnK.disabled = true;
+    outK.textContent = 'Buscando en Kalshi...';
+    buscarEventoKalshi(serieTicker, p.local, p.visita).then(function(res){
+      btnK.disabled = false;
+      if(!res){
+        outK.textContent = 'No encontré este partido en Kalshi (puede que no lo liste todavía, o que el ticker de esta liga esté mal).';
+        return;
+      }
+      if(res.local===null && res.empate===null && res.visita===null){
+        outK.textContent = 'Encontré el evento en Kalshi pero no pude leer ningún precio.';
+        return;
+      }
+      if(res.local!==null) document.getElementById(id+'oddL').value = res.local;
+      if(res.empate!==null) document.getElementById(id+'oddD').value = res.empate;
+      if(res.visita!==null) document.getElementById(id+'oddV').value = res.visita;
+      outK.textContent = 'Cuotas de Kalshi cargadas' + (res.empate===null?' (sin mercado de empate detectado)':'') + '. Dale "Calcular valor".';
+    }).catch(function(e){
+      btnK.disabled = false;
+      outK.textContent = 'Kalshi falló: '+e.message+' (revisa que el Worker esté desplegado y la URL en KALSHI_PROXY sea correcta).';
     });
   });
 
