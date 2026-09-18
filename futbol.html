@@ -160,6 +160,14 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
  margin:18px 2px 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
 .diaHead:first-child{margin-top:4px}
 
+/* barra de dias arriba (Hoy / Mañana / fecha), como FotMob */
+.diaSelector{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+ margin:14px 0 4px;padding-bottom:2px}
+.diaSelector::-webkit-scrollbar{display:none}
+.diaBtn{flex:0 0 auto;background:var(--bg2);color:var(--mut);border:1px solid var(--line2);border-radius:20px;
+ padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;text-transform:capitalize}
+.diaBtn.on{background:var(--hot);color:var(--hotTx);border-color:var(--hot)}
+
 /* botones chicos de guardar/combinar */
 .filaCuota{display:flex;justify-content:space-between;align-items:center;margin:6px 0;gap:8px}
 .filaCuota .txt{flex:1;min-width:0}
@@ -193,6 +201,7 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
     <option value="dfbpokal">DFB-Pokal</option>
     <option value="copaitalia">Coppa Italia</option>
     <option value="coupefrance">Coupe de France</option>
+    <option value="copadelrey">Copa del Rey</option>
    </optgroup>
   </select>
  </div>
@@ -201,6 +210,7 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
  <div class="estado" id="estado">Cargando...</div>
 
  <div class="vista on" id="vistaJuegos">
+  <div class="diaSelector" id="diaSelector"></div>
   <div id="juegos"></div>
  </div>
 
@@ -239,6 +249,7 @@ var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
 var TERMINADOS = [];
 var MOSTRANDO_TODOS = false;
+var DIA_SELECCIONADO = null;
 var LIGA_ACTUAL = null;
 var LIGA_ES_COPA = false;
 var CACHE_PERFIL = {};
@@ -273,7 +284,8 @@ var LIGAS = {
   facup: {nombre:'FA Cup', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co41/results-and-standings/'},
   dfbpokal: {nombre:'DFB-Pokal', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co33/results-and-standings/'},
   copaitalia: {nombre:'Coppa Italia', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co27/results-and-standings/'},
-  coupefrance: {nombre:'Coupe de France', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co29/results-and-standings/'}
+  coupefrance: {nombre:'Coupe de France', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co29/results-and-standings/'},
+  copadelrey: {nombre:'Copa del Rey', esCopa:true, urlPartidos:'https://www.worldfootball.net/competition/co23/results-and-standings/'}
 };
 
 // ---------- utilidades ----------
@@ -392,6 +404,22 @@ function extraerTabla(html){
 }
 
 // ---------- partidos (proximos Y terminados) ----------
+function buscarFechaCercana(nodo){
+  // Plan B: si la fecha no viene dentro del texto del propio partido, es porque
+  // el sitio la pone en una fila aparte arriba del bloque de partidos de ese dia.
+  // Subimos a la fila de tabla mas cercana y vamos mirando filas anteriores
+  // hasta toparnos con una que sea solo una fecha.
+  var fila = (nodo && nodo.closest) ? nodo.closest('tr') : null;
+  var intentos = 0;
+  while(fila && intentos < 10){
+    var m = fila.textContent.match(/\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b/);
+    if(m) return m[0];
+    fila = fila.previousElementSibling;
+    intentos++;
+  }
+  return '';
+}
+
 function extraerPartidos(html){
   var doc = new DOMParser().parseFromString(html, 'text/html');
   var enlaces = doc.querySelectorAll('a[href*="match-report"]');
@@ -415,7 +443,7 @@ function extraerPartidos(html){
     var horaM = texto.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
     var hora = horaM ? horaM[0] : '';
     var fechaM = texto.match(/\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b/);
-    var fecha = fechaM ? fechaM[0] : '';
+    var fecha = fechaM ? fechaM[0] : buscarFechaCercana(a);
     var golesLocal=null, golesVisita=null;
     if(esFinal){
       var scoreM = texto.match(/\b(\d{1,2})\s*:\s*(\d{1,2})\b/);
@@ -841,6 +869,45 @@ function etiquetaFecha(fechaStr){
   return DIAS[d.getDay()] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()];
 }
 
+function pintarSelectorDias(){
+  var cont = document.getElementById('diaSelector');
+  var fechas = [];
+  PENDIENTES_TODOS.forEach(function(p){
+    if(p.fecha && fechas.indexOf(p.fecha)===-1) fechas.push(p.fecha);
+  });
+  if(!fechas.length){
+    if(cont) cont.innerHTML = '';
+    DIA_SELECCIONADO = 'TODOS';
+    return;
+  }
+  if(!cont) return;
+  if(!DIA_SELECCIONADO || (DIA_SELECCIONADO!=='TODOS' && fechas.indexOf(DIA_SELECCIONADO)===-1)){
+    DIA_SELECCIONADO = fechas[0];
+  }
+  var botones = fechas.map(function(f){ return {val:f, lbl:etiquetaFecha(f)}; });
+  botones.push({val:'TODOS', lbl:'Todos'});
+  cont.innerHTML = botones.map(function(b){
+    var on = b.val===DIA_SELECCIONADO ? ' on' : '';
+    return '<button class="diaBtn'+on+'" data-fecha="'+b.val+'">'+b.lbl+'</button>';
+  }).join('');
+  cont.querySelectorAll('.diaBtn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      DIA_SELECCIONADO = btn.dataset.fecha;
+      pintarSelectorDias();
+      aplicarSelectorDias();
+    });
+  });
+}
+
+function aplicarSelectorDias(){
+  if(DIA_SELECCIONADO==='TODOS'){
+    PARTIDOS = PENDIENTES_TODOS;
+  } else {
+    PARTIDOS = PENDIENTES_TODOS.filter(function(p){ return p.fecha===DIA_SELECCIONADO; });
+  }
+  pintarJuegos(PARTIDOS);
+}
+
 function pintarGameBodyCopa(bodyEl, p){
   var id = 'c'+Math.random().toString(36).slice(2);
   bodyEl.innerHTML =
@@ -917,19 +984,6 @@ function pintarJuegos(partidos){
       }
     });
   });
-
-  if(PENDIENTES_TODOS.length > partidos.length || (MOSTRANDO_TODOS && PENDIENTES_TODOS.length)){
-    var btnTxt = MOSTRANDO_TODOS ? 'Ver solo próxima jornada' : 'Ver todos los próximos partidos ('+PENDIENTES_TODOS.length+')';
-    cont.insertAdjacentHTML('beforeend', '<button id="btnToggleJornada" class="btnAncho sec">'+btnTxt+'</button>');
-    var btnT = document.getElementById('btnToggleJornada');
-    if(btnT){
-      btnT.addEventListener('click', function(){
-        MOSTRANDO_TODOS = !MOSTRANDO_TODOS;
-        PARTIDOS = MOSTRANDO_TODOS ? PENDIENTES_TODOS : filtrarJornadaActual(PENDIENTES_TODOS);
-        pintarJuegos(PARTIDOS);
-      });
-    }
-  }
 }
 
 function pintarAlGane(partidos){
@@ -1154,8 +1208,9 @@ function cargarLiga(clave){
         var pendientes = todos.filter(function(p){ return !p.terminado; });
         pendientes.sort(function(a,b){ return compararFecha(a.fecha,b.fecha) || (a.hora||'').localeCompare(b.hora||''); });
         PENDIENTES_TODOS = pendientes;
-        PARTIDOS = filtrarJornadaActual(pendientes);
-        pintarJuegos(PARTIDOS);
+        DIA_SELECCIONADO = null;
+        pintarSelectorDias();
+        aplicarSelectorDias();
         document.getElementById('algane').innerHTML =
           '<div class="estado">"Al gane" no aplica a copas de eliminación directa — no hay modelo de probabilidad sin tabla de temporada.</div>';
         var ahora = new Date().toLocaleString('es', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
@@ -1179,11 +1234,12 @@ function cargarLiga(clave){
     var pendientes = todos.filter(function(p){ return !p.terminado; });
     pendientes.sort(function(a,b){ return compararFecha(a.fecha,b.fecha) || (a.hora||'').localeCompare(b.hora||''); });
     PENDIENTES_TODOS = pendientes;
-    PARTIDOS = filtrarJornadaActual(pendientes);
-    pintarJuegos(PARTIDOS);
+    DIA_SELECCIONADO = null;
+    pintarSelectorDias();
+    aplicarSelectorDias();
     pintarAlGane(PENDIENTES_TODOS.length ? PENDIENTES_TODOS : PARTIDOS);
     var ahora = new Date().toLocaleString('es', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
-    estado.textContent = '✓ '+liga.nombre+' — '+EQUIPOS.length+' equipos, '+PARTIDOS.length+' partidos próxima jornada, '+TERMINADOS.length+' terminados medibles — en vivo ('+ahora+').';
+    estado.textContent = '✓ '+liga.nombre+' — '+EQUIPOS.length+' equipos, '+PARTIDOS.length+' partidos del día, '+TERMINADOS.length+' terminados medibles — en vivo ('+ahora+').';
     estado.className = 'estado ok';
   }).catch(function(e){
     estado.textContent = '✗ No se pudo cargar '+liga.nombre+': '+e.message;
