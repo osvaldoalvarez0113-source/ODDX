@@ -574,6 +574,27 @@ function extraerMarcador(texto){
   }
   return null;
 }
+// tok = textos de cada nodo unidos con espacio; plano = textContent tal cual (sin separadores).
+// worldfootball pega la hora y el marcador ("21:003:0"), asi que si no aparecen separados se busca pegado.
+function extraerMarcadorCompleto(tok, plano){
+  var m = extraerMarcador(tok);
+  if(m) return m;
+  var r = plano.match(/(?:^|[^\d:.])\d{1,2}:[0-5]\d(\d{1,2}):(\d)(?![\d:])/);
+  return r ? {l:+r[1], v:+r[2]} : null;
+}
+// Textos de cada nodo dentro de un elemento (cada trozo por separado, sin pegarlos).
+function textoNodos(nodo, out){
+  out = out || [];
+  for(var c = nodo.firstChild; c; c = c.nextSibling){
+    if(c.nodeType===3){
+      var t = c.nodeValue.replace(/\s+/g,' ').trim();
+      if(t) out.push(t);
+    } else if(c.nodeType===1 && !/^(script|style)$/i.test(c.nodeName)){
+      textoNodos(c, out);
+    }
+  }
+  return out;
+}
 
 function extraerPartidos(html){
   var doc = new DOMParser().parseFromString(html, 'text/html');
@@ -594,19 +615,22 @@ function extraerPartidos(html){
     var nombreLocal = escudos[0].getAttribute('alt') || escudos[0].getAttribute('title');
     var nombreVisita = escudos[1].getAttribute('alt') || escudos[1].getAttribute('title');
     if(!nombreLocal || !nombreVisita) return;
+    var tokens = textoNodos(cont);
+    var textoTok = tokens.join(' ');
     var texto = cont.textContent.replace(/\s+/g,' ');
-    var marcador = extraerMarcador(texto);
-    var enVivo = /\blive\b|half[\s-]?time|\b\d{1,3}\s*['’′]/i.test(texto);
+    var marcador = extraerMarcadorCompleto(textoTok, texto);
+    var enVivo = tokens.some(function(t){ return /^(live|ht|half[\s-]?time)$/i.test(t) || /^\d{1,3}(\+\d+)?['’′]$/.test(t); }) || /live\s*$/i.test(texto);
     // terminado = dice "Ended" O trae un marcador que no es una hora (y no esta en juego)
-    var esFinal = /\bEnded\b/i.test(texto) || (!!marcador && !enVivo);
-    var horaM = texto.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
-    var hora = horaM ? horaM[0] : '';
-    var fechaM = texto.match(/\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b/);
+    var esFinal = /ended/i.test(texto) || (!!marcador && !enVivo);
+    var horaM = textoTok.match(/(?:^|[^\d:.])([01]?\d|2[0-3]):([0-5]\d)(?![\d:])/) ||
+                textoTok.match(/(?:^|[^\d:.])([01]?\d|2[0-3]):([0-5]\d)(?=\d{1,2}:\d)/);   // hora pegada al marcador ("13:301:3")
+    var hora = horaM ? horaM[1]+':'+horaM[2] : '';
+    var fechaM = textoTok.match(/\b(\d{1,2})\.(\d{1,2})\.(\d{2,4})\b/);
     var fecha = fechaM ? fechaM[0] : buscarFechaCercana(cont);
     var golesLocal=null, golesVisita=null;
     if(esFinal && marcador){ golesLocal=marcador.l; golesVisita=marcador.v; }
     var lista = esFinal ? MUESTRAS.term : MUESTRAS.pend;
-    if(lista.length < 2) lista.push('['+nombreLocal+' - '+nombreVisita+'] "'+texto.slice(0,150)+'" fecha='+(fecha||'?'));
+    if(lista.length < 2) lista.push('['+nombreLocal+' - '+nombreVisita+'] nodos: '+tokens.join(' | ').slice(0,150)+' → '+(esFinal?'TERMINADO '+(marcador?marcador.l+':'+marcador.v:'sin marcador'):(enVivo?'EN VIVO':'por jugar'))+' fecha='+(fecha||'?'));
     var clave = nombreLocal+'|'+nombreVisita+'|'+fecha+'|'+hora;
     if(partidos.some(function(p){ return p.clave===clave; })) return;
     var horaDt = (!esFinal && fecha && hora) ? horaLocalDispositivo(fecha, hora) : null;
@@ -617,19 +641,24 @@ function extraerPartidos(html){
       hrefLocal: escudos[0].closest('a') ? escudos[0].closest('a').getAttribute('href') : null,
       hrefVisita: escudos[1].closest('a') ? escudos[1].closest('a').getAttribute('href') : null,
       hora: hora, horaLocal: horaLocalTxt, fecha: fecha, terminado: esFinal,
+      enVivo: enVivo && !esFinal, marcadorVivo: (enVivo && !esFinal) ? marcador : null,
       golesLocal: golesLocal, golesVisita: golesVisita
     });
   });
   return partidos;
 }
 
-// ---------- ESPN: bajar resultados por trozos de un mes ----------
+// ---------- ESPN: bajar resultados ----------
+// El rango de fechas (dates=A-B) esta documentado para otros deportes; para futbol solo esta
+// confirmado el dia suelto (dates=YYYYMMDD). Por eso se prueba el rango una vez y, si no responde
+// bien, se baja dia por dia (mas lento, pero es el formato documentado para futbol).
+var ESPN_MODO = null;   // 'rango' | 'dia'
 function inicioTemporada(atras){
   var h = new Date();
   var y = h.getFullYear() - (h.getMonth()<6 ? 1 : 0) - (atras||0);
-  return new Date(y, 6, 1);   // 1 de julio
+  return new Date(y, 7, 1);   // 1 de agosto
 }
-function finTemporada(ini){ return new Date(ini.getFullYear()+1, 5, 30); }
+function finTemporada(ini){ return new Date(ini.getFullYear()+1, 5, 10); }
 function trozosMensuales(desde, hasta){
   var out = [], y = desde.getFullYear(), m = desde.getMonth();
   while(new Date(y, m, 1) <= hasta){
@@ -671,25 +700,77 @@ function parseESPN(json){
   });
   return out;
 }
-function bajarResultadosESPN(slug, desde, hasta){
-  var trozos = trozosMensuales(desde, hasta), errores = [];
-  return Promise.all(trozos.map(function(t){
-    var url = ESPN_BASE+slug+'/scoreboard?dates='+ymd(t[0])+'-'+ymd(t[1])+'&limit=500';
-    return fetch(url).then(function(r){
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      return r.json();
-    }).then(parseESPN).catch(function(e){
-      errores.push(ymd(t[0]).slice(0,6)+': '+(e && e.message ? e.message : 'falló'));
-      return [];
+function espnJSON(url){
+  return fetch(url).then(function(r){
+    if(r.ok) return r.json();
+    return r.text().then(function(t){ throw new Error('HTTP '+r.status+' '+(t||'').replace(/\s+/g,' ').slice(0,80)); },
+                         function(){ throw new Error('HTTP '+r.status); });
+  });
+}
+function descubrirModoESPN(slug){
+  if(ESPN_MODO) return Promise.resolve({modo:ESPN_MODO, nota:'(ya sabido)'});
+  var fin = new Date(); fin.setDate(fin.getDate()-8);
+  var ini = new Date(); ini.setDate(ini.getDate()-21);
+  var url = ESPN_BASE+slug+'/scoreboard?dates='+ymd(ini)+'-'+ymd(fin)+'&limit=1000';
+  return espnJSON(url).then(function(j){
+    var ev = parseESPN(j);
+    var dentro = ev.length>0 && ev.every(function(e){ return e.ts && e.ts >= ini.getTime()-86400000 && e.ts <= fin.getTime()+2*86400000; });
+    if(dentro){ ESPN_MODO = 'rango'; return {modo:'rango', nota:'sonda de rango ok ('+ev.length+' partidos en 2 semanas)'}; }
+    return {modo:'dia', nota:'sonda de rango no confiable ('+ev.length+' partidos'+(ev.length?', fuera de fecha':'')+') → día por día'};
+  }).catch(function(e){
+    if(/HTTP 4/.test(e.message)) ESPN_MODO = 'dia';
+    return {modo:'dia', nota:'sonda de rango falló ('+e.message+') → día por día'};
+  });
+}
+function bajarPorDias(slug, desde, hasta, errores, progreso){
+  var dias = [];
+  for(var d = new Date(desde); d <= hasta; d.setDate(d.getDate()+1)) dias.push(new Date(d));
+  var out = [], i = 0, activos = 0, hechos = 0;
+  return new Promise(function(resolve){
+    function siguiente(){
+      while(activos < 10 && i < dias.length){
+        (function(dia){
+          activos++;
+          espnJSON(ESPN_BASE+slug+'/scoreboard?dates='+ymd(dia)).then(parseESPN).then(function(ev){
+            out = out.concat(ev);
+          }).catch(function(e){
+            errores.push(ymd(dia)+': '+e.message);
+          }).then(function(){
+            activos--; hechos++;
+            if(progreso) progreso(hechos, dias.length);
+            siguiente();
+          });
+        })(dias[i++]);
+      }
+      if(i >= dias.length && activos === 0) resolve(out);
+    }
+    siguiente();
+  });
+}
+function bajarResultadosESPN(slug, desde, hasta, progreso){
+  var errores = [];
+  return descubrirModoESPN(slug).then(function(sonda){
+    var pedido;
+    if(sonda.modo==='rango'){
+      var trozos = trozosMensuales(desde, hasta), hechos = 0;
+      pedido = Promise.all(trozos.map(function(t){
+        var url = ESPN_BASE+slug+'/scoreboard?dates='+ymd(t[0])+'-'+ymd(t[1])+'&limit=1000';
+        return espnJSON(url).then(parseESPN).catch(function(e){
+          errores.push(ymd(t[0]).slice(0,6)+': '+e.message); return [];
+        }).then(function(ev){ hechos++; if(progreso) progreso(hechos, trozos.length); return ev; });
+      })).then(function(arrs){ return [].concat.apply([], arrs); });
+    } else {
+      pedido = bajarPorDias(slug, desde, hasta, errores, progreso);
+    }
+    return pedido.then(function(todos){
+      var vistos = {}, unicos = [];
+      todos.forEach(function(p){
+        if(p.id && vistos[p.id]) return;
+        if(p.id) vistos[p.id] = true;
+        unicos.push(p);
+      });
+      return {partidos:unicos, errores:errores, modo:sonda.modo, nota:sonda.nota};
     });
-  })).then(function(arrs){
-    var vistos = {}, todos = [];
-    [].concat.apply([], arrs).forEach(function(p){
-      if(p.id && vistos[p.id]) return;
-      if(p.id) vistos[p.id] = true;
-      todos.push(p);
-    });
-    return {partidos:todos, errores:errores, trozos:trozos.length};
   });
 }
 // Si worldfootball trajo menos de 10 terminados, se prueba ESPN y se usa el que tenga mas.
@@ -699,11 +780,11 @@ function completarResultados(clave, terminadosWF){
   var ini = inicioTemporada(0);
   return bajarResultadosESPN(ESPN_SLUG[clave], ini, new Date()).then(function(r){
     var fin = r.partidos.filter(function(p){ return p.terminado; });
-    DIAG.espn = {trozos:r.trozos, leidos:r.partidos.length, terminados:fin.length, errores:r.errores};
+    DIAG.espn = {modo:r.modo, nota:r.nota, leidos:r.partidos.length, terminados:fin.length, errores:r.errores};
     if(fin.length > terminadosWF.length) return {lista:fin, fuente:'ESPN'};
     return {lista:terminadosWF, fuente:'worldfootball'};
   }).catch(function(e){
-    DIAG.espn = {trozos:0, leidos:0, terminados:0, errores:[String(e && e.message || e)]};
+    DIAG.espn = {modo:'?', nota:'', leidos:0, terminados:0, errores:[String(e && e.message || e)]};
     return {lista:terminadosWF, fuente:'worldfootball'};
   });
 }
@@ -1234,7 +1315,8 @@ function pintarJuegos(partidos){
           '<div class="eq"><img src="'+p.escudoLocal+'"><span>'+p.local+'</span></div>'+
           '<div class="eq"><img src="'+p.escudoVisita+'"><span>'+p.visita+'</span></div>'+
         '</div>'+
-        (p.horaLocal?'<div class="hora">'+p.horaLocal+'</div>':(p.hora?'<div class="hora">'+p.hora+' (hora del sitio)</div>':''))+
+        (p.enVivo ? '<div class="hora" style="color:var(--bad)">🔴 '+(p.marcadorVivo ? p.marcadorVivo.l+'-'+p.marcadorVivo.v : 'en vivo')+'</div>' :
+          (p.horaLocal?'<div class="hora">'+p.horaLocal+'</div>':(p.hora?'<div class="hora">'+p.hora+' (hora del sitio)</div>':'')))+
         '<div class="chev">▾</div>'+
       '</div>'+
       '<div class="body"></div>'+
@@ -1408,18 +1490,34 @@ function renderBacktest(lista, titulo, minPrev){
   return html;
 }
 
-function obtenerTemporadaPasada(){
+function obtenerTemporadaPasada(progreso){
   if(TEMP_PASADA[LIGA_ACTUAL]) return Promise.resolve(TEMP_PASADA[LIGA_ACTUAL]);
   var slug = ESPN_SLUG[LIGA_ACTUAL];
   if(!slug) return Promise.reject(new Error('esta competencia no tiene fuente de resultados'));
   var ini = inicioTemporada(1);
-  return bajarResultadosESPN(slug, ini, finTemporada(ini)).then(function(r){
+  var claveCache = 'ova_futbol_pasada_'+LIGA_ACTUAL+'_'+ini.getFullYear();
+  // la temporada pasada ya no cambia: se guarda en el telefono para no volver a bajarla
+  try{
+    var guardada = JSON.parse(localStorage.getItem(claveCache)||'null');
+    if(guardada && guardada.length > 100){
+      TEMP_PASADA[LIGA_ACTUAL] = guardada;
+      DIAG.pasada = {leidos:guardada.length, terminados:guardada.length, errores:[], modo:'guardada en el teléfono', nota:''};
+      return Promise.resolve(guardada);
+    }
+  }catch(e){}
+  return bajarResultadosESPN(slug, ini, finTemporada(ini), progreso).then(function(r){
     var fin = r.partidos.filter(function(p){ return p.terminado; });
-    DIAG.pasada = {leidos:r.partidos.length, terminados:fin.length, errores:r.errores};
+    DIAG.pasada = {leidos:r.partidos.length, terminados:fin.length, errores:r.errores, modo:r.modo, nota:r.nota};
     if(!fin.length) throw new Error('ESPN no devolvió partidos ('+(r.errores[0]||'sin detalle')+')');
     TEMP_PASADA[LIGA_ACTUAL] = fin;
+    if(fin.length > 100){
+      try{ localStorage.setItem(claveCache, JSON.stringify(fin.map(function(p){ return {id:p.id,local:p.local,visita:p.visita,golesLocal:p.golesLocal,golesVisita:p.golesVisita,terminado:true,ts:p.ts}; }))); }catch(e){}
+    }
     return fin;
   });
+}
+function progresoTexto(out, etiqueta){
+  return function(hechos, total){ out.innerHTML = '<div class="estado">'+etiqueta+' '+hechos+' de '+total+'...</div>'; };
 }
 
 function correrBacktestActual(){
@@ -1439,7 +1537,7 @@ function correrBacktestPasado(){
   if(LIGA_ES_COPA){ out.innerHTML = '<div class="estado bad">El backtest no aplica a copas de eliminación directa.</div>'; return; }
   out.innerHTML = '<div class="estado">Bajando la temporada pasada de ESPN...</div>';
   var liga = LIGA_ACTUAL;
-  obtenerTemporadaPasada().then(function(lista){
+  obtenerTemporadaPasada(progresoTexto(out, 'Bajando la temporada pasada de ESPN:')).then(function(lista){
     if(liga!==LIGA_ACTUAL) return;
     setTimeout(function(){
       out.innerHTML = renderBacktest(lista, 'Temporada pasada completa', 4);
@@ -1453,7 +1551,7 @@ function correrCalibracion(){
   if(LIGA_ES_COPA){ out.innerHTML = '<div class="estado bad">No aplica a copas de eliminación directa.</div>'; return; }
   out.innerHTML = '<div class="estado">Bajando la temporada pasada y probando combinaciones... (unos segundos)</div>';
   var liga = LIGA_ACTUAL;
-  obtenerTemporadaPasada().then(function(lista){
+  obtenerTemporadaPasada(progresoTexto(out, 'Bajando la temporada pasada de ESPN:')).then(function(lista){
     if(liga!==LIGA_ACTUAL) return;
     setTimeout(function(){
       var prep = prepararLista(lista);
@@ -1691,21 +1789,23 @@ function armarDiag(){
   var w = DIAG.wf;
   if(w){
     L.push('worldfootball: '+w.total+' partidos leídos → '+w.terminados+' terminados con marcador, '+w.sinMarcador+' terminados sin marcador legible, '+w.pendientes+' por jugar ('+w.sinFecha+' de ellos sin fecha)');
-    L.push('Lo que ve el parser (texto de un partido POR JUGAR):');
+    L.push('Lo que ve el parser (un partido POR JUGAR):');
     (MUESTRAS.pend.length?MUESTRAS.pend:['(ninguno)']).forEach(function(s){ L.push('  '+s); });
-    L.push('Lo que ve el parser (texto de un partido TERMINADO):');
+    L.push('Lo que ve el parser (un partido TERMINADO):');
     (MUESTRAS.term.length?MUESTRAS.term:['(ninguno — ningún partido se marcó como terminado)']).forEach(function(s){ L.push('  '+s); });
   } else {
     L.push('worldfootball: sin datos (la carga falló).');
   }
   var e = DIAG.espn;
   if(e){
-    L.push('ESPN (respaldo): '+e.trozos+' consultas, '+e.leidos+' partidos leídos, '+e.terminados+' terminados'+(e.errores.length?' · errores: '+e.errores.slice(0,3).join(' | '):''));
+    L.push('ESPN (respaldo): modo '+e.modo+' · '+e.nota);
+    L.push('  '+e.leidos+' partidos leídos, '+e.terminados+' terminados'+(e.errores.length?' · '+e.errores.length+' errores, ej: '+e.errores.slice(0,2).join(' | '):''));
   } else {
     L.push('ESPN (respaldo): no hizo falta (worldfootball trajo suficientes) o no aplica.');
   }
   if(DIAG.pasada){
-    L.push('ESPN temporada pasada: '+DIAG.pasada.leidos+' leídos, '+DIAG.pasada.terminados+' terminados'+(DIAG.pasada.errores.length?' · errores: '+DIAG.pasada.errores.slice(0,3).join(' | '):''));
+    L.push('ESPN temporada pasada: modo '+DIAG.pasada.modo+' · '+DIAG.pasada.nota);
+    L.push('  '+DIAG.pasada.leidos+' leídos, '+DIAG.pasada.terminados+' terminados'+(DIAG.pasada.errores.length?' · '+DIAG.pasada.errores.length+' errores, ej: '+DIAG.pasada.errores.slice(0,2).join(' | '):''));
   }
   L.push('Fuente usada para terminados: '+FUENTE_TERM+' ('+TERMINADOS.length+')');
   if(DIAG.tablaDeResultados) L.push('La tabla de posiciones de worldfootball no se pudo leer: se armó con los resultados.');
