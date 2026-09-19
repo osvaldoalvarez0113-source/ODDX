@@ -198,7 +198,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL <span class="ver">v6</span></h1>
+  <h1>⚽ FÚTBOL <span class="ver">v7</span></h1>
   <select id="ligaSel">
    <optgroup label="Ligas">
     <option value="pl">Premier League</option>
@@ -271,7 +271,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 
 
 <script>
-var VERSION = 'v6';
+var VERSION = 'v7';
 var EQUIPOS = null;
 var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
@@ -1257,8 +1257,8 @@ function badgeMercado(m){
     return '<div class="nota" style="margin:0 0 8px">Este mercado: <b>sin medir</b>. Ve a Backtest → Medir temporada pasada para saber si el modelo le gana a la frecuencia de la liga.</div>';
   }
   var t = veredictoDe(v[m]);
-  var expl = t.t==='✓ le gana' ? 'el modelo aporta algo sobre la frecuencia de la liga.' :
-    (t.t==='≈ igual' ? 'el modelo no aporta señal medible; úsalo solo de referencia.' : 'el modelo salió PEOR que la frecuencia de la liga; ignora el "valor".');
+  var expl = t.t==='✓ le gana' ? 'el modelo le gana a la frecuencia de la liga con diferencia clara.' :
+    (t.t==='≈ igual' ? 'no hay evidencia de que el modelo aporte; úsalo solo de referencia y no te fíes del "valor".' : 'el modelo salió claramente PEOR que la frecuencia de la liga; ignora el "valor".');
   return '<div class="nota" style="margin:0 0 8px">Este mercado en el backtest: <b style="color:'+t.c+'">'+t.t+'</b> — '+expl+'</div>';
 }
 function pintarFilasValor(filas, out, p){
@@ -1269,7 +1269,7 @@ function pintarFilasValor(filas, out, p){
   // si el backtest dijo que el modelo NO le gana a la frecuencia de la liga en este mercado, el "valor" no es confiable
   var vered = leerVeredictos(LIGA_ACTUAL);
   var claveM = {'1X2':'x12','OU2.5':'ou','BTTS':'bt'}[filas[0].mercado];
-  var confiable = (vered && vered[claveM]!==undefined) ? vered[claveM] > 0.005 : null;
+  var confiable = (vered && vered[claveM]!==undefined) ? veredictoDe(vered[claveM]).t==='✓ le gana' : null;
   var html = '';
   filas.forEach(function(f){
     if(f.odd===null) return;
@@ -1673,6 +1673,7 @@ function walkForward(prep, P, minPrev, opts){
   var A = (P.A===undefined ? 1 : P.A), At = (P.At===undefined ? A : P.At);
   var EDG = [0.45, 0.55, 0.65];
   var r = {n:0, ok1x2:0, okOU:0, okBtts:0, ll:0, llBase:0, brier:0, sl:0, over:0, btts:0, llOU:0, llOUb:0, llBt:0, llBtb:0,
+    q:{x12:{s:0,s2:0}, ou:{s:0,s2:0}, bt:{s:0,s2:0}},
     bins:[{n:0,pred:0,gan:0},{n:0,pred:0,gan:0},{n:0,pred:0,gan:0},{n:0,pred:0,gan:0}]};
   prep.forEach(function(m, idx){
     var aL = acum[m.kL], aV = acum[m.kV];
@@ -1691,8 +1692,10 @@ function walkForward(prep, P, minPrev, opts){
       r.n++;
       var pred = (d.pL>=d.pD && d.pL>=d.pV) ? 'L' : (d.pV>=d.pD ? 'V' : 'D');
       if(pred===real) r.ok1x2++;
-      r.ll += -Math.log(Math.max(pr[real], 1e-9));
-      r.llBase += -Math.log(fr[real]/nfr);
+      var lm1 = -Math.log(Math.max(pr[real], 1e-9)), lb1 = -Math.log(fr[real]/nfr);
+      r.ll += lm1;
+      r.llBase += lb1;
+      r.q.x12.s += lb1-lm1; r.q.x12.s2 += (lb1-lm1)*(lb1-lm1);
       r.brier += Math.pow(d.pL-(real==='L'?1:0),2) + Math.pow(d.pD-(real==='D'?1:0),2) + Math.pow(d.pV-(real==='V'?1:0),2);
       if(real==='L') r.sl++;
       var tot = m.gl+m.gv;
@@ -1701,10 +1704,11 @@ function walkForward(prep, P, minPrev, opts){
       var bt = (m.gl>=1 && m.gv>=1);
       if((d.btts>=0.5)===bt) r.okBtts++;
       if(bt) r.btts++;
-      r.llOU  += -Math.log(Math.max(tot>2.5 ? d.o25 : 1-d.o25, 1e-9));
-      r.llOUb += -Math.log(tot>2.5 ? fo.s/(fo.s+fo.n) : fo.n/(fo.s+fo.n));
-      r.llBt  += -Math.log(Math.max(bt ? d.btts : 1-d.btts, 1e-9));
-      r.llBtb += -Math.log(bt ? fb.s/(fb.s+fb.n) : fb.n/(fb.s+fb.n));
+      var lmO = -Math.log(Math.max(tot>2.5 ? d.o25 : 1-d.o25, 1e-9)), lbO = -Math.log(tot>2.5 ? fo.s/(fo.s+fo.n) : fo.n/(fo.s+fo.n));
+      var lmB = -Math.log(Math.max(bt ? d.btts : 1-d.btts, 1e-9)), lbB = -Math.log(bt ? fb.s/(fb.s+fb.n) : fb.n/(fb.s+fb.n));
+      r.llOU += lmO; r.llOUb += lbO; r.llBt += lmB; r.llBtb += lbB;
+      r.q.ou.s += lbO-lmO; r.q.ou.s2 += (lbO-lmO)*(lbO-lmO);
+      r.q.bt.s += lbB-lmB; r.q.bt.s2 += (lbB-lmB)*(lbB-lmB);
       var pf = Math.max(d.pL, d.pV);
       var favGana = (d.pL>=d.pV) ? real==='L' : real==='V';
       var bi = pf<EDG[0] ? 0 : (pf<EDG[1] ? 1 : (pf<EDG[2] ? 2 : 3));
@@ -1729,7 +1733,7 @@ function walkForward(prep, P, minPrev, opts){
 // Busqueda por etapas (para no probar millones de combinaciones en el telefono):
 //  A) historial (S), encogimiento (K) y confianza (w) del 1X2  ->  B) localia (h) y empates (rho)
 //  C) modelo de GOLES (Mas/Menos y Ambos anotan): su propio encogimiento (Kt), confianza (wt) y nivel (ct).
-function calibrarEtapas(prep, semilla, minPrev, rango){
+function calibrarEtapas(prep, semilla, minPrev, rango, ligero){
   var opts = {semilla:semilla, desde:rango?rango[0]:0, hasta:rango?rango[1]:prep.length};
   var hayS = semilla && Object.keys(semilla).length > 0;
   var nX = 0; prep.forEach(function(q){ if(q.xl!==null && q.xl!==undefined) nX++; });
@@ -1747,39 +1751,57 @@ function calibrarEtapas(prep, semilla, minPrev, rango){
     return mejor ? mejor.P : null;
   }
   var candA = [];
-  (hayS ? [0,8,16,24] : [0]).forEach(function(S){ [6,10,16].forEach(function(K){ [1,0.9,0.8].forEach(function(w){ candA.push(con(base,{S:S,K:K,w:w})); }); }); });
+  (hayS ? (ligero ? [0,16] : [0,8,16,24]) : [0]).forEach(function(S){ (ligero ? [6,12] : [6,10,16]).forEach(function(K){ (ligero ? [1,0.85] : [1,0.9,0.8]).forEach(function(w){ candA.push(con(base,{S:S,K:K,w:w})); }); }); });
   var pA = mejorDe(candA, function(r){ return r.ll/r.n; });
   if(!pA) return null;
   var candB = [];
-  [1.06,1.08,1.10,1.12,1.14,1.16,1.18,1.20].forEach(function(h){ [0,-0.06,-0.12].forEach(function(rho){ candB.push(con(pA,{h:h,rho:rho})); }); });
+  (ligero ? [1.08,1.12,1.16] : [1.06,1.08,1.10,1.12,1.14,1.16,1.18,1.20]).forEach(function(h){ (ligero ? [0,-0.1] : [0,-0.06,-0.12]).forEach(function(rho){ candB.push(con(pA,{h:h,rho:rho})); }); });
   var pB = mejorDe(candB, function(r){ return r.ll/r.n; }) || pA;
   // tiros: cuanto de xG aproximado mezclar en los ratings del 1X2
   if(hayX){
-    var candX = [1,0.7,0.4,0.15].map(function(A){ return con(pB,{A:A}); });
+    var candX = (ligero ? [1,0.6,0.3] : [1,0.7,0.4,0.15]).map(function(A){ return con(pB,{A:A}); });
     pB = mejorDe(candX, function(r){ return r.ll/r.n; }) || pB;
   }
   var candC = [];
-  [6,16,40].forEach(function(Kt){ [1,0.6,0.3,0].forEach(function(wt){ [0.96,1,1.04].forEach(function(ct){ (hayX ? [1,0.5,0] : [1]).forEach(function(At){ candC.push(con(pB,{Kt:Kt,wt:wt,ct:ct,At:At})); }); }); }); });
+  (ligero ? [6,20] : [6,16,40]).forEach(function(Kt){ (ligero ? [1,0.5,0] : [1,0.6,0.3,0]).forEach(function(wt){ (ligero ? [1,1.04] : [0.96,1,1.04]).forEach(function(ct){ (hayX ? (ligero ? [1,0] : [1,0.5,0]) : [1]).forEach(function(At){ candC.push(con(pB,{Kt:Kt,wt:wt,ct:ct,At:At})); }); }); }); });
   var pC = mejorDe(candC, function(r){ return (r.llOU+r.llBt)/(2*r.n); }) || pB;
   return pC;
 }
-function pctTxt(x, n){ return n ? (x/n*100).toFixed(1)+'%' : '—'; }
-function veredictoDe(dif){
-  return dif > 0.005 ? {t:'✓ le gana', c:'var(--good)'} : (dif < -0.005 ? {t:'✗ peor', c:'var(--bad)'} : {t:'≈ igual', c:'var(--mut)'});
+// suma dos resultados de walkForward (por ejemplo las dos mitades del chequeo cruzado)
+function combinarR(a, b){
+  var o = {n:a.n+b.n, ll:a.ll+b.ll, llBase:a.llBase+b.llBase, llOU:a.llOU+b.llOU, llOUb:a.llOUb+b.llOUb, llBt:a.llBt+b.llBt, llBtb:a.llBtb+b.llBtb, q:{}};
+  ['x12','ou','bt'].forEach(function(k){ o.q[k] = {s:a.q[k].s+b.q[k].s, s2:a.q[k].s2+b.q[k].s2}; });
+  return o;
 }
-// difs = mejora de la perdida contra "sin modelo" en cada mercado (positivo = el modelo gana)
+function pctTxt(x, n){ return n ? (x/n*100).toFixed(1)+'%' : '—'; }
+// v = {d, se}: d = mejora media de la perdida contra "sin modelo" (positivo = el modelo gana), se = su error estandar.
+// Un check o una X solo salen si la diferencia es clara (mas de 2 errores estandar y mas de 0.003); si no, "igual".
+function normV(v){ return (typeof v==='number') ? {d:v, se:0.004} : v; }
+function veredictoDe(v){
+  v = normV(v);
+  var z = v.se > 0 ? v.d/v.se : 0;
+  if(z > 2 && v.d > 0.003) return {t:'✓ le gana', c:'var(--good)'};
+  if(z < -2 && v.d < -0.003) return {t:'✗ peor', c:'var(--bad)'};
+  return {t:'≈ igual', c:'var(--mut)'};
+}
+// mejora de la perdida contra "sin modelo" en cada mercado, con su error estandar
 function difsMercados(r){
-  return {x12:(r.llBase-r.ll)/r.n, ou:(r.llOUb-r.llOU)/r.n, bt:(r.llBtb-r.llBt)/r.n};
+  function una(q, base, mod){
+    var n = r.n, d = (base-mod)/n;
+    var varD = n>1 ? Math.max(q.s2 - q.s*q.s/n, 0)/(n-1) : 0;
+    return {d:d, se:Math.sqrt(varD/n)};
+  }
+  return {x12:una(r.q.x12, r.llBase, r.ll), ou:una(r.q.ou, r.llOUb, r.llOU), bt:una(r.q.bt, r.llBtb, r.llBt)};
 }
 function guardarVeredictos(liga, difs, n, fuente){
   try{
-    var todos = JSON.parse(localStorage.getItem('ova_futbol_veredictos_v1')||'{}');
+    var todos = JSON.parse(localStorage.getItem('ova_futbol_veredictos_v2')||'{}');
     todos[liga] = {x12:difs.x12, ou:difs.ou, bt:difs.bt, n:n, fuente:fuente};
-    localStorage.setItem('ova_futbol_veredictos_v1', JSON.stringify(todos));
+    localStorage.setItem('ova_futbol_veredictos_v2', JSON.stringify(todos));
   }catch(e){}
 }
 function leerVeredictos(liga){
-  try{ return (JSON.parse(localStorage.getItem('ova_futbol_veredictos_v1')||'{}'))[liga] || null; }catch(e){ return null; }
+  try{ return (JSON.parse(localStorage.getItem('ova_futbol_veredictos_v2')||'{}'))[liga] || null; }catch(e){ return null; }
 }
 function filaMerc(nombre, cols, dif, mostrarVered){
   var v = veredictoDe(dif);
@@ -1820,22 +1842,22 @@ function renderBacktest(lista, titulo, minPrev, semilla){
     filaMerc('1X2', [llA.toFixed(3), (v3r.ll/v3r.n).toFixed(3), llB.toFixed(3)], d5.x12, a.n>=100) +
     filaMerc('Más/Menos 2.5', [(a.llOU/a.n).toFixed(3), (v3r.llOU/v3r.n).toFixed(3), (a.llOUb/a.n).toFixed(3)], d5.ou, a.n>=100) +
     filaMerc('Ambos anotan', [(a.llBt/a.n).toFixed(3), (v3r.llBt/v3r.n).toFixed(3), (a.llBtb/a.n).toFixed(3)], d5.bt, a.n>=100) + '</table>'+
-    '<div class="nota" style="margin-top:0">"Sin modelo" = predecir siempre la frecuencia que llevaba la liga hasta ese día (justa, sin ver el futuro).'+
+    '<div class="nota" style="margin-top:0">"Sin modelo" = predecir siempre la frecuencia que llevaba la liga hasta ese día (justa, sin ver el futuro). Un ✓ o una ✗ solo salen si la diferencia es clara (más de 2 errores estándar); si no, ≈ igual.'+
     (usaHist ? ' Esta medición usa el historial de la temporada anterior (S='+PARAMS.S+').' : '')+'</div>';
   if(/^Temporada pasada/.test(titulo) && a.n>=150) guardarVeredictos(LIGA_ACTUAL, d5, a.n, 'medición');
 
   var veredicto = '';
   if(a.n < 100){
     veredicto = 'Muestra chica ('+a.n+' partidos): no se puede concluir nada todavía. Usa la temporada pasada para una medición seria.';
-  } else if(d5.x12 > 0.01){
+  } else if(veredictoDe(d5.x12).t==='✓ le gana'){
     veredicto = 'En el 1X2 el modelo <b>sí le gana</b> a la referencia (pérdida '+llA.toFixed(3)+' vs '+llB.toFixed(3)+'). Eso es lo mínimo que se le pide; todavía no dice que le gane al mercado.';
   } else {
     veredicto = 'En el 1X2 el modelo <b>no le gana claramente</b> a la referencia (pérdida '+llA.toFixed(3)+' vs '+llB.toFixed(3)+').';
   }
   var malos = [];
-  if(a.n>=100 && d5.ou <= 0.005) malos.push('Más/Menos 2.5');
-  if(a.n>=100 && d5.bt <= 0.005) malos.push('Ambos anotan');
-  if(malos.length) veredicto += ' En '+malos.join(' y ')+' <b>no le gana a la frecuencia de la liga</b>: no te fíes de sus porcentajes ahí.';
+  if(a.n>=100 && veredictoDe(d5.ou).t!=='✓ le gana') malos.push('Más/Menos 2.5');
+  if(a.n>=100 && veredictoDe(d5.bt).t!=='✓ le gana') malos.push('Ambos anotan');
+  if(malos.length) veredicto += ' En '+malos.join(' y ')+' <b>no hay una ventaja clara sobre la frecuencia de la liga</b>: no te fíes de sus porcentajes ahí.';
   html += '<div class="veredicto-bt">'+veredicto+'</div>';
 
   html += '<h3>¿Cuando dice 60%, gana 60%?</h3><table class="tabla-bt"><tr><th>Favorito con</th><th>Partidos</th><th>Dijo</th><th>Ganó</th></tr>';
@@ -1960,12 +1982,17 @@ function correrCalibracion(){
       var minPrev = 2, n = prep.length, mid = Math.floor(n/2);
       var mejor = calibrarEtapas(prep, sem, minPrev, null);
       if(!mejor){ out.innerHTML = '<div class="estado bad">No hubo partidos medibles para calibrar.</div>'; return; }
-      out.innerHTML = '<div class="estado">Chequeo honesto: calibrando solo con la primera mitad de la temporada...</div>';
+      out.innerHTML = '<div class="estado">Chequeo honesto 1 de 2: calibrando con la primera mitad de la temporada...</div>';
       setTimeout(function(){
-      var mejorH = calibrarEtapas(prep, sem, minPrev, [0,mid]) || mejor;
-      var completo = {semilla:sem}, mitad2 = {semilla:sem, desde:mid, hasta:n};
+      var mejorH1 = calibrarEtapas(prep, sem, minPrev, [0,mid], true) || mejor;
+      out.innerHTML = '<div class="estado">Chequeo honesto 2 de 2: calibrando con la segunda mitad...</div>';
+      setTimeout(function(){
+      var mejorH2 = calibrarEtapas(prep, sem, minPrev, [mid,n], true) || mejor;
+      var completo = {semilla:sem}, v1 = {semilla:sem, desde:mid, hasta:n}, v2 = {semilla:sem, desde:0, hasta:mid};
       var fAct = walkForward(prep, PARAMS, minPrev, completo), fMej = walkForward(prep, mejor, minPrev, completo);
-      var hAct = walkForward(prep, PARAMS, minPrev, mitad2), hMej = walkForward(prep, mejorH, minPrev, mitad2);
+      // cruzado: la 2ª mitad se mide con parámetros calibrados en la 1ª, y la 1ª con los calibrados en la 2ª
+      var hAct = combinarR(walkForward(prep, PARAMS, minPrev, v1), walkForward(prep, PARAMS, minPrev, v2));
+      var hMej = combinarR(walkForward(prep, mejorH1, minPrev, v1), walkForward(prep, mejorH2, minPrev, v2));
       var dAct = difsMercados(fAct), dMej = difsMercados(fMej), dHAct = difsMercados(hAct), dHMej = difsMercados(hMej);
       function ll(r, k){ return (k==='x12' ? r.ll : (k==='ou' ? r.llOU : r.llBt))/r.n; }
       function llb(r, k){ return (k==='x12' ? r.llBase : (k==='ou' ? r.llOUb : r.llBtb))/r.n; }
@@ -1985,16 +2012,16 @@ function correrCalibracion(){
       html += '<div class="observ"><b>Actual:</b> '+txtP(PARAMS)+'</div><div class="observ"><b>Calibrado:</b> '+txtP(mejor)+'</div>';
       html += '<h3>Toda la temporada (pérdida, más baja = mejor)</h3>'+tabla(fAct, fMej, dMej, true);
       html += '<div class="nota" style="margin-top:0">Ojo: aquí los parámetros se eligieron mirando esos mismos partidos, así que sale más bonito de lo real.</div>';
-      var hayHonesto = hMej.n >= 80;
+      var hayHonesto = hMej.n >= 120;
       if(hayHonesto){
-        html += '<h3>Chequeo honesto: calibrado con la 1ª mitad, medido en la 2ª ('+hMej.n+' partidos)</h3>'+tabla(hAct, hMej, dHMej, true);
-        html += '<div class="nota" style="margin-top:0">Esta es la tabla que vale: los parámetros no vieron estos partidos.</div>';
+        html += '<h3>Chequeo honesto cruzado ('+hMej.n+' partidos)</h3>'+tabla(hAct, hMej, dHMej, true);
+        html += '<div class="nota" style="margin-top:0">Esta es la tabla que vale: cada mitad de la temporada se mide con parámetros calibrados en la OTRA mitad, así que ningún partido se midió con parámetros que lo hayan visto.</div>';
       }
       var d = hayHonesto ? dHMej : dMej;
       var lineas = [];
       ['ou','bt'].forEach(function(k){
         var v = veredictoDe(d[k]);
-        lineas.push(nom[k]+': '+(v.t==='✓ le gana' ? 'le gana a la frecuencia de la liga. En totales la ventaja real suele ser chica: confírmala con tu Registro de picks.' : (v.t==='≈ igual' ? 'queda igual que la frecuencia de la liga: el modelo ya no hace daño, pero tampoco aporta señal.' : 'sigue peor que la frecuencia de la liga: con goles solos no hay señal suficiente.')));
+        lineas.push(nom[k]+': '+(v.t==='✓ le gana' ? 'le gana a la frecuencia de la liga con una diferencia clara. En totales la ventaja real suele ser chica: confírmala con tu Registro de picks.' : (v.t==='≈ igual' ? 'no se distingue de la frecuencia de la liga: no hay evidencia de que el modelo aporte.' : 'es claramente peor que la frecuencia de la liga: ignora sus porcentajes.')));
       });
       html += '<div class="veredicto-bt">'+lineas.join('<br>')+'</div>';
       html += '<button id="btnUsarParams" class="btnAncho">Usar los parámetros calibrados</button>'+
@@ -2002,7 +2029,7 @@ function correrCalibracion(){
       out.innerHTML = html;
       document.getElementById('btnUsarParams').addEventListener('click', function(){
         guardarParams(mejor);
-        guardarVeredictos(LIGA_ACTUAL, d, hayHonesto ? hMej.n : fMej.n, hayHonesto ? 'calibración (2ª mitad)' : 'calibración');
+        guardarVeredictos(LIGA_ACTUAL, d, hayHonesto ? hMej.n : fMej.n, hayHonesto ? 'calibración cruzada' : 'calibración');
         out.insertAdjacentHTML('beforeend','<div class="estado ok">Guardado. Los partidos que abras desde ahora usan estos parámetros.</div>');
         this.disabled = true;
       });
@@ -2011,6 +2038,7 @@ function correrCalibracion(){
         out.insertAdjacentHTML('beforeend','<div class="estado ok">Parámetros de arranque restablecidos.</div>');
         this.disabled = true;
       });
+      }, 40);
       }, 40);
     }, 40);
   }).catch(function(e){
