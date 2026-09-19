@@ -198,7 +198,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL <span class="ver">v4</span></h1>
+  <h1>⚽ FÚTBOL <span class="ver">v5</span></h1>
   <select id="ligaSel">
    <optgroup label="Ligas">
     <option value="pl">Premier League</option>
@@ -237,7 +237,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
  </div>
 
  <div class="vista" id="vistaBacktest">
-  <div class="nota" style="margin:12px 2px 0">Cada partido se predice usando <b>solo lo que había antes de jugarse</b> (sin trampa) y se compara contra el resultado real. La temporada actual tiene pocos partidos al inicio; la pasada da una muestra mucho más confiable.</div>
+  <div class="nota" style="margin:12px 2px 0">Cada partido se predice usando <b>solo lo que había antes de jugarse</b> (sin trampa) y se compara contra el resultado real. La temporada actual tiene pocos partidos al inicio; la pasada da una muestra mucho más confiable. "Calibrar" baja también la temporada anterior a la pasada (una sola vez) para usarla como punto de partida.</div>
   <button id="btnBtActual" class="btnAncho">Medir esta temporada</button>
   <button id="btnBtPasada" class="btnAncho sec">Medir temporada pasada completa</button>
   <button id="btnCalibrar" class="btnAncho sec">Calibrar parámetros (temporada pasada)</button>
@@ -270,7 +270,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 
 
 <script>
-var VERSION = 'v4';
+var VERSION = 'v5';
 var EQUIPOS = null;
 var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
@@ -292,23 +292,32 @@ var MUESTRAS = {pend:[], term:[]};
 // K = cuanto se encogen las estadisticas de un equipo hacia el promedio de la liga.
 // rho = correccion de Dixon-Coles para marcadores bajos (0-0, 1-0, 0-1, 1-1). Negativo = mas empates.
 // w = encogimiento de confianza: 1 = probabilidades tal cual; 0.8 = 80% modelo + 20% "partido promedio de la liga".
-var PARAMS_DEFECTO = {K:6, h:1.13, rho:-0.08, w:1};
+var PARAMS_DEFECTO = {K:6, h:1.13, rho:-0.08, w:1, S:0, Kt:16, wt:0.5, ct:1};
+// Modelo de GOLES (Mas/Menos y Ambos anotan): en la medicion real el modelo comun salia PEOR que la frecuencia
+// de la liga en Mas/Menos 2.5, por ruido (con 6-10 partidos por equipo el promedio de goles casi no dice nada).
+// Por eso tiene su propio encogimiento fuerte (Kt), su propia confianza (wt) y un ajuste de nivel (ct).
+// S = "partidos de historial": cuanto pesa la temporada anterior como punto de partida de cada equipo.
 var PARAMS = cargarParams();
+function paramsCompletos(p){
+  return {K:+p.K, h:+p.h, rho:+p.rho,
+    w:(isFinite(p.w) ? +p.w : PARAMS_DEFECTO.w), S:(isFinite(p.S) ? +p.S : 0),
+    Kt:(isFinite(p.Kt) ? +p.Kt : PARAMS_DEFECTO.Kt), wt:(isFinite(p.wt) ? +p.wt : PARAMS_DEFECTO.wt), ct:(isFinite(p.ct) ? +p.ct : 1)};
+}
 function cargarParams(){
   try{
     var p = JSON.parse(localStorage.getItem('ova_futbol_params_v1')||'null');
-    if(p && isFinite(p.K) && isFinite(p.h) && isFinite(p.rho)) return {K:+p.K, h:+p.h, rho:+p.rho, w:(isFinite(p.w)?+p.w:1), calibrado:true};
+    if(p && isFinite(p.K) && isFinite(p.h) && isFinite(p.rho)){ var q = paramsCompletos(p); q.calibrado = true; return q; }
   }catch(e){}
-  return {K:PARAMS_DEFECTO.K, h:PARAMS_DEFECTO.h, rho:PARAMS_DEFECTO.rho, w:PARAMS_DEFECTO.w, calibrado:false};
+  var d = paramsCompletos(PARAMS_DEFECTO); d.calibrado = false; return d;
 }
 function guardarParams(P){
-  var w = (P.w===undefined || !isFinite(P.w)) ? 1 : P.w;
-  try{ localStorage.setItem('ova_futbol_params_v1', JSON.stringify({K:P.K,h:P.h,rho:P.rho,w:w})); }catch(e){}
-  PARAMS = {K:P.K, h:P.h, rho:P.rho, w:w, calibrado:true};
+  var q = paramsCompletos(P);
+  try{ localStorage.setItem('ova_futbol_params_v1', JSON.stringify(q)); }catch(e){}
+  q.calibrado = true; PARAMS = q;
 }
 function restablecerParams(){
   try{ localStorage.removeItem('ova_futbol_params_v1'); }catch(e){}
-  PARAMS = {K:PARAMS_DEFECTO.K, h:PARAMS_DEFECTO.h, rho:PARAMS_DEFECTO.rho, w:PARAMS_DEFECTO.w, calibrado:false};
+  var d = paramsCompletos(PARAMS_DEFECTO); d.calibrado = false; PARAMS = d;
 }
 
 // ---------- Kalshi (cuotas via Worker de Cloudflare, para esquivar CORS) ----------
@@ -376,13 +385,13 @@ function claveEq(nombre){
 }
 // Mismo equipo si la clave es igual, o si una es el PREFIJO de la otra ("newcastle" / "newcastleunited").
 // Prefijo y no "contiene": asi "milan" no se confunde con "intermilan".
-function mismoEquipo(a, b){
-  var x = claveEq(a), y = claveEq(b);
+function mismaClave(x, y){
   if(!x || !y) return false;
   if(x===y) return true;
   var c = x.length<=y.length ? x : y, l = x.length<=y.length ? y : x;
   return c.length>=5 && l.indexOf(c)===0;
 }
+function mismoEquipo(a, b){ return mismaClave(claveEq(a), claveEq(b)); }
 function parseFecha(f){
   if(!f) return null;
   var m = f.match(/(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
@@ -861,6 +870,49 @@ function diasDesdeUltimo(nombreEquipo){
   var d = Math.floor((Date.now()-ult)/86400000);
   return d<0 ? 0 : d;
 }
+function leerCachePasada(){
+  try{ return JSON.parse(localStorage.getItem('ova_futbol_pasada_'+LIGA_ACTUAL+'_'+inicioTemporada(1).getFullYear())||'[]') || []; }catch(e){ return []; }
+}
+// ultimos 10 partidos del equipo (si esta temporada lleva menos, se completa con la pasada guardada)
+function juegosParaTendencia(nombre){
+  var act = partidosDe(nombre).sort(function(a,b){ return tsPartido(b)-tsPartido(a); }).slice(0,10);
+  if(act.length < 10){
+    var prev = leerCachePasada().filter(function(p){ return mismoEquipo(p.local,nombre) || mismoEquipo(p.visita,nombre); })
+      .sort(function(a,b){ return tsPartido(b)-tsPartido(a); });
+    act = act.concat(prev.slice(0, 10-act.length));
+  }
+  return act;
+}
+function resumenTendencia(nombre){
+  var js = juegosParaTendencia(nombre);
+  if(!js.length) return null;
+  var o=0, b=0, cs=0, fs=0, gf=0, gc=0;
+  js.forEach(function(p){
+    var esL = mismoEquipo(p.local, nombre);
+    var f = esL ? p.golesLocal : p.golesVisita, c = esL ? p.golesVisita : p.golesLocal;
+    gf += f; gc += c;
+    if(f+c > 2.5) o++;
+    if(f>=1 && c>=1) b++;
+    if(c===0) cs++;
+    if(f===0) fs++;
+  });
+  return {n:js.length, o:o, b:b, cs:cs, fs:fs, gf:gf/js.length, gc:gc/js.length};
+}
+function pintarTendencias(elId, nombreL, nombreV){
+  var el = document.getElementById(elId);
+  if(!el) return;
+  var tl = resumenTendencia(nombreL), tv = resumenTendencia(nombreV);
+  if(!tl || !tv){ el.innerHTML = '<div class="nota" style="margin:0">Todavía no hay partidos terminados suficientes.</div>'; return; }
+  function bloque(nombre, t){
+    return '<div class="observ"><b>'+nombre+'</b> ('+t.n+' partidos)<br>'+
+      'Más de 2.5: <b>'+t.o+'/'+t.n+'</b> · Ambos anotan: <b>'+t.b+'/'+t.n+'</b><br>'+
+      'Goles por partido: <b>'+t.gf.toFixed(1)+'</b> a favor, <b>'+t.gc.toFixed(1)+'</b> en contra · Portería en cero: <b>'+t.cs+'/'+t.n+'</b> · Sin marcar: <b>'+t.fs+'/'+t.n+'</b></div>';
+  }
+  var pO = (tl.o/tl.n + tv.o/tv.n)/2, pB = (tl.b/tl.n + tv.b/tv.n)/2;
+  el.innerHTML = bloque(nombreL, tl) + bloque(nombreV, tv) +
+    '<div class="observ">Cruzando los dos: Más de 2.5 en <b>'+(pO*100).toFixed(0)+'%</b> de sus partidos · Ambos anotan en <b>'+(pB*100).toFixed(0)+'%</b></div>'+
+    '<div class="nota" style="margin-top:6px">Son estadísticas descriptivas (lo que pasó), no una predicción. Con 10 partidos hay mucho ruido; por eso el modelo de goles las usa muy encogidas.</div>';
+}
 function calcularH2H(nombreL, nombreV){
   var juegos = TERMINADOS.filter(function(p){
     return (mismoEquipo(p.local,nombreL) && mismoEquipo(p.visita,nombreV)) ||
@@ -914,21 +966,83 @@ function distribucion(lamL, lamV, rho, conMarcadores){
   if(marc){ marc.forEach(function(m){ m.p/=suma; }); marc.sort(function(a,b){ return b.p-a.p; }); }
   return {pL:pL/suma, pD:pD/suma, pV:pV/suma, o15:o15/suma, o25:o25/suma, o35:o35/suma, btts:pBtts/suma, marcadores:marc};
 }
-// Encoge las probabilidades hacia las de un "partido promedio de la liga" (d0). Con w=1 no cambia nada.
-function mezclar(d, d0, w){
-  var out = {marcadores:d.marcadores};
-  ['pL','pD','pV','o15','o25','o35','btts'].forEach(function(k){ out[k] = w*d[k] + (1-w)*d0[k]; });
+var CLAVES_1X2 = ['pL','pD','pV'], CLAVES_GOLES = ['o15','o25','o35','btts'];
+// Encoge las probabilidades (solo las claves indicadas) hacia las de un "partido promedio de la liga" (d0).
+function mezclar(d, d0, w, claves){
+  var out = {};
+  Object.keys(d).forEach(function(k){ out[k] = d[k]; });
+  claves.forEach(function(k){ out[k] = w*d[k] + (1-w)*d0[k]; });
   return out;
 }
+// Todas las probabilidades del modelo para un partido. eL/eV = {pj,gf,gc} de cada equipo, lp = goles por equipo por partido de la liga.
+function probsModelo(eL, eV, lp, P, conMarc){
+  var w = (P.w===undefined ? 1 : P.w);
+  var Kt = (P.Kt===undefined ? P.K : P.Kt), wt = (P.wt===undefined ? w : P.wt), ct = (P.ct===undefined ? 1 : P.ct);
+  var lm = lambdas(eL, eV, lp, P);
+  var d = distribucion(lm.lamL, lm.lamV, P.rho, conMarc);
+  var res = {lamL:lm.lamL, lamV:lm.lamV, marcadores:d.marcadores};
+  var x = d;
+  if(w<1) x = mezclar(d, distribucion(lp*P.h, lp/P.h, P.rho, false), w, CLAVES_1X2);
+  res.pL = x.pL; res.pD = x.pD; res.pV = x.pV;
+  var g = d;
+  if(Kt!==P.K || ct!==1){
+    var lg = lambdas(eL, eV, lp, {K:Kt, h:P.h});
+    g = distribucion(lg.lamL*ct, lg.lamV*ct, P.rho, false);
+  }
+  if(wt<1) g = mezclar(g, distribucion(lp*ct*P.h, lp*ct/P.h, P.rho, false), wt, CLAVES_GOLES);
+  res.o15 = g.o15; res.o25 = g.o25; res.o35 = g.o35; res.btts = g.btts;
+  return res;
+}
+
+// ---------- historial: ratings de la temporada anterior como punto de partida ----------
+var SEMILLA = {};   // claveEq -> {att, def} (relativos al promedio de esa liga)
+function construirSemilla(lista){
+  var m = {}, gf = 0, n = 0;
+  lista.forEach(function(p){
+    if(p.golesLocal===null || p.golesLocal===undefined) return;
+    gf += p.golesLocal+p.golesVisita; n++;
+    [[p.local,p.golesLocal,p.golesVisita],[p.visita,p.golesVisita,p.golesLocal]].forEach(function(x){
+      var k = claveEq(x[0]);
+      var e = m[k] || (m[k] = {pj:0, gf:0, gc:0});
+      e.pj++; e.gf += x[1]; e.gc += x[2];
+    });
+  });
+  if(!n) return {};
+  var lp = gf/(2*n), out = {};
+  Object.keys(m).forEach(function(k){
+    if(m[k].pj >= 10) out[k] = {att:(m[k].gf/m[k].pj)/lp, def:(m[k].gc/m[k].pj)/lp};
+  });
+  return out;
+}
+function buscarSemilla(mapa, nombre){
+  var k = claveEq(nombre);
+  if(mapa[k]) return mapa[k];
+  var ks = Object.keys(mapa);
+  for(var i=0;i<ks.length;i++) if(mismaClave(k, ks[i])) return mapa[ks[i]];
+  return null;
+}
+// suma S "partidos de historial" con los ratings de la temporada pasada (escalados al promedio actual de la liga)
+function conSemilla(a, s, S, lp){
+  if(!s || !S) return a;
+  return {pj:a.pj+S, gf:a.gf+S*s.att*lp, gc:a.gc+S*s.def*lp};
+}
+function cargarSemillaCache(){
+  SEMILLA = {};
+  try{
+    var g = JSON.parse(localStorage.getItem('ova_futbol_pasada_'+LIGA_ACTUAL+'_'+inicioTemporada(1).getFullYear())||'null');
+    if(g && g.length > 100) SEMILLA = construirSemilla(g);
+  }catch(e){}
+}
+
 function calcular(eL, eV, P){
   P = P || PARAMS;
   var totalGF=0, totalPJ=0;
   EQUIPOS.forEach(function(e){ totalGF+=e.gf; totalPJ+=e.pj; });
-  var ligaProm = totalGF / totalPJ;
-  var lm = lambdas(eL, eV, ligaProm, P);
-  var d = distribucion(lm.lamL, lm.lamV, P.rho, true);
-  if(P.w!==undefined && P.w<1) d = mezclar(d, distribucion(ligaProm*P.h, ligaProm/P.h, P.rho, false), P.w);
-  return {lamL:lm.lamL, lamV:lm.lamV, pL:d.pL, pD:d.pD, pV:d.pV,
+  var lp = totalGF / totalPJ;
+  var aL = conSemilla(eL, buscarSemilla(SEMILLA, eL.nombre), P.S, lp);
+  var aV = conSemilla(eV, buscarSemilla(SEMILLA, eV.nombre), P.S, lp);
+  var d = probsModelo(aL, aV, lp, P, true);
+  return {lamL:d.lamL, lamV:d.lamV, pL:d.pL, pD:d.pD, pV:d.pV,
     overLin:{1.5:d.o15, 2.5:d.o25, 3.5:d.o35}, pBtts:d.btts, marcadores:d.marcadores};
 }
 
@@ -1012,11 +1126,26 @@ function pintarForma(elId, nombreEquipo){
     (dias!==null ? '<div class="nota" style="margin:0 0 0 6px;align-self:center">último partido hace '+dias+' '+plural(dias,'día','días')+'</div>' : '');
 }
 
+// ---------- veredicto por mercado (segun el backtest) ----------
+function badgeMercado(m){
+  var v = leerVeredictos(LIGA_ACTUAL);
+  if(!v || v[m]===undefined){
+    return '<div class="nota" style="margin:0 0 8px">Este mercado: <b>sin medir</b>. Ve a Backtest → Medir temporada pasada para saber si el modelo le gana a la frecuencia de la liga.</div>';
+  }
+  var t = veredictoDe(v[m]);
+  var expl = t.t==='✓ le gana' ? 'el modelo aporta algo sobre la frecuencia de la liga.' :
+    (t.t==='≈ igual' ? 'el modelo no aporta señal medible; úsalo solo de referencia.' : 'el modelo salió PEOR que la frecuencia de la liga; ignora el "valor".');
+  return '<div class="nota" style="margin:0 0 8px">Este mercado en el backtest: <b style="color:'+t.c+'">'+t.t+'</b> — '+expl+'</div>';
+}
 function pintarFilasValor(filas, out, p){
   var conOdd = filas.filter(function(f){ return f.odd!==null && impProb(f.odd)!==null; });
   if(!conOdd.length){ out.textContent = 'Mete al menos una cuota.'; return; }
   var completo = conOdd.length===filas.length;
   var sumaImp = conOdd.reduce(function(a,f){ return a+impProb(f.odd); }, 0);
+  // si el backtest dijo que el modelo NO le gana a la frecuencia de la liga en este mercado, el "valor" no es confiable
+  var vered = leerVeredictos(LIGA_ACTUAL);
+  var claveM = {'1X2':'x12','OU2.5':'ou','BTTS':'bt'}[filas[0].mercado];
+  var confiable = (vered && vered[claveM]!==undefined) ? vered[claveM] > 0.005 : null;
   var html = '';
   filas.forEach(function(f){
     if(f.odd===null) return;
@@ -1026,9 +1155,10 @@ function pintarFilasValor(filas, out, p){
     var ref = completo ? imp/sumaImp : imp;
     var diff = (f.modelo - ref)*100;
     var hayValor = diff >= 3;
+    var etiquetaValor = hayValor ? '<span class="'+(confiable===false ? 'no' : 'si')+'">valor +'+diff.toFixed(1)+(confiable===false ? ' (no confiable)' : '')+'</span>' :
+      '<span class="no">sin valor '+diff.toFixed(1)+'</span>';
     html += '<div class="filaCuota"><span class="txt">'+f.sel+': modelo '+(f.modelo*100).toFixed(1)+'% vs '+
-      (completo?'mercado sin margen ':'cuota ')+(ref*100).toFixed(1)+'% — '+
-      (hayValor ? '<span class="si">valor +'+diff.toFixed(1)+'</span>' : '<span class="no">sin valor '+diff.toFixed(1)+'</span>')+
+      (completo?'mercado sin margen ':'cuota ')+(ref*100).toFixed(1)+'% — '+etiquetaValor+
       '</span>'+
       '<button class="btnChico guardarPick" data-mercado="'+f.mercado+'" data-sel="'+f.sel+'" data-odd="'+f.odd+'" data-prob="'+f.modelo+'">💾</button>'+
       '<button class="btnChico agregarCombinada" data-sel="'+f.sel+'" data-prob="'+f.modelo+'">🔗</button>'+
@@ -1075,10 +1205,10 @@ function pintarGameBody(bodyEl, p, eL, eV){
       '<button class="tb" data-t="for">Forma</button>' +
     '</div>' +
     '<div class="pane on" id="'+id+'ver">' + base.veredictoHtml +
-      '<div class="nota">Modelo Poisson con encogimiento (K='+PARAMS.K+'), localía (h='+PARAMS.h+') y corrección de marcadores bajos (ρ='+PARAMS.rho+')'+(PARAMS.w<1?', confianza reducida (w='+PARAMS.w+')':'')+'. Parámetros: '+estadoParams+'. Sin lesiones ni alineaciones. Datos en vivo de worldfootball.net.</div>' +
+      '<div class="nota">Modelo Poisson con encogimiento (K='+PARAMS.K+'), localía (h='+PARAMS.h+') y corrección de marcadores bajos (ρ='+PARAMS.rho+')'+(PARAMS.w<1?', confianza reducida (w='+PARAMS.w+')':'')+(PARAMS.S&&Object.keys(SEMILLA).length?', con historial de la temporada pasada (S='+PARAMS.S+')':'')+'. Más/Menos y Ambos anotan usan su propio encogimiento fuerte (K='+PARAMS.Kt+', w='+PARAMS.wt+'). Parámetros: '+estadoParams+'. Sin lesiones ni alineaciones. Datos en vivo de worldfootball.net.</div>' +
     '</div>' +
     '<div class="pane" id="'+id+'cuo">' +
-      '<h3>Ganador (1X2)</h3>' +
+      '<h3>Ganador (1X2)</h3>' + badgeMercado('x12') +
       '<div class="cuotasbox">' +
         '<button id="'+id+'btnKalshi" class="btnAncho sec" style="margin:0 0 10px">🦈 Traer cuota de Kalshi</button>' +
         '<div id="'+id+'kalshiOut" class="nota" style="margin:0 0 10px"></div>' +
@@ -1090,7 +1220,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
         '<button id="'+id+'btn" class="btnAncho">Calcular valor</button>' +
         '<div class="veredictoCuota" id="'+id+'verC"></div>' +
       '</div>' +
-      '<h3>Más/Menos de 2.5 goles</h3>' +
+      '<h3>Más/Menos de 2.5 goles</h3>' + badgeMercado('ou') +
       '<div class="cuotasbox">' +
         '<div class="fila">' +
           '<div style="flex:1"><label>Cuota Más de 2.5</label><input type="number" id="'+id+'oddOver" placeholder="-120 ó 55¢"></div>' +
@@ -1099,7 +1229,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
         '<button id="'+id+'btnOU" class="btnAncho">Calcular valor</button>' +
         '<div class="veredictoCuota" id="'+id+'verOU"></div>' +
       '</div>' +
-      '<h3>Ambos anotan</h3>' +
+      '<h3>Ambos anotan</h3>' + badgeMercado('bt') +
       '<div class="cuotasbox">' +
         '<div class="fila">' +
           '<div style="flex:1"><label>Cuota Sí</label><input type="number" id="'+id+'oddBttsSi" placeholder="-110 ó 52¢"></div>' +
@@ -1122,6 +1252,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
       '<div id="'+id+'perfilL" class="nota">Cargando '+p.local+'...</div>' +
       '<div id="'+id+'perfilV" class="nota">Cargando '+p.visita+'...</div>' +
       '<h3>Cara a cara esta temporada</h3><div id="'+id+'h2h" class="nota"></div>' +
+      '<h3>Tendencias de goles (últimos 10)</h3><div id="'+id+'tend"></div>' +
       '<h3>Últimas noticias</h3><div id="'+id+'noticias" class="nota">Buscando noticias...</div>' +
     '</div>';
 
@@ -1197,6 +1328,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
 
   pintarForma(id+'formaL', p.local);
   pintarForma(id+'formaV', p.visita);
+  pintarTendencias(id+'tend', p.local, p.visita);
   var h2h = calcularH2H(p.local, p.visita);
   var h2hEl = document.getElementById(id+'h2h');
   if(h2hEl){
@@ -1391,25 +1523,31 @@ function pintarAlGane(partidos){
 
 // ---------- backtest SIN TRAMPA (walk-forward) ----------
 // Cada partido se predice solo con lo acumulado ANTES de jugarse; despues se actualiza el acumulado.
+// Con "semilla" (ratings de la temporada anterior) tambien se puede predecir desde la primera jornada.
 function prepararLista(lista){
   return lista.filter(function(p){ return p.golesLocal!==null && p.golesLocal!==undefined && p.golesVisita!==null && p.golesVisita!==undefined; })
     .map(function(p){ return {kL:claveEq(p.local), kV:claveEq(p.visita), gl:p.golesLocal, gv:p.golesVisita, ts:tsPartido(p)}; })
     .sort(function(a,b){ return a.ts-b.ts; });
 }
-function walkForward(prep, P, minPrev){
+var CERO = {pj:0, gf:0, gc:0};
+function walkForward(prep, P, minPrev, opts){
+  opts = opts || {};
+  var sem = opts.semilla || null;
+  var desde = opts.desde || 0, hasta = (opts.hasta===undefined ? prep.length : opts.hasta);
   var acum = {}, gfTot = 0, pjTot = 0, fr = {L:1,D:1,V:1}, nfr = 3;
   var fo = {s:1,n:1}, fb = {s:1,n:1};   // frecuencias corridas (suavizadas) de Mas de 2.5 y de Ambos anotan
   var EDG = [0.45, 0.55, 0.65];
   var r = {n:0, ok1x2:0, okOU:0, okBtts:0, ll:0, llBase:0, brier:0, sl:0, over:0, btts:0, llOU:0, llOUb:0, llBt:0, llBtb:0,
     bins:[{n:0,pred:0,gan:0},{n:0,pred:0,gan:0},{n:0,pred:0,gan:0},{n:0,pred:0,gan:0}]};
-  prep.forEach(function(m){
+  prep.forEach(function(m, idx){
     var aL = acum[m.kL], aV = acum[m.kV];
     var real = m.gl>m.gv ? 'L' : (m.gl<m.gv ? 'V' : 'D');
-    if(aL && aV && aL.pj>=minPrev && aV.pj>=minPrev && pjTot>0){
+    var conJuegos = (minPrev<=0) || (aL && aV && aL.pj>=minPrev && aV.pj>=minPrev);
+    if(idx>=desde && idx<hasta && pjTot>=20 && conJuegos){
       var lp = gfTot/pjTot;
-      var lm = lambdas(aL, aV, lp, P);
-      var d = distribucion(lm.lamL, lm.lamV, P.rho, false);
-      if(P.w!==undefined && P.w<1) d = mezclar(d, distribucion(lp*P.h, lp/P.h, P.rho, false), P.w);
+      var eL = conSemilla(aL||CERO, sem ? sem[m.kL] : null, P.S, lp);
+      var eV = conSemilla(aV||CERO, sem ? sem[m.kV] : null, P.S, lp);
+      var d = probsModelo(eL, eV, lp, P, false);
       var pr = {L:d.pL, D:d.pD, V:d.pV};
       r.n++;
       var pred = (d.pL>=d.pD && d.pL>=d.pV) ? 'L' : (d.pV>=d.pD ? 'V' : 'D');
@@ -1444,31 +1582,74 @@ function walkForward(prep, P, minPrev){
   });
   return r;
 }
-function calibrarGrid(prep, minPrev){
-  var hs = []; for(var h=1.02; h<=1.221; h+=0.02) hs.push(Math.round(h*100)/100);
-  var mejor = null;
-  hs.forEach(function(h){ [6,10,16].forEach(function(K){ [0,-0.06,-0.12,-0.18].forEach(function(rho){ [1,0.9,0.8,0.7].forEach(function(w){
-    var r = walkForward(prep, {K:K,h:h,rho:rho,w:w}, minPrev);
-    if(!r.n) return;
-    var ll = r.ll/r.n;
-    if(!mejor || ll<mejor.ll) mejor = {h:h, K:K, rho:rho, w:w, ll:ll, n:r.n};
-  }); }); }); });
-  return mejor;
+// Busqueda por etapas (para no probar millones de combinaciones en el telefono):
+//  A) historial (S), encogimiento (K) y confianza (w) del 1X2  ->  B) localia (h) y empates (rho)
+//  C) modelo de GOLES (Mas/Menos y Ambos anotan): su propio encogimiento (Kt), confianza (wt) y nivel (ct).
+function calibrarEtapas(prep, semilla, minPrev, rango){
+  var opts = {semilla:semilla, desde:rango?rango[0]:0, hasta:rango?rango[1]:prep.length};
+  var hayS = semilla && Object.keys(semilla).length > 0;
+  var base = {K:PARAMS_DEFECTO.K, h:PARAMS_DEFECTO.h, rho:PARAMS_DEFECTO.rho, w:1, S:0, Kt:PARAMS_DEFECTO.Kt, wt:PARAMS_DEFECTO.wt, ct:1};
+  function con(P, extra){ var o = {}; Object.keys(P).forEach(function(k){ o[k]=P[k]; }); Object.keys(extra).forEach(function(k){ o[k]=extra[k]; }); return o; }
+  function mejorDe(candidatos, medida){
+    var mejor = null;
+    candidatos.forEach(function(P){
+      var r = walkForward(prep, P, minPrev, opts);
+      if(!r.n) return;
+      var v = medida(r);
+      if(!mejor || v < mejor.v) mejor = {P:P, v:v};
+    });
+    return mejor ? mejor.P : null;
+  }
+  var candA = [];
+  (hayS ? [0,8,16,24] : [0]).forEach(function(S){ [6,10,16].forEach(function(K){ [1,0.9,0.8].forEach(function(w){ candA.push(con(base,{S:S,K:K,w:w})); }); }); });
+  var pA = mejorDe(candA, function(r){ return r.ll/r.n; });
+  if(!pA) return null;
+  var candB = [];
+  [1.06,1.08,1.10,1.12,1.14,1.16,1.18,1.20].forEach(function(h){ [0,-0.06,-0.12].forEach(function(rho){ candB.push(con(pA,{h:h,rho:rho})); }); });
+  var pB = mejorDe(candB, function(r){ return r.ll/r.n; }) || pA;
+  var candC = [];
+  [6,16,40,80].forEach(function(Kt){ [1,0.8,0.6,0.4,0.2,0].forEach(function(wt){ [0.96,1,1.04].forEach(function(ct){ candC.push(con(pB,{Kt:Kt,wt:wt,ct:ct})); }); }); });
+  var pC = mejorDe(candC, function(r){ return (r.llOU+r.llBt)/(2*r.n); }) || pB;
+  return pC;
 }
 function pctTxt(x, n){ return n ? (x/n*100).toFixed(1)+'%' : '—'; }
+function veredictoDe(dif){
+  return dif > 0.005 ? {t:'✓ le gana', c:'var(--good)'} : (dif < -0.005 ? {t:'✗ peor', c:'var(--bad)'} : {t:'≈ igual', c:'var(--mut)'});
+}
+// difs = mejora de la perdida contra "sin modelo" en cada mercado (positivo = el modelo gana)
+function difsMercados(r){
+  return {x12:(r.llBase-r.ll)/r.n, ou:(r.llOUb-r.llOU)/r.n, bt:(r.llBtb-r.llBt)/r.n};
+}
+function guardarVeredictos(liga, difs, n, fuente){
+  try{
+    var todos = JSON.parse(localStorage.getItem('ova_futbol_veredictos_v1')||'{}');
+    todos[liga] = {x12:difs.x12, ou:difs.ou, bt:difs.bt, n:n, fuente:fuente};
+    localStorage.setItem('ova_futbol_veredictos_v1', JSON.stringify(todos));
+  }catch(e){}
+}
+function leerVeredictos(liga){
+  try{ return (JSON.parse(localStorage.getItem('ova_futbol_veredictos_v1')||'{}'))[liga] || null; }catch(e){ return null; }
+}
+function filaMerc(nombre, cols, dif, mostrarVered){
+  var v = veredictoDe(dif);
+  return '<tr><td>'+nombre+'</td>'+cols.map(function(c){ return '<td>'+c+'</td>'; }).join('')+
+    '<td style="color:'+v.c+'">'+(mostrarVered?v.t:'—')+'</td></tr>';
+}
 
-function renderBacktest(lista, titulo, minPrev){
+function renderBacktest(lista, titulo, minPrev, semilla){
   var prep = prepararLista(lista);
+  var opts = {semilla: semilla};
   var variantes = [
     {n:'v3 (h 1.35, sin corrección)', P:{K:6, h:1.35, rho:0, w:1}},
-    {n:'v4 ('+(PARAMS.calibrado?'calibrado':'arranque')+')', P:PARAMS}
+    {n:'v5 ('+(PARAMS.calibrado?'calibrado':'arranque')+')', P:PARAMS}
   ];
-  var res = variantes.map(function(v){ return {n:v.n, r:walkForward(prep, v.P, minPrev)}; });
-  var a = res[1].r;
+  var res = variantes.map(function(v){ return {n:v.n, r:walkForward(prep, v.P, minPrev, opts)}; });
+  var a = res[1].r, v3r = res[0].r;
   if(!a.n){
     return '<div class="estado bad">'+titulo+': no hay partidos medibles (se necesitan equipos con al menos '+minPrev+' partidos previos).</div>';
   }
   var llA = a.ll/a.n, llB = a.llBase/a.n;
+  var usaHist = semilla && Object.keys(semilla).length && PARAMS.S;
   var html = '<h3>'+titulo+' — '+a.n+' partidos medidos</h3>';
   html += '<div class="kpi">'+
     '<div><b>'+pctTxt(a.ok1x2,a.n)+'</b><small>Acierto 1X2</small></div>'+
@@ -1481,40 +1662,29 @@ function renderBacktest(lista, titulo, minPrev){
   });
   var baseOU = Math.max(a.over, a.n-a.over), baseBtts = Math.max(a.btts, a.n-a.btts);
   html += '<tr class="ref"><td>Referencia sin modelo</td><td>'+pctTxt(a.sl,a.n)+'</td><td>'+llB.toFixed(3)+'</td><td>'+pctTxt(baseOU,a.n)+'</td><td>'+pctTxt(baseBtts,a.n)+'</td></tr></table>';
-  html += '<div class="nota" style="margin-top:0">"Pérdida" = log-loss del 1X2: mientras más baja, mejor. La referencia es "siempre local" para el acierto y las frecuencias de la liga para la pérdida; para Más/Menos y Ambos anotan, apostar siempre al lado más común (esa referencia ya conoce el resultado final de la temporada, así que juega con ventaja).</div>';
+  html += '<div class="nota" style="margin-top:0">"Pérdida" = log-loss del 1X2: mientras más baja, mejor. La referencia de acierto ya conoce el resultado final de la temporada (juega con ventaja); la justa es la de la tabla de abajo.</div>';
 
-  // Pérdida por mercado contra una referencia justa: la frecuencia corrida de la liga, sin mirar el partido
-  var v3r = res[0].r;
-  function filaMercado(nombre, mod, v3, base){
-    var dif = base - mod;
-    var veredicto = a.n < 100 ? '—' : (dif > 0.005 ? '✓ le gana' : (dif < -0.005 ? '✗ peor' : '≈ igual'));
-    var color = dif > 0.005 ? 'var(--good)' : (dif < -0.005 ? 'var(--bad)' : 'var(--mut)');
-    return '<tr><td>'+nombre+'</td><td>'+mod.toFixed(3)+'</td><td>'+v3.toFixed(3)+'</td><td>'+base.toFixed(3)+'</td><td style="color:'+color+'">'+veredicto+'</td></tr>';
-  }
-  var okOU = (a.llOUb - a.llOU)/a.n > 0.005, okBt = (a.llBtb - a.llBt)/a.n > 0.005;
+  var d5 = difsMercados(a);
   html += '<h3>Pérdida por mercado (más baja = mejor)</h3><table class="tabla-bt"><tr><th>Mercado</th><th>Modelo</th><th>v3</th><th>Sin modelo</th><th>Veredicto</th></tr>'+
-    filaMercado('1X2', llA, v3r.ll/v3r.n, llB) +
-    filaMercado('Más/Menos 2.5', a.llOU/a.n, v3r.llOU/v3r.n, a.llOUb/a.n) +
-    filaMercado('Ambos anotan', a.llBt/a.n, v3r.llBt/v3r.n, a.llBtb/a.n) + '</table>'+
-    '<div class="nota" style="margin-top:0">"Sin modelo" = predecir siempre la frecuencia que llevaba la liga hasta ese día (justa, sin ver el futuro). Esta es la comparación que vale para Más/Menos y Ambos anotan; el % de acierto con corte en 50% no es buena medida.</div>';
-  if(a.n >= 100 && (!okOU || !okBt)){
-    html += '<div class="veredicto-bt">'+(!okOU && !okBt ? 'En Más/Menos 2.5 y en Ambos anotan' : (!okOU ? 'En Más/Menos 2.5' : 'En Ambos anotan'))+
-      ' el modelo <b>no le gana claramente</b> a la frecuencia de la liga. Con esta muestra no hay razón para fiarse de sus porcentajes en ese mercado.</div>';
-  }
+    filaMerc('1X2', [llA.toFixed(3), (v3r.ll/v3r.n).toFixed(3), llB.toFixed(3)], d5.x12, a.n>=100) +
+    filaMerc('Más/Menos 2.5', [(a.llOU/a.n).toFixed(3), (v3r.llOU/v3r.n).toFixed(3), (a.llOUb/a.n).toFixed(3)], d5.ou, a.n>=100) +
+    filaMerc('Ambos anotan', [(a.llBt/a.n).toFixed(3), (v3r.llBt/v3r.n).toFixed(3), (a.llBtb/a.n).toFixed(3)], d5.bt, a.n>=100) + '</table>'+
+    '<div class="nota" style="margin-top:0">"Sin modelo" = predecir siempre la frecuencia que llevaba la liga hasta ese día (justa, sin ver el futuro).'+
+    (usaHist ? ' Esta medición usa el historial de la temporada anterior (S='+PARAMS.S+').' : '')+'</div>';
+  if(/^Temporada pasada/.test(titulo) && a.n>=150) guardarVeredictos(LIGA_ACTUAL, d5, a.n, 'medición');
 
   var veredicto = '';
-  var mejora = llB - llA;
   if(a.n < 100){
     veredicto = 'Muestra chica ('+a.n+' partidos): no se puede concluir nada todavía. Usa la temporada pasada para una medición seria.';
-  } else if(mejora > 0.01){
-    veredicto = 'El modelo <b>sí le gana</b> a la referencia sin modelo en el 1X2 (pérdida '+llA.toFixed(3)+' vs '+llB.toFixed(3)+'). Eso es lo mínimo que se le pide; todavía no dice que le gane al mercado.';
+  } else if(d5.x12 > 0.01){
+    veredicto = 'En el 1X2 el modelo <b>sí le gana</b> a la referencia (pérdida '+llA.toFixed(3)+' vs '+llB.toFixed(3)+'). Eso es lo mínimo que se le pide; todavía no dice que le gane al mercado.';
   } else {
-    veredicto = 'El modelo <b>no le gana claramente</b> a la referencia sin modelo en el 1X2 (pérdida '+llA.toFixed(3)+' vs '+llB.toFixed(3)+'). Con estas cifras no hay razón para confiar en sus porcentajes.';
+    veredicto = 'En el 1X2 el modelo <b>no le gana claramente</b> a la referencia (pérdida '+llA.toFixed(3)+' vs '+llB.toFixed(3)+').';
   }
-  var dif = (res[0].r.ll/res[0].r.n) - llA;
-  if(a.n >= 100){
-    veredicto += ' Contra la v3: '+(dif>0.002 ? 'la v4 mejora la pérdida en '+dif.toFixed(3)+'.' : (dif<-0.002 ? 'la v3 salía mejor por '+(-dif).toFixed(3)+'.' : 'prácticamente igual.'));
-  }
+  var malos = [];
+  if(a.n>=100 && d5.ou <= 0.005) malos.push('Más/Menos 2.5');
+  if(a.n>=100 && d5.bt <= 0.005) malos.push('Ambos anotan');
+  if(malos.length) veredicto += ' En '+malos.join(' y ')+' <b>no le gana a la frecuencia de la liga</b>: no te fíes de sus porcentajes ahí.';
   html += '<div class="veredicto-bt">'+veredicto+'</div>';
 
   html += '<h3>¿Cuando dice 60%, gana 60%?</h3><table class="tabla-bt"><tr><th>Favorito con</th><th>Partidos</th><th>Dijo</th><th>Ganó</th></tr>';
@@ -1522,31 +1692,34 @@ function renderBacktest(lista, titulo, minPrev){
   a.bins.forEach(function(b,i){
     html += '<tr><td>'+etq[i]+'</td><td>'+b.n+'</td><td>'+(b.n?(b.pred/b.n*100).toFixed(1)+'%':'—')+'</td><td>'+(b.n?(b.gan/b.n*100).toFixed(1)+'%':'—')+'</td></tr>';
   });
-  html += '</table><div class="nota" style="margin-top:0">Si "Dijo" queda muy por encima de "Ganó", el modelo está inflando la confianza (el mismo problema que tenía el ×13 en MLB). Los rangos con menos de ~30 partidos no dicen mucho.</div>';
-  html += '<div class="nota">Sin lesiones, alineaciones ni xG. Los primeros partidos de cada equipo se saltan (necesitan '+minPrev+' previos).</div>';
+  html += '</table><div class="nota" style="margin-top:0">Si "Dijo" queda muy por encima de "Ganó", el modelo está inflando la confianza. Los rangos con menos de ~30 partidos no dicen mucho.</div>';
+  html += '<div class="nota">Sin lesiones, alineaciones ni xG. Se miden partidos donde cada equipo ya llevaba al menos '+minPrev+' juegos.</div>';
   return html;
 }
 
-function obtenerTemporadaPasada(progreso){
-  if(TEMP_PASADA[LIGA_ACTUAL]) return Promise.resolve(TEMP_PASADA[LIGA_ACTUAL]);
+var CARGAS = {};   // temporadas ya bajadas en esta sesion: "liga|atras"
+function obtenerTemporada(atras, progreso){
+  var clv = LIGA_ACTUAL+'|'+atras;
+  if(CARGAS[clv]) return Promise.resolve(CARGAS[clv]);
   var slug = ESPN_SLUG[LIGA_ACTUAL];
   if(!slug) return Promise.reject(new Error('esta competencia no tiene fuente de resultados'));
-  var ini = inicioTemporada(1);
+  var ini = inicioTemporada(atras);
   var claveCache = 'ova_futbol_pasada_'+LIGA_ACTUAL+'_'+ini.getFullYear();
-  // la temporada pasada ya no cambia: se guarda en el telefono para no volver a bajarla
+  var rotulo = atras===1 ? 'pasada' : 'anterior';
+  // las temporadas pasadas ya no cambian: se guardan en el telefono para no volver a bajarlas
   try{
     var guardada = JSON.parse(localStorage.getItem(claveCache)||'null');
     if(guardada && guardada.length > 100){
-      TEMP_PASADA[LIGA_ACTUAL] = guardada;
-      DIAG.pasada = {leidos:guardada.length, terminados:guardada.length, errores:[], modo:'guardada en el teléfono', nota:''};
+      CARGAS[clv] = guardada;
+      DIAG[rotulo] = {leidos:guardada.length, terminados:guardada.length, errores:[], modo:'guardada en el teléfono', nota:''};
       return Promise.resolve(guardada);
     }
   }catch(e){}
   return bajarResultadosESPN(slug, ini, finTemporada(ini), progreso).then(function(r){
     var fin = r.partidos.filter(function(p){ return p.terminado; });
-    DIAG.pasada = {leidos:r.partidos.length, terminados:fin.length, errores:r.errores, modo:r.modo, nota:r.nota};
+    DIAG[rotulo] = {leidos:r.partidos.length, terminados:fin.length, errores:r.errores, modo:r.modo, nota:r.nota};
     if(!fin.length) throw new Error('ESPN no devolvió partidos ('+(r.errores[0]||'sin detalle')+')');
-    TEMP_PASADA[LIGA_ACTUAL] = fin;
+    CARGAS[clv] = fin;
     if(fin.length > 100){
       try{ localStorage.setItem(claveCache, JSON.stringify(fin.map(function(p){ return {id:p.id,local:p.local,visita:p.visita,golesLocal:p.golesLocal,golesVisita:p.golesVisita,terminado:true,ts:p.ts}; }))); }catch(e){}
     }
@@ -1567,68 +1740,96 @@ function correrBacktestActual(){
     out.innerHTML = '<div class="estado bad">Solo hay '+(TERMINADOS?TERMINADOS.length:0)+' partidos terminados leídos en esta liga (fuente: '+FUENTE_TERM+'). Toca 🔍 Diagnóstico para ver por qué, o usa "Medir temporada pasada completa".</div>';
     return;
   }
-  out.innerHTML = renderBacktest(TERMINADOS, 'Temporada actual ('+FUENTE_TERM+')', 3);
+  out.innerHTML = renderBacktest(TERMINADOS, 'Temporada actual ('+FUENTE_TERM+')', 2, SEMILLA);
 }
 function correrBacktestPasado(){
   var out = document.getElementById('backtestOut');
   if(LIGA_ES_COPA){ out.innerHTML = '<div class="estado bad">El backtest no aplica a copas de eliminación directa.</div>'; return; }
   out.innerHTML = '<div class="estado">Bajando la temporada pasada de ESPN...</div>';
   var liga = LIGA_ACTUAL;
-  obtenerTemporadaPasada(progresoTexto(out, 'Bajando la temporada pasada de ESPN:')).then(function(lista){
+  obtenerTemporada(1, progresoTexto(out, 'Bajando la temporada pasada de ESPN:')).then(function(l1){
     if(liga!==LIGA_ACTUAL) return;
+    SEMILLA = construirSemilla(l1);
+    // la semilla de la temporada pasada es la de hace dos: si ya esta guardada, se usa
+    var l2 = null;
+    try{ l2 = JSON.parse(localStorage.getItem('ova_futbol_pasada_'+LIGA_ACTUAL+'_'+inicioTemporada(2).getFullYear())||'null'); }catch(e){}
+    var sem = (l2 && l2.length>100) ? construirSemilla(l2) : null;
     setTimeout(function(){
-      out.innerHTML = renderBacktest(lista, 'Temporada pasada completa', 4);
+      out.innerHTML = renderBacktest(l1, 'Temporada pasada completa', 2, sem);
     }, 30);
   }).catch(function(e){
     out.innerHTML = '<div class="estado bad">No pude bajar la temporada pasada: '+e.message+'. Toca 🔍 Diagnóstico.</div>';
   });
 }
+
 function correrCalibracion(){
   var out = document.getElementById('backtestOut');
   if(LIGA_ES_COPA){ out.innerHTML = '<div class="estado bad">No aplica a copas de eliminación directa.</div>'; return; }
-  out.innerHTML = '<div class="estado">Bajando la temporada pasada y probando combinaciones... (unos segundos)</div>';
+  out.innerHTML = '<div class="estado">Bajando las dos temporadas anteriores de ESPN (la primera vez tarda; luego quedan guardadas)...</div>';
   var liga = LIGA_ACTUAL;
-  obtenerTemporadaPasada(progresoTexto(out, 'Bajando la temporada pasada de ESPN:')).then(function(lista){
+  obtenerTemporada(1, progresoTexto(out, 'Temporada pasada:')).then(function(l1){
+    SEMILLA = construirSemilla(l1);
+    return obtenerTemporada(2, progresoTexto(out, 'Temporada anterior a la pasada:')).then(function(l2){ return [l1,l2]; }, function(){ return [l1,null]; });
+  }).then(function(par){
     if(liga!==LIGA_ACTUAL) return;
+    out.innerHTML = '<div class="estado">Probando combinaciones...</div>';
     setTimeout(function(){
-      var prep = prepararLista(lista);
-      var mejor = calibrarGrid(prep, 4);
+      var prep = prepararLista(par[0]);
+      var sem = par[1] ? construirSemilla(par[1]) : null;
+      var minPrev = 2, n = prep.length, mid = Math.floor(n/2);
+      var mejor = calibrarEtapas(prep, sem, minPrev, null);
       if(!mejor){ out.innerHTML = '<div class="estado bad">No hubo partidos medibles para calibrar.</div>'; return; }
-      var actual = walkForward(prep, PARAMS, 4);
-      var llActual = actual.n ? actual.ll/actual.n : null;
-      var v3 = walkForward(prep, {K:6,h:1.35,rho:0,w:1}, 4);
-      var html = '<h3>Calibración con la temporada pasada ('+mejor.n+' partidos)</h3>';
-      html += '<table class="tabla-bt"><tr><th></th><th>Localía h</th><th>K</th><th>ρ</th><th>w</th><th>Pérdida</th></tr>'+
-        '<tr><td>v3 (anterior)</td><td>1.35</td><td>6</td><td>0</td><td>1</td><td>'+(v3.ll/v3.n).toFixed(3)+'</td></tr>'+
-        '<tr><td>Actual</td><td>'+PARAMS.h+'</td><td>'+PARAMS.K+'</td><td>'+PARAMS.rho+'</td><td>'+PARAMS.w+'</td><td>'+(llActual!==null?llActual.toFixed(3):'—')+'</td></tr>'+
-        '<tr><td><b>Mejor hallada</b></td><td>'+mejor.h+'</td><td>'+mejor.K+'</td><td>'+mejor.rho+'</td><td>'+mejor.w+'</td><td>'+mejor.ll.toFixed(3)+'</td></tr></table>';
-      var mejora = llActual!==null ? llActual - mejor.ll : 0;
-      // chequeo fuera de muestra: los parametros hallados con la temporada pasada, medidos en la actual
-      var fuera = '';
-      if(TERMINADOS && TERMINADOS.length >= 30){
-        var prepAct = prepararLista(TERMINADOS);
-        var rNuevo = walkForward(prepAct, mejor, 3), rActual = walkForward(prepAct, PARAMS, 3);
-        if(rNuevo.n && rActual.n){
-          fuera = '<div class="nota" style="margin-top:0">Chequeo en la temporada actual (n='+rNuevo.n+', datos que NO se usaron para calibrar): pérdida con los nuevos '+(rNuevo.ll/rNuevo.n).toFixed(3)+' vs '+(rActual.ll/rActual.n).toFixed(3)+' con los actuales.'+(rNuevo.n<60?' Son muy pocos partidos: este chequeo todavía no dice nada.':'')+'</div>';
-        }
+      out.innerHTML = '<div class="estado">Chequeo honesto: calibrando solo con la primera mitad de la temporada...</div>';
+      setTimeout(function(){
+      var mejorH = calibrarEtapas(prep, sem, minPrev, [0,mid]) || mejor;
+      var completo = {semilla:sem}, mitad2 = {semilla:sem, desde:mid, hasta:n};
+      var fAct = walkForward(prep, PARAMS, minPrev, completo), fMej = walkForward(prep, mejor, minPrev, completo);
+      var hAct = walkForward(prep, PARAMS, minPrev, mitad2), hMej = walkForward(prep, mejorH, minPrev, mitad2);
+      var dAct = difsMercados(fAct), dMej = difsMercados(fMej), dHAct = difsMercados(hAct), dHMej = difsMercados(hMej);
+      function ll(r, k){ return (k==='x12' ? r.ll : (k==='ou' ? r.llOU : r.llBt))/r.n; }
+      function llb(r, k){ return (k==='x12' ? r.llBase : (k==='ou' ? r.llOUb : r.llBtb))/r.n; }
+      var nom = {x12:'1X2', ou:'Más/Menos 2.5', bt:'Ambos anotan'};
+      function tabla(rA, rM, dM, conVered){
+        var h = '<table class="tabla-bt"><tr><th>Mercado</th><th>Actual</th><th>Calibrado</th><th>Sin modelo</th><th>Veredicto</th></tr>';
+        ['x12','ou','bt'].forEach(function(k){
+          h += filaMerc(nom[k], [ll(rA,k).toFixed(3), ll(rM,k).toFixed(3), llb(rM,k).toFixed(3)], dM[k], conVered);
+        });
+        return h + '</table>';
       }
-      html += '<div class="veredicto-bt">'+(mejora>0.002 ?
-        'Los parámetros hallados mejoran la pérdida en '+mejora.toFixed(3)+'. La mejora es chica: con una sola temporada hay riesgo de que sea ruido, así que revisa el chequeo de abajo antes de usarlos.' :
-        'No hay mejora real sobre los parámetros actuales (diferencia '+mejora.toFixed(3)+'). Déjalos como están.')+'</div>'+fuera;
-      html += '<button id="btnUsarParams" class="btnAncho">Usar h='+mejor.h+', K='+mejor.K+', ρ='+mejor.rho+', w='+mejor.w+'</button>'+
+      function txtP(P){ return 'h '+P.h+' · K '+P.K+' · ρ '+P.rho+' · w '+P.w+' · historial S '+(P.S||0)+'  |  goles: K '+P.Kt+' · w '+P.wt+' · nivel ×'+P.ct; }
+      var html = '<h3>Calibración con la temporada pasada ('+fMej.n+' partidos)</h3>';
+      html += '<div class="nota" style="margin-top:0">'+(sem ? 'Con el historial de la temporada anterior a la pasada como base.' : 'Sin historial previo: ESPN no dio la temporada anterior a la pasada, así que se calibró sin base.')+'</div>';
+      html += '<div class="observ"><b>Actual:</b> '+txtP(PARAMS)+'</div><div class="observ"><b>Calibrado:</b> '+txtP(mejor)+'</div>';
+      html += '<h3>Toda la temporada (pérdida, más baja = mejor)</h3>'+tabla(fAct, fMej, dMej, true);
+      html += '<div class="nota" style="margin-top:0">Ojo: aquí los parámetros se eligieron mirando esos mismos partidos, así que sale más bonito de lo real.</div>';
+      var hayHonesto = hMej.n >= 80;
+      if(hayHonesto){
+        html += '<h3>Chequeo honesto: calibrado con la 1ª mitad, medido en la 2ª ('+hMej.n+' partidos)</h3>'+tabla(hAct, hMej, dHMej, true);
+        html += '<div class="nota" style="margin-top:0">Esta es la tabla que vale: los parámetros no vieron estos partidos.</div>';
+      }
+      var d = hayHonesto ? dHMej : dMej;
+      var lineas = [];
+      ['ou','bt'].forEach(function(k){
+        var v = veredictoDe(d[k]);
+        lineas.push(nom[k]+': '+(v.t==='✓ le gana' ? 'le gana a la frecuencia de la liga. En totales la ventaja real suele ser chica: confírmala con tu Registro de picks.' : (v.t==='≈ igual' ? 'queda igual que la frecuencia de la liga: el modelo ya no hace daño, pero tampoco aporta señal.' : 'sigue peor que la frecuencia de la liga: con goles solos no hay señal suficiente.')));
+      });
+      html += '<div class="veredicto-bt">'+lineas.join('<br>')+'</div>';
+      html += '<button id="btnUsarParams" class="btnAncho">Usar los parámetros calibrados</button>'+
               '<button id="btnResetParams" class="btnAncho sec">Volver a valores de arranque</button>';
       out.innerHTML = html;
       document.getElementById('btnUsarParams').addEventListener('click', function(){
         guardarParams(mejor);
+        guardarVeredictos(LIGA_ACTUAL, d, hayHonesto ? hMej.n : fMej.n, hayHonesto ? 'calibración (2ª mitad)' : 'calibración');
         out.insertAdjacentHTML('beforeend','<div class="estado ok">Guardado. Los partidos que abras desde ahora usan estos parámetros.</div>');
         this.disabled = true;
       });
       document.getElementById('btnResetParams').addEventListener('click', function(){
         restablecerParams();
-        out.insertAdjacentHTML('beforeend','<div class="estado ok">Parámetros de arranque restablecidos (h='+PARAMS.h+', K='+PARAMS.K+', ρ='+PARAMS.rho+', w='+PARAMS.w+').</div>');
+        out.insertAdjacentHTML('beforeend','<div class="estado ok">Parámetros de arranque restablecidos.</div>');
         this.disabled = true;
       });
-    }, 30);
+      }, 40);
+    }, 40);
   }).catch(function(e){
     out.innerHTML = '<div class="estado bad">No pude bajar la temporada pasada: '+e.message+'. Toca 🔍 Diagnóstico.</div>';
   });
@@ -1720,7 +1921,7 @@ function pintarRegistro(){
 function armarRespaldo(){
   return JSON.stringify({app:'ova-futbol', v:1, fecha:new Date().toISOString(),
     registro:cargarRegistro(), combinada:cargarCombinada(),
-    params: PARAMS.calibrado ? {K:PARAMS.K, h:PARAMS.h, rho:PARAMS.rho, w:PARAMS.w} : null});
+    params: PARAMS.calibrado ? paramsCompletos(PARAMS) : null});
 }
 function restaurarRespaldo(texto){
   var d = JSON.parse(texto);
@@ -1822,7 +2023,7 @@ function pintarEstado(liga){
 function armarDiag(){
   var L = [];
   L.push('App '+VERSION+' · liga '+LIGA_ACTUAL+' · '+new Date().toLocaleString());
-  L.push('Parámetros: h='+PARAMS.h+' K='+PARAMS.K+' ρ='+PARAMS.rho+' w='+PARAMS.w+(PARAMS.calibrado?' (calibrados)':' (arranque)'));
+  L.push('Parámetros: h='+PARAMS.h+' K='+PARAMS.K+' ρ='+PARAMS.rho+' w='+PARAMS.w+' S='+PARAMS.S+' | goles: K='+PARAMS.Kt+' w='+PARAMS.wt+' ×'+PARAMS.ct+(PARAMS.calibrado?' (calibrados)':' (arranque)')+' · historial: '+Object.keys(SEMILLA).length+' equipos');
   var w = DIAG.wf;
   if(w){
     L.push('worldfootball: '+w.total+' partidos leídos → '+w.terminados+' terminados con marcador, '+w.sinMarcador+' terminados sin marcador legible, '+w.pendientes+' por jugar ('+w.sinFecha+' de ellos sin fecha)');
@@ -1839,6 +2040,9 @@ function armarDiag(){
     L.push('  '+e.leidos+' partidos leídos, '+e.terminados+' terminados'+(e.errores.length?' · '+e.errores.length+' errores, ej: '+e.errores.slice(0,2).join(' | '):''));
   } else {
     L.push('ESPN (respaldo): no hizo falta (worldfootball trajo suficientes) o no aplica.');
+  }
+  if(DIAG.anterior){
+    L.push('ESPN temporada anterior a la pasada: modo '+DIAG.anterior.modo+' · '+DIAG.anterior.leidos+' leídos, '+DIAG.anterior.terminados+' terminados');
   }
   if(DIAG.pasada){
     L.push('ESPN temporada pasada: modo '+DIAG.pasada.modo+' · '+DIAG.pasada.nota);
@@ -1862,6 +2066,7 @@ function armarDiag(){
 function cargarLiga(clave){
   var mio = ++CARGA_ID;   // si el usuario cambia de liga a mitad de carga, la respuesta vieja se descarta
   LIGA_ACTUAL = clave;
+  cargarSemillaCache();
   CACHE_PERFIL = {};
   DIAG = {};
   MUESTRAS = {pend:[], term:[]};
