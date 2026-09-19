@@ -198,7 +198,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL <span class="ver">v5</span></h1>
+  <h1>⚽ FÚTBOL <span class="ver">v6</span></h1>
   <select id="ligaSel">
    <optgroup label="Ligas">
     <option value="pl">Premier League</option>
@@ -240,6 +240,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
   <div class="nota" style="margin:12px 2px 0">Cada partido se predice usando <b>solo lo que había antes de jugarse</b> (sin trampa) y se compara contra el resultado real. La temporada actual tiene pocos partidos al inicio; la pasada da una muestra mucho más confiable. "Calibrar" baja también la temporada anterior a la pasada (una sola vez) para usarla como punto de partida.</div>
   <button id="btnBtActual" class="btnAncho">Medir esta temporada</button>
   <button id="btnBtPasada" class="btnAncho sec">Medir temporada pasada completa</button>
+  <button id="btnTiros" class="btnAncho sec">Bajar tiros de ESPN (una vez; descarga pesada)</button>
   <button id="btnCalibrar" class="btnAncho sec">Calibrar parámetros (temporada pasada)</button>
   <div id="backtestOut"></div>
  </div>
@@ -270,7 +271,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 
 
 <script>
-var VERSION = 'v5';
+var VERSION = 'v6';
 var EQUIPOS = null;
 var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
@@ -292,16 +293,18 @@ var MUESTRAS = {pend:[], term:[]};
 // K = cuanto se encogen las estadisticas de un equipo hacia el promedio de la liga.
 // rho = correccion de Dixon-Coles para marcadores bajos (0-0, 1-0, 0-1, 1-1). Negativo = mas empates.
 // w = encogimiento de confianza: 1 = probabilidades tal cual; 0.8 = 80% modelo + 20% "partido promedio de la liga".
-var PARAMS_DEFECTO = {K:6, h:1.13, rho:-0.08, w:1, S:0, Kt:16, wt:0.5, ct:1};
+var PARAMS_DEFECTO = {K:6, h:1.13, rho:-0.08, w:1, S:0, Kt:16, wt:0.5, ct:1, A:1, At:1};
 // Modelo de GOLES (Mas/Menos y Ambos anotan): en la medicion real el modelo comun salia PEOR que la frecuencia
 // de la liga en Mas/Menos 2.5, por ruido (con 6-10 partidos por equipo el promedio de goles casi no dice nada).
 // Por eso tiene su propio encogimiento fuerte (Kt), su propia confianza (wt) y un ajuste de nivel (ct).
 // S = "partidos de historial": cuanto pesa la temporada anterior como punto de partida de cada equipo.
+// A / At = mezcla goles vs tiros (xG aproximado) en los ratings del 1X2 / de goles: 1 = solo goles, 0 = solo tiros.
 var PARAMS = cargarParams();
 function paramsCompletos(p){
   return {K:+p.K, h:+p.h, rho:+p.rho,
     w:(isFinite(p.w) ? +p.w : PARAMS_DEFECTO.w), S:(isFinite(p.S) ? +p.S : 0),
-    Kt:(isFinite(p.Kt) ? +p.Kt : PARAMS_DEFECTO.Kt), wt:(isFinite(p.wt) ? +p.wt : PARAMS_DEFECTO.wt), ct:(isFinite(p.ct) ? +p.ct : 1)};
+    Kt:(isFinite(p.Kt) ? +p.Kt : PARAMS_DEFECTO.Kt), wt:(isFinite(p.wt) ? +p.wt : PARAMS_DEFECTO.wt), ct:(isFinite(p.ct) ? +p.ct : 1),
+    A:(isFinite(p.A) ? +p.A : 1), At:(isFinite(p.At) ? +p.At : 1)};
 }
 function cargarParams(){
   try{
@@ -719,17 +722,18 @@ function espnJSON(url){
   });
 }
 function descubrirModoESPN(slug){
-  if(ESPN_MODO) return Promise.resolve({modo:ESPN_MODO, nota:'(ya sabido)'});
+  if(!ESPN_MODO){ try{ var mg = localStorage.getItem('ova_futbol_espn_modo'); if(mg==='dia' || mg==='rango') ESPN_MODO = mg; }catch(e){} }
+  if(ESPN_MODO) return Promise.resolve({modo:ESPN_MODO, nota:'(modo guardado)'});
   var fin = new Date(); fin.setDate(fin.getDate()-8);
   var ini = new Date(); ini.setDate(ini.getDate()-21);
   var url = ESPN_BASE+slug+'/scoreboard?dates='+ymd(ini)+'-'+ymd(fin)+'&limit=1000';
   return espnJSON(url).then(function(j){
     var ev = parseESPN(j);
     var dentro = ev.length>0 && ev.every(function(e){ return e.ts && e.ts >= ini.getTime()-86400000 && e.ts <= fin.getTime()+2*86400000; });
-    if(dentro){ ESPN_MODO = 'rango'; return {modo:'rango', nota:'sonda de rango ok ('+ev.length+' partidos en 2 semanas)'}; }
+    if(dentro){ ESPN_MODO = 'rango'; try{ localStorage.setItem('ova_futbol_espn_modo','rango'); }catch(e){} return {modo:'rango', nota:'sonda de rango ok ('+ev.length+' partidos en 2 semanas)'}; }
     return {modo:'dia', nota:'sonda de rango no confiable ('+ev.length+' partidos'+(ev.length?', fuera de fecha':'')+') → día por día'};
   }).catch(function(e){
-    if(/HTTP 4/.test(e.message)) ESPN_MODO = 'dia';
+    if(/HTTP 4/.test(e.message)){ ESPN_MODO = 'dia'; try{ localStorage.setItem('ova_futbol_espn_modo','dia'); }catch(e2){} }
     return {modo:'dia', nota:'sonda de rango falló ('+e.message+') → día por día'};
   });
 }
@@ -784,19 +788,113 @@ function bajarResultadosESPN(slug, desde, hasta, progreso){
     });
   });
 }
-// Si worldfootball trajo menos de 10 terminados, se prueba ESPN y se usa el que tenga mas.
+function leerJSON(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
+// Resultados terminados de la temporada actual desde ESPN, con cache INCREMENTAL: la primera vez baja todo lo que va
+// de temporada; despues solo los ultimos dias (antes bajaba la temporada entera cada vez que abrias una liga).
 function completarResultados(clave, terminadosWF){
   DIAG.espn = null;
-  if(terminadosWF.length >= 10 || !ESPN_SLUG[clave]) return Promise.resolve({lista:terminadosWF, fuente:'worldfootball'});
-  var ini = inicioTemporada(0);
-  return bajarResultadosESPN(ESPN_SLUG[clave], ini, new Date()).then(function(r){
-    var fin = r.partidos.filter(function(p){ return p.terminado; });
-    DIAG.espn = {modo:r.modo, nota:r.nota, leidos:r.partidos.length, terminados:fin.length, errores:r.errores};
-    if(fin.length > terminadosWF.length) return {lista:fin, fuente:'ESPN'};
+  if(!ESPN_SLUG[clave]) return Promise.resolve({lista:terminadosWF, fuente:'worldfootball'});
+  var ini = inicioTemporada(0), hoy = new Date();
+  var claveC = 'ova_futbol_actual_'+clave+'_'+ini.getFullYear();
+  var cache = leerJSON(claveC) || {hasta:null, partidos:[]};
+  var desde = ini;
+  if(cache.hasta){ desde = new Date(cache.hasta); desde.setDate(desde.getDate()-4); if(desde < ini) desde = ini; }
+  return bajarResultadosESPN(ESPN_SLUG[clave], desde, hoy).then(function(r){
+    var mapa = {};
+    cache.partidos.forEach(function(p){ mapa[p.id] = p; });
+    r.partidos.filter(function(p){ return p.terminado; }).forEach(function(p){ mapa[p.id] = p; });
+    var fin = Object.keys(mapa).map(function(k){ return mapa[k]; });
+    // solo se guarda si no hubo errores: asi un dia que fallo no queda marcado como ya cubierto
+    if(!r.errores.length && fin.length){
+      try{ localStorage.setItem(claveC, JSON.stringify({hasta:hoy.toISOString(), partidos:fin.map(function(p){ return {id:p.id,local:p.local,visita:p.visita,golesLocal:p.golesLocal,golesVisita:p.golesVisita,terminado:true,ts:p.ts,fecha:p.fecha}; })})); }catch(e){}
+    }
+    DIAG.espn = {modo:r.modo, nota:r.nota, leidos:r.partidos.length, terminados:fin.length, errores:r.errores, enCache:cache.partidos.length, desde:ymd(desde)};
+    if(fin.length >= terminadosWF.length && fin.length) return {lista:fin, fuente:'ESPN'};
     return {lista:terminadosWF, fuente:'worldfootball'};
   }).catch(function(e){
-    DIAG.espn = {modo:'?', nota:'', leidos:0, terminados:0, errores:[String(e && e.message || e)]};
+    DIAG.espn = {modo:'?', nota:'', leidos:0, terminados:0, errores:[String(e && e.message || e)], enCache:cache.partidos.length, desde:''};
+    if(cache.partidos.length >= terminadosWF.length && cache.partidos.length) return {lista:cache.partidos, fuente:'ESPN (guardado)'};
     return {lista:terminadosWF, fuente:'worldfootball'};
+  });
+}
+
+// ---------- tiros (ESPN summary): xG aproximado ----------
+// Los goles son muy ruidosos; los tiros a puerta y los tiros totales dicen mas sobre lo bien que juega un equipo.
+// xG aproximado de un equipo en un partido = tiros a puerta + 0.1 x (tiros fuera), reescalado para que en total
+// coincida con los goles reales de la liga.
+var TIROS = {};   // id de partido ESPN -> [tiros local, a puerta local, tiros visita, a puerta visita]
+function claveTiros(){ return 'ova_futbol_tiros_'+LIGA_ACTUAL; }
+function cargarTirosCache(){ TIROS = leerJSON(claveTiros()) || {}; }
+function guardarTirosCache(){ try{ localStorage.setItem(claveTiros(), JSON.stringify(TIROS)); }catch(e){} }
+function pseudoXg(sh, sot){ return sot + 0.1*Math.max(sh-sot, 0); }
+function numStat(s){
+  var v = (s.displayValue!==undefined ? s.displayValue : s.value);
+  var n = parseFloat(String(v).replace(/[^\d.]/g,''));
+  return isFinite(n) ? n : null;
+}
+function buscarStat(stats, nombres, etiquetaRe){
+  for(var i=0;i<stats.length;i++){
+    var st = stats[i], n = st.name || '', l = st.label || st.abbreviation || '';
+    if(nombres.indexOf(n)>-1 || (etiquetaRe && etiquetaRe.test(l))){ var v = numStat(st); if(v!==null) return v; }
+  }
+  return null;
+}
+// De un "summary" de ESPN saca [tirosL, alArcoL, tirosV, alArcoV]; null si no encuentra los datos.
+function extraerTirosResumen(json, ev){
+  var teams = json && json.boxscore && json.boxscore.teams;
+  if(!teams || teams.length < 2) return null;
+  var filas = teams.map(function(t){
+    var st = t.statistics || [];
+    var sot = buscarStat(st, ['shotsOnTarget','shotsOnGoal','onTargetShots'], /on (target|goal)|^sot$|^st$/i);
+    var sh = buscarStat(st, ['totalShots','shots','shotsTotal'], /^shots$|^sh$/i);
+    if(sh===null && sot!==null) sh = sot;
+    return {ha:t.homeAway||'', nombre:(t.team && (t.team.displayName || t.team.name)) || '', sh:sh, sot:sot};
+  });
+  if(filas.some(function(f){ return f.sh===null || f.sot===null; })) return null;
+  var h = null, a = null;
+  filas.forEach(function(f){ if(f.ha==='home') h = f; else if(f.ha==='away') a = f; });
+  if(!h || !a){
+    h = null; a = null;
+    filas.forEach(function(f){ if(mismoEquipo(f.nombre, ev.local)) h = f; else if(mismoEquipo(f.nombre, ev.visita)) a = f; });
+  }
+  if(!h || !a || h===a) return null;
+  return [h.sh, h.sot, a.sh, a.sot];
+}
+// Baja el resumen de cada partido que aun no tenga tiros (de 6 en 6) y lo guarda en el telefono.
+function bajarTiros(slug, partidos, progreso){
+  var vistos = {}, pend = [];
+  partidos.forEach(function(p){ if(p.id && !vistos[p.id] && !TIROS[p.id]){ vistos[p.id] = true; pend.push(p); } });
+  var res = {pedidos:pend.length, ok:0, sinDatos:0, fallidos:0, primerError:'', abortado:false};
+  var i = 0, activos = 0, hechos = 0, parar = false;
+  return new Promise(function(resolve){
+    if(!pend.length) return resolve(res);
+    function siguiente(){
+      while(!parar && activos < 6 && i < pend.length){
+        (function(p){
+          activos++;
+          espnJSON(ESPN_BASE+slug+'/summary?event='+p.id).then(function(j){
+            if(!DIAG.tirosMuestra){
+              var t0 = j && j.boxscore && j.boxscore.teams && j.boxscore.teams[0];
+              DIAG.tirosMuestra = t0 ? ('boxscore.teams[0] trae: '+(t0.statistics||[]).map(function(x){ return (x.name||'?')+'='+(x.displayValue!==undefined?x.displayValue:x.value); }).slice(0,40).join(', ')) :
+                ('sin boxscore.teams; claves de primer nivel: '+Object.keys(j||{}).slice(0,15).join(', '));
+            }
+            var t = extraerTirosResumen(j, p);
+            if(t){ TIROS[p.id] = t; res.ok++; } else res.sinDatos++;
+          }).catch(function(e){
+            res.fallidos++; if(!res.primerError) res.primerError = e.message;
+          }).then(function(){
+            activos--; hechos++;
+            // si los primeros 12 no traen tiros, no tiene caso bajar el resto (son archivos pesados)
+            if(hechos >= 12 && res.ok === 0 && !parar){ parar = true; res.abortado = true; }
+            if(hechos % 25 === 0) guardarTirosCache();
+            if(progreso) progreso(hechos, pend.length);
+            siguiente();
+          });
+        })(pend[i++]);
+      }
+      if((i >= pend.length || parar) && activos === 0){ guardarTirosCache(); resolve(res); }
+    }
+    siguiente();
   });
 }
 
@@ -975,7 +1073,7 @@ function mezclar(d, d0, w, claves){
   return out;
 }
 // Todas las probabilidades del modelo para un partido. eL/eV = {pj,gf,gc} de cada equipo, lp = goles por equipo por partido de la liga.
-function probsModelo(eL, eV, lp, P, conMarc){
+function probsModelo(eL, eV, lp, P, conMarc, eLg, eVg){
   var w = (P.w===undefined ? 1 : P.w);
   var Kt = (P.Kt===undefined ? P.K : P.Kt), wt = (P.wt===undefined ? w : P.wt), ct = (P.ct===undefined ? 1 : P.ct);
   var lm = lambdas(eL, eV, lp, P);
@@ -985,8 +1083,8 @@ function probsModelo(eL, eV, lp, P, conMarc){
   if(w<1) x = mezclar(d, distribucion(lp*P.h, lp/P.h, P.rho, false), w, CLAVES_1X2);
   res.pL = x.pL; res.pD = x.pD; res.pV = x.pV;
   var g = d;
-  if(Kt!==P.K || ct!==1){
-    var lg = lambdas(eL, eV, lp, {K:Kt, h:P.h});
+  if(Kt!==P.K || ct!==1 || eLg){
+    var lg = lambdas(eLg || eL, eVg || eV, lp, {K:Kt, h:P.h});
     g = distribucion(lg.lamL*ct, lg.lamV*ct, P.rho, false);
   }
   if(wt<1) g = mezclar(g, distribucion(lp*ct*P.h, lp*ct/P.h, P.rho, false), wt, CLAVES_GOLES);
@@ -1014,7 +1112,7 @@ function construirSemilla(lista){
   });
   return out;
 }
-function buscarSemilla(mapa, nombre){
+function buscarEnMapa(mapa, nombre){
   var k = claveEq(nombre);
   if(mapa[k]) return mapa[k];
   var ks = Object.keys(mapa);
@@ -1022,6 +1120,7 @@ function buscarSemilla(mapa, nombre){
   return null;
 }
 // suma S "partidos de historial" con los ratings de la temporada pasada (escalados al promedio actual de la liga)
+var buscarSemilla = buscarEnMapa;
 function conSemilla(a, s, S, lp){
   if(!s || !S) return a;
   return {pj:a.pj+S, gf:a.gf+S*s.att*lp, gc:a.gc+S*s.def*lp};
@@ -1034,14 +1133,39 @@ function cargarSemillaCache(){
   }catch(e){}
 }
 
+// xG aproximado acumulado por equipo en la temporada actual (para el modelo en vivo)
+var XLIVE = {mapa:{}, escala:0.30};
+function armarXLive(){
+  var mapa = {}, gS = 0, xS = 0;
+  TERMINADOS.forEach(function(p){
+    var t = p.id ? TIROS[p.id] : null;
+    if(!t) return;
+    var xl = pseudoXg(t[0], t[1]), xv = pseudoXg(t[2], t[3]);
+    gS += p.golesLocal+p.golesVisita; xS += xl+xv;
+    [[p.local,xl,xv],[p.visita,xv,xl]].forEach(function(z){
+      var k = claveEq(z[0]);
+      var e = mapa[k] || (mapa[k] = {px:0, xf:0, xc:0});
+      e.px++; e.xf += z[1]; e.xc += z[2];
+    });
+  });
+  XLIVE = {mapa:mapa, escala:(xS>0 ? gS/xS : 0.30)};
+}
+function acumConTiros(e){
+  var x = buscarEnMapa(XLIVE.mapa, e.nombre);
+  return {pj:e.pj, gf:e.gf, gc:e.gc, px:(x?x.px:0), xf:(x?x.xf:0), xc:(x?x.xc:0)};
+}
 function calcular(eL, eV, P){
   P = P || PARAMS;
   var totalGF=0, totalPJ=0;
   EQUIPOS.forEach(function(e){ totalGF+=e.gf; totalPJ+=e.pj; });
   var lp = totalGF / totalPJ;
-  var aL = conSemilla(eL, buscarSemilla(SEMILLA, eL.nombre), P.S, lp);
-  var aV = conSemilla(eV, buscarSemilla(SEMILLA, eV.nombre), P.S, lp);
-  var d = probsModelo(aL, aV, lp, P, true);
+  var A = (P.A===undefined ? 1 : P.A), At = (P.At===undefined ? A : P.At);
+  var aL0 = acumConTiros(eL), aV0 = acumConTiros(eV);
+  var sL = buscarSemilla(SEMILLA, eL.nombre), sV = buscarSemilla(SEMILLA, eV.nombre);
+  var eL1 = conSemilla(mezclaTiros(aL0, A, XLIVE.escala), sL, P.S, lp), eV1 = conSemilla(mezclaTiros(aV0, A, XLIVE.escala), sV, P.S, lp);
+  var eL2 = null, eV2 = null;
+  if(At!==A){ eL2 = conSemilla(mezclaTiros(aL0, At, XLIVE.escala), sL, P.S, lp); eV2 = conSemilla(mezclaTiros(aV0, At, XLIVE.escala), sV, P.S, lp); }
+  var d = probsModelo(eL1, eV1, lp, P, true, eL2, eV2);
   return {lamL:d.lamL, lamV:d.lamV, pL:d.pL, pD:d.pD, pV:d.pV,
     overLin:{1.5:d.o15, 2.5:d.o25, 3.5:d.o35}, pBtts:d.btts, marcadores:d.marcadores};
 }
@@ -1526,16 +1650,27 @@ function pintarAlGane(partidos){
 // Con "semilla" (ratings de la temporada anterior) tambien se puede predecir desde la primera jornada.
 function prepararLista(lista){
   return lista.filter(function(p){ return p.golesLocal!==null && p.golesLocal!==undefined && p.golesVisita!==null && p.golesVisita!==undefined; })
-    .map(function(p){ return {kL:claveEq(p.local), kV:claveEq(p.visita), gl:p.golesLocal, gv:p.golesVisita, ts:tsPartido(p)}; })
+    .map(function(p){
+      var t = p.id ? TIROS[p.id] : null;
+      return {kL:claveEq(p.local), kV:claveEq(p.visita), gl:p.golesLocal, gv:p.golesVisita, ts:tsPartido(p),
+        xl:(t ? pseudoXg(t[0],t[1]) : null), xv:(t ? pseudoXg(t[2],t[3]) : null)};
+    })
     .sort(function(a,b){ return a.ts-b.ts; });
 }
-var CERO = {pj:0, gf:0, gc:0};
+var CERO = {pj:0, gf:0, gc:0, px:0, xf:0, xc:0};
+// Mezcla los goles de un equipo con su xG aproximado (esc = escala de la liga). A=1 -> solo goles; A=0 -> solo tiros.
+function mezclaTiros(a, A, esc){
+  if(A>=1 || !a.px || !a.pj) return a;
+  var gfR = a.gf/a.pj, gcR = a.gc/a.pj, xfR = a.xf*esc/a.px, xcR = a.xc*esc/a.px;
+  return {pj:a.pj, gf:a.pj*(A*gfR+(1-A)*xfR), gc:a.pj*(A*gcR+(1-A)*xcR)};
+}
 function walkForward(prep, P, minPrev, opts){
   opts = opts || {};
   var sem = opts.semilla || null;
   var desde = opts.desde || 0, hasta = (opts.hasta===undefined ? prep.length : opts.hasta);
-  var acum = {}, gfTot = 0, pjTot = 0, fr = {L:1,D:1,V:1}, nfr = 3;
+  var acum = {}, gfTot = 0, pjTot = 0, fr = {L:1,D:1,V:1}, nfr = 3, gS = 0, xS = 0;
   var fo = {s:1,n:1}, fb = {s:1,n:1};   // frecuencias corridas (suavizadas) de Mas de 2.5 y de Ambos anotan
+  var A = (P.A===undefined ? 1 : P.A), At = (P.At===undefined ? A : P.At);
   var EDG = [0.45, 0.55, 0.65];
   var r = {n:0, ok1x2:0, okOU:0, okBtts:0, ll:0, llBase:0, brier:0, sl:0, over:0, btts:0, llOU:0, llOUb:0, llBt:0, llBtb:0,
     bins:[{n:0,pred:0,gan:0},{n:0,pred:0,gan:0},{n:0,pred:0,gan:0},{n:0,pred:0,gan:0}]};
@@ -1545,9 +1680,13 @@ function walkForward(prep, P, minPrev, opts){
     var conJuegos = (minPrev<=0) || (aL && aV && aL.pj>=minPrev && aV.pj>=minPrev);
     if(idx>=desde && idx<hasta && pjTot>=20 && conJuegos){
       var lp = gfTot/pjTot;
-      var eL = conSemilla(aL||CERO, sem ? sem[m.kL] : null, P.S, lp);
-      var eV = conSemilla(aV||CERO, sem ? sem[m.kV] : null, P.S, lp);
-      var d = probsModelo(eL, eV, lp, P, false);
+      var esc = xS>0 ? gS/xS : 0.30;
+      var sL = sem ? sem[m.kL] : null, sV = sem ? sem[m.kV] : null;
+      var eL = conSemilla(mezclaTiros(aL||CERO, A, esc), sL, P.S, lp);
+      var eV = conSemilla(mezclaTiros(aV||CERO, A, esc), sV, P.S, lp);
+      var eL2 = null, eV2 = null;
+      if(At!==A){ eL2 = conSemilla(mezclaTiros(aL||CERO, At, esc), sL, P.S, lp); eV2 = conSemilla(mezclaTiros(aV||CERO, At, esc), sV, P.S, lp); }
+      var d = probsModelo(eL, eV, lp, P, false, eL2, eV2);
       var pr = {L:d.pL, D:d.pD, V:d.pV};
       r.n++;
       var pred = (d.pL>=d.pD && d.pL>=d.pV) ? 'L' : (d.pV>=d.pD ? 'V' : 'D');
@@ -1571,10 +1710,15 @@ function walkForward(prep, P, minPrev, opts){
       var bi = pf<EDG[0] ? 0 : (pf<EDG[1] ? 1 : (pf<EDG[2] ? 2 : 3));
       r.bins[bi].n++; r.bins[bi].pred += pf; if(favGana) r.bins[bi].gan++;
     }
-    var x = acum[m.kL] || (acum[m.kL] = {pj:0,gf:0,gc:0});
-    var y = acum[m.kV] || (acum[m.kV] = {pj:0,gf:0,gc:0});
+    var x = acum[m.kL] || (acum[m.kL] = {pj:0,gf:0,gc:0,px:0,xf:0,xc:0});
+    var y = acum[m.kV] || (acum[m.kV] = {pj:0,gf:0,gc:0,px:0,xf:0,xc:0});
     x.pj++; x.gf+=m.gl; x.gc+=m.gv;
     y.pj++; y.gf+=m.gv; y.gc+=m.gl;
+    if(m.xl!==null && m.xl!==undefined){
+      x.px++; x.xf+=m.xl; x.xc+=m.xv;
+      y.px++; y.xf+=m.xv; y.xc+=m.xl;
+      gS += m.gl+m.gv; xS += m.xl+m.xv;
+    }
     gfTot += m.gl+m.gv; pjTot += 2;
     fr[real]++; nfr++;
     if(m.gl+m.gv>2.5) fo.s++; else fo.n++;
@@ -1588,7 +1732,9 @@ function walkForward(prep, P, minPrev, opts){
 function calibrarEtapas(prep, semilla, minPrev, rango){
   var opts = {semilla:semilla, desde:rango?rango[0]:0, hasta:rango?rango[1]:prep.length};
   var hayS = semilla && Object.keys(semilla).length > 0;
-  var base = {K:PARAMS_DEFECTO.K, h:PARAMS_DEFECTO.h, rho:PARAMS_DEFECTO.rho, w:1, S:0, Kt:PARAMS_DEFECTO.Kt, wt:PARAMS_DEFECTO.wt, ct:1};
+  var nX = 0; prep.forEach(function(q){ if(q.xl!==null && q.xl!==undefined) nX++; });
+  var hayX = nX >= 150;
+  var base = {K:PARAMS_DEFECTO.K, h:PARAMS_DEFECTO.h, rho:PARAMS_DEFECTO.rho, w:1, S:0, Kt:PARAMS_DEFECTO.Kt, wt:PARAMS_DEFECTO.wt, ct:1, A:1, At:1};
   function con(P, extra){ var o = {}; Object.keys(P).forEach(function(k){ o[k]=P[k]; }); Object.keys(extra).forEach(function(k){ o[k]=extra[k]; }); return o; }
   function mejorDe(candidatos, medida){
     var mejor = null;
@@ -1607,8 +1753,13 @@ function calibrarEtapas(prep, semilla, minPrev, rango){
   var candB = [];
   [1.06,1.08,1.10,1.12,1.14,1.16,1.18,1.20].forEach(function(h){ [0,-0.06,-0.12].forEach(function(rho){ candB.push(con(pA,{h:h,rho:rho})); }); });
   var pB = mejorDe(candB, function(r){ return r.ll/r.n; }) || pA;
+  // tiros: cuanto de xG aproximado mezclar en los ratings del 1X2
+  if(hayX){
+    var candX = [1,0.7,0.4,0.15].map(function(A){ return con(pB,{A:A}); });
+    pB = mejorDe(candX, function(r){ return r.ll/r.n; }) || pB;
+  }
   var candC = [];
-  [6,16,40,80].forEach(function(Kt){ [1,0.8,0.6,0.4,0.2,0].forEach(function(wt){ [0.96,1,1.04].forEach(function(ct){ candC.push(con(pB,{Kt:Kt,wt:wt,ct:ct})); }); }); });
+  [6,16,40].forEach(function(Kt){ [1,0.6,0.3,0].forEach(function(wt){ [0.96,1,1.04].forEach(function(ct){ (hayX ? [1,0.5,0] : [1]).forEach(function(At){ candC.push(con(pB,{Kt:Kt,wt:wt,ct:ct,At:At})); }); }); }); });
   var pC = mejorDe(candC, function(r){ return (r.llOU+r.llBt)/(2*r.n); }) || pB;
   return pC;
 }
@@ -1762,6 +1913,36 @@ function correrBacktestPasado(){
   });
 }
 
+function correrBajarTiros(){
+  var out = document.getElementById('backtestOut');
+  if(LIGA_ES_COPA){ out.innerHTML = '<div class="estado bad">No aplica a copas de eliminación directa.</div>'; return; }
+  var slug = ESPN_SLUG[LIGA_ACTUAL], liga = LIGA_ACTUAL;
+  if(!slug){ out.innerHTML = '<div class="estado bad">Esta competencia no tiene fuente de tiros.</div>'; return; }
+  DIAG.tirosMuestra = null;
+  out.innerHTML = '<div class="estado">Bajando la temporada pasada de ESPN (si no está guardada)...</div>';
+  obtenerTemporada(1, progresoTexto(out, 'Temporada pasada:')).then(function(l1){
+    if(liga!==LIGA_ACTUAL) return;
+    var todos = l1.concat(TERMINADOS.filter(function(p){ return p.id; }));
+    var faltan = todos.filter(function(p){ return p.id && !TIROS[p.id]; }).length;
+    out.innerHTML = '<div class="estado">Bajando el resumen de '+faltan+' partidos (tiros). Es una descarga pesada; se hace una sola vez y queda guardada en el teléfono...</div>';
+    return bajarTiros(slug, todos, progresoTexto(out, 'Bajando tiros:')).then(function(r){
+      if(liga!==LIGA_ACTUAL) return;
+      armarXLive();
+      var conTiros = todos.filter(function(p){ return p.id && TIROS[p.id]; }).length;
+      var html = '<div class="estado '+(conTiros>=150?'ok':'warn')+'">'+conTiros+' de '+todos.length+' partidos con tiros guardados'+
+        (r.sinDatos ? ' · '+r.sinDatos+' sin datos de tiros' : '')+(r.fallidos ? ' · '+r.fallidos+' fallaron' : '')+'.</div>';
+      if(r.abortado) html += '<div class="nota">Me detuve a los 12 partidos: ninguno traía tiros, así que no bajé el resto.</div>';
+      if(r.primerError) html += '<div class="nota">Primer error: '+r.primerError+'</div>';
+      if(DIAG.tirosMuestra) html += '<div class="nota">'+DIAG.tirosMuestra+'</div>';
+      html += conTiros>=150 ? '<div class="nota">Listo. Ahora toca <b>Calibrar parámetros</b>: probará cuánto ayudan los tiros y te dirá si mejoran o no.</div>' :
+        '<div class="nota">No alcanzó para probar. Toca 🔍 Diagnóstico y mándame el screenshot: ahí sale cómo llegan los datos de tiros desde ESPN.</div>';
+      out.innerHTML = html;
+    });
+  }).catch(function(e){
+    out.innerHTML = '<div class="estado bad">No pude bajar los tiros: '+e.message+'. Toca 🔍 Diagnóstico.</div>';
+  });
+}
+
 function correrCalibracion(){
   var out = document.getElementById('backtestOut');
   if(LIGA_ES_COPA){ out.innerHTML = '<div class="estado bad">No aplica a copas de eliminación directa.</div>'; return; }
@@ -1796,9 +1977,11 @@ function correrCalibracion(){
         });
         return h + '</table>';
       }
-      function txtP(P){ return 'h '+P.h+' · K '+P.K+' · ρ '+P.rho+' · w '+P.w+' · historial S '+(P.S||0)+'  |  goles: K '+P.Kt+' · w '+P.wt+' · nivel ×'+P.ct; }
+      function txtP(P){ return 'h '+P.h+' · K '+P.K+' · ρ '+P.rho+' · w '+P.w+' · historial S '+(P.S||0)+' · goles(vs tiros) A '+(P.A===undefined?1:P.A)+'  |  goles: K '+P.Kt+' · w '+P.wt+' · nivel ×'+P.ct+' · A '+(P.At===undefined?1:P.At); }
+      var nX = 0; prep.forEach(function(q){ if(q.xl!==null && q.xl!==undefined) nX++; });
       var html = '<h3>Calibración con la temporada pasada ('+fMej.n+' partidos)</h3>';
-      html += '<div class="nota" style="margin-top:0">'+(sem ? 'Con el historial de la temporada anterior a la pasada como base.' : 'Sin historial previo: ESPN no dio la temporada anterior a la pasada, así que se calibró sin base.')+'</div>';
+      html += '<div class="nota" style="margin-top:0">'+(sem ? 'Con el historial de la temporada anterior a la pasada como base. ' : 'Sin historial previo: ESPN no dio la temporada anterior a la pasada, así que se calibró sin base. ')+
+        (nX>=150 ? 'Con tiros de ESPN en '+nX+' partidos (A = 1 solo goles, 0 solo tiros).' : 'Sin tiros: toca "Bajar tiros de ESPN" para probarlos.')+'</div>';
       html += '<div class="observ"><b>Actual:</b> '+txtP(PARAMS)+'</div><div class="observ"><b>Calibrado:</b> '+txtP(mejor)+'</div>';
       html += '<h3>Toda la temporada (pérdida, más baja = mejor)</h3>'+tabla(fAct, fMej, dMej, true);
       html += '<div class="nota" style="margin-top:0">Ojo: aquí los parámetros se eligieron mirando esos mismos partidos, así que sale más bonito de lo real.</div>';
@@ -2023,7 +2206,7 @@ function pintarEstado(liga){
 function armarDiag(){
   var L = [];
   L.push('App '+VERSION+' · liga '+LIGA_ACTUAL+' · '+new Date().toLocaleString());
-  L.push('Parámetros: h='+PARAMS.h+' K='+PARAMS.K+' ρ='+PARAMS.rho+' w='+PARAMS.w+' S='+PARAMS.S+' | goles: K='+PARAMS.Kt+' w='+PARAMS.wt+' ×'+PARAMS.ct+(PARAMS.calibrado?' (calibrados)':' (arranque)')+' · historial: '+Object.keys(SEMILLA).length+' equipos');
+  L.push('Parámetros: h='+PARAMS.h+' K='+PARAMS.K+' ρ='+PARAMS.rho+' w='+PARAMS.w+' S='+PARAMS.S+' A='+PARAMS.A+' | goles: K='+PARAMS.Kt+' w='+PARAMS.wt+' ×'+PARAMS.ct+' A='+PARAMS.At+(PARAMS.calibrado?' (calibrados)':' (arranque)')+' · historial: '+Object.keys(SEMILLA).length+' equipos');
   var w = DIAG.wf;
   if(w){
     L.push('worldfootball: '+w.total+' partidos leídos → '+w.terminados+' terminados con marcador, '+w.sinMarcador+' terminados sin marcador legible, '+w.pendientes+' por jugar ('+w.sinFecha+' de ellos sin fecha)');
@@ -2037,7 +2220,7 @@ function armarDiag(){
   var e = DIAG.espn;
   if(e){
     L.push('ESPN (respaldo): modo '+e.modo+' · '+e.nota);
-    L.push('  '+e.leidos+' partidos leídos, '+e.terminados+' terminados'+(e.errores.length?' · '+e.errores.length+' errores, ej: '+e.errores.slice(0,2).join(' | '):''));
+    L.push('  '+e.leidos+' partidos leídos desde '+(e.desde||'?')+', '+e.terminados+' terminados en total ('+(e.enCache||0)+' ya guardados)'+(e.errores.length?' · '+e.errores.length+' errores, ej: '+e.errores.slice(0,2).join(' | '):''));
   } else {
     L.push('ESPN (respaldo): no hizo falta (worldfootball trajo suficientes) o no aplica.');
   }
@@ -2049,6 +2232,7 @@ function armarDiag(){
     L.push('  '+DIAG.pasada.leidos+' leídos, '+DIAG.pasada.terminados+' terminados'+(DIAG.pasada.errores.length?' · '+DIAG.pasada.errores.length+' errores, ej: '+DIAG.pasada.errores.slice(0,2).join(' | '):''));
   }
   L.push('Fuente usada para terminados: '+FUENTE_TERM+' ('+TERMINADOS.length+')');
+  L.push('Tiros de ESPN guardados: '+Object.keys(TIROS).length+' partidos de esta liga'+(DIAG.tirosMuestra ? '\n  '+DIAG.tirosMuestra : ''));
   if(DIAG.tablaDeResultados) L.push('La tabla de posiciones de worldfootball no se pudo leer: se armó con los resultados.');
   if(!LIGA_ES_COPA && EQUIPOS && EQUIPOS.length && TERMINADOS.length){
     var sinCruzar = [];
@@ -2067,6 +2251,7 @@ function cargarLiga(clave){
   var mio = ++CARGA_ID;   // si el usuario cambia de liga a mitad de carga, la respuesta vieja se descarta
   LIGA_ACTUAL = clave;
   cargarSemillaCache();
+  cargarTirosCache();
   CACHE_PERFIL = {};
   DIAG = {};
   MUESTRAS = {pend:[], term:[]};
@@ -2103,6 +2288,7 @@ function cargarLiga(clave){
     return completarResultados(clave, termWF).then(function(r){
       if(mio!==CARGA_ID) return;
       TERMINADOS = r.lista; FUENTE_TERM = r.fuente;
+      armarXLive();
       if(!LIGA_ES_COPA && !EQUIPOS.length){
         if(TERMINADOS.length >= 10){ EQUIPOS = equiposDesdeResultados(TERMINADOS); DIAG.tablaDeResultados = true; }
         else throw new Error('no se pudo leer la tabla de posiciones');
@@ -2140,6 +2326,7 @@ document.querySelectorAll('.tabbar .tbar-btn').forEach(function(btn){
 document.getElementById('btnBtActual').addEventListener('click', correrBacktestActual);
 document.getElementById('btnBtPasada').addEventListener('click', correrBacktestPasado);
 document.getElementById('btnCalibrar').addEventListener('click', correrCalibracion);
+document.getElementById('btnTiros').addEventListener('click', correrBajarTiros);
 document.getElementById('btnVerificarRegistro').addEventListener('click', verificarRegistro);
 document.getElementById('btnDiag').addEventListener('click', function(){
   var el = document.getElementById('diagOut');
