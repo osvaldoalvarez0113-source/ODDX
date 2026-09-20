@@ -530,12 +530,71 @@ svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
 @media (prefers-reduced-motion:reduce){.iabox button::after{animation:none}}
 .pick.ia{border-left-color:var(--ia);background:#0F2426;border-color:#1D4A47}
 .pick.ia .q{color:var(--ia)}
+
+/* ---------- marcador en vivo (v43) ----------
+   La cabecera del juego pasa a dos pisos: arriba lo de siempre (equipos, hora, flecha)
+   y abajo el marcador estilo tele, que solo se pinta cuando el juego esta en marcha
+   o ya termino. */
+.head{display:block}
+.hrow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.bug{display:none;color:#fff}
+.bug.on{display:block;margin-top:13px}
+.bug .caja{display:flex;align-items:center;gap:11px;background:rgba(0,0,0,.42);
+ border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:8px 11px}
+.bug .qu{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px}
+.bug .qr{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700;line-height:1.1}
+.bug .qr b{flex:1;font-family:var(--body);font-weight:700;letter-spacing:.4px}
+.bug .qr i{font-style:normal;font-family:var(--cond);font-size:20px;font-weight:800;
+ color:var(--hot);min-width:22px;text-align:right;font-variant-numeric:tabular-nums}
+.bug .in{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;
+ justify-content:center;min-width:32px;line-height:1.05}
+.bug .in em{font-style:normal;font-size:11.5px;color:var(--hot);font-weight:700}
+.bug .in b{font-family:var(--cond);font-size:22px;font-weight:800}
+.bug .dia{flex:0 0 auto;width:46px;height:41px}
+.bug .dia .base{fill:rgba(255,255,255,.2);stroke:rgba(255,255,255,.45);stroke-width:1}
+.bug .dia .base.on{fill:var(--hot);stroke:var(--hot)}
+.bug .dia .camino{stroke:rgba(255,255,255,.28);stroke-width:1;fill:none}
+.bug .cnt{flex:0 0 auto;display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:700}
+.bug .cnt div{display:flex;align-items:center;gap:4px}
+.bug .cnt u{text-decoration:none;width:9px;color:rgba(255,255,255,.75)}
+.bug .d{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);display:inline-block}
+.bug .d.b.on{background:var(--good)}
+.bug .d.s.on{background:var(--bad)}
+.bug .d.o.on{background:var(--hot)}
+.bug .qien{margin-top:8px;font-size:11.5px;color:rgba(255,255,255,.78);line-height:1.4}
+.bug .qien b{color:#fff;font-weight:600}
+.bug .caja.fin{justify-content:center;gap:12px;padding:9px 11px}
+.bug .fq{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700}
+.bug .fq i{font-style:normal;font-family:var(--cond);font-size:21px;font-weight:800;
+ font-variant-numeric:tabular-nums;color:rgba(255,255,255,.7)}
+.bug .fq.gana i{color:var(--hot)}
+.bug .gs{color:rgba(255,255,255,.5)}
+.bug .ft{margin-left:4px;font-size:11px;font-weight:700;letter-spacing:.8px;
+ color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.35);border-radius:4px;padding:2px 6px}
+.game .clock.vivo{color:#fff;background:#C0392B;border-color:#C0392B;font-weight:700}
+.game .clock.vivo::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;
+ background:#fff;margin-right:6px;animation:vivopulso 1.4s ease-in-out infinite}
+@keyframes vivopulso{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.game .clock.vivo::before{animation:none}}
+/* Con el juego abierto la cabecera se queda pegada arriba: se compacta para no comerse la pantalla. */
+.game.open .bug .qien{display:none}
+.game.live.open .head{padding-top:12px;padding-bottom:12px}
+.game.live.open .match{font-size:19px;line-height:1.2}
+.game.live.open .match .esc{width:22px !important;height:22px !important}
+.game.live.open .match small{display:none}
+.game.live.open .bug.on{margin-top:8px}
+.game.live.open .bug .caja{padding:6px 10px}
+@media (max-width:360px){
+ .bug .caja{gap:8px;padding:7px 9px}
+ .bug .dia{width:40px;height:36px}
+}
+
 </style>
 </head>
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v42</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v43</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -878,7 +937,7 @@ svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
   Los mercados de un mismo juego están correlacionados, así que jugar dos del ranking no diversifica.
   El tope del porcentaje es 22–78%; si un juego lo toca, el moneyline sale del ranking.
 
-  <b>El botón 🦈 Verificar con IA.</b> Manda tu ranking a un modelo de lenguaje con acceso a internet para que busque lineup, lesiones y noticias del día y te diga si eso cambia el pick. No reemplaza el modelo de la app — lo complementa con lo que un número solo no puede ver. La clave de API vive en el código de este archivo (variable <code>CLAUDE_KEY</code>): si compartes el link del repo, compartes esa clave, y cada toque del botón gasta crédito de tu cuenta de Anthropic. Ponle un límite de gasto mensual en console.anthropic.com.
+  <b>El marcador en vivo.</b> Cada juego que está en marcha muestra arriba lo que sale en la tele: carreras, entrada (&#9650; alta, &#9660; baja), corredores en base, bolas, strikes y outs, más quién batea y quién lanza. Sale del mismo MLB Stats API de todo lo demás y se refresca solo cada 20 segundos mientras haya juegos en vivo; con la pantalla apagada o la app en segundo plano no consulta nada. Es solo información: no entra al cálculo de ningún mercado.<br><br><b>El botón 🦈 Verificar con IA.</b> Manda tu ranking a un modelo de lenguaje con acceso a internet para que busque lineup, lesiones y noticias del día y te diga si eso cambia el pick. No reemplaza el modelo de la app — lo complementa con lo que un número solo no puede ver. La clave de API vive en el código de este archivo (variable <code>CLAUDE_KEY</code>): si compartes el link del repo, compartes esa clave, y cada toque del botón gasta crédito de tu cuenta de Anthropic. Ponle un límite de gasto mensual en console.anthropic.com.
 
 </details>
 </footer>
@@ -2754,7 +2813,7 @@ function cargar(){
     K_LIGA=null; LIGA_ERA=null; LIGA_RG=null; STAND=null; LIGA_YEAR=+y;
   }
   kLiga(+y); ligaEra(+y); standings(+y);
-  j(API+'/schedule?sportId=1&date='+m+'/'+d+'/'+y+'&hydrate=probablePitcher,team,venue(location,fieldInfo)').then(function(data){
+  j(API+'/schedule?sportId=1&date='+m+'/'+d+'/'+y+'&hydrate=probablePitcher,team,venue(location,fieldInfo),linescore').then(function(data){
     var games=(data.dates&&data.dates[0]&&data.dates[0].games)||[];
     if(!games.length){ $('status').textContent='No hay juegos de MLB ese día.'; return; }
     $('status').innerHTML=games.length+' juegos. Toca uno para correr los números, o dale a Ranking al gane para calcularlos todos.'+
@@ -2763,6 +2822,7 @@ function cargar(){
         'ese día. El ERA de bullpen sí queda en el del staff completo: el split de relevistas no '+
         'acepta rango de fechas.':'');
     games.forEach(function(g){ $('slate').appendChild(fila(g,+y)); });
+    if(typeof vivoIniciar==='function') vivoIniciar(iso);
   }).catch(function(e){
     $('status').className='status err';
     $('status').textContent='No se pudo cargar el calendario ('+e.message+'). Revisa la conexión o usa el cálculo a mano.';
@@ -2776,15 +2836,18 @@ function fila(g,year){
   var el=document.createElement('div');
   el.className='game';
   el._pk=g.gamePk;
-  el.innerHTML='<div class="head"><div class="match">'+
+  el.innerHTML='<div class="head"><div class="hrow"><div class="match">'+
     eqNom(a.team.id,esc(a.team.name),26)+' <span class="vs">@</span> '+
     eqNom(h.team.id,esc(h.team.name),26)+
     '<small>&#9918; '+esc(pa?pa.fullName:'Abridor por confirmar')+' <span class="vs">vs</span> '+
     esc(pih?pih.fullName:'Abridor por confirmar')+'</small>'+
     '</div><div style="text-align:right"><div class="clock">'+hora+'</div>'+
-    '<div class="chev">&#9660;</div></div></div>'+
+    '<div class="chev">&#9660;</div></div></div><div class="bug"></div></div>'+
     '<div class="body"><div class="status">Cargando números…</div></div>';
   var head=el.querySelector('.head'), body=el.querySelector('.body');
+  el._hora=hora;
+  el._eq={a:{id:a.team.id, ab:(a.team.abbreviation||a.team.name)}, h:{id:h.team.id, ab:(h.team.abbreviation||h.team.name)}};
+  if(typeof pintarBug==='function') pintarBug(el,g);
 
   el._cargar=function(){
     if(el._prom) return el._prom;
@@ -4107,6 +4170,166 @@ try{
   },{passive:true});
 }catch(e){}
 })();
+</script>
+<script>
+/* ---------- marcador en vivo (v43) ----------
+   Pinta en cada juego lo que sale en la tele: carreras, entrada (arriba o abajo),
+   corredores en base, bolas, strikes y outs, y quien batea y quien lanza.
+   Sale del MLB Stats API (hydrate=linescore), el mismo que usa todo lo demas, y se
+   refresca solo cada 20 segundos mientras haya juegos en vivo o por empezar.
+   Es SOLO informacion: no entra al calculo de ningun mercado. */
+var VIVO={timer:null, fecha:null, pendiente:false, hayVivo:false, sigInicio:null};
+
+function bugPuntos(n,max,cls){
+  var s='';
+  for(var i=0;i<max;i++) s+='<span class="d '+cls+(i<n?' on':'')+'"></span>';
+  return s;
+}
+function bugCarreras(ls,g,lado){
+  var v=(ls&&ls.teams&&ls.teams[lado])?ls.teams[lado].runs:null;
+  if(v==null&&g&&g.teams&&g.teams[lado]) v=g.teams[lado].score;
+  return v==null?0:v;
+}
+function bugBases(b1,b2,b3){
+  return '<svg class="dia" viewBox="0 0 46 41" aria-hidden="true">'+
+    '<path class="camino" d="M23 31 L37 20 L23 9 L9 20 Z"/>'+
+    '<rect class="base'+(b2?' on':'')+'" x="18" y="4" width="10" height="10" transform="rotate(45 23 9)"/>'+
+    '<rect class="base'+(b3?' on':'')+'" x="4" y="15" width="10" height="10" transform="rotate(45 9 20)"/>'+
+    '<rect class="base'+(b1?' on':'')+'" x="32" y="15" width="10" height="10" transform="rotate(45 37 20)"/>'+
+    '<path d="M19 30 h8 v3 l-4 3.6 l-4 -3.6 z" fill="rgba(255,255,255,.6)"/>'+
+  '</svg>';
+}
+function bugTraducir(det){
+  det=String(det||'');
+  if(/postpone/i.test(det)) return 'Pospuesto';
+  if(/suspend/i.test(det)) return 'Suspendido';
+  if(/cancel/i.test(det)) return 'Cancelado';
+  if(/delay/i.test(det)) return 'Juego en retraso';
+  if(/challenge|review/i.test(det)) return 'En revisión';
+  return '';
+}
+function bugVivoHtml(el,g,ls,det){
+  var eq=el._eq||{a:{id:null,ab:'VIS'},h:{id:null,ab:'LOC'}};
+  var rA=bugCarreras(ls,g,'away'), rH=bugCarreras(ls,g,'home');
+  var estado=String(ls.inningState||'');
+  var inn=ls.currentInning||'';
+  var entre=(estado==='Middle'||estado==='End');
+  var flecha=estado==='Top'?'&#9650;':(estado==='Bottom'?'&#9660;':(estado==='Middle'?'MID':(estado==='End'?'FIN':'')));
+  var off=ls.offense||{}, def=ls.defense||{};
+  var b1=!entre&&!!off.first, b2=!entre&&!!off.second, b3=!entre&&!!off.third;
+  var balls=entre?0:Math.min(+ls.balls||0,3);
+  var strikes=entre?0:Math.min(+ls.strikes||0,2);
+  var outs=entre?0:Math.min(+ls.outs||0,2);
+  var h='<div class="caja"><div class="qu">'+
+    '<div class="qr">'+escudo(eq.a.id,18)+'<b>'+esc(eq.a.ab)+'</b><i>'+rA+'</i></div>'+
+    '<div class="qr">'+escudo(eq.h.id,18)+'<b>'+esc(eq.h.ab)+'</b><i>'+rH+'</i></div></div>'+
+    '<div class="in"><em>'+flecha+'</em><b>'+inn+'</b></div>'+
+    bugBases(b1,b2,b3)+
+    '<div class="cnt"><div><u>B</u>'+bugPuntos(balls,3,'b')+'</div>'+
+      '<div><u>S</u>'+bugPuntos(strikes,2,'s')+'</div>'+
+      '<div><u>O</u>'+bugPuntos(outs,2,'o')+'</div></div></div>';
+  var etq=bugTraducir(det);
+  var bat=off.batter&&off.batter.fullName, pit=def.pitcher&&def.pitcher.fullName;
+  var linea='';
+  if(etq) linea=etq;
+  else if(entre) linea='Entre entradas';
+  else if(bat||pit) linea=(bat?'Al bate: <b>'+esc(bat)+'</b>':'')+(bat&&pit?' · ':'')+(pit?'Lanza: <b>'+esc(pit)+'</b>':'');
+  if(linea) h+='<div class="qien">'+linea+'</div>';
+  return h;
+}
+function bugFinalHtml(el,g,ls){
+  var eq=el._eq||{a:{id:null,ab:'VIS'},h:{id:null,ab:'LOC'}};
+  var rA=bugCarreras(ls,g,'away'), rH=bugCarreras(ls,g,'home');
+  var extra=(ls.currentInning&&ls.currentInning!==9)?(' F/'+ls.currentInning):'';
+  return '<div class="caja fin">'+
+    '<span class="fq'+(rA>rH?' gana':'')+'">'+escudo(eq.a.id,18)+esc(eq.a.ab)+' <i>'+rA+'</i></span>'+
+    '<span class="gs">&ndash;</span>'+
+    '<span class="fq'+(rH>rA?' gana':'')+'"><i>'+rH+'</i> '+esc(eq.h.ab)+escudo(eq.h.id,18)+'</span>'+
+    '<span class="ft">FINAL'+extra+'</span></div>';
+}
+function pintarBug(el,g){
+  if(!el||!g) return;
+  var bug=el.querySelector('.bug'), reloj=el.querySelector('.clock');
+  if(!bug) return;
+  var est=(g.status&&g.status.abstractGameState)||'';
+  var det=(g.status&&g.status.detailedState)||'';
+  var ls=g.linescore||{};
+  var html='', textoReloj=null, claseReloj='';
+  if(est==='Live'){
+    html=bugVivoHtml(el,g,ls,det);
+    textoReloj='EN VIVO'; claseReloj='vivo';
+  }else if(est==='Final'){
+    html=bugFinalHtml(el,g,ls);
+    textoReloj='FINAL';
+  }else{
+    var et=bugTraducir(det);
+    if(/postpone|suspend|cancel/i.test(det)) textoReloj=et;
+    else if(/warm/i.test(det)) textoReloj='Calentando';
+  }
+  el.classList.toggle('live', est==='Live');
+  if(reloj){
+    if(textoReloj==null){ reloj.textContent=el._hora||reloj.textContent; reloj.className='clock'; }
+    else{ reloj.textContent=textoReloj; reloj.className='clock'+(claseReloj?' '+claseReloj:''); }
+  }
+  if(html!==el._bugHtml){
+    el._bugHtml=html;
+    bug.className='bug'+(html?' on':'');
+    bug.innerHTML=html;
+    /* la cabecera cambio de alto: hay que volver a medirla para que las pestañas queden pegadas debajo */
+    if(el.classList.contains('open')&&typeof medirHead==='function') medirHead(el);
+  }
+}
+
+function vivoParar(){
+  if(VIVO.timer){ clearInterval(VIVO.timer); VIVO.timer=null; }
+}
+function vivoActualizar(){
+  if(!VIVO.fecha||VIVO.pendiente) return;
+  var p=VIVO.fecha.split('-');
+  VIVO.pendiente=true;
+  fetch(API+'/schedule?sportId=1&date='+p[1]+'/'+p[2]+'/'+p[0]+'&hydrate=linescore',{cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(d){
+      var gs=(d.dates&&d.dates[0]&&d.dates[0].games)||[], mapa={};
+      gs.forEach(function(g){ mapa[g.gamePk]=g; });
+      var vivo=false, porEmpezar=false, sig=null;
+      document.querySelectorAll('.game').forEach(function(el){
+        var g=mapa[el._pk];
+        if(!g) return;
+        pintarBug(el,g);
+        var est=g.status&&g.status.abstractGameState;
+        var det=(g.status&&g.status.detailedState)||'';
+        if(est==='Live') vivo=true;
+        else if(est==='Preview'&&!/postpone|cancel/i.test(det)){
+          porEmpezar=true;
+          var t=Date.parse(g.gameDate);
+          if(isFinite(t)&&(sig==null||t<sig)) sig=t;
+        }
+      });
+      VIVO.hayVivo=vivo; VIVO.sigInicio=sig;
+      /* ya no queda nada en marcha ni por empezar: se deja de preguntar */
+      if(!vivo&&!porEmpezar) vivoParar();
+    })
+    .catch(function(){})
+    .then(function(){ VIVO.pendiente=false; });
+}
+function vivoIniciar(iso){
+  vivoParar();
+  /* una fecha futura no tiene marcador que mostrar */
+  if(!iso||iso>hoyISO()) return;
+  VIVO.fecha=iso; VIVO.hayVivo=false; VIVO.sigInicio=null;
+  vivoActualizar();
+  VIVO.timer=setInterval(function(){
+    if(document.hidden) return;
+    /* nada en vivo y el proximo juego esta a mas de 15 minutos: no se gasta red */
+    if(!VIVO.hayVivo&&VIVO.sigInicio&&VIVO.sigInicio-Date.now()>15*60000) return;
+    vivoActualizar();
+  },20000);
+}
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden&&VIVO.timer) vivoActualizar();
+});
+
 </script>
 </body>
 </html>
