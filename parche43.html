@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parche v43</title>
+<style>
+body{margin:0;padding:22px 16px 60px;background:#070B12;color:#F1F5FB;font:15px/1.55 system-ui,-apple-system,sans-serif}
+.w{max-width:560px;margin:0 auto}
+h1{font-size:21px;margin:0 0 6px}
+p{color:#9DB2C8;font-size:13.5px}
+button{background:#3B82F6;color:#020509;border:0;border-radius:10px;padding:13px 16px;font-size:15px;font-weight:700;margin:6px 6px 6px 0}
+button.g{background:#131D2C;color:#9DB2C8;border:1px solid #2A3E56}
+button:disabled{opacity:.45}
+.f{padding:9px 12px;border-radius:9px;margin:6px 0;font-size:13.5px;background:#0D1420;border:1px solid #1C2838}
+.f.ok{border-left:3px solid #34D399}.f.mal{border-left:3px solid #F87171;background:#2A1A19}.f.op{border-left:3px solid #FBBF24}
+</style>
+</head>
+<body><div class="w">
+<h1>Parche v43 &mdash; marcador en vivo</h1>
+<p>Esta página lee el <b>index.html</b> que está en esta misma carpeta del repo, le aplica el parche y te da el archivo nuevo. Por sí sola no cambia nada en GitHub: el archivo nuevo lo subes tú, encima del viejo.</p>
+<button id="ap">Aplicar parche</button>
+<div id="log"></div>
+<div id="sal" style="display:none">
+  <p>Listo. Descarga el archivo y súbelo a GitHub con el nombre <b>index.html</b>, encima del que ya está.</p>
+  <button id="desc">Descargar index.html</button>
+  <button id="copia" class="g">Copiar el código</button>
+  <button id="prueba" class="g">Probar antes de subir</button>
+  <div id="msg"></div>
+</div>
+</div>
+<script>
+var PASOS=[{"n": "Cabecera del juego en dos pisos (equipos arriba, marcador abajo)", "old": "el.innerHTML='<div class=\"head\"><div class=\"match\">'+"}, {"n": "Espacio del marcador dentro de la cabecera", "old": "'<div class=\"chev\">&#9660;<\/div><\/div><\/div>'+"}, {"n": "Guardar hora y equipos, y pintar el marcador al crear el juego", "old": "var head=el.querySelector('.head'), body=el.querySelector('.body');"}, {"n": "Pedir el linescore junto con el calendario", "old": "hydrate=probablePitcher,team,venue(location,fieldInfo)'"}, {"n": "Arrancar el refresco en vivo al cargar los juegos", "old": "games.forEach(function(g){ $('slate').appendChild(fila(g,+y)); });"}, {"n": "Estilos del marcador", "old": "<\/style>"}, {"n": "Codigo del marcador", "old": "<\/body>"}, {"n": "Numero de version (v42 a v43)", "opc": true, "old": "<span class=\"ver\">v42<\/span>"}, {"n": "Nota en la explicacion tecnica", "opc": true, "old": "<b>El botón 🦈 Verificar con IA.<\/b>"}];
+var NUEVOS=["el.innerHTML='<div class=\"head\"><div class=\"hrow\"><div class=\"match\">'+", "'<div class=\"chev\">&#9660;<\/div><\/div><\/div><div class=\"bug\"><\/div><\/div>'+", "var head=el.querySelector('.head'), body=el.querySelector('.body');\n  el._hora=hora;\n  el._eq={a:{id:a.team.id, ab:(a.team.abbreviation||a.team.name)}, h:{id:h.team.id, ab:(h.team.abbreviation||h.team.name)}};\n  if(typeof pintarBug==='function') pintarBug(el,g);", "hydrate=probablePitcher,team,venue(location,fieldInfo),linescore'", "games.forEach(function(g){ $('slate').appendChild(fila(g,+y)); });\n    if(typeof vivoIniciar==='function') vivoIniciar(iso);", "@@CSS@@\n<\/style>", "@@JS@@", "<span class=\"ver\">v43<\/span>", "<b>El marcador en vivo.<\/b> Cada juego que está en marcha muestra arriba lo que sale en la tele: carreras, entrada (&#9650; alta, &#9660; baja), corredores en base, bolas, strikes y outs, más quién batea y quién lanza. Sale del mismo MLB Stats API de todo lo demás y se refresca solo cada 20 segundos mientras haya juegos en vivo; con la pantalla apagada o la app en segundo plano no consulta nada. Es solo información: no entra al cálculo de ningún mercado.<br><br><b>El botón 🦈 Verificar con IA.<\/b>"];
+var CSS_NUEVO="\n/* ---------- marcador en vivo (v43) ----------\n   La cabecera del juego pasa a dos pisos: arriba lo de siempre (equipos, hora, flecha)\n   y abajo el marcador estilo tele, que solo se pinta cuando el juego esta en marcha\n   o ya termino. */\n.head{display:block}\n.hrow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}\n.bug{display:none;color:#fff}\n.bug.on{display:block;margin-top:13px}\n.bug .caja{display:flex;align-items:center;gap:11px;background:rgba(0,0,0,.42);\n border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:8px 11px}\n.bug .qu{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:4px}\n.bug .qr{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700;line-height:1.1}\n.bug .qr b{flex:1;font-family:var(--body);font-weight:700;letter-spacing:.4px}\n.bug .qr i{font-style:normal;font-family:var(--cond);font-size:20px;font-weight:800;\n color:var(--hot);min-width:22px;text-align:right;font-variant-numeric:tabular-nums}\n.bug .in{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;\n justify-content:center;min-width:32px;line-height:1.05}\n.bug .in em{font-style:normal;font-size:11.5px;color:var(--hot);font-weight:700}\n.bug .in b{font-family:var(--cond);font-size:22px;font-weight:800}\n.bug .dia{flex:0 0 auto;width:46px;height:41px}\n.bug .dia .base{fill:rgba(255,255,255,.2);stroke:rgba(255,255,255,.45);stroke-width:1}\n.bug .dia .base.on{fill:var(--hot);stroke:var(--hot)}\n.bug .dia .camino{stroke:rgba(255,255,255,.28);stroke-width:1;fill:none}\n.bug .cnt{flex:0 0 auto;display:flex;flex-direction:column;gap:4px;font-size:10.5px;font-weight:700}\n.bug .cnt div{display:flex;align-items:center;gap:4px}\n.bug .cnt u{text-decoration:none;width:9px;color:rgba(255,255,255,.75)}\n.bug .d{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);display:inline-block}\n.bug .d.b.on{background:var(--good)}\n.bug .d.s.on{background:var(--bad)}\n.bug .d.o.on{background:var(--hot)}\n.bug .qien{margin-top:8px;font-size:11.5px;color:rgba(255,255,255,.78);line-height:1.4}\n.bug .qien b{color:#fff;font-weight:600}\n.bug .caja.fin{justify-content:center;gap:12px;padding:9px 11px}\n.bug .fq{display:flex;align-items:center;gap:7px;font-size:14px;font-weight:700}\n.bug .fq i{font-style:normal;font-family:var(--cond);font-size:21px;font-weight:800;\n font-variant-numeric:tabular-nums;color:rgba(255,255,255,.7)}\n.bug .fq.gana i{color:var(--hot)}\n.bug .gs{color:rgba(255,255,255,.5)}\n.bug .ft{margin-left:4px;font-size:11px;font-weight:700;letter-spacing:.8px;\n color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.35);border-radius:4px;padding:2px 6px}\n.game .clock.vivo{color:#fff;background:#C0392B;border-color:#C0392B;font-weight:700}\n.game .clock.vivo::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;\n background:#fff;margin-right:6px;animation:vivopulso 1.4s ease-in-out infinite}\n@keyframes vivopulso{50%{opacity:.3}}\n@media (prefers-reduced-motion:reduce){.game .clock.vivo::before{animation:none}}\n/* Con el juego abierto la cabecera se queda pegada arriba: se compacta para no comerse la pantalla. */\n.game.open .bug .qien{display:none}\n.game.live.open .head{padding-top:12px;padding-bottom:12px}\n.game.live.open .match{font-size:19px;line-height:1.2}\n.game.live.open .match .esc{width:22px !important;height:22px !important}\n.game.live.open .match small{display:none}\n.game.live.open .bug.on{margin-top:8px}\n.game.live.open .bug .caja{padding:6px 10px}\n@media (max-width:360px){\n .bug .caja{gap:8px;padding:7px 9px}\n .bug .dia{width:40px;height:36px}\n}\n";
+var JS_NUEVO="/* ---------- marcador en vivo (v43) ----------\n   Pinta en cada juego lo que sale en la tele: carreras, entrada (arriba o abajo),\n   corredores en base, bolas, strikes y outs, y quien batea y quien lanza.\n   Sale del MLB Stats API (hydrate=linescore), el mismo que usa todo lo demas, y se\n   refresca solo cada 20 segundos mientras haya juegos en vivo o por empezar.\n   Es SOLO informacion: no entra al calculo de ningun mercado. */\nvar VIVO={timer:null, fecha:null, pendiente:false, hayVivo:false, sigInicio:null};\n\nfunction bugPuntos(n,max,cls){\n  var s='';\n  for(var i=0;i<max;i++) s+='<span class=\"d '+cls+(i<n?' on':'')+'\"><\/span>';\n  return s;\n}\nfunction bugCarreras(ls,g,lado){\n  var v=(ls&&ls.teams&&ls.teams[lado])?ls.teams[lado].runs:null;\n  if(v==null&&g&&g.teams&&g.teams[lado]) v=g.teams[lado].score;\n  return v==null?0:v;\n}\nfunction bugBases(b1,b2,b3){\n  return '<svg class=\"dia\" viewBox=\"0 0 46 41\" aria-hidden=\"true\">'+\n    '<path class=\"camino\" d=\"M23 31 L37 20 L23 9 L9 20 Z\"/>'+\n    '<rect class=\"base'+(b2?' on':'')+'\" x=\"18\" y=\"4\" width=\"10\" height=\"10\" transform=\"rotate(45 23 9)\"/>'+\n    '<rect class=\"base'+(b3?' on':'')+'\" x=\"4\" y=\"15\" width=\"10\" height=\"10\" transform=\"rotate(45 9 20)\"/>'+\n    '<rect class=\"base'+(b1?' on':'')+'\" x=\"32\" y=\"15\" width=\"10\" height=\"10\" transform=\"rotate(45 37 20)\"/>'+\n    '<path d=\"M19 30 h8 v3 l-4 3.6 l-4 -3.6 z\" fill=\"rgba(255,255,255,.6)\"/>'+\n  '<\/svg>';\n}\nfunction bugTraducir(det){\n  det=String(det||'');\n  if(/postpone/i.test(det)) return 'Pospuesto';\n  if(/suspend/i.test(det)) return 'Suspendido';\n  if(/cancel/i.test(det)) return 'Cancelado';\n  if(/delay/i.test(det)) return 'Juego en retraso';\n  if(/challenge|review/i.test(det)) return 'En revisión';\n  return '';\n}\nfunction bugVivoHtml(el,g,ls,det){\n  var eq=el._eq||{a:{id:null,ab:'VIS'},h:{id:null,ab:'LOC'}};\n  var rA=bugCarreras(ls,g,'away'), rH=bugCarreras(ls,g,'home');\n  var estado=String(ls.inningState||'');\n  var inn=ls.currentInning||'';\n  var entre=(estado==='Middle'||estado==='End');\n  var flecha=estado==='Top'?'&#9650;':(estado==='Bottom'?'&#9660;':(estado==='Middle'?'MID':(estado==='End'?'FIN':'')));\n  var off=ls.offense||{}, def=ls.defense||{};\n  var b1=!entre&&!!off.first, b2=!entre&&!!off.second, b3=!entre&&!!off.third;\n  var balls=entre?0:Math.min(+ls.balls||0,3);\n  var strikes=entre?0:Math.min(+ls.strikes||0,2);\n  var outs=entre?0:Math.min(+ls.outs||0,2);\n  var h='<div class=\"caja\"><div class=\"qu\">'+\n    '<div class=\"qr\">'+escudo(eq.a.id,18)+'<b>'+esc(eq.a.ab)+'<\/b><i>'+rA+'<\/i><\/div>'+\n    '<div class=\"qr\">'+escudo(eq.h.id,18)+'<b>'+esc(eq.h.ab)+'<\/b><i>'+rH+'<\/i><\/div><\/div>'+\n    '<div class=\"in\"><em>'+flecha+'<\/em><b>'+inn+'<\/b><\/div>'+\n    bugBases(b1,b2,b3)+\n    '<div class=\"cnt\"><div><u>B<\/u>'+bugPuntos(balls,3,'b')+'<\/div>'+\n      '<div><u>S<\/u>'+bugPuntos(strikes,2,'s')+'<\/div>'+\n      '<div><u>O<\/u>'+bugPuntos(outs,2,'o')+'<\/div><\/div><\/div>';\n  var etq=bugTraducir(det);\n  var bat=off.batter&&off.batter.fullName, pit=def.pitcher&&def.pitcher.fullName;\n  var linea='';\n  if(etq) linea=etq;\n  else if(entre) linea='Entre entradas';\n  else if(bat||pit) linea=(bat?'Al bate: <b>'+esc(bat)+'<\/b>':'')+(bat&&pit?' · ':'')+(pit?'Lanza: <b>'+esc(pit)+'<\/b>':'');\n  if(linea) h+='<div class=\"qien\">'+linea+'<\/div>';\n  return h;\n}\nfunction bugFinalHtml(el,g,ls){\n  var eq=el._eq||{a:{id:null,ab:'VIS'},h:{id:null,ab:'LOC'}};\n  var rA=bugCarreras(ls,g,'away'), rH=bugCarreras(ls,g,'home');\n  var extra=(ls.currentInning&&ls.currentInning!==9)?(' F/'+ls.currentInning):'';\n  return '<div class=\"caja fin\">'+\n    '<span class=\"fq'+(rA>rH?' gana':'')+'\">'+escudo(eq.a.id,18)+esc(eq.a.ab)+' <i>'+rA+'<\/i><\/span>'+\n    '<span class=\"gs\">&ndash;<\/span>'+\n    '<span class=\"fq'+(rH>rA?' gana':'')+'\"><i>'+rH+'<\/i> '+esc(eq.h.ab)+escudo(eq.h.id,18)+'<\/span>'+\n    '<span class=\"ft\">FINAL'+extra+'<\/span><\/div>';\n}\nfunction pintarBug(el,g){\n  if(!el||!g) return;\n  var bug=el.querySelector('.bug'), reloj=el.querySelector('.clock');\n  if(!bug) return;\n  var est=(g.status&&g.status.abstractGameState)||'';\n  var det=(g.status&&g.status.detailedState)||'';\n  var ls=g.linescore||{};\n  var html='', textoReloj=null, claseReloj='';\n  if(est==='Live'){\n    html=bugVivoHtml(el,g,ls,det);\n    textoReloj='EN VIVO'; claseReloj='vivo';\n  }else if(est==='Final'){\n    html=bugFinalHtml(el,g,ls);\n    textoReloj='FINAL';\n  }else{\n    var et=bugTraducir(det);\n    if(/postpone|suspend|cancel/i.test(det)) textoReloj=et;\n    else if(/warm/i.test(det)) textoReloj='Calentando';\n  }\n  el.classList.toggle('live', est==='Live');\n  if(reloj){\n    if(textoReloj==null){ reloj.textContent=el._hora||reloj.textContent; reloj.className='clock'; }\n    else{ reloj.textContent=textoReloj; reloj.className='clock'+(claseReloj?' '+claseReloj:''); }\n  }\n  if(html!==el._bugHtml){\n    el._bugHtml=html;\n    bug.className='bug'+(html?' on':'');\n    bug.innerHTML=html;\n    /* la cabecera cambio de alto: hay que volver a medirla para que las pestañas queden pegadas debajo */\n    if(el.classList.contains('open')&&typeof medirHead==='function') medirHead(el);\n  }\n}\n\nfunction vivoParar(){\n  if(VIVO.timer){ clearInterval(VIVO.timer); VIVO.timer=null; }\n}\nfunction vivoActualizar(){\n  if(!VIVO.fecha||VIVO.pendiente) return;\n  var p=VIVO.fecha.split('-');\n  VIVO.pendiente=true;\n  fetch(API+'/schedule?sportId=1&date='+p[1]+'/'+p[2]+'/'+p[0]+'&hydrate=linescore',{cache:'no-store'})\n    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })\n    .then(function(d){\n      var gs=(d.dates&&d.dates[0]&&d.dates[0].games)||[], mapa={};\n      gs.forEach(function(g){ mapa[g.gamePk]=g; });\n      var vivo=false, porEmpezar=false, sig=null;\n      document.querySelectorAll('.game').forEach(function(el){\n        var g=mapa[el._pk];\n        if(!g) return;\n        pintarBug(el,g);\n        var est=g.status&&g.status.abstractGameState;\n        var det=(g.status&&g.status.detailedState)||'';\n        if(est==='Live') vivo=true;\n        else if(est==='Preview'&&!/postpone|cancel/i.test(det)){\n          porEmpezar=true;\n          var t=Date.parse(g.gameDate);\n          if(isFinite(t)&&(sig==null||t<sig)) sig=t;\n        }\n      });\n      VIVO.hayVivo=vivo; VIVO.sigInicio=sig;\n      /* ya no queda nada en marcha ni por empezar: se deja de preguntar */\n      if(!vivo&&!porEmpezar) vivoParar();\n    })\n    .catch(function(){})\n    .then(function(){ VIVO.pendiente=false; });\n}\nfunction vivoIniciar(iso){\n  vivoParar();\n  /* una fecha futura no tiene marcador que mostrar */\n  if(!iso||iso>hoyISO()) return;\n  VIVO.fecha=iso; VIVO.hayVivo=false; VIVO.sigInicio=null;\n  vivoActualizar();\n  VIVO.timer=setInterval(function(){\n    if(document.hidden) return;\n    /* nada en vivo y el proximo juego esta a mas de 15 minutos: no se gasta red */\n    if(!VIVO.hayVivo&&VIVO.sigInicio&&VIVO.sigInicio-Date.now()>15*60000) return;\n    vivoActualizar();\n  },20000);\n}\ndocument.addEventListener('visibilitychange',function(){\n  if(!document.hidden&&VIVO.timer) vivoActualizar();\n});\n";
+var RESULTADO=null;
+function el(id){ return document.getElementById(id); }
+function fila(cl,t){ var d=document.createElement('div'); d.className='f '+cl; d.textContent=t; el('log').appendChild(d); }
+function aplicar(txt){
+  if(txt.indexOf('marcador en vivo (v43)')>-1) return {ya:true};
+  var t=txt, res=[];
+  PASOS.forEach(function(p,i){
+    var n=t.split(p.old).length-1;
+    if(n===1){
+      var nuevo=NUEVOS[i];
+      if(nuevo.indexOf('@@CSS@@')===0) nuevo=CSS_NUEVO+'\n</style>';
+      if(nuevo==='@@JS@@') nuevo='<scr'+'ipt>\n'+JS_NUEVO+'\n</scr'+'ipt>\n</body>';
+      t=t.replace(p.old,function(){ return nuevo; });
+      res.push({n:p.n,ok:true});
+    }else res.push({n:p.n,ok:false,cuenta:n,opc:!!p.opc});
+  });
+  return {t:t,res:res};
+}
+el('ap').addEventListener('click',function(){
+  el('log').innerHTML=''; el('sal').style.display='none'; RESULTADO=null;
+  var b=el('ap'); b.disabled=true;
+  fetch('index.html',{cache:'no-store'}).then(function(r){
+    if(!r.ok) throw new Error('No encontré index.html en esta carpeta (HTTP '+r.status+')');
+    return r.text();
+  }).then(function(txt){
+    var o=aplicar(txt);
+    if(o.ya){ fila('op','Este index.html ya tiene el marcador en vivo. No hace falta aplicar el parche otra vez.'); return; }
+    var fallo=false;
+    o.res.forEach(function(x){
+      if(x.ok) fila('ok','✓ '+x.n);
+      else if(x.opc) fila('op','• (opcional, no se aplicó) '+x.n);
+      else { fila('mal','✗ '+x.n+' — la pieza que busco aparece '+x.cuenta+' veces y debería ser 1'); fallo=true; }
+    });
+    if(fallo){ fila('mal','No se generó nada. Tu index.html es distinto al que esperaba; mándame este mensaje tal cual.'); return; }
+    RESULTADO=o.t; window.RESULTADO=o.t;
+    el('sal').style.display='block';
+    el('msg').innerHTML='<p>Tamaño: '+Math.round(o.t.length/1024)+' KB.</p>';
+  }).catch(function(e){ fila('mal','Error: '+e.message); })
+  .then(function(){ b.disabled=false; });
+});
+function blobUrl(){ return URL.createObjectURL(new Blob([RESULTADO],{type:'text/html;charset=utf-8'})); }
+el('desc').addEventListener('click',function(){
+  if(!RESULTADO) return;
+  var a=document.createElement('a'); a.href=blobUrl(); a.download='index.html';
+  document.body.appendChild(a); a.click(); a.remove();
+});
+el('copia').addEventListener('click',function(){
+  if(!RESULTADO) return;
+  var m=el('msg');
+  if(navigator.clipboard&&navigator.clipboard.writeText)
+    navigator.clipboard.writeText(RESULTADO).then(function(){ m.innerHTML='<p>Código copiado.</p>'; },function(){ m.innerHTML='<p>No se pudo copiar.</p>'; });
+  else m.innerHTML='<p>Este navegador no deja copiar; usa Descargar.</p>';
+});
+el('prueba').addEventListener('click',function(){
+  if(!RESULTADO) return;
+  /* la app se recarga sola una vez por sesion; se marca como ya recargada para que en la vista previa no se rompa */
+  try{ sessionStorage.setItem('ventaja_fresco','1'); }catch(e){}
+  window.open(blobUrl(),'_blank');
+});
+</script>
+</body>
+</html>
