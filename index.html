@@ -590,6 +590,380 @@ svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
 }
 
 </style>
+<!--OVA44:HEAD:BEGIN-->
+<style id="ova-skins">
+/* ===== OVA · temas v44 =====
+   El tema por defecto (Noche) NO lleva atributo data-skin y queda como antes, salvo
+   los retoques marcados 0 y 0b (un desborde real y tres textos con poco contraste).
+   Cada tema nuevo define TODOS sus colores como variables; las reglas de la seccion 1
+   solo se activan cuando hay data-skin. */
+:root{
+ --x-chip:#04140C;
+ --x-herobg:linear-gradient(180deg,var(--bg2),var(--bg1));
+ --x-fixed:none;
+}
+html[data-app=fut] .forma span{color:var(--x-chip)}
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--x-fixed)}
+
+
+/* ---------- 0. arreglo de desborde horizontal (todos los temas, tambien Noche) ----------
+   El brillo de arriba de la tarjeta abierta medía 160% del ancho y se salia de la pantalla
+   (medido: la pagina pasaba de 390 a 485 px de ancho al abrir un juego). Ahora se queda adentro. */
+html[data-app=mlb] .game.open .body::before{left:0;width:100%;transform:none}
+
+
+/* ---------- 0b. legibilidad de Noche (tres textos que median bajo 4.5 en la auditoria) ---------- */
+html[data-app=mlb]:not([data-skin]) .tb.on{background:#2D6CDF}
+html[data-app=mlb]:not([data-skin]) .out.no{color:#7C92AA}
+html[data-app=mlb]:not([data-skin]) .teq.on{color:var(--acc2)}
+
+/* ---------- 1. consumir las variables (solo con tema activo) ---------- */
+html[data-app=mlb][data-skin] .topbar{background:var(--x-topbg)}
+html[data-app=mlb][data-skin] .navbar{background:var(--x-navbg)}
+html[data-app=fut][data-skin] header{background:var(--x-fhead)}
+html[data-app=fut][data-skin] .tabbar{background:var(--x-navbg)}
+html[data-app=fut][data-skin] body{font-family:var(--body)}
+html[data-app=mlb][data-skin] .game,html[data-app=fut][data-skin] .game{box-shadow:var(--x-shadow)}
+html[data-app=mlb][data-skin] .status.err,html[data-app=mlb][data-skin] .aviso,html[data-app=mlb][data-skin] .pick.alerta,html[data-app=mlb][data-skin] .row.hcrow .par.pr{background:var(--x-errbg);border-color:var(--x-errbd)}
+html[data-app=mlb][data-skin] .aviso b{color:var(--x-errb)}
+html[data-app=fut][data-skin] .aviso{background:var(--x-warnbg)}
+html[data-app=mlb][data-skin] .medido.ok,html[data-app=mlb][data-skin] .pk .res.g{background:var(--x-okbg);color:var(--x-oktx)}
+html[data-app=mlb][data-skin] .medido.flojo,html[data-app=mlb][data-skin] .pk .res.p{background:var(--x-flbg);color:var(--x-fltx)}
+html[data-app=mlb][data-skin] .out.si,html[data-app=mlb][data-skin] .pick.big .q{color:var(--x-oktx)}
+html[data-app=mlb][data-skin] .row.hcrow .par.pv{background:var(--x-pvbg);border-color:var(--x-pvbd)}
+html[data-app=mlb][data-skin] .teq.on{background:var(--x-teqon)}
+html[data-app=mlb][data-skin] .pick.ia{background:var(--x-iabg);border-color:var(--x-iabd)}
+html[data-app=mlb][data-skin] .pick.big,html[data-app=fut][data-skin] .pick{background:var(--x-goodbg)}
+html[data-app=mlb][data-skin] .pick.big{border-color:var(--x-goodbd)}
+html[data-app=mlb][data-skin] .game.open .body::before{background:radial-gradient(ellipse at top,var(--x-glow),transparent 60%)}
+html[data-app=mlb][data-skin] .game.open .head{box-shadow:0 0 40px -8px var(--x-headglow) inset}
+html[data-app=mlb][data-skin] .bar .lead,html[data-app=fut][data-skin] .bar .h{background:var(--x-lead)}
+html[data-app=mlb][data-skin] .bar .lead{box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 0 22px -4px var(--x-leadglow)}
+html[data-app=mlb][data-skin] .fila.alto .track i{background:var(--x-lead)}
+html[data-app=mlb][data-skin] .tb.on{color:var(--x-tabtx)}
+html[data-app=fut][data-skin] .bar .a{color:var(--x-atx)}
+html[data-app=mlb][data-skin] .bug .qr i,html[data-app=mlb][data-skin] .bug .in em{color:var(--x-onhead)}
+html[data-app=mlb][data-skin] .bug .dia .base.on{fill:var(--x-onhead);stroke:var(--x-onhead)}
+html[data-app=mlb][data-skin] .tabs,html[data-app=fut][data-skin] .body .tabs{background:var(--x-stbg)}
+html[data-app=mlb][data-skin] .cabp{background:var(--x-cabbg)}
+html[data-app=mlb][data-skin] .game,html[data-app=fut][data-skin] .game,html[data-app=mlb][data-skin] .ajustes,html[data-app=mlb][data-skin] .pk,html[data-app=fut][data-skin] .cuotasbox,html[data-app=mlb][data-skin] .vacio{-webkit-backdrop-filter:var(--x-blur);backdrop-filter:var(--x-blur)}
+
+/* ---------- 2. hero de probabilidad (todos los temas) ---------- */
+.ovaHero{position:relative;margin:8px 0 12px;padding:14px 10px 12px;border-radius:var(--r2);
+ background:var(--x-herobg);border:1px solid var(--line2);overflow:hidden}
+.ovaHero .row3{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:4px}
+.ovaHero .side{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.ovaHero .side .esc{width:46px;height:46px}
+.ovaHero .side img.cr{width:44px;height:44px;object-fit:contain;background:#fff;border-radius:10px;padding:3px}
+.ovaHero .side .ab{font-family:var(--cond);font-weight:700;font-size:13px;letter-spacing:.6px;color:var(--mut);
+ max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ovaHero .side .pc{font-family:var(--cond);font-weight:800;font-size:clamp(20px,6.6vw,26px);line-height:1;white-space:nowrap;color:var(--txt);
+ font-variant-numeric:tabular-nums}
+.ovaHero .side.fav .pc{color:var(--hot)}
+.ovaHero .gz{position:relative;width:124px;height:72px}
+.ovaHero .gz svg{width:100%;height:auto}
+.ovaHero svg{display:block;overflow:visible}
+.ovaHero .tr{fill:none;stroke:var(--line2);stroke-width:10}
+.ovaHero .sg{fill:none;stroke-width:10;transition:stroke-dasharray 1s cubic-bezier(.16,1,.3,1),stroke-dashoffset 1s cubic-bezier(.16,1,.3,1)}
+.ovaHero .sg.fv{stroke:var(--hot)}
+.ovaHero .sg.ot{stroke:var(--mut2)}
+.ovaHero .sg.dr{stroke:var(--mut2)}
+.ovaHero .sg.aw{stroke:var(--acc)}
+.ovaHero .cx{position:absolute;left:0;right:0;bottom:2px;text-align:center;line-height:1.1}
+.ovaHero .cx small{display:block;font-size:10px;color:var(--mut);letter-spacing:.2px}
+.ovaHero .cx b{font-family:var(--cond);font-size:19px;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums}
+.ovaHero .cap{margin-top:8px;text-align:center;font-size:12px;color:var(--mut);line-height:1.4}
+.ovaHero .cap b{color:var(--txt);font-weight:600}
+.ovaHero.fut .gz{width:112px;height:112px}
+.ovaHero.fut .cx{bottom:auto;top:50%;transform:translateY(-50%)}
+.ovaHero.fut .cx b{font-size:17px}
+@media (prefers-reduced-motion:reduce){.ovaHero .sg{transition:none}}
+html[data-app=mlb] .tab[data-t="v"] .ovaHero ~ .bar{display:none}
+html[data-app=fut] .pane .ovaHero ~ .bar{display:none}
+
+/* ---------- 3. selector de tema ---------- */
+.ovaSkins{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0 4px}
+.ovaSk{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:0;text-align:left;
+ background:transparent;border:2px solid var(--line2);border-radius:14px;overflow:hidden;
+ color:var(--txt);font-family:var(--body,system-ui);cursor:pointer;min-height:0}
+.ovaSk[aria-pressed="true"]{border-color:var(--hot);box-shadow:0 0 0 3px rgba(255,255,255,.06)}
+.ovaSk .pv{display:block;height:64px;padding:9px 10px;position:relative}
+.ovaSk .pv i{display:block;height:8px;border-radius:4px;margin-bottom:6px}
+.ovaSk .pv i:nth-child(1){width:62%}
+.ovaSk .pv i:nth-child(2){width:38%;opacity:.85}
+.ovaSk .pv em{position:absolute;right:10px;bottom:9px;width:22px;height:22px;border-radius:50%}
+.ovaSk .tx{display:block;padding:8px 10px 9px;background:var(--bg2)}
+.ovaSk .tx b{display:block;font-size:13.5px;font-weight:700;color:var(--txt)}
+.ovaSk .tx span{display:block;font-size:11px;color:var(--mut);margin-top:1px;line-height:1.3}
+.ovaSheet{position:fixed;inset:0;z-index:100;display:none;align-items:flex-end;background:rgba(0,0,0,.55)}
+.ovaSheet.on{display:flex}
+.ovaSheet .card{width:100%;max-height:82vh;overflow:auto;background:var(--bg1);border-top:1px solid var(--line2);
+ border-radius:22px 22px 0 0;padding:14px 14px calc(18px + env(safe-area-inset-bottom))}
+.ovaSheet .card h2{margin:2px 0 2px;font-size:18px;font-family:var(--cond)}
+.ovaSheet .card p{margin:0 0 4px;font-size:12px;color:var(--mut)}
+.ovaApar{padding-top:14px}
+.ovaApar h2{font-size:19px;margin:0 0 2px;font-weight:600;font-family:var(--cond)}
+.ovaApar p{margin:0;font-size:12.5px;color:var(--mut)}
+
+/* ---------- 4. pantalla Combo (MLB) ---------- */
+.ovaCombo h2{font-size:19px;margin:4px 0 4px;font-weight:600;font-family:var(--cond)}
+.ovaCombo .leg{background:var(--bg2);border-radius:var(--r);padding:10px;margin:8px 0;display:grid;
+ grid-template-columns:1fr 1fr;gap:7px}
+.ovaCombo .leg .t{grid-column:1/-1;font-size:11.5px;color:var(--mut);font-weight:600}
+.ovaCombo .leg select,.ovaCombo .leg input{width:100%}
+.ovaCombo .pay{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.ovaCombo .pay label{display:block;font-size:12px;color:var(--mut);margin-bottom:3px}
+.ovaCombo .pay input{width:100%}
+.ovaCombo .res{margin-top:12px}
+.ovaCombo .big{font-family:var(--cond);font-size:36px;font-weight:800;line-height:1;color:var(--hot);
+ font-variant-numeric:tabular-nums}
+.ovaCombo .cmpg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
+.ovaCombo .cmpg div{background:var(--bg2);border-radius:var(--r);padding:10px 8px;text-align:center}
+.ovaCombo .cmpg b{display:block;font-family:var(--cond);font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}
+.ovaCombo .cmpg span{display:block;font-size:10.5px;color:var(--mut);margin-top:2px;line-height:1.3}
+.ovaCombo .cmpg .good b{color:var(--good)}
+.ovaCombo .cmpg .bad b{color:var(--bad)}
+.ovaDO table{margin-top:4px}
+
+/* ============ TEMA: ORO NEGRO ============ */
+html[data-skin=oro]{
+ color-scheme:dark;
+ --bg:#0A0908;--bg1:#13110D;--bg2:#1B1812;--bg3:#25211A;
+ --line:#2A241B;--line2:#43381F;
+ --txt:#F7F2E7;--mut:#CBBFA5;--mut2:#A09472;
+ --acc:#C9A24A;--acc2:#E6C874;--accTx:#1A1305;
+ --hot:#F0CE6B;--hotTx:#1A1305;
+ --good:#6FD39A;--bad:#F08A78;--info:#C9A24A;--ia:#7DD3E0;
+ --cond:'Playfair Display',Georgia,'Times New Roman',serif;
+ --body:'Inter',system-ui,-apple-system,sans-serif;--mono:'Inter',system-ui,sans-serif;
+ --r:6px;--r2:12px;
+ --x-topbg:rgba(10,9,8,.94);--x-navbg:rgba(10,9,8,.96);--x-fhead:#0A0908;
+ --x-errbg:#2A1614;--x-errbd:#5A2B25;--x-errb:#F5B5A9;
+ --x-okbg:#15251A;--x-oktx:#8FE0AE;--x-flbg:#2B1815;--x-fltx:#F1A99B;
+ --x-pvbg:#14241A;--x-pvbd:#2D5138;--x-teqon:#2A2314;
+ --x-iabg:#10222A;--x-iabd:#1F4652;
+ --x-glow:rgba(201,162,74,.10);--x-headglow:rgba(201,162,74,.30);
+ --x-lead:linear-gradient(90deg,#B8893A,#F0CE6B);--x-leadglow:rgba(240,206,107,.45);
+ --x-shadow:0 0 0 1px rgba(201,162,74,.10),0 26px 50px -24px rgba(0,0,0,.95);
+ --x-tabtx:#1A1305;--x-atx:#1A1305;
+ --x-goodbg:linear-gradient(135deg,rgba(111,211,154,.14),rgba(111,211,154,.03));--x-goodbd:rgba(111,211,154,.35);
+ --x-warnbg:rgba(240,206,107,.08);
+ --x-herobg:radial-gradient(120% 90% at 50% 0%,rgba(201,162,74,.16),transparent 62%),linear-gradient(180deg,var(--bg2),var(--bg1));
+ --x-stbg:var(--bg1);--x-cabbg:var(--bg2);--x-blur:none;--x-onhead:#F0CE6B;
+ --x-fixed:radial-gradient(90% 55% at 50% -12%,rgba(201,162,74,.12),transparent 62%);
+}
+html[data-skin=oro] .brand,html[data-skin=oro] header h1{letter-spacing:6px;font-weight:700}
+html[data-skin=oro] h3{border-bottom:1px solid rgba(201,162,74,.55)}
+html[data-skin=oro] .kpi b,html[data-skin=oro] .bar span,html[data-skin=oro] .match,html[data-skin=oro] .pct,
+html[data-skin=oro] .ovaHero .pc,html[data-skin=oro] .ovaHero .cx b{font-variant-numeric:lining-nums tabular-nums}
+html[data-skin=oro] .match{font-weight:700}
+html[data-skin=oro] button:not(.ghost):not(.teq):not(.tb):not(.tbar-btn):not(.ovaSk):not(.diaBtn):not(.btnChico):not(.fab):not([data-p]),
+html[data-skin=oro] .btnAncho:not(.sec){background:linear-gradient(180deg,var(--acc2),var(--acc));color:var(--accTx)}
+html[data-skin=oro] .tb.on,html[data-skin=oro] .diaBtn.on{background:linear-gradient(180deg,var(--acc2),var(--acc));color:var(--accTx)}
+html[data-skin=oro] .game.open{border-color:var(--acc)}
+html[data-skin=oro] .pick{border-left-color:var(--acc)}
+html[data-skin=oro] .ovaHero{border-color:rgba(201,162,74,.4)}
+
+/* ============ TEMA: NEON ============ */
+html[data-skin=neon]{
+ color-scheme:dark;
+ --bg:#07060F;--bg1:#0E0B1F;--bg2:#161231;--bg3:#1F1A44;
+ --line:#241E4A;--line2:#3D3280;
+ --txt:#F5F3FF;--mut:#BDB6EC;--mut2:#8E86C8;
+ --acc:#19E3FF;--acc2:#6BF0FF;--accTx:#00141A;
+ --hot:#FF4FD0;--hotTx:#1D0018;
+ --good:#3DFFB4;--bad:#FF6B86;--info:#19E3FF;--ia:#19E3FF;
+ --cond:'Rajdhani','Arial Narrow',system-ui,sans-serif;
+ --body:'Inter',system-ui,-apple-system,sans-serif;--mono:'Rajdhani','Inter',system-ui,sans-serif;
+ --r:10px;--r2:16px;
+ --x-topbg:rgba(7,6,15,.88);--x-navbg:rgba(9,7,22,.92);--x-fhead:#07060F;
+ --x-errbg:#2B0F22;--x-errbd:#6B1F55;--x-errb:#FFB0C6;
+ --x-okbg:#0B2A22;--x-oktx:#6FFFCB;--x-flbg:#2E1030;--x-fltx:#FFA1D6;
+ --x-pvbg:#0B2A22;--x-pvbd:#1C7A5C;--x-teqon:#0B2A38;
+ --x-iabg:#08262E;--x-iabd:#0F6F80;
+ --x-glow:rgba(25,227,255,.13);--x-headglow:rgba(255,79,208,.40);
+ --x-lead:linear-gradient(90deg,#B4149A,#FF4FD0);--x-leadglow:rgba(255,79,208,.6);
+ --x-shadow:0 0 0 1px rgba(25,227,255,.10),0 0 34px -12px rgba(25,227,255,.35),0 24px 48px -22px rgba(0,0,0,.95);
+ --x-tabtx:#00141A;--x-atx:#00141A;
+ --x-goodbg:linear-gradient(135deg,rgba(61,255,180,.14),rgba(61,255,180,.03));--x-goodbd:rgba(61,255,180,.4);
+ --x-warnbg:rgba(255,79,208,.10);
+ --x-herobg:radial-gradient(120% 100% at 50% 0%,rgba(255,79,208,.20),transparent 60%),linear-gradient(180deg,var(--bg2),var(--bg1));
+ --x-stbg:var(--bg1);--x-cabbg:var(--bg2);--x-blur:none;--x-onhead:#FF7FE0;
+ --x-fixed:linear-gradient(rgba(25,227,255,.045) 1px,transparent 1px) 0 0/34px 34px,linear-gradient(90deg,rgba(25,227,255,.045) 1px,transparent 1px) 0 0/34px 34px,radial-gradient(80% 50% at 85% 0%,rgba(255,79,208,.16),transparent 60%),radial-gradient(70% 45% at 0% 100%,rgba(25,227,255,.12),transparent 60%);
+}
+html[data-skin=neon] .brand,html[data-skin=neon] header h1{text-shadow:0 0 18px rgba(25,227,255,.7);letter-spacing:5px}
+html[data-skin=neon] .match{font-weight:700;font-size:24px}
+html[data-skin=neon] .kpi b{font-size:28px}
+html[data-skin=neon] .bar span{font-size:19px}
+html[data-skin=neon] .game.open{border-color:var(--acc);box-shadow:0 0 30px -8px rgba(25,227,255,.55),0 24px 48px -22px rgba(0,0,0,.95)}
+html[data-skin=neon] .tb.on,html[data-skin=neon] .diaBtn.on{box-shadow:0 0 16px -2px rgba(25,227,255,.7)}
+html[data-skin=neon] .ovaHero .sg.fv{filter:drop-shadow(0 0 6px rgba(255,79,208,.9))}
+html[data-skin=neon] .ovaHero{border-color:rgba(25,227,255,.35)}
+html[data-skin=neon] h3{border-bottom-color:rgba(25,227,255,.35)}
+html[data-skin=neon] .pick{border-left-color:var(--hot)}
+
+/* ============ TEMA: DIA DE JUEGO (claro, se lee al sol) ============ */
+html[data-skin=dia]{
+ color-scheme:light;
+ --x-chip:#FFFFFF;
+ --bg:#EAF0F7;--bg1:#FFFFFF;--bg2:#F0F4FA;--bg3:#E2E9F3;
+ --line:#E0E7F1;--line2:#C3D0E1;
+ --txt:#0E1A2C;--mut:#3F5068;--mut2:#56677F;
+ --acc:#1D4ED8;--acc2:#3B6BF0;--accTx:#FFFFFF;
+ --hot:#9A4406;--hotTx:#FFFFFF;
+ --good:#0B7A52;--bad:#C0362C;--info:#1D4ED8;--ia:#0E7490;
+ --cond:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+ --body:'Inter',system-ui,-apple-system,sans-serif;--mono:'Inter',system-ui,sans-serif;
+ --r:10px;--r2:18px;
+ --x-topbg:rgba(255,255,255,.90);--x-navbg:rgba(255,255,255,.94);--x-fhead:#FFFFFF;
+ --x-errbg:#FDECEA;--x-errbd:#F1B2AB;--x-errb:#8F2219;
+ --x-okbg:#DFF5EA;--x-oktx:#0B6B45;--x-flbg:#FDECEA;--x-fltx:#9A2A20;
+ --x-pvbg:#E4F6EC;--x-pvbd:#9AD5B5;--x-teqon:#E3EBFF;
+ --x-iabg:#E1F5F9;--x-iabd:#95D2DC;
+ --x-glow:rgba(29,78,216,.07);--x-headglow:rgba(255,255,255,.10);
+ --x-lead:linear-gradient(90deg,#C2600C,#E8890B);--x-leadglow:rgba(232,137,11,.35);
+ --x-shadow:0 1px 2px rgba(16,32,60,.08),0 16px 32px -18px rgba(16,32,60,.35);
+ --x-tabtx:#FFFFFF;--x-atx:#FFFFFF;
+ --x-goodbg:linear-gradient(135deg,rgba(11,122,82,.12),rgba(11,122,82,.03));--x-goodbd:rgba(11,122,82,.35);
+ --x-warnbg:rgba(180,83,9,.09);
+ --x-herobg:linear-gradient(180deg,#FFFFFF,#F0F4FA);
+ --x-stbg:var(--bg1);--x-cabbg:var(--bg2);--x-blur:none;--x-onhead:#FBBF24;
+ --x-fixed:linear-gradient(180deg,#F6F9FD,#E6EDF6);
+}
+html[data-skin=dia] .brand,html[data-skin=dia] header h1{letter-spacing:3px;font-weight:800}
+html[data-skin=dia] .match{font-weight:700;font-size:25px;letter-spacing:0}
+html[data-skin=dia] .kpi b{font-size:29px;font-weight:700}
+html[data-skin=dia] .bar span{font-size:20px;font-weight:700}
+html[data-skin=dia] .ovaHero .cx b{font-weight:700}
+html[data-skin=dia] .pick .q{font-size:18px}
+html[data-skin=dia] .navbar,html[data-skin=dia] .tabbar{border-top-color:var(--line2)}
+html[data-skin=dia] .game{border-color:var(--line2)}
+html[data-skin=dia] .game.open{border-color:var(--acc)}
+html[data-skin=dia] .game.open .head .clock,html[data-skin=dia] .game.open .head .match{color:#fff}
+html[data-skin=dia] .bar .trail{color:var(--mut)}
+html[data-skin=dia] .cara{background:var(--bg3)}
+html[data-skin=dia] .esc img{filter:none}
+html[data-skin=dia] .ovaSk[aria-pressed="true"]{box-shadow:0 0 0 3px rgba(29,78,216,.18)}
+html[data-skin=dia] .ovaSheet{background:rgba(15,26,44,.45)}
+
+/* ============ TEMA: CAMPO ============ */
+html[data-skin=campo]{
+ color-scheme:dark;
+ --bg:#05130A;--bg1:#0A2013;--bg2:#10301D;--bg3:#174127;
+ --line:#154029;--line2:#2D6A45;
+ --txt:#F0F8F1;--mut:#B2D0B9;--mut2:#86AA8F;
+ --acc:#3DDC84;--acc2:#7BF0AB;--accTx:#03150A;
+ --hot:#F2EA6B;--hotTx:#1B1A02;
+ --good:#5CE69F;--bad:#FF8577;--info:#3DDC84;--ia:#6DE7D9;
+ --cond:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+ --body:'Barlow',system-ui,-apple-system,sans-serif;--mono:'Barlow',system-ui,sans-serif;
+ --r:8px;--r2:14px;
+ --x-topbg:rgba(5,19,10,.92);--x-navbg:rgba(5,19,10,.95);--x-fhead:#05130A;
+ --x-errbg:#2B1712;--x-errbd:#6A3327;--x-errb:#FFC0B4;
+ --x-okbg:#0F2F1D;--x-oktx:#8FF0BA;--x-flbg:#2E1A14;--x-fltx:#FFB4A5;
+ --x-pvbg:#0F2F1D;--x-pvbd:#2F7A4C;--x-teqon:#123824;
+ --x-iabg:#0B2C2A;--x-iabd:#1A6A63;
+ --x-glow:rgba(61,220,132,.12);--x-headglow:rgba(61,220,132,.30);
+ --x-lead:linear-gradient(90deg,#B9B02A,#F2EA6B);--x-leadglow:rgba(242,234,107,.45);
+ --x-shadow:0 0 0 1px rgba(240,248,241,.05),0 24px 48px -22px rgba(0,0,0,.95);
+ --x-tabtx:#03150A;--x-atx:#03150A;
+ --x-goodbg:linear-gradient(135deg,rgba(92,230,159,.16),rgba(92,230,159,.04));--x-goodbd:rgba(92,230,159,.38);
+ --x-warnbg:rgba(242,234,107,.08);
+ --x-herobg:radial-gradient(110% 80% at 50% 0%,rgba(61,220,132,.16),transparent 62%),linear-gradient(180deg,var(--bg2),var(--bg1));
+ --x-stbg:var(--bg1);--x-cabbg:var(--bg2);--x-blur:none;--x-onhead:#F2EA6B;
+ --x-fixed:repeating-linear-gradient(90deg,rgba(255,255,255,.022) 0 56px,transparent 56px 112px),radial-gradient(90% 50% at 50% -10%,rgba(61,220,132,.16),transparent 60%);
+}
+html[data-skin=campo] .brand,html[data-skin=campo] header h1{letter-spacing:4px;font-weight:800}
+html[data-skin=campo] .match{font-weight:700;font-size:25px}
+html[data-skin=campo] .kpi b{font-size:29px;font-weight:700}
+html[data-skin=campo] .bar span{font-size:20px;font-weight:700}
+html[data-skin=campo] .pick .q{font-size:18px}
+html[data-skin=campo] h3{border-bottom:1px dashed rgba(240,248,241,.32)}
+html[data-skin=campo] .kpi div,html[data-skin=campo] .tarj div{border:1px solid var(--line2)}
+html[data-skin=campo] .game{border-color:var(--line2)}
+html[data-skin=campo] .ovaHero{border:1px dashed rgba(240,248,241,.35)}
+
+/* ============ TEMA: CRISTAL ============ */
+html[data-skin=cristal]{
+ color-scheme:dark;
+ --bg:#0A0C1C;--bg1:rgba(255,255,255,.075);--bg2:rgba(255,255,255,.10);--bg3:rgba(255,255,255,.15);
+ --line:rgba(255,255,255,.12);--line2:rgba(255,255,255,.22);
+ --txt:#F6F7FF;--mut:#C3C8E8;--mut2:#98A0CC;
+ --acc:#8E96FF;--acc2:#B7BCFF;--accTx:#0A0C1C;
+ --hot:#FFC27A;--hotTx:#2A1600;
+ --good:#5EEAD4;--bad:#FF95A8;--info:#8E96FF;--ia:#67E8F9;
+ --cond:'Manrope',system-ui,sans-serif;
+ --body:'Manrope',system-ui,-apple-system,sans-serif;--mono:'Manrope',system-ui,sans-serif;
+ --r:14px;--r2:24px;
+ --x-topbg:rgba(14,16,40,.62);--x-navbg:rgba(14,16,40,.70);--x-fhead:rgba(14,16,40,.62);
+ --x-errbg:rgba(255,120,140,.14);--x-errbd:rgba(255,120,140,.40);--x-errb:#FFC2CD;
+ --x-okbg:rgba(94,234,212,.15);--x-oktx:#8DF3E1;--x-flbg:rgba(255,149,168,.15);--x-fltx:#FFB8C5;
+ --x-pvbg:rgba(94,234,212,.12);--x-pvbd:rgba(94,234,212,.38);--x-teqon:rgba(142,150,255,.24);
+ --x-iabg:rgba(103,232,249,.12);--x-iabd:rgba(103,232,249,.38);
+ --x-glow:rgba(142,150,255,.20);--x-headglow:rgba(142,150,255,.35);
+ --x-lead:linear-gradient(90deg,#FF9D6B,#FFC27A);--x-leadglow:rgba(255,194,122,.5);
+ --x-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 24px 50px -24px rgba(3,4,20,.9);
+ --x-tabtx:#0A0C1C;--x-atx:#0A0C1C;
+ --x-goodbg:linear-gradient(135deg,rgba(94,234,212,.16),rgba(94,234,212,.04));--x-goodbd:rgba(94,234,212,.38);
+ --x-warnbg:rgba(255,194,122,.12);
+ --x-herobg:radial-gradient(120% 100% at 50% 0%,rgba(142,150,255,.28),transparent 62%),rgba(255,255,255,.06);
+ --x-stbg:#191C3A;--x-cabbg:#1D2042;--x-blur:blur(18px) saturate(150%);--x-onhead:#FFC27A;
+ --x-fixed:radial-gradient(60% 40% at 12% 8%,rgba(142,150,255,.42),transparent 62%),radial-gradient(55% 38% at 92% 18%,rgba(255,110,190,.26),transparent 60%),radial-gradient(60% 42% at 50% 100%,rgba(45,212,191,.26),transparent 62%);
+}
+html[data-skin=cristal] .brand,html[data-skin=cristal] header h1{letter-spacing:2px;font-weight:800}
+html[data-skin=cristal] .match{font-weight:800}
+html[data-skin=cristal] .game,html[data-skin=cristal] .ajustes,html[data-skin=cristal] .pk,html[data-skin=cristal] .vacio,
+html[data-skin=cristal] .cuotasbox,html[data-skin=cristal] .ovaHero{border-color:rgba(255,255,255,.20)}
+html[data-skin=cristal] .game.open{border-color:rgba(183,188,255,.65)}
+html[data-skin=cristal] .navbar,html[data-skin=cristal] .tabbar,html[data-skin=cristal] .topbar,html[data-skin=cristal] header{
+ -webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
+html[data-skin=cristal] .ovaHero{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+html[data-skin=cristal] .tb.on,html[data-skin=cristal] .diaBtn.on{box-shadow:0 6px 18px -6px rgba(142,150,255,.75)}
+html[data-skin=cristal] .ovaSheet .card{background:#141737;-webkit-backdrop-filter:none;backdrop-filter:none}
+html[data-skin=cristal] .ovaSk .tx{background:rgba(255,255,255,.08)}
+html[data-skin=cristal] .teq.on{color:#fff;border-color:var(--acc2)}
+
+/* ---------- ajustes finos de fútbol (3 columnas de KPI y encabezado de una sola línea) ---------- */
+html[data-app=fut][data-skin] header h1{letter-spacing:2px}
+html[data-app=fut][data-skin] .kpi b{font-size:19px}
+html[data-app=fut][data-skin] .marcadores b{font-size:15px}
+.ovaDO .linea{gap:10px}
+.ovaDO .linea b{white-space:nowrap}
+
+/* ---------- Hub (pantalla de inicio) ---------- */
+html[data-app=hub][data-skin] body{font-family:var(--body)}
+html[data-app=hub][data-skin] h1,html[data-app=hub][data-skin] .txt b{font-family:var(--cond)}
+html[data-app=hub][data-skin] .card{box-shadow:var(--x-shadow);-webkit-backdrop-filter:var(--x-blur);backdrop-filter:var(--x-blur)}
+html[data-app=hub][data-skin] .badge{background:var(--bg2)}
+html[data-app=hub] .ovaApar{padding-top:0}
+
+</style>
+<script>
+(function(){
+ var d=document.documentElement;
+ d.setAttribute('data-app','mlb');
+ var F={
+  oro:'family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700',
+  neon:'family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700',
+  dia:'family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700',
+  campo:'family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700',
+  cristal:'family=Manrope:wght@400;500;600;700;800'
+ };
+ window.__ovaFont=function(id){
+  if(!F[id]||document.getElementById('ovaFont-'+id)) return;
+  var l=document.createElement('link');
+  l.id='ovaFont-'+id; l.rel='stylesheet';
+  l.href='https://fonts.googleapis.com/css2?'+F[id]+'&display=swap';
+  document.head.appendChild(l);
+ };
+ try{
+  var s=localStorage.getItem('ova_skin');
+  if(s&&F[s]){ d.setAttribute('data-skin',s); window.__ovaFont(s); }
+ }catch(e){}
+})();
+
+</script>
+<!--OVA44:HEAD:END-->
 </head>
 <body>
 
@@ -4331,5 +4705,324 @@ document.addEventListener('visibilitychange',function(){
 });
 
 </script>
+<!--OVA44:BODY:BEGIN-->
+<script>
+/* OVA · administrador de temas (v44). Se guarda en localStorage 'ova_skin' y lo comparten
+   las paginas del mismo sitio (MLB, futbol). Noche = sin atributo = como siempre. */
+(function(){
+ if(window.OVASkins) return;
+ var SK=[
+  {id:'noche',n:'Noche de estadio',d:'Azul medianoche y ámbar',bg:'#070B12',card:'#0D1420',acc:'#3B82F6',hot:'#FBBF24'},
+  {id:'oro',n:'Oro negro',d:'Negro cálido, dorado, serif',bg:'#0A0908',card:'#1B1812',acc:'#C9A24A',hot:'#F0CE6B'},
+  {id:'neon',n:'Neón',d:'Cian y magenta sobre violeta',bg:'linear-gradient(135deg,#0E0B1F,#1F1A44)',card:'#161231',acc:'#19E3FF',hot:'#FF4FD0'},
+  {id:'dia',n:'Día de juego',d:'Claro, se lee con sol',bg:'#EAF0F7',card:'#FFFFFF',acc:'#1D4ED8',hot:'#B45309'},
+  {id:'campo',n:'Campo',d:'Verde césped y tiza',bg:'linear-gradient(135deg,#05130A,#10301D)',card:'#10301D',acc:'#3DDC84',hot:'#F2EA6B'},
+  {id:'cristal',n:'Cristal',d:'Vidrio esmerilado, aurora',bg:'linear-gradient(135deg,#3B3F9E,#0A0C1C 55%,#0F6F66)',card:'rgba(255,255,255,.18)',acc:'#8E96FF',hot:'#FFC27A'}
+ ];
+ function meta(){
+  var m=document.querySelector('meta[name=theme-color]');
+  if(!m){ m=document.createElement('meta'); m.name='theme-color'; document.head.appendChild(m); }
+  return m;
+ }
+ function get(){ try{ return localStorage.getItem('ova_skin')||'noche'; }catch(e){ return 'noche'; } }
+ function find(id){ for(var i=0;i<SK.length;i++) if(SK[i].id===id) return SK[i]; return SK[0]; }
+ function marcar(){
+  var cur=get();
+  var bs=document.querySelectorAll('.ovaSk');
+  for(var i=0;i<bs.length;i++) bs[i].setAttribute('aria-pressed', bs[i].getAttribute('data-sk')===cur?'true':'false');
+ }
+ function apply(id){
+  var s=find(id), d=document.documentElement;
+  if(s.id==='noche') d.removeAttribute('data-skin');
+  else { d.setAttribute('data-skin',s.id); if(window.__ovaFont) window.__ovaFont(s.id); }
+  try{ localStorage.setItem('ova_skin',s.id); }catch(e){}
+  var c=s.bg; if(c.indexOf('#')!==0) c={neon:'#0E0B1F',campo:'#05130A',cristal:'#0A0C1C'}[s.id]||'#070B12';
+  meta().setAttribute('content',c);
+  marcar();
+ }
+ function mount(box){
+  if(!box) return;
+  var g=document.createElement('div'); g.className='ovaSkins';
+  var h='';
+  for(var i=0;i<SK.length;i++){
+   var s=SK[i];
+   h+='<button type="button" class="ovaSk" data-sk="'+s.id+'" aria-pressed="false">'+
+    '<span class="pv" style="background:'+s.bg+'"><i style="background:'+s.acc+'"></i><i style="background:'+s.hot+'"></i>'+
+    '<em style="background:'+s.card+';border:2px solid '+s.acc+'"></em></span>'+
+    '<span class="tx"><b>'+s.n+'</b><span>'+s.d+'</span></span></button>';
+  }
+  g.innerHTML=h;
+  g.addEventListener('click',function(e){
+   var b=e.target.closest?e.target.closest('.ovaSk'):null;
+   if(b) apply(b.getAttribute('data-sk'));
+  });
+  box.appendChild(g);
+  marcar();
+ }
+ window.OVASkins={list:SK,apply:apply,get:get,mount:mount,marcar:marcar};
+ apply(get());
+})();
+
+</script>
+<script>
+/* OVA MLB · v44: arco de probabilidad, combo del mismo juego, selector de tema. */
+(function(){
+ var VER='v44';
+ function $q(s,r){ return (r||document).querySelector(s); }
+ function $$(s,r){ return [].slice.call((r||document).querySelectorAll(s)); }
+ function fmtAm(p){ return (typeof american==='function') ? american(p) : String(Math.round(p)); }
+
+ /* ---------- 1. arco de probabilidad en el Veredicto ---------- */
+ function arcHtml(pA,pH,fav){
+  var gap=1.2, la=Math.max(0.1,pA-gap), lh=Math.max(0.1,pH-gap);
+  var d='M 12 78 A 63 63 0 0 1 138 78';
+  return '<svg viewBox="0 0 150 86" width="150" height="86" aria-hidden="true">'+
+   '<path class="sg '+(fav==='a'?'fv':'ot')+'" d="'+d+'" pathLength="100" data-len="'+la.toFixed(2)+'" data-start="0.6" '+
+     'style="stroke-dasharray:0 100;stroke-dashoffset:-0.6"/>'+
+   '<path class="sg '+(fav==='h'?'fv':'ot')+'" d="'+d+'" pathLength="100" data-len="'+lh.toFixed(2)+'" data-start="'+(pA+0.6).toFixed(2)+'" '+
+     'style="stroke-dasharray:0 100;stroke-dashoffset:-'+(pA+0.6).toFixed(2)+'"/></svg>';
+ }
+ function animar(root){
+  var ps=$$('path.sg',root);
+  var go=function(){ ps.forEach(function(p){ p.style.strokeDasharray=p.getAttribute('data-len')+' 100'; }); };
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches){ go(); return; }
+  requestAnimationFrame(function(){ requestAnimationFrame(go); });
+ }
+ function hero(el){
+  var c=el._calc, d=el._d;
+  if(!c||!d||!d.a||!d.h) return;
+  var body=$q('.body',el), tab=body&&$q('.tab[data-t="v"]',body);
+  if(!tab) return;
+  var old=$q('.ovaHero',tab); if(old) old.parentNode.removeChild(old);
+  var pA=+c.pA, pH=+c.pH, fav=pH>=pA?'h':'a';
+  var vc=+c.vc, gris=(typeof CORTE_GRIS==='number')?CORTE_GRIS:0.5;
+  var cap = vc<gris ? 'Muy parejo: ventaja de solo <b>'+vc.toFixed(2)+'</b> carreras'
+                    : '<b>'+(typeof esc==='function'?esc(c.gana):c.gana)+'</b> favorito · ventaja de <b>'+vc.toFixed(2)+'</b> carreras';
+  var side=function(id,ab,p,f){
+   return '<div class="side'+(f?' fav':'')+'">'+(typeof escudo==='function'?escudo(id,46):'')+
+     '<span class="ab">'+ab+'</span><span class="pc">'+p.toFixed(1)+'%</span></div>';
+  };
+  var div=document.createElement('div');
+  div.className='ovaHero mlb';
+  div.innerHTML='<div class="row3">'+side(d.a.team.id,c.nomA,pA,fav==='a')+
+   '<div class="gz">'+arcHtml(pA,pH,fav)+'<div class="cx"><small>cuota justa</small><b>'+fmtAm(Math.max(pA,pH))+'</b></div></div>'+
+   side(d.h.team.id,c.nomH,pH,fav==='h')+'</div><div class="cap">'+cap+'</div>';
+  tab.insertBefore(div,tab.firstChild);
+  animar(div);
+ }
+ if(typeof pintar==='function'){
+  var _p=pintar;
+  pintar=function(el){ _p(el); try{ hero(el); }catch(e){} };
+ }
+
+ /* ---------- 2. combo del mismo juego (matematica pura, sin DOM) ---------- */
+ var MAXX=25;
+ function cellW(side,x,y){ /* x = carreras de la visita, y = del local; el empate se reparte 50/50 como hace la app */
+  if(side==='A') return x>y?1:(x===y?0.5:0);
+  return y>x?1:(x===y?0.5:0);
+ }
+ function legOk(leg,x,y){
+  if(leg.k==='tt'){ var r=leg.t==='A'?x:y; return leg.d==='o' ? r>leg.L : r<leg.L; }
+  if(leg.k==='tot'){ var t=x+y; return leg.d==='o' ? t>leg.L : t<leg.L; }
+  return true;
+ }
+ /* legs: [{k:'ml',s:'A'|'H'},{k:'tt',t:'A'|'H',d:'o'|'u',L},{k:'tot',d:'o'|'u',L}]
+    Con un ganador entre las patas, la probabilidad del ganador se ancla al numero CALIBRADO de la
+    app (pStar) y la parte de carreras sale de la distribucion condicionada a que ese equipo gane. */
+ function joint(lamA,lamH,pStarA,legs){
+  var A=[],H=[],i,j;
+  for(i=0;i<=MAXX;i++){ A.push(pmf(i,lamA)); H.push(pmf(i,lamH)); }
+  var mass=0; for(i=0;i<=MAXX;i++) for(j=0;j<=MAXX;j++) mass+=A[i]*H[j];
+  var ml=null, others=[];
+  legs.forEach(function(l){ if(l.k==='ml') ml=l; else others.push(l); });
+  var w0=0, raw=0, marg=others.map(function(){ return 0; });
+  for(i=0;i<=MAXX;i++) for(j=0;j<=MAXX;j++){
+   var m=A[i]*H[j]/mass, s=ml?cellW(ml.s,i,j):1, ok=true;
+   for(var k=0;k<others.length;k++){ if(legOk(others[k],i,j)) marg[k]+=m; else ok=false; }
+   if(ml) w0+=m*s;
+   if(ok) raw+=m*s;
+  }
+  var pMl=null, out;
+  if(ml){
+   pMl = ml.s==='A' ? pStarA : 1-pStarA;
+   out = w0>0 ? pMl*(raw/w0) : 0;
+  } else out=raw;
+  var indep = ml?pMl:1; marg.forEach(function(v){ indep*=v; });
+  return {joint:out, indep:indep, pMl:pMl, marg:marg, w0:w0};
+ }
+
+ /* ---------- 3. pantalla Combo ---------- */
+ var MK=[['','— sin usar —'],['ml','Ganador'],['ttA','Carreras de %A'],['ttH','Carreras de %H'],['tot','Total del juego']];
+ function games(){ return $$('#slate .game'); }
+ function names(g){ var e=g&&g._eq; return e?{a:e.a.ab,h:e.h.ab}:{a:'Visita',h:'Local'}; }
+ function sideOpts(mk,n){
+  if(mk==='ml') return [['A',n.a+' gana'],['H',n.h+' gana']];
+  if(mk==='ttA'||mk==='ttH'||mk==='tot') return [['o','Más de (Over)'],['u','Menos de (Under)']];
+  return [];
+ }
+ function opt(v,t,sel){ return '<option value="'+v+'"'+(sel?' selected':'')+'>'+t+'</option>'; }
+ function legHtml(i){
+  return '<div class="leg" data-i="'+i+'"><div class="t">Pata '+(i+1)+(i<2?'':' (opcional)')+'</div>'+
+   '<select class="cm" aria-label="Mercado pata '+(i+1)+'"></select>'+
+   '<select class="cs" aria-label="Lado pata '+(i+1)+'"></select>'+
+   '<input type="text" inputmode="decimal" class="cl" placeholder="línea, ej. 3.5" style="grid-column:1/-1;display:none" aria-label="Línea pata '+(i+1)+'"></div>';
+ }
+ function relabel(pane){
+  var g=games()[+$q('#cmb_juego',pane).value], n=names(g);
+  $$('.leg',pane).forEach(function(L,i){
+   var cm=$q('.cm',L), cur=cm.value||(i===0?'ml':(i===1?'ttA':''));
+   cm.innerHTML=MK.map(function(m){ return opt(m[0],m[1].replace('%A',n.a).replace('%H',n.h),m[0]===cur); }).join('');
+   sides(L,n);
+  });
+ }
+ function sides(L,n){
+  var mk=$q('.cm',L).value, cs=$q('.cs',L), cur=cs.value;
+  var os=sideOpts(mk,n);
+  cs.innerHTML=os.map(function(o,k){ return opt(o[0],o[1],o[0]===cur||(!cur&&k===0)); }).join('');
+  cs.style.display=os.length?'':'none';
+  $q('.cl',L).style.display=(mk==='ttA'||mk==='ttH'||mk==='tot')?'':'none';
+ }
+ function fmtP(p){ return (p*100).toFixed(1)+'%'; }
+ function readGame(g){
+  var body=$q('.body',g), cmp=body&&$q('.row.cmp',body), tts=body?$$('.row[data-tt]',body):[];
+  if(!cmp||tts.length<2) return null;
+  return {pA:+cmp.dataset.pa, pH:+cmp.dataset.ph, na:cmp.dataset.na, nh:cmp.dataset.nh,
+          cap:cmp.dataset.cap==='1', lamA:+tts[0].dataset.tt, lamH:+tts[1].dataset.tt};
+ }
+ function legsFrom(pane,n){
+  var legs=[], names=[], err=null;
+  $$('.leg',pane).forEach(function(L){
+   var mk=$q('.cm',L).value; if(!mk) return;
+   var sd=$q('.cs',L).value, raw=($q('.cl',L).value||'').replace(',','.').trim(), lv=parseFloat(raw);
+   if(mk==='ml'){ legs.push({k:'ml',s:sd}); names.push((sd==='A'?n.a:n.h)+' gana'); return; }
+   if(!isFinite(lv)){ err='Falta la línea de una pata (por ejemplo 3.5).'; return; }
+   if(Math.abs(lv*2-Math.round(lv*2))>1e-9 || Math.abs(lv-Math.floor(lv)-0.5)>1e-9){ err='Usa líneas terminadas en .5 (como 3.5), que es como las pone Kalshi.'; return; }
+   var dtx=sd==='o'?'más de ':'menos de ';
+   if(mk==='tot'){ legs.push({k:'tot',d:sd,L:lv}); names.push('Total '+dtx+lv); }
+   else { var t=mk==='ttA'?'A':'H'; legs.push({k:'tt',t:t,d:sd,L:lv}); names.push((t==='A'?n.a:n.h)+' '+dtx+lv+' carreras'); }
+  });
+  var nml=legs.filter(function(l){ return l.k==='ml'; }).length;
+  if(!err&&legs.length<2) err='Escoge al menos 2 patas para armar el combo.';
+  if(!err&&nml>1) err='Solo puede haber un ganador por combo.';
+  return {legs:legs,names:names,err:err};
+ }
+ function amFromPay(stake,pay){
+  var b=pay/stake-1;
+  return b>=1 ? '+'+Math.round(b*100) : '-'+Math.round(100/b);
+ }
+ function resultado(pane,g,info,lg,box){
+  var r=joint(info.lamA,info.lamH,info.pA/100,lg.legs);
+  var stake=parseFloat(($q('#cmb_stake',pane).value||'').replace(',','.')), pay=parseFloat(($q('#cmb_pay',pane).value||'').replace(',','.'));
+  var p=r.joint, n=names(g);
+  var hasPay=isFinite(stake)&&stake>0&&isFinite(pay)&&pay>stake;
+  var be=hasPay?stake/pay:null, edge=null, ev=null, klass='';
+  if(hasPay){ edge=(p-be)*100; ev=p*(pay/stake)-1; klass=edge>0?'good':'bad'; }
+  var out='<div class="cmpg"><div><b>'+fmtP(p)+'</b><span>Modelo, con las patas relacionadas</span></div>'+
+    '<div><b>'+fmtP(r.indep)+'</b><span>Multiplicando como si fueran independientes</span></div>'+
+    '<div'+(klass?' class="'+klass+'"':'')+'><b>'+(hasPay?fmtP(be):'—')+'</b><span>'+
+    (hasPay?'Equilibrio del pago ($'+stake+' pagan $'+pay+')':'Escribe cuánto te pagan')+'</span></div></div>';
+  var umbral=lg.legs.some(function(l){ return l.k!=='ml'; })?8:2;
+  var v='';
+  if(hasPay){
+   if(ev<=0){
+    v='<div class="pick no"><div class="q">Sin valor</div><div class="r">Con este pago el modelo da '+fmtP(p)+' y hace falta '+fmtP(be)+
+      '. Tendría que pagar '+(1/p).toFixed(2)+'x o más y te pagan '+(pay/stake).toFixed(2)+'x.</div></div>';
+   } else if(edge<umbral){
+    v='<div class="pick no"><div class="q">Dentro del ruido</div><div class="r">+'+edge.toFixed(1)+' puntos de ventaja, pero un combo con carreras pide '+umbral+
+      '. El modelo de carreras salió flojo al medirlo: no lo estires.</div></div>';
+   } else {
+    var kel='';
+    if(typeof banca==='function'&&banca()){ var b=pay/stake-1, f=(p*b-(1-p))/b; if(f>0) kel=' ¼ Kelly $'+(banca()*f*0.25).toFixed(2)+'.'; }
+    v='<div class="pick'+(edge>=umbral+4?' big':'')+'"><div class="q">Valor +'+edge.toFixed(1)+' puntos</div><div class="r">Modelo '+fmtP(p)+' contra equilibrio '+fmtP(be)+
+      ' · EV +'+(ev*100).toFixed(1)+'% por dólar.'+kel+'</div></div>';
+   }
+  }
+  var mi=0, partes=lg.legs.map(function(l,k){ return lg.names[k]+' → '+fmtP(l.k==='ml'?r.pMl:r.marg[mi++]); });
+  var det='<div class="flag">Cuota justa del combo: <b>'+fmtAm(p*100)+'</b> ('+(1/p).toFixed(2)+'x). Cada pata por separado: '+partes.join(' · ')+'.</div>';
+  var ley='<div class="leyenda">Cómo sale: se arma la distribución de carreras de los dos equipos (la misma de la pestaña Cuotas, con su forma medida ×2.3) y se cuentan los marcadores que cumplen todas las patas a la vez. Si una pata es el ganador, su probabilidad se ancla al número <b>calibrado</b> de la app y las carreras se condicionan a que ese equipo gane. Por eso «gana» y «más de 3.5 carreras» del mismo equipo dan bastante más que multiplicarlas: casi siempre van juntas. <b>Sin medir como combo</b>: las carreras por equipo salieron flojas (0.11) en el backtest y el modelo no ve la correlación real entre lo que anotan los dos equipos.</div>';
+  var guard='<div class="row" style="background:transparent;padding:0"><button class="ghost" data-org="modelo" id="cmb_g1">Guardar · del modelo</button>'+
+    '<button class="ghost" data-org="mio" id="cmb_g2">Guardar · mío 👁</button><div class="out" id="cmb_gm"></div></div>';
+  box.innerHTML=(info.cap?'<div class="aviso">⚠️ El porcentaje del modelo chocó con el tope de 22–78% en este juego, así que el ganador viene recortado.</div>':'')+
+    out+v+det+ley+(hasPay?guard:'');
+  if(hasPay){
+   [$q('#cmb_g1',box),$q('#cmb_g2',box)].forEach(function(bt){
+    bt.addEventListener('click',function(){
+     var fe=$q('#fecha'), base={f:(fe&&fe.value)||'', juego:n.a+' @ '+n.h, m:'Combo: '+lg.names.join(' + '), p:p*100, am:amFromPay(stake,pay), plat:'book'};
+     var m=$q('#cmb_gm',box);
+     if(typeof regExiste==='function'&&regExiste(base)){ m.textContent='Ya lo tienes guardado ✓'; return; }
+     var id=(typeof regAdd==='function')?regAdd({f:base.f,juego:base.juego,m:base.m,p:base.p,am:base.am,plat:base.plat,org:bt.getAttribute('data-org'),cierre:null,res:null}):null;
+     if(id){ m.textContent='Guardado en Mis picks ✓'; if(typeof pintarRegistro==='function') pintarRegistro(); }
+     else m.textContent='No se pudo guardar.';
+    });
+   });
+  }
+ }
+ function calcular(pane){
+  var box=$q('#cmb_out',pane), gs=games(), g=gs[+$q('#cmb_juego',pane).value];
+  if(!g){ box.innerHTML='<div class="aviso">Primero carga los partidos en la pestaña Juegos.</div>'; return; }
+  var n=names(g), lg=legsFrom(pane,n);
+  if(lg.err){ box.innerHTML='<div class="aviso">'+lg.err+'</div>'; return; }
+  box.innerHTML='<div class="status">Calculando…</div>';
+  Promise.resolve(g._cargar?g._cargar():null).then(function(){
+   var info=readGame(g);
+   if(!info){ box.innerHTML='<div class="aviso">Ese juego todavía no tiene abridores confirmados; no hay números para armar el combo.</div>'; return; }
+   resultado(pane,g,info,lg,box);
+  }).catch(function(){ box.innerHTML='<div class="aviso">No se pudo calcular ese juego.</div>'; });
+ }
+ function mountCombo(){
+  var wrap=$q('.wrap'), nav=$q('.navbar');
+  if(!wrap||!nav||$q('#pane-combo')) return;
+  var pane=document.createElement('section'); pane.className='pane'; pane.id='pane-combo';
+  pane.innerHTML='<div class="ovaCombo"><h2>Combo del mismo juego</h2>'+
+   '<p class="flag">Para combos tipo Kalshi (por ejemplo «Milwaukee gana» + «Milwaukee más de 3.5 carreras»). La app calcula la probabilidad de que se cumplan <b>a la vez</b>, y la compara con lo que te pagan.</p>'+
+   '<div class="row"><label for="cmb_juego">Juego</label><select id="cmb_juego" style="flex:1 1 100%"></select></div>'+
+   legHtml(0)+legHtml(1)+legHtml(2)+
+   '<div class="pay"><div><label for="cmb_stake">Apuestas ($)</label><input type="text" inputmode="decimal" id="cmb_stake" value="10"></div>'+
+   '<div><label for="cmb_pay">Te pagan ($)</label><input type="text" inputmode="decimal" id="cmb_pay" placeholder="ej. 18.74"></div></div>'+
+   '<div class="controls"><button id="cmb_go">Calcular combo</button></div><div id="cmb_out" class="res"></div></div>';
+  wrap.appendChild(pane);
+  var b=document.createElement('button'); b.setAttribute('data-p','combo');
+  b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16M4 16h16M8 4l-2 16M18 4l-2 16"/></svg><span>Combo</span>';
+  nav.insertBefore(b, nav.children[2]||null);
+  function abrir(){
+   var sel=$q('#cmb_juego',pane), gs=games(), prev=sel.value;
+   sel.innerHTML=gs.length?gs.map(function(g,i){ var n=names(g); return opt(i,n.a+' @ '+n.h,String(i)===prev); }).join(''):opt('','Carga los partidos primero',true);
+   relabel(pane);
+  }
+  b.addEventListener('click',function(){
+   $$('.pane').forEach(function(p){ p.classList.toggle('on',p===pane); });
+   $$('.navbar button').forEach(function(x){ x.classList.toggle('on',x===b); });
+   abrir(); window.scrollTo(0,0);
+  });
+  $$('.navbar button').forEach(function(o){ if(o!==b) o.addEventListener('click',function(){ pane.classList.remove('on'); b.classList.remove('on'); }); });
+  $q('#cmb_juego',pane).addEventListener('change',function(){ relabel(pane); $q('#cmb_out',pane).innerHTML=''; });
+  $$('.leg',pane).forEach(function(L){ $q('.cm',L).addEventListener('change',function(){ sides(L,names(games()[+$q('#cmb_juego',pane).value])); }); });
+  $q('#cmb_go',pane).addEventListener('click',function(){ calcular(pane); });
+ }
+
+ /* ---------- 4. selector de tema en Ajustes + version ---------- */
+ function mountTema(){
+  var pa=$q('#pane-ajustes'); if(!pa||$q('.ovaApar',pa)||!window.OVASkins) return;
+  var box=document.createElement('div'); box.className='ovaApar';
+  box.innerHTML='<h2>Apariencia</h2><p>Toca un tema para verlo al instante. Se guarda en este teléfono y lo comparten MLB y fútbol.</p>';
+  pa.insertBefore(box,pa.firstChild);
+  OVASkins.mount(box);
+ }
+ function ver(){
+  $$('.ver').forEach(function(e){ e.textContent=VER; });
+  var f=$q('footer details');
+  if(f&&!$q('.ovaNota44',f)){
+   var d=document.createElement('div'); d.className='flag ovaNota44';
+   d.innerHTML='<b>v44 · presentación y combos.</b> Seis temas (Ajustes → Apariencia), arco de probabilidad en cada Veredicto y pantalla <b>Combo</b> para combos del mismo juego. Ningún cálculo del modelo cambió: el arco solo dibuja los mismos porcentajes, y el combo usa la misma distribución de carreras de la pestaña Cuotas. El combo no está medido como tal.';
+   f.appendChild(d);
+  }
+ }
+ function init(){ try{ mountCombo(); }catch(e){ if(window.console) console.error('ova combo',e); } try{ mountTema(); }catch(e){} try{ ver(); }catch(e){} }
+ window.OVAMLB={joint:joint,init:init,hero:hero};
+ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+
+</script>
+<!--OVA44:BODY:END-->
 </body>
 </html>
