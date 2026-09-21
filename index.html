@@ -4785,7 +4785,7 @@ document.addEventListener('visibilitychange',function(){
 <script>
 /* OVA MLB · v44: arco de probabilidad, combo del mismo juego, selector de tema. */
 (function(){
- var VER='v45';
+ var VER='v46';
  function $q(s,r){ return (r||document).querySelector(s); }
  function $$(s,r){ return [].slice.call((r||document).querySelectorAll(s)); }
  function fmtAm(p){ return (typeof american==='function') ? american(p) : String(Math.round(p)); }
@@ -5031,7 +5031,7 @@ document.addEventListener('visibilitychange',function(){
   var f=$q('footer details');
   if(f&&!$q('.ovaNota44',f)){
    var d=document.createElement('div'); d.className='flag ovaNota44';
-   d.innerHTML='<b>v45 · presentación, combos y app instalable.</b> Seis temas (Ajustes → Apariencia), arco de probabilidad en cada Veredicto y pantalla <b>Combo</b> para combos del mismo juego. Ningún cálculo del modelo cambió: el arco solo dibuja los mismos porcentajes, y el combo usa la misma distribución de carreras de la pestaña Cuotas. El combo no está medido como tal.';
+   d.innerHTML='<b>v46 · picks que se cierran solos.</b> En Mis picks, «Cerrar picks solos» busca en la MLB cómo terminó cada juego y marca ganó, perdió o devuelto; no toca lo que cerraste a mano. Antes: presentación, combos y app instalable. Seis temas (Ajustes → Apariencia), arco de probabilidad en cada Veredicto y pantalla <b>Combo</b> para combos del mismo juego. Ningún cálculo del modelo cambió: el arco solo dibuja los mismos porcentajes, y el combo usa la misma distribución de carreras de la pestaña Cuotas. El combo no está medido como tal.';
    f.appendChild(d);
   }
  }
@@ -5042,6 +5042,212 @@ document.addEventListener('visibilitychange',function(){
  }
  function init(){ try{ inicio(); }catch(e){} try{ mountCombo(); }catch(e){ if(window.console) console.error('ova combo',e); } try{ mountTema(); }catch(e){} try{ ver(); }catch(e){} }
  window.OVAMLB={joint:joint,init:init,hero:hero};
+ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+
+</script>
+<script>
+/* OVA MLB · v46: cierre automático de picks. Busca en la API de la MLB cómo terminó cada juego y marca
+   ganó / perdió / empate (te devuelven el dinero). NO toca lo que ya cerraste a mano ni inventa la cuota de cierre. */
+(function(){
+ var $q=function(s,r){ return (r||document).querySelector(s); };
+ var $$=function(s,r){ return [].slice.call((r||document).querySelectorAll(s)); };
+ function norm(s){ return String(s==null?'':s).replace(/&amp;/g,'&').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim(); }
+ function lado(G,tok){ var t=norm(tok); if(!t) return null;
+  if(t===norm(G.a.ab)||t===norm(G.a.name)) return 'a';
+  if(t===norm(G.h.ab)||t===norm(G.h.name)) return 'h';
+  return null; }
+ function otro(s){ return s==='a'?'h':'a'; }
+ function lin(v,L,over){ if(v===L) return 'E'; return (over?v>L:v<L)?'G':'P'; }
+ function f5(G){
+  if(!G.inn||G.inn.length<5) return null;
+  var a=0,h=0;
+  for(var i=0;i<5;i++){ var x=G.inn[i]; if(typeof x.a!=='number'||typeof x.h!=='number') return null; a+=x.a; h+=x.h; }
+  return {a:a,h:h};
+ }
+ function ksDe(b){
+  var o={};
+  ['home','away'].forEach(function(l){
+   var pl=(b&&b.teams&&b.teams[l]&&b.teams[l].players)||{};
+   for(var k in pl){ var st=pl[k].stats&&pl[k].stats.pitching; if(!st||st.inningsPitched==null||!pl[k].person) continue;
+    o[norm(pl[k].person.fullName)]={k:+(st.strikeOuts||0), gs:+(st.gamesStarted||0)}; }
+  });
+  return o;
+ }
+ function parsear(m){
+  var s=String(m||'').trim(), r;
+  if(/^Combo: /.test(s)) return {k:'combo',legs:s.slice(7).split(' + ')};
+  if((r=s.match(/^(.+) [\u2212-]1\.5 \(gana por 2\+\)$/))) return {k:'rl',eq:r[1],dos:true};
+  if((r=s.match(/^(.+) \+1\.5 \(pierde por 1 o gana\)$/))) return {k:'rl',eq:r[1],dos:false};
+  if((r=s.match(/^(Over|Under) ([\d.]+) carreras de (.+)$/))) return {k:'tt',over:r[1]==='Over',L:+r[2],eq:r[3]};
+  if((r=s.match(/^(Over|Under) ([\d.]+) carreras$/))) return {k:'tot',over:r[1]==='Over',L:+r[2]};
+  if((r=s.match(/^(Over|Under) ([\d.]+) F5$/))) return {k:'f5t',over:r[1]==='Over',L:+r[2]};
+  if((r=s.match(/^(.+) F5 \(gana las 5\)$/))) return {k:'f5m',eq:r[1]};
+  if(s==='Empate en F5') return {k:'f5m',emp:true};
+  if((r=s.match(/^(.+) (Over|Under) ([\d.]+) K$/))) return {k:'k',q:r[1],over:r[2]==='Over',L:+r[3]};
+  if((r=s.match(/^(.+) gana$/))) return {k:'ml',eq:r[1]};
+  return null;
+ }
+ function pata(G,t){
+  var r;
+  if((r=t.match(/^Total (más|menos) de ([\d.]+)$/))){ var T=G.a.runs+G.h.runs, L=+r[2]; return r[1]==='más'?T>L:T<L; }
+  if((r=t.match(/^(.+) (más|menos) de ([\d.]+) carreras$/))){ var s=lado(G,r[1]); if(!s) return null; var v=G[s].runs, L2=+r[3]; return r[2]==='más'?v>L2:v<L2; }
+  if((r=t.match(/^(.+) gana$/))){ var s2=lado(G,r[1]); if(!s2) return null; return G[s2].runs>G[otro(s2)].runs; }
+  return null;
+ }
+ /* devuelve {res:'G'|'P'|'E'} o {why:'motivo'} o {need:'box'} */
+ function resolver(p,G){
+  var m=parsear(p.m); if(!m) return {why:'no reconozco este tipo de mercado'};
+  var d,s,x;
+  switch(m.k){
+   case 'ml': s=lado(G,m.eq); if(!s) return {why:'no encontré al equipo «'+m.eq+'» en el juego'};
+    if(G.a.runs===G.h.runs) return {why:'el juego quedó empatado en el marcador'};
+    return {res:G[s].runs>G[otro(s)].runs?'G':'P'};
+   case 'rl': s=lado(G,m.eq); if(!s) return {why:'no encontré al equipo «'+m.eq+'» en el juego'};
+    d=G[s].runs-G[otro(s)].runs; return {res:(m.dos?d>=2:d>=-1)?'G':'P'};
+   case 'tot': return {res:lin(G.a.runs+G.h.runs,m.L,m.over)};
+   case 'tt': s=lado(G,m.eq); if(!s) return {why:'no encontré al equipo «'+m.eq+'» en el juego'}; return {res:lin(G[s].runs,m.L,m.over)};
+   case 'f5t': x=f5(G); if(!x) return {why:'el juego no tiene las 5 entradas completas'}; return {res:lin(x.a+x.h,m.L,m.over)};
+   case 'f5m': x=f5(G); if(!x) return {why:'el juego no tiene las 5 entradas completas'};
+    if(m.emp) return {res:x.a===x.h?'G':'P'};
+    s=lado(G,m.eq); if(!s) return {why:'no encontré al equipo «'+m.eq+'» en el juego'};
+    return {res:x[s]>x[otro(s)]?'G':'P'};
+   case 'k': if(!G.ks) return {need:'box'};
+    x=G.ks[norm(m.q)]; if(!x) return {why:'«'+m.q+'» no aparece lanzando en ese juego (revisa si te devolvieron el dinero)'};
+    if(x.gs<1) return {why:m.q+' no abrió el juego (revisa si te devolvieron el dinero)'};
+    return {res:lin(x.k,m.L,m.over)};
+   case 'combo': var ok=true, dudoso=false;
+    m.legs.forEach(function(t){ var v=pata(G,t.trim()); if(v===null) dudoso=true; else if(!v) ok=false; });
+    if(dudoso) return {why:'no pude leer una de las patas del combo'};
+    return {res:ok?'G':'P'};
+  }
+  return {why:'mercado no reconocido'};
+ }
+ function armarG(g){
+  var ls=g.linescore||{}, T=g.teams||{};
+  if(!T.away||!T.home||!T.away.team||!T.home.team) return null;
+  return {pk:g.gamePk,
+   a:{ab:T.away.team.abbreviation||'',name:T.away.team.name||'',runs:+(T.away.score||0)},
+   h:{ab:T.home.team.abbreviation||'',name:T.home.team.name||'',runs:+(T.home.score||0)},
+   inn:(ls.innings||[]).map(function(x){ return {a:x.away&&x.away.runs,h:x.home&&x.home.runs}; }),
+   est:(g.status&&g.status.abstractGameState)||'', det:(g.status&&g.status.detailedState)||''};
+ }
+ function terminado(G){ return G.est==='Final' && /^(Final|Game Over)/i.test(G.det); }
+ function mmddyyyy(f){ var p=String(f).split('-'); return p.length===3?p[1]+'/'+p[2]+'/'+p[0]:null; }
+
+ var CACHE={dias:{},box:{}}, CORRIENDO=false, ULT=0;
+ function dia(f){
+  if(CACHE.dias[f]) return CACHE.dias[f];
+  var q=mmddyyyy(f); if(!q) return Promise.resolve([]);
+  return (CACHE.dias[f]=j(API+'/schedule?sportId=1&date='+q+'&hydrate=team,linescore').then(function(d){
+   var gs=(d.dates&&d.dates[0]&&d.dates[0].games)||[]; return gs.map(armarG).filter(Boolean);
+  }).catch(function(e){ delete CACHE.dias[f]; throw e; }));
+ }
+ function caja(G){
+  if(CACHE.box[G.pk]) return CACHE.box[G.pk];
+  return (CACHE.box[G.pk]=j(API+'/game/'+G.pk+'/boxscore').then(function(b){ G.ks=ksDe(b); return G; }).catch(function(e){ delete CACHE.box[G.pk]; throw e; }));
+ }
+ function buscar(p,juegos){
+  if(p.pk){ for(var i=0;i<juegos.length;i++) if(String(juegos[i].pk)===String(p.pk)) return {G:juegos[i]}; }
+  var pr=String(p.juego||'').split(' @ '); if(pr.length!==2) return {why:'no sé de qué juego es este pick'};
+  var c=juegos.filter(function(G){ return lado({a:G.a,h:G.h},pr[0])==='a' && lado({a:G.a,h:G.h},pr[1])==='h'; });
+  if(!c.length) return {why:'no encontré ese juego en la MLB ese día'};
+  if(c.length>1) return {why:'hubo doble jornada; ciérralo a mano'};
+  return {G:c[0]};
+ }
+ function marc(G){ return G.a.ab+' '+G.a.runs+' – '+G.h.runs+' '+G.h.ab; }
+ /* Cierra todos los picks abiertos que se pueda. Devuelve {cerrados,g,p,e,pend:[{p,why}]} */
+ function cerrar(){
+  var abiertos=regLeer().filter(function(p){ return !p.res; });
+  var out={cerrados:0,g:0,p:0,e:0,pend:[],total:abiertos.length};
+  if(!abiertos.length) return Promise.resolve(out);
+  var fechas={}; abiertos.forEach(function(p){ if(p.f) fechas[p.f]=1; });
+  var lista=Object.keys(fechas);
+  return Promise.all(lista.map(function(f){ return dia(f).then(function(js){ return [f,js]; },function(){ return [f,null]; }); })).then(function(pares){
+   var porDia={}; pares.forEach(function(x){ porDia[x[0]]=x[1]; });
+   var cambios=[];
+   var cadena=Promise.resolve();
+   abiertos.forEach(function(p){
+    cadena=cadena.then(function(){
+     var js=porDia[p.f];
+     if(js===null){ out.pend.push({p:p,why:'no pude consultar la MLB'}); return; }
+     var b=buscar(p,js||[]); if(!b.G){ out.pend.push({p:p,why:b.why}); return; }
+     var G=b.G;
+     if(!terminado(G)){ out.pend.push({p:p,why:G.est==='Final'?'juego especial o acortado; ciérralo a mano':'el juego todavía no termina'}); return; }
+     var r=resolver(p,G);
+     if(r.need==='box') return caja(G).then(function(){ r=resolver(p,G); return r; },function(){ return {why:'no pude bajar el detalle del juego'}; }).then(function(rr){ fin(p,G,rr); });
+     fin(p,G,r);
+    });
+   });
+   function fin(p,G,r){
+    if(r&&r.res){ cambios.push([p.id,{res:r.res,auto:true,marc:marc(G),pk:G.pk}]); out.cerrados++; if(r.res==='G') out.g++; else if(r.res==='P') out.p++; else out.e++; }
+    else out.pend.push({p:p,why:(r&&r.why)||'sin datos'});
+   }
+   return cadena.then(function(){
+    cambios.forEach(function(c){ if(typeof regUpd==='function') regUpd(c[0],c[1]); else { var a=regLeer(); a.forEach(function(x){ if(x.id===c[0]) for(var k in c[1]) x[k]=c[1][k]; }); regEscribir(a); } });
+    return out;
+   });
+  });
+ }
+ function resumenTxt(o){
+  if(!o.total) return 'No tienes picks abiertos.';
+  var t='';
+  if(o.cerrados) t+='Cerré '+o.cerrados+' '+(o.cerrados===1?'pick':'picks')+' solo'+(o.cerrados===1?'':'s')+': '+o.g+' ganado'+(o.g===1?'':'s')+', '+o.p+' perdido'+(o.p===1?'':'s')+(o.e?', '+o.e+' devuelto'+(o.e===1?'':'s'):'')+'. ';
+  if(o.pend.length){
+   var n=o.pend.length, porqs={}; o.pend.forEach(function(x){ porqs[x.why]=(porqs[x.why]||0)+1; });
+   t+=n+' '+(n===1?'sigue abierto':'siguen abiertos')+': '+Object.keys(porqs).map(function(k){ return porqs[k]+' — '+k; }).join('; ')+'.';
+  }
+  if(!o.cerrados&&!o.pend.length) t='Nada por cerrar.';
+  return t.trim();
+ }
+ function correr(silencioso){
+  if(CORRIENDO) return Promise.resolve(null);
+  var msg=$q('#auto_msg'), btn=$q('#auto_btn');
+  CORRIENDO=true; ULT=Date.now();
+  if(btn) btn.disabled=true; if(msg&&!silencioso) msg.textContent='Buscando cómo terminaron los juegos…';
+  return cerrar().then(function(o){
+   if(msg&&(!silencioso||o.cerrados)) msg.textContent=resumenTxt(o);
+   if(o.cerrados&&typeof pintarRegistro==='function') pintarRegistro();
+   return o;
+  }).catch(function(e){ if(msg) msg.textContent='No pude consultar la MLB ahora. Intenta de nuevo en un rato.'; return null; })
+   .then(function(o){ CORRIENDO=false; if(btn) btn.disabled=false; return o; });
+ }
+ function montar(){
+  var reg=$q('#pane-picks .registro'), rs=$q('#reg_resumen'); if(!reg||!rs||$q('.ovaAuto',reg)) return;
+  var d=document.createElement('div'); d.className='ovaAuto';
+  d.innerHTML='<button class="ghost" id="auto_btn">Cerrar picks solos</button><div class="flag" id="auto_msg">Busca en la MLB cómo terminó cada juego y marca ganó o perdió. Lo que cierres a mano no se toca. La cuota de cierre (para el CLV) sigue siendo manual.</div>';
+  reg.insertBefore(d,rs);
+  $q('#auto_btn',d).addEventListener('click',function(){ correr(false); });
+  var nav=$q('.navbar button[data-p=picks]');
+  if(nav) nav.addEventListener('click',function(){ if(Date.now()-ULT>60000) correr(true); });
+ }
+ /* guarda el id del juego con cada pick nuevo (así una doble jornada no se confunde) */
+ function envolver(){
+  if(typeof regAdd==='function'&&!regAdd.__ova){
+   var _ra=regAdd;
+   regAdd=function(o){
+    try{ if(o&&!o.pk){ var g=$$('#slate .game').filter(function(el){ return el._eq&&(el._eq.a.ab+' @ '+el._eq.h.ab)===o.juego; }); if(g.length===1) o.pk=g[0]._pk; } }catch(e){}
+    return _ra(o);
+   };
+   regAdd.__ova=1;
+  }
+  if(typeof pintarRegistro==='function'&&!pintarRegistro.__ova){
+   var _pr=pintarRegistro;
+   pintarRegistro=function(){
+    _pr();
+    try{ var a=regLeer(); $$('#reg_lista .pk').forEach(function(el){ var p=a.filter(function(x){ return x.id===el.getAttribute('data-id'); })[0];
+      if(p&&p.auto&&p.marc){ var s=$q('.s',el); if(s&&s.textContent.indexOf('cerrado solo')<0) s.appendChild(document.createTextNode(' · cerrado solo ('+p.marc+')')); } }); }catch(e){}
+   };
+   pintarRegistro.__ova=1;
+  }
+ }
+ function init(){
+  try{ envolver(); }catch(e){}
+  try{ montar(); }catch(e){}
+  try{ if(typeof pintarRegistro==='function') pintarRegistro(); }catch(e){}
+  setTimeout(function(){ try{ if(regLeer().some(function(p){ return !p.res; })) correr(true); }catch(e){} },1500);
+ }
+ window.OVAAuto={resolver:resolver,parsear:parsear,cerrar:cerrar,correr:correr,armarG:armarG,ksDe:ksDe,resumenTxt:resumenTxt};
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 
