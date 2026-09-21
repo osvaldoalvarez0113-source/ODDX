@@ -48,7 +48,13 @@ h1{font-size:26px;margin:0 0 34px;font-weight:800;text-align:center}
 .nba .ico{animation-delay:.6s}
 @media (prefers-reduced-motion:reduce){.ico{animation:none}}
 </style>
-<!--OVA44:HEAD:BEGIN-->
+<!--OVA45:HEAD:BEGIN-->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="OVA">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
 <style id="ova-skins">
 /* ===== OVA · temas v44 =====
    El tema por defecto (Noche) NO lleva atributo data-skin y queda como antes, salvo
@@ -395,6 +401,21 @@ html[data-app=hub][data-skin] .card{box-shadow:var(--x-shadow);-webkit-backdrop-
 html[data-app=hub][data-skin] .badge{background:var(--bg2)}
 html[data-app=hub] .ovaApar{padding-top:0}
 
+/* ---------- boton Inicio (para volver al hub cuando la app corre sin barras de Safari) ---------- */
+.ovaHome{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:0 0 auto;text-decoration:none;
+ padding:7px 13px;border-radius:999px;border:1px solid var(--line2);background:var(--bg2);color:var(--mut);
+ font:600 13px/1 var(--body,system-ui,sans-serif);min-height:34px}
+.ovaHome:active{opacity:.6}
+html[data-app=fut] .ovaHome{width:36px;height:36px;padding:0;font-size:24px;line-height:1;padding-bottom:3px}
+html[data-app=fut] header .top select{min-width:0}
+html[data-app=fut] header .top{flex-wrap:nowrap;gap:8px}
+html[data-app=fut] header h1{font-size:18px;letter-spacing:1px;white-space:nowrap}
+html[data-app=fut] header h1 .ver{margin-left:4px}
+html[data-app=fut] .ovaHome{width:34px;height:34px}
+html[data-app=fut] header .top select{padding:7px 10px}
+html[data-app=fut][data-skin] header h1{letter-spacing:1px}
+html[data-app=fut] select#ligaSel{min-width:0;width:0}
+
 </style>
 <script>
 (function(){
@@ -421,7 +442,7 @@ html[data-app=hub] .ovaApar{padding-top:0}
 })();
 
 </script>
-<!--OVA44:HEAD:END-->
+<!--OVA45:HEAD:END-->
 </head>
 <body>
 <div class="brand">O V A</div>
@@ -446,7 +467,7 @@ html[data-app=hub] .ovaApar{padding-top:0}
   <div class="badge">Próximamente</div>
  </div>
 </div>
-<!--OVA44:BODY:BEGIN-->
+<!--OVA45:BODY:BEGIN-->
 <script>
 /* OVA · administrador de temas (v44). Se guarda en localStorage 'ova_skin' y lo comparten
    las paginas del mismo sitio (MLB, futbol). Noche = sin atributo = como siempre. */
@@ -520,6 +541,6 @@ html[data-app=hub] .ovaApar{padding-top:0}
 })();
 
 </script>
-<!--OVA44:BODY:END-->
+<!--OVA45:BODY:END-->
 </body>
 </html>
