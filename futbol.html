@@ -562,6 +562,19 @@ html[data-app=fut] header .top select{padding:7px 10px}
 html[data-app=fut][data-skin] header h1{letter-spacing:1px}
 html[data-app=fut] select#ligaSel{min-width:0;width:0}
 
+html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
+
+/* ---------- fútbol: pulido v10 ---------- */
+.kpi div.sinmed{opacity:.55}
+.ovaMini{display:flex;align-items:center;gap:8px;margin-top:3px}
+.ovaMini .b{flex:1;display:flex;height:6px;border-radius:4px;overflow:hidden;background:var(--bg2);gap:2px;max-width:150px}
+.ovaMini .b i{display:block;height:100%}
+.ovaMini .l{background:var(--hot)} .ovaMini .d{background:var(--mut2)} .ovaMini .v{background:var(--acc)}
+.ovaMini small{font-size:10.5px;color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap}
+html[data-app=fut] #btnDiag{opacity:.75;font-size:11px;padding:5px 10px}
+.kpi div.sinmed{opacity:.55}
+html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
+
 </style>
 <script>
 (function(){
@@ -2837,9 +2850,10 @@ document.getElementById('ligaSel').addEventListener('change', function(){
 
 </script>
 <script>
-/* OVA Fútbol · v8: anillo de probabilidad, doble oportunidad, selector de tema. */
+/* OVA Fútbol · v10: anillo de probabilidad, doble oportunidad, selector de tema, pulido (atenuar
+   porcentajes de goles no medidos, apagar Kalshi tras un 429, verificar picks al abrir Registro). */
 (function(){
- var VER='v9';
+ var VER='v10';
  function $q(s,r){ return (r||document).querySelector(s); }
  function pct(x){ return (x*100).toFixed(1)+'%'; }
  function am(p){
@@ -2888,6 +2902,25 @@ document.getElementById('ligaSel').addEventListener('change', function(){
   pane.insertBefore(hero,pane.firstChild);
   animar(hero);
 
+  /* Los porcentajes de goles que en tu backtest NO le ganaron a la frecuencia de la liga (o que
+     no se han medido) se atenúan, para que no se confundan con el 1X2, que sí lo mide. */
+  try{
+   var v=(typeof leerVeredictos==='function')?leerVeredictos(LIGA_ACTUAL):null;
+   var ok=function(k){ return !!(v && v[k]!==undefined && veredictoDe(v[k]).t==='✓ le gana'); };
+   var kp=pane.querySelectorAll('.kpi div'), okOU=ok('ou'), okBT=ok('bt'), n=0;
+   [okOU,okOU,okBT].forEach(function(o,i){ if(kp[i] && !o){ kp[i].classList.add('sinmed'); n++; } });
+   if(n){ var kEl=pane.querySelector('.kpi'); if(kEl) kEl.insertAdjacentHTML('afterend','<div class="nota" style="margin-top:-4px">Los porcentajes atenuados (Más/Menos y Ambos anotan) no le ganaron a la frecuencia de la liga en tu backtest, o no se han medido: úsalos solo de referencia. El 1X2 de arriba sí.</div>'); }
+  }catch(e){}
+  /* Si Kalshi ya respondió 429 (límite de peticiones) en este partido, no se vuelve a ofrecer
+     el botón en los demás: no funciona desde el teléfono y solo genera clics perdidos. */
+  try{
+   if(localStorage.getItem('ova_kalshi_off')==='1'){
+    var kb=bodyEl.querySelector('button[id$="btnKalshi"]'), ko=bodyEl.querySelector('[id$="kalshiOut"]');
+    if(kb) kb.style.display='none';
+    if(ko) ko.textContent='Kalshi no responde desde el teléfono (error 429): escribe las cuotas a mano.';
+   }
+  }catch(e){}
+
   var d=derivadas(pL,pD,pV);
   var row=function(t,x){ return '<div class="linea"><span>'+t+'</span><b>'+pct(x)+' · '+am(x)+'</b></div>'; };
   var box=document.createElement('div'); box.className='ovaDO';
@@ -2896,11 +2929,37 @@ document.getElementById('ligaSel').addEventListener('change', function(){
    row(escT(p.local)+' o '+escT(p.visita)+' (12, sin empate)',d.x12)+
    row('Empate no apuesta · '+escT(p.local),d.dnbL)+row('Empate no apuesta · '+escT(p.visita),d.dnbV)+'</div>'+
    '<div class="nota">Salen del mismo 1X2 de arriba (el mercado donde el modelo sí le ganó a la frecuencia de la liga), sin ninguna constante nueva. La cifra de la derecha es la cuota justa: solo hay valor si la casa paga <b>más</b>. En empate no apuesta, si empatan te devuelven el dinero.</div>';
-  var nota=pane.querySelector('.nota:last-child'); pane.appendChild(box);
+  pane.appendChild(box);
  }
  if(typeof pintarGameBody==='function'){
   var _pg=pintarGameBody;
   pintarGameBody=function(bodyEl,p,eL,eV){ _pg(bodyEl,p,eL,eV); try{ heroFut(bodyEl,p,eL,eV); }catch(e){ if(window.console) console.error('ova hero',e); } };
+ }
+
+ /* Envuelve buscarEventoKalshi para recordar un error 429 (no engañarlo con reintentos que no
+    van a funcionar), y hace que abrir la pestaña Registro verifique los picks pendientes solo. */
+ function extras(){
+  try{
+   if(typeof buscarEventoKalshi==='function' && !buscarEventoKalshi.__ova){
+    var _b=buscarEventoKalshi;
+    buscarEventoKalshi=function(){
+     return _b.apply(null,arguments).catch(function(e){
+      if(/429/.test(String(e&&e.message))){ try{ localStorage.setItem('ova_kalshi_off','1'); }catch(x){} }
+      throw e;
+     });
+    };
+    buscarEventoKalshi.__ova=1;
+   }
+  }catch(e){}
+  try{
+   var rb=$q('.tabbar .tbar-btn[data-vista="registro"]');
+   if(rb && !rb.__ova){
+    rb.__ova=1;
+    rb.addEventListener('click',function(){
+     setTimeout(function(){ try{ if(typeof verificarRegistro==='function') verificarRegistro(); }catch(e){} },60);
+    });
+   }
+  }catch(e){}
  }
 
  function mountTema(){
@@ -2923,7 +2982,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
   var a=document.createElement('a'); a.className='ovaHome'; a.href='hub.html'; a.setAttribute('aria-label','Volver al inicio'); a.textContent='‹';
   top.insertBefore(a,top.firstChild);
  }
- function init(){ try{ inicio(); }catch(e){} try{ mountTema(); }catch(e){} ver(); }
+ function init(){ try{ inicio(); }catch(e){} try{ mountTema(); }catch(e){} try{ extras(); }catch(e){} ver(); }
  window.OVAFUT={derivadas:derivadas,init:init};
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
