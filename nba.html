@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NBA — OVA</title>
+<style>
+:root{
+ --bg:#070B12;--bg1:#0D1420;--bg2:#131D2C;--bg3:#1B2838;
+ --line:#1C2838;--line2:#2A3E56;
+ --txt:#F1F5FB;--mut:#9DB2C8;--mut2:#6D8299;
+ --acc:#3B82F6;--acc2:#60A5FA;--accTx:#020509;
+ --hot:#FBBF24;--hotTx:#1A1305;
+ --good:#34D399;--bad:#F87171;
+ --r:10px;--r2:18px;
+ --cond:system-ui,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);
+ padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+header{padding:16px 14px 12px;position:sticky;top:0;background:var(--bg);z-index:9;
+ border-bottom:1px solid var(--line)}
+header .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+header h1{font-size:20px;margin:0;font-weight:800;letter-spacing:2px}
+.ver{font-size:10px;color:var(--mut);font-weight:400;margin-left:2px}
+select#ligaSel{background:var(--bg2);border:1px solid var(--line2);color:var(--txt);
+ border-radius:20px;padding:7px 12px;font-size:12.5px;flex:1;min-width:130px;-webkit-appearance:none}
+.tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--bg1);
+ border-top:1px solid var(--line2);z-index:20;padding-bottom:env(safe-area-inset-bottom)}
+.tbar-btn{flex:1;background:transparent;border:0;color:var(--mut);padding:9px 2px 8px;
+ display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.tbar-btn .ic{font-size:19px;line-height:1;filter:grayscale(1);opacity:.75}
+.tbar-btn .lb{font-size:10px;font-weight:700}
+.tbar-btn.on{color:var(--hot)}
+.tbar-btn.on .ic{filter:none;opacity:1}
+.tabs{display:flex;gap:6px}
+.tb{flex:1;background:var(--bg2);color:var(--mut);border:0;border-radius:9px;padding:9px 8px;
+ font-size:12.5px;font-weight:700;cursor:pointer}
+.tb.on{background:var(--acc);color:var(--accTx)}
+main{padding:0 14px}
+.vista{display:none}
+.vista.on{display:block}
+.estado{font-size:12.5px;color:var(--mut);margin:12px 2px}
+.estado.ok{color:var(--good)}
+.estado.warn{color:var(--hot)}
+.estado.bad{color:var(--bad)}
+.kpi b,.marcadores b,.linea b,.bar span,.fila-rank .pct,.egol b{font-variant-numeric:tabular-nums}
+.game{background:var(--bg1);border:1px solid var(--line2);border-radius:var(--r2);
+ margin:12px 0;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.4),0 20px 40px -18px rgba(0,0,0,.7)}
+.head{display:flex;align-items:center;gap:10px;padding:14px;cursor:pointer}
+.crestpair{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+.eq{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;min-width:0}
+.eq img{width:24px;height:24px;object-fit:contain;background:#fff;border-radius:5px;flex:0 0 auto}
+.eq span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hora{font-size:11.5px;color:var(--mut);background:var(--bg2);border:1px solid var(--line2);
+ border-radius:20px;padding:5px 10px;flex:0 0 auto;white-space:nowrap;text-align:right}
+.chev{color:var(--mut2);font-size:18px;flex:0 0 auto;transition:transform .2s}
+.game.open .chev{transform:rotate(180deg)}
+.body{display:none;padding:0 14px 16px}
+.game.open .body{display:block}
+.egol{display:flex;justify-content:space-between;font-size:13px;color:var(--mut);margin:4px 0}
+.egol b{color:var(--txt)}
+.bar{height:38px;display:flex;border-radius:12px;overflow:hidden;background:var(--bg2);
+ margin:12px 0;border:1px solid var(--line2)}
+.bar span{display:flex;align-items:center;justify-content:center;font-family:var(--cond);
+ font-size:13.5px;font-weight:800;transition:flex-grow .5s}
+.bar .h{background:linear-gradient(90deg,#D89626,var(--hot));color:var(--hotTx)}
+.bar .d{background:var(--bg3);color:var(--mut)}
+.bar .a{background:linear-gradient(90deg,var(--acc),var(--acc2));color:#fff}
+.pick{border-left:3px solid var(--good);background:linear-gradient(135deg,rgba(52,211,153,.16),rgba(52,211,153,.04));
+ border-radius:0 var(--r) var(--r) 0;padding:11px 13px;margin:10px 0;font-size:13px}
+.pick b{display:block;color:var(--good);font-size:14.5px;margin-bottom:2px}
+.pick.no{border-left-color:var(--line2);background:var(--bg2)}
+.pick.no b{color:var(--mut)}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.kpi div{background:var(--bg2);border-radius:var(--r);padding:10px;text-align:center}
+.kpi b{display:block;font-size:17px;font-weight:800;font-family:var(--cond)}
+.kpi small{color:var(--mut);font-size:10.5px}
+h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-transform:uppercase;
+ letter-spacing:.5px}
+.marcadores{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.marcadores div{background:var(--bg2);border-radius:var(--r);padding:8px 4px;text-align:center}
+.marcadores b{display:block;font-family:var(--cond);font-size:15px;font-weight:800}
+.marcadores small{color:var(--mut);font-size:10px}
+.lineas{display:flex;flex-direction:column;gap:6px}
+.linea{display:flex;justify-content:space-between;align-items:center;background:var(--bg2);
+ border-radius:var(--r);padding:8px 11px;font-size:12.5px}
+.linea b{font-family:var(--cond)}
+.nota{font-size:10.5px;color:var(--mut2);line-height:1.5;margin-top:12px}
+.tabpos{width:100%;border-collapse:collapse;font-size:11.5px}
+.tabpos td{padding:6px 4px;border-bottom:1px solid var(--line)}
+.tabpos tr.destacada td{color:var(--hot);font-weight:700}
+.tabpos .num{color:var(--mut);width:20px}
+.estadio{display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:var(--r);
+ padding:10px 12px;font-size:12.5px;margin:6px 0}
+.estadio b{color:var(--txt)}
+.forma{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 12px}
+.forma span{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+ font-size:10.5px;font-weight:800;color:#fff}
+.forma .V{background:var(--good)}
+.forma .E{background:var(--mut2)}
+.forma .D{background:var(--bad)}
+.h2h{display:flex;justify-content:space-around;text-align:center;background:var(--bg2);border-radius:var(--r);
+ padding:10px;margin:6px 0}
+.noticia{font-size:12px;color:var(--mut);padding:7px 0;border-bottom:1px solid var(--line)}
+.noticia:last-child{border-bottom:0}
+.cuotasbox{background:var(--bg2);border-radius:var(--r);padding:12px;margin:6px 0}
+.cuotasbox .fila{display:flex;gap:8px;margin-bottom:8px}
+.cuotasbox input{flex:1;background:var(--bg1);border:1px solid var(--line2);color:var(--txt);
+ border-radius:8px;padding:9px;font-size:13px;text-align:center}
+.cuotasbox label{font-size:10.5px;color:var(--mut);display:block;margin-bottom:3px}
+.veredictoCuota{margin-top:10px;font-size:12.5px}
+.veredictoCuota .si{color:var(--good);font-weight:700}
+.veredictoCuota .no{color:var(--mut)}
+.observ{background:var(--bg2);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--mut);
+ margin:5px 0}
+.observ b{color:var(--txt)}
+.aviso{border-left:3px solid var(--hot);background:rgba(251,191,36,.08);border-radius:0 var(--r) var(--r) 0;
+ padding:9px 12px;font-size:11.5px;color:var(--hot);margin:0 0 10px}
+.body .tabs{display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding-bottom:2px}
+.body .tb{flex:0 0 auto;background:var(--bg2);color:var(--mut);border:0;border-radius:9px;
+ padding:8px 12px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer}
+.body .tb.on{background:var(--acc);color:var(--accTx)}
+.body .pane{display:none}
+.body .pane.on{display:block}
+.fila-rank{display:flex;align-items:center;gap:10px;background:var(--bg1);border:1px solid var(--line2);
+ border-radius:var(--r);padding:11px;margin:8px 0}
+.fila-rank .pos{color:var(--mut);font-size:12px;width:18px;flex:0 0 auto}
+.fila-rank img{width:22px;height:22px;object-fit:contain;background:#fff;border-radius:5px}
+.fila-rank .nom{flex:1;font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fila-rank .nom small{display:block;font-size:10.5px;color:var(--mut2);font-weight:400}
+.fila-rank .pct{font-family:var(--cond);font-weight:800;font-size:15px;color:var(--hot)}
+.diaHead{font-size:11.5px;color:var(--mut);font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+ margin:18px 2px 8px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+.diaHead:first-child{margin-top:4px}
+.diaSelector{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+ margin:14px 0 4px;padding-bottom:2px}
+.diaSelector::-webkit-scrollbar{display:none}
+.diaBtn{flex:0 0 auto;background:var(--bg2);color:var(--mut);border:1px solid var(--line2);border-radius:20px;
+ padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;text-transform:capitalize}
+.diaBtn.on{background:var(--hot);color:var(--hotTx);border-color:var(--hot)}
+.filaCuota{display:flex;justify-content:space-between;align-items:center;margin:6px 0;gap:8px}
+.filaCuota .txt{flex:1;min-width:0}
+.btnChico{flex:0 0 auto;background:var(--bg3);color:var(--txt);border:1px solid var(--line2);
+ border-radius:7px;padding:7px 10px;font-size:12px;cursor:pointer}
+.btnAncho{width:100%;background:var(--acc);color:var(--accTx);border:0;border-radius:10px;
+ padding:12px;font-weight:700;margin:12px 0;cursor:pointer}
+.btnAncho.sec{background:var(--bg2);color:var(--mut);border:1px solid var(--line2)}
+.btnAncho:disabled{opacity:.5}
+.tabla-bt{width:100%;border-collapse:collapse;font-size:11.5px;margin:8px 0}
+.tabla-bt th,.tabla-bt td{padding:7px 4px;border-bottom:1px solid var(--line);text-align:center;font-variant-numeric:tabular-nums}
+.tabla-bt th{color:var(--mut);font-weight:700;font-size:10.5px}
+.tabla-bt td:first-child,.tabla-bt th:first-child{text-align:left}
+.tabla-bt tr.ref td{color:var(--mut2)}
+.veredicto-bt{background:var(--bg2);border-left:3px solid var(--hot);border-radius:0 var(--r) var(--r) 0;
+ padding:10px 12px;font-size:12px;line-height:1.5;margin:10px 0}
+textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);border:1px solid var(--line2);
+ border-radius:8px;padding:8px;font-size:11px;font-family:ui-monospace,Menlo,monospace}
+#diagOut{background:var(--bg1);border:1px solid var(--line2);border-radius:var(--r);padding:10px;
+ font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:var(--mut);white-space:pre-wrap;word-break:break-word}
+
+.kpi div.sinmed{opacity:.55}
+.ovaHero.nba .gz{width:124px;height:72px;position:relative}
+.filaCuota .txt{font-size:12.5px}
+
+</style>
+<!--OVA45:HEAD:BEGIN-->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="OVA">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style id="ova-skins">
+/* ===== OVA · temas v44 =====
+   El tema por defecto (Noche) NO lleva atributo data-skin y queda como antes, salvo
+   los retoques marcados 0 y 0b (un desborde real y tres textos con poco contraste).
+   Cada tema nuevo define TODOS sus colores como variables; las reglas de la seccion 1
+   solo se activan cuando hay data-skin. */
+:root{
+ --x-chip:#04140C;
+ --x-herobg:linear-gradient(180deg,var(--bg2),var(--bg1));
+ --x-fixed:none;
+}
+html[data-app=fut] .forma span{color:var(--x-chip)}
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background:var(--x-fixed)}
+
+
+/* ---------- 0. arreglo de desborde horizontal (todos los temas, tambien Noche) ----------
+   El brillo de arriba de la tarjeta abierta medía 160% del ancho y se salia de la pantalla
+   (medido: la pagina pasaba de 390 a 485 px de ancho al abrir un juego). Ahora se queda adentro. */
+html[data-app=mlb] .game.open .body::before{left:0;width:100%;transform:none}
+
+
+/* ---------- 0b. legibilidad de Noche (tres textos que median bajo 4.5 en la auditoria) ---------- */
+html[data-app=mlb]:not([data-skin]) .tb.on{background:#2D6CDF}
+html[data-app=mlb]:not([data-skin]) .out.no{color:#7C92AA}
+html[data-app=mlb]:not([data-skin]) .teq.on{color:var(--acc2)}
+
+/* ---------- 1. consumir las variables (solo con tema activo) ---------- */
+html[data-app=mlb][data-skin] .topbar{background:var(--x-topbg)}
+html[data-app=mlb][data-skin] .navbar{background:var(--x-navbg)}
+html[data-app=fut][data-skin] header{background:var(--x-fhead)}
+html[data-app=fut][data-skin] .tabbar{background:var(--x-navbg)}
+html[data-app=fut][data-skin] body{font-family:var(--body)}
+html[data-app=mlb][data-skin] .game,html[data-app=fut][data-skin] .game{box-shadow:var(--x-shadow)}
+html[data-app=mlb][data-skin] .status.err,html[data-app=mlb][data-skin] .aviso,html[data-app=mlb][data-skin] .pick.alerta,html[data-app=mlb][data-skin] .row.hcrow .par.pr{background:var(--x-errbg);border-color:var(--x-errbd)}
+html[data-app=mlb][data-skin] .aviso b{color:var(--x-errb)}
+html[data-app=fut][data-skin] .aviso{background:var(--x-warnbg)}
+html[data-app=mlb][data-skin] .medido.ok,html[data-app=mlb][data-skin] .pk .res.g{background:var(--x-okbg);color:var(--x-oktx)}
+html[data-app=mlb][data-skin] .medido.flojo,html[data-app=mlb][data-skin] .pk .res.p{background:var(--x-flbg);color:var(--x-fltx)}
+html[data-app=mlb][data-skin] .out.si,html[data-app=mlb][data-skin] .pick.big .q{color:var(--x-oktx)}
+html[data-app=mlb][data-skin] .row.hcrow .par.pv{background:var(--x-pvbg);border-color:var(--x-pvbd)}
+html[data-app=mlb][data-skin] .teq.on{background:var(--x-teqon)}
+html[data-app=mlb][data-skin] .pick.ia{background:var(--x-iabg);border-color:var(--x-iabd)}
+html[data-app=mlb][data-skin] .pick.big,html[data-app=fut][data-skin] .pick{background:var(--x-goodbg)}
+html[data-app=mlb][data-skin] .pick.big{border-color:var(--x-goodbd)}
+html[data-app=mlb][data-skin] .game.open .body::before{background:radial-gradient(ellipse at top,var(--x-glow),transparent 60%)}
+html[data-app=mlb][data-skin] .game.open .head{box-shadow:0 0 40px -8px var(--x-headglow) inset}
+html[data-app=mlb][data-skin] .bar .lead,html[data-app=fut][data-skin] .bar .h{background:var(--x-lead)}
+html[data-app=mlb][data-skin] .bar .lead{box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 0 22px -4px var(--x-leadglow)}
+html[data-app=mlb][data-skin] .fila.alto .track i{background:var(--x-lead)}
+html[data-app=mlb][data-skin] .tb.on{color:var(--x-tabtx)}
+html[data-app=fut][data-skin] .bar .a{color:var(--x-atx)}
+html[data-app=mlb][data-skin] .bug .qr i,html[data-app=mlb][data-skin] .bug .in em{color:var(--x-onhead)}
+html[data-app=mlb][data-skin] .bug .dia .base.on{fill:var(--x-onhead);stroke:var(--x-onhead)}
+html[data-app=mlb][data-skin] .tabs,html[data-app=fut][data-skin] .body .tabs{background:var(--x-stbg)}
+html[data-app=mlb][data-skin] .cabp{background:var(--x-cabbg)}
+html[data-app=mlb][data-skin] .game,html[data-app=fut][data-skin] .game,html[data-app=mlb][data-skin] .ajustes,html[data-app=mlb][data-skin] .pk,html[data-app=fut][data-skin] .cuotasbox,html[data-app=mlb][data-skin] .vacio{-webkit-backdrop-filter:var(--x-blur);backdrop-filter:var(--x-blur)}
+
+/* ---------- 2. hero de probabilidad (todos los temas) ---------- */
+.ovaHero{position:relative;margin:8px 0 12px;padding:14px 10px 12px;border-radius:var(--r2);
+ background:var(--x-herobg);border:1px solid var(--line2);overflow:hidden}
+.ovaHero .row3{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:4px}
+.ovaHero .side{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.ovaHero .side .esc{width:46px;height:46px}
+.ovaHero .side img.cr{width:44px;height:44px;object-fit:contain;background:#fff;border-radius:10px;padding:3px}
+.ovaHero .side .ab{font-family:var(--cond);font-weight:700;font-size:13px;letter-spacing:.6px;color:var(--mut);
+ max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ovaHero .side .pc{font-family:var(--cond);font-weight:800;font-size:clamp(20px,6.6vw,26px);line-height:1;white-space:nowrap;color:var(--txt);
+ font-variant-numeric:tabular-nums}
+.ovaHero .side.fav .pc{color:var(--hot)}
+.ovaHero .gz{position:relative;width:124px;height:72px}
+.ovaHero .gz svg{width:100%;height:auto}
+.ovaHero svg{display:block;overflow:visible}
+.ovaHero .tr{fill:none;stroke:var(--line2);stroke-width:10}
+.ovaHero .sg{fill:none;stroke-width:10;transition:stroke-dasharray 1s cubic-bezier(.16,1,.3,1),stroke-dashoffset 1s cubic-bezier(.16,1,.3,1)}
+.ovaHero .sg.fv{stroke:var(--hot)}
+.ovaHero .sg.ot{stroke:var(--mut2)}
+.ovaHero .sg.dr{stroke:var(--mut2)}
+.ovaHero .sg.aw{stroke:var(--acc)}
+.ovaHero .cx{position:absolute;left:0;right:0;bottom:2px;text-align:center;line-height:1.1}
+.ovaHero .cx small{display:block;font-size:10px;color:var(--mut);letter-spacing:.2px}
+.ovaHero .cx b{font-family:var(--cond);font-size:19px;font-weight:800;color:var(--txt);font-variant-numeric:tabular-nums}
+.ovaHero .cap{margin-top:8px;text-align:center;font-size:12px;color:var(--mut);line-height:1.4}
+.ovaHero .cap b{color:var(--txt);font-weight:600}
+.ovaHero.fut .gz{width:112px;height:112px}
+.ovaHero.fut .cx{bottom:auto;top:50%;transform:translateY(-50%)}
+.ovaHero.fut .cx b{font-size:17px}
+@media (prefers-reduced-motion:reduce){.ovaHero .sg{transition:none}}
+html[data-app=mlb] .tab[data-t="v"] .ovaHero ~ .bar{display:none}
+html[data-app=fut] .pane .ovaHero ~ .bar{display:none}
+
+/* ---------- 3. selector de tema ---------- */
+.ovaSkins{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0 4px}
+.ovaSk{display:flex;flex-direction:column;align-items:stretch;gap:0;padding:0;text-align:left;
+ background:transparent;border:2px solid var(--line2);border-radius:14px;overflow:hidden;
+ color:var(--txt);font-family:var(--body,system-ui);cursor:pointer;min-height:0}
+.ovaSk[aria-pressed="true"]{border-color:var(--hot);box-shadow:0 0 0 3px rgba(255,255,255,.06)}
+.ovaSk .pv{display:block;height:64px;padding:9px 10px;position:relative}
+.ovaSk .pv i{display:block;height:8px;border-radius:4px;margin-bottom:6px}
+.ovaSk .pv i:nth-child(1){width:62%}
+.ovaSk .pv i:nth-child(2){width:38%;opacity:.85}
+.ovaSk .pv em{position:absolute;right:10px;bottom:9px;width:22px;height:22px;border-radius:50%}
+.ovaSk .tx{display:block;padding:8px 10px 9px;background:var(--bg2)}
+.ovaSk .tx b{display:block;font-size:13.5px;font-weight:700;color:var(--txt)}
+.ovaSk .tx span{display:block;font-size:11px;color:var(--mut);margin-top:1px;line-height:1.3}
+.ovaSheet{position:fixed;inset:0;z-index:100;display:none;align-items:flex-end;background:rgba(0,0,0,.55)}
+.ovaSheet.on{display:flex}
+.ovaSheet .card{width:100%;max-height:82vh;overflow:auto;background:var(--bg1);border-top:1px solid var(--line2);
+ border-radius:22px 22px 0 0;padding:14px 14px calc(18px + env(safe-area-inset-bottom))}
+.ovaSheet .card h2{margin:2px 0 2px;font-size:18px;font-family:var(--cond)}
+.ovaSheet .card p{margin:0 0 4px;font-size:12px;color:var(--mut)}
+.ovaApar{padding-top:14px}
+.ovaApar h2{font-size:19px;margin:0 0 2px;font-weight:600;font-family:var(--cond)}
+.ovaApar p{margin:0;font-size:12.5px;color:var(--mut)}
+
+/* ---------- 4. pantalla Combo (MLB) ---------- */
+.ovaCombo h2{font-size:19px;margin:4px 0 4px;font-weight:600;font-family:var(--cond)}
+.ovaCombo .leg{background:var(--bg2);border-radius:var(--r);padding:10px;margin:8px 0;display:grid;
+ grid-template-columns:1fr 1fr;gap:7px}
+.ovaCombo .leg .t{grid-column:1/-1;font-size:11.5px;color:var(--mut);font-weight:600}
+.ovaCombo .leg select,.ovaCombo .leg input{width:100%}
+.ovaCombo .pay{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.ovaCombo .pay label{display:block;font-size:12px;color:var(--mut);margin-bottom:3px}
+.ovaCombo .pay input{width:100%}
+.ovaCombo .res{margin-top:12px}
+.ovaCombo .big{font-family:var(--cond);font-size:36px;font-weight:800;line-height:1;color:var(--hot);
+ font-variant-numeric:tabular-nums}
+.ovaCombo .cmpg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
+.ovaCombo .cmpg div{background:var(--bg2);border-radius:var(--r);padding:10px 8px;text-align:center}
+.ovaCombo .cmpg b{display:block;font-family:var(--cond);font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}
+.ovaCombo .cmpg span{display:block;font-size:10.5px;color:var(--mut);margin-top:2px;line-height:1.3}
+.ovaCombo .cmpg .good b{color:var(--good)}
+.ovaCombo .cmpg .bad b{color:var(--bad)}
+.ovaDO table{margin-top:4px}
+
+/* ============ TEMA: ORO NEGRO ============ */
+html[data-skin=oro]{
+ color-scheme:dark;
+ --bg:#0A0908;--bg1:#13110D;--bg2:#1B1812;--bg3:#25211A;
+ --line:#2A241B;--line2:#43381F;
+ --txt:#F7F2E7;--mut:#CBBFA5;--mut2:#A09472;
+ --acc:#C9A24A;--acc2:#E6C874;--accTx:#1A1305;
+ --hot:#F0CE6B;--hotTx:#1A1305;
+ --good:#6FD39A;--bad:#F08A78;--info:#C9A24A;--ia:#7DD3E0;
+ --cond:'Playfair Display',Georgia,'Times New Roman',serif;
+ --body:'Inter',system-ui,-apple-system,sans-serif;--mono:'Inter',system-ui,sans-serif;
+ --r:6px;--r2:12px;
+ --x-topbg:rgba(10,9,8,.94);--x-navbg:rgba(10,9,8,.96);--x-fhead:#0A0908;
+ --x-errbg:#2A1614;--x-errbd:#5A2B25;--x-errb:#F5B5A9;
+ --x-okbg:#15251A;--x-oktx:#8FE0AE;--x-flbg:#2B1815;--x-fltx:#F1A99B;
+ --x-pvbg:#14241A;--x-pvbd:#2D5138;--x-teqon:#2A2314;
+ --x-iabg:#10222A;--x-iabd:#1F4652;
+ --x-glow:rgba(201,162,74,.10);--x-headglow:rgba(201,162,74,.30);
+ --x-lead:linear-gradient(90deg,#B8893A,#F0CE6B);--x-leadglow:rgba(240,206,107,.45);
+ --x-shadow:0 0 0 1px rgba(201,162,74,.10),0 26px 50px -24px rgba(0,0,0,.95);
+ --x-tabtx:#1A1305;--x-atx:#1A1305;
+ --x-goodbg:linear-gradient(135deg,rgba(111,211,154,.14),rgba(111,211,154,.03));--x-goodbd:rgba(111,211,154,.35);
+ --x-warnbg:rgba(240,206,107,.08);
+ --x-herobg:radial-gradient(120% 90% at 50% 0%,rgba(201,162,74,.16),transparent 62%),linear-gradient(180deg,var(--bg2),var(--bg1));
+ --x-stbg:var(--bg1);--x-cabbg:var(--bg2);--x-blur:none;--x-onhead:#F0CE6B;
+ --x-fixed:radial-gradient(90% 55% at 50% -12%,rgba(201,162,74,.12),transparent 62%);
+}
+html[data-skin=oro] .brand,html[data-skin=oro] header h1{letter-spacing:6px;font-weight:700}
+html[data-skin=oro] h3{border-bottom:1px solid rgba(201,162,74,.55)}
+html[data-skin=oro] .kpi b,html[data-skin=oro] .bar span,html[data-skin=oro] .match,html[data-skin=oro] .pct,
+html[data-skin=oro] .ovaHero .pc,html[data-skin=oro] .ovaHero .cx b{font-variant-numeric:lining-nums tabular-nums}
+html[data-skin=oro] .match{font-weight:700}
+html[data-skin=oro] button:not(.ghost):not(.teq):not(.tb):not(.tbar-btn):not(.ovaSk):not(.diaBtn):not(.btnChico):not(.fab):not([data-p]),
+html[data-skin=oro] .btnAncho:not(.sec){background:linear-gradient(180deg,var(--acc2),var(--acc));color:var(--accTx)}
+html[data-skin=oro] .tb.on,html[data-skin=oro] .diaBtn.on{background:linear-gradient(180deg,var(--acc2),var(--acc));color:var(--accTx)}
+html[data-skin=oro] .game.open{border-color:var(--acc)}
+html[data-skin=oro] .pick{border-left-color:var(--acc)}
+html[data-skin=oro] .ovaHero{border-color:rgba(201,162,74,.4)}
+
+/* ============ TEMA: NEON ============ */
+html[data-skin=neon]{
+ color-scheme:dark;
+ --bg:#07060F;--bg1:#0E0B1F;--bg2:#161231;--bg3:#1F1A44;
+ --line:#241E4A;--line2:#3D3280;
+ --txt:#F5F3FF;--mut:#BDB6EC;--mut2:#8E86C8;
+ --acc:#19E3FF;--acc2:#6BF0FF;--accTx:#00141A;
+ --hot:#FF4FD0;--hotTx:#1D0018;
+ --good:#3DFFB4;--bad:#FF6B86;--info:#19E3FF;--ia:#19E3FF;
+ --cond:'Rajdhani','Arial Narrow',system-ui,sans-serif;
+ --body:'Inter',system-ui,-apple-system,sans-serif;--mono:'Rajdhani','Inter',system-ui,sans-serif;
+ --r:10px;--r2:16px;
+ --x-topbg:rgba(7,6,15,.88);--x-navbg:rgba(9,7,22,.92);--x-fhead:#07060F;
+ --x-errbg:#2B0F22;--x-errbd:#6B1F55;--x-errb:#FFB0C6;
+ --x-okbg:#0B2A22;--x-oktx:#6FFFCB;--x-flbg:#2E1030;--x-fltx:#FFA1D6;
+ --x-pvbg:#0B2A22;--x-pvbd:#1C7A5C;--x-teqon:#0B2A38;
+ --x-iabg:#08262E;--x-iabd:#0F6F80;
+ --x-glow:rgba(25,227,255,.13);--x-headglow:rgba(255,79,208,.40);
+ --x-lead:linear-gradient(90deg,#B4149A,#FF4FD0);--x-leadglow:rgba(255,79,208,.6);
+ --x-shadow:0 0 0 1px rgba(25,227,255,.10),0 0 34px -12px rgba(25,227,255,.35),0 24px 48px -22px rgba(0,0,0,.95);
+ --x-tabtx:#00141A;--x-atx:#00141A;
+ --x-goodbg:linear-gradient(135deg,rgba(61,255,180,.14),rgba(61,255,180,.03));--x-goodbd:rgba(61,255,180,.4);
+ --x-warnbg:rgba(255,79,208,.10);
+ --x-herobg:radial-gradient(120% 100% at 50% 0%,rgba(255,79,208,.20),transparent 60%),linear-gradient(180deg,var(--bg2),var(--bg1));
+ --x-stbg:var(--bg1);--x-cabbg:var(--bg2);--x-blur:none;--x-onhead:#FF7FE0;
+ --x-fixed:linear-gradient(rgba(25,227,255,.045) 1px,transparent 1px) 0 0/34px 34px,linear-gradient(90deg,rgba(25,227,255,.045) 1px,transparent 1px) 0 0/34px 34px,radial-gradient(80% 50% at 85% 0%,rgba(255,79,208,.16),transparent 60%),radial-gradient(70% 45% at 0% 100%,rgba(25,227,255,.12),transparent 60%);
+}
+html[data-skin=neon] .brand,html[data-skin=neon] header h1{text-shadow:0 0 18px rgba(25,227,255,.7);letter-spacing:5px}
+html[data-skin=neon] .match{font-weight:700;font-size:24px}
+html[data-skin=neon] .kpi b{font-size:28px}
+html[data-skin=neon] .bar span{font-size:19px}
+html[data-skin=neon] .game.open{border-color:var(--acc);box-shadow:0 0 30px -8px rgba(25,227,255,.55),0 24px 48px -22px rgba(0,0,0,.95)}
+html[data-skin=neon] .tb.on,html[data-skin=neon] .diaBtn.on{box-shadow:0 0 16px -2px rgba(25,227,255,.7)}
+html[data-skin=neon] .ovaHero .sg.fv{filter:drop-shadow(0 0 6px rgba(255,79,208,.9))}
+html[data-skin=neon] .ovaHero{border-color:rgba(25,227,255,.35)}
+html[data-skin=neon] h3{border-bottom-color:rgba(25,227,255,.35)}
+html[data-skin=neon] .pick{border-left-color:var(--hot)}
+
+/* ============ TEMA: DIA DE JUEGO (claro, se lee al sol) ============ */
+html[data-skin=dia]{
+ color-scheme:light;
+ --x-chip:#FFFFFF;
+ --bg:#EAF0F7;--bg1:#FFFFFF;--bg2:#F0F4FA;--bg3:#E2E9F3;
+ --line:#E0E7F1;--line2:#C3D0E1;
+ --txt:#0E1A2C;--mut:#3F5068;--mut2:#56677F;
+ --acc:#1D4ED8;--acc2:#3B6BF0;--accTx:#FFFFFF;
+ --hot:#9A4406;--hotTx:#FFFFFF;
+ --good:#0B7A52;--bad:#C0362C;--info:#1D4ED8;--ia:#0E7490;
+ --cond:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+ --body:'Inter',system-ui,-apple-system,sans-serif;--mono:'Inter',system-ui,sans-serif;
+ --r:10px;--r2:18px;
+ --x-topbg:rgba(255,255,255,.90);--x-navbg:rgba(255,255,255,.94);--x-fhead:#FFFFFF;
+ --x-errbg:#FDECEA;--x-errbd:#F1B2AB;--x-errb:#8F2219;
+ --x-okbg:#DFF5EA;--x-oktx:#0B6B45;--x-flbg:#FDECEA;--x-fltx:#9A2A20;
+ --x-pvbg:#E4F6EC;--x-pvbd:#9AD5B5;--x-teqon:#E3EBFF;
+ --x-iabg:#E1F5F9;--x-iabd:#95D2DC;
+ --x-glow:rgba(29,78,216,.07);--x-headglow:rgba(255,255,255,.10);
+ --x-lead:linear-gradient(90deg,#C2600C,#E8890B);--x-leadglow:rgba(232,137,11,.35);
+ --x-shadow:0 1px 2px rgba(16,32,60,.08),0 16px 32px -18px rgba(16,32,60,.35);
+ --x-tabtx:#FFFFFF;--x-atx:#FFFFFF;
+ --x-goodbg:linear-gradient(135deg,rgba(11,122,82,.12),rgba(11,122,82,.03));--x-goodbd:rgba(11,122,82,.35);
+ --x-warnbg:rgba(180,83,9,.09);
+ --x-herobg:linear-gradient(180deg,#FFFFFF,#F0F4FA);
+ --x-stbg:var(--bg1);--x-cabbg:var(--bg2);--x-blur:none;--x-onhead:#FBBF24;
+ --x-fixed:linear-gradient(180deg,#F6F9FD,#E6EDF6);
+}
+html[data-skin=dia] .brand,html[data-skin=dia] header h1{letter-spacing:3px;font-weight:800}
+html[data-skin=dia] .match{font-weight:700;font-size:25px;letter-spacing:0}
+html[data-skin=dia] .kpi b{font-size:29px;font-weight:700}
+html[data-skin=dia] .bar span{font-size:20px;font-weight:700}
+html[data-skin=dia] .ovaHero .cx b{font-weight:700}
+html[data-skin=dia] .pick .q{font-size:18px}
+html[data-skin=dia] .navbar,html[data-skin=dia] .tabbar{border-top-color:var(--line2)}
+html[data-skin=dia] .game{border-color:var(--line2)}
+html[data-skin=dia] .game.open{border-color:var(--acc)}
+html[data-skin=dia] .game.open .head .clock,html[data-skin=dia] .game.open .head .match{color:#fff}
+html[data-skin=dia] .bar .trail{color:var(--mut)}
+html[data-skin=dia] .cara{background:var(--bg3)}
+html[data-skin=dia] .esc img{filter:none}
+html[data-skin=dia] .ovaSk[aria-pressed="true"]{box-shadow:0 0 0 3px rgba(29,78,216,.18)}
+html[data-skin=dia] .ovaSheet{background:rgba(15,26,44,.45)}
+
+/* ============ TEMA: CAMPO ============ */
+html[data-skin=campo]{
+ color-scheme:dark;
+ --bg:#05130A;--bg1:#0A2013;--bg2:#10301D;--bg3:#174127;
+ --line:#154029;--line2:#2D6A45;
+ --txt:#F0F8F1;--mut:#B2D0B9;--mut2:#86AA8F;
+ --acc:#3DDC84;--acc2:#7BF0AB;--accTx:#03150A;
+ --hot:#F2EA6B;--hotTx:#1B1A02;
+ --good:#5CE69F;--bad:#FF8577;--info:#3DDC84;--ia:#6DE7D9;
+ --cond:'Barlow Condensed','Arial Narrow',system-ui,sans-serif;
+ --body:'Barlow',system-ui,-apple-system,sans-serif;--mono:'Barlow',system-ui,sans-serif;
+ --r:8px;--r2:14px;
+ --x-topbg:rgba(5,19,10,.92);--x-navbg:rgba(5,19,10,.95);--x-fhead:#05130A;
+ --x-errbg:#2B1712;--x-errbd:#6A3327;--x-errb:#FFC0B4;
+ --x-okbg:#0F2F1D;--x-oktx:#8FF0BA;--x-flbg:#2E1A14;--x-fltx:#FFB4A5;
+ --x-pvbg:#0F2F1D;--x-pvbd:#2F7A4C;--x-teqon:#123824;
+ --x-iabg:#0B2C2A;--x-iabd:#1A6A63;
+ --x-glow:rgba(61,220,132,.12);--x-headglow:rgba(61,220,132,.30);
+ --x-lead:linear-gradient(90deg,#B9B02A,#F2EA6B);--x-leadglow:rgba(242,234,107,.45);
+ --x-shadow:0 0 0 1px rgba(240,248,241,.05),0 24px 48px -22px rgba(0,0,0,.95);
+ --x-tabtx:#03150A;--x-atx:#03150A;
+ --x-goodbg:linear-gradient(135deg,rgba(92,230,159,.16),rgba(92,230,159,.04));--x-goodbd:rgba(92,230,159,.38);
+ --x-warnbg:rgba(242,234,107,.08);
+ --x-herobg:radial-gradient(110% 80% at 50% 0%,rgba(61,220,132,.16),transparent 62%),linear-gradient(180deg,var(--bg2),var(--bg1));
+ --x-stbg:var(--bg1);--x-cabbg:var(--bg2);--x-blur:none;--x-onhead:#F2EA6B;
+ --x-fixed:repeating-linear-gradient(90deg,rgba(255,255,255,.022) 0 56px,transparent 56px 112px),radial-gradient(90% 50% at 50% -10%,rgba(61,220,132,.16),transparent 60%);
+}
+html[data-skin=campo] .brand,html[data-skin=campo] header h1{letter-spacing:4px;font-weight:800}
+html[data-skin=campo] .match{font-weight:700;font-size:25px}
+html[data-skin=campo] .kpi b{font-size:29px;font-weight:700}
+html[data-skin=campo] .bar span{font-size:20px;font-weight:700}
+html[data-skin=campo] .pick .q{font-size:18px}
+html[data-skin=campo] h3{border-bottom:1px dashed rgba(240,248,241,.32)}
+html[data-skin=campo] .kpi div,html[data-skin=campo] .tarj div{border:1px solid var(--line2)}
+html[data-skin=campo] .game{border-color:var(--line2)}
+html[data-skin=campo] .ovaHero{border:1px dashed rgba(240,248,241,.35)}
+
+/* ============ TEMA: CRISTAL ============ */
+html[data-skin=cristal]{
+ color-scheme:dark;
+ --bg:#0A0C1C;--bg1:rgba(255,255,255,.075);--bg2:rgba(255,255,255,.10);--bg3:rgba(255,255,255,.15);
+ --line:rgba(255,255,255,.12);--line2:rgba(255,255,255,.22);
+ --txt:#F6F7FF;--mut:#C3C8E8;--mut2:#98A0CC;
+ --acc:#8E96FF;--acc2:#B7BCFF;--accTx:#0A0C1C;
+ --hot:#FFC27A;--hotTx:#2A1600;
+ --good:#5EEAD4;--bad:#FF95A8;--info:#8E96FF;--ia:#67E8F9;
+ --cond:'Manrope',system-ui,sans-serif;
+ --body:'Manrope',system-ui,-apple-system,sans-serif;--mono:'Manrope',system-ui,sans-serif;
+ --r:14px;--r2:24px;
+ --x-topbg:rgba(14,16,40,.62);--x-navbg:rgba(14,16,40,.70);--x-fhead:rgba(14,16,40,.62);
+ --x-errbg:rgba(255,120,140,.14);--x-errbd:rgba(255,120,140,.40);--x-errb:#FFC2CD;
+ --x-okbg:rgba(94,234,212,.15);--x-oktx:#8DF3E1;--x-flbg:rgba(255,149,168,.15);--x-fltx:#FFB8C5;
+ --x-pvbg:rgba(94,234,212,.12);--x-pvbd:rgba(94,234,212,.38);--x-teqon:rgba(142,150,255,.24);
+ --x-iabg:rgba(103,232,249,.12);--x-iabd:rgba(103,232,249,.38);
+ --x-glow:rgba(142,150,255,.20);--x-headglow:rgba(142,150,255,.35);
+ --x-lead:linear-gradient(90deg,#FF9D6B,#FFC27A);--x-leadglow:rgba(255,194,122,.5);
+ --x-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 24px 50px -24px rgba(3,4,20,.9);
+ --x-tabtx:#0A0C1C;--x-atx:#0A0C1C;
+ --x-goodbg:linear-gradient(135deg,rgba(94,234,212,.16),rgba(94,234,212,.04));--x-goodbd:rgba(94,234,212,.38);
+ --x-warnbg:rgba(255,194,122,.12);
+ --x-herobg:radial-gradient(120% 100% at 50% 0%,rgba(142,150,255,.28),transparent 62%),rgba(255,255,255,.06);
+ --x-stbg:#191C3A;--x-cabbg:#1D2042;--x-blur:blur(18px) saturate(150%);--x-onhead:#FFC27A;
+ --x-fixed:radial-gradient(60% 40% at 12% 8%,rgba(142,150,255,.42),transparent 62%),radial-gradient(55% 38% at 92% 18%,rgba(255,110,190,.26),transparent 60%),radial-gradient(60% 42% at 50% 100%,rgba(45,212,191,.26),transparent 62%);
+}
+html[data-skin=cristal] .brand,html[data-skin=cristal] header h1{letter-spacing:2px;font-weight:800}
+html[data-skin=cristal] .match{font-weight:800}
+html[data-skin=cristal] .game,html[data-skin=cristal] .ajustes,html[data-skin=cristal] .pk,html[data-skin=cristal] .vacio,
+html[data-skin=cristal] .cuotasbox,html[data-skin=cristal] .ovaHero{border-color:rgba(255,255,255,.20)}
+html[data-skin=cristal] .game.open{border-color:rgba(183,188,255,.65)}
+html[data-skin=cristal] .navbar,html[data-skin=cristal] .tabbar,html[data-skin=cristal] .topbar,html[data-skin=cristal] header{
+ -webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%)}
+html[data-skin=cristal] .ovaHero{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+html[data-skin=cristal] .tb.on,html[data-skin=cristal] .diaBtn.on{box-shadow:0 6px 18px -6px rgba(142,150,255,.75)}
+html[data-skin=cristal] .ovaSheet .card{background:#141737;-webkit-backdrop-filter:none;backdrop-filter:none}
+html[data-skin=cristal] .ovaSk .tx{background:rgba(255,255,255,.08)}
+html[data-skin=cristal] .teq.on{color:#fff;border-color:var(--acc2)}
+
+/* ---------- ajustes finos de fútbol (3 columnas de KPI y encabezado de una sola línea) ---------- */
+html[data-app=fut][data-skin] header h1{letter-spacing:2px}
+html[data-app=fut][data-skin] .kpi b{font-size:19px}
+html[data-app=fut][data-skin] .marcadores b{font-size:15px}
+.ovaDO .linea{gap:10px}
+.ovaDO .linea b{white-space:nowrap}
+
+/* ---------- Hub (pantalla de inicio) ---------- */
+html[data-app=hub][data-skin] body{font-family:var(--body)}
+html[data-app=hub][data-skin] h1,html[data-app=hub][data-skin] .txt b{font-family:var(--cond)}
+html[data-app=hub][data-skin] .card{box-shadow:var(--x-shadow);-webkit-backdrop-filter:var(--x-blur);backdrop-filter:var(--x-blur)}
+html[data-app=hub][data-skin] .badge{background:var(--bg2)}
+html[data-app=hub] .ovaApar{padding-top:0}
+
+/* ---------- boton Inicio (para volver al hub cuando la app corre sin barras de Safari) ---------- */
+.ovaHome{display:inline-flex;align-items:center;justify-content:center;gap:5px;flex:0 0 auto;text-decoration:none;
+ padding:7px 13px;border-radius:999px;border:1px solid var(--line2);background:var(--bg2);color:var(--mut);
+ font:600 13px/1 var(--body,system-ui,sans-serif);min-height:34px}
+.ovaHome:active{opacity:.6}
+html[data-app=fut] .ovaHome{width:36px;height:36px;padding:0;font-size:24px;line-height:1;padding-bottom:3px}
+html[data-app=fut] header .top select{min-width:0}
+html[data-app=fut] header .top{flex-wrap:nowrap;gap:8px}
+html[data-app=fut] header h1{font-size:18px;letter-spacing:1px;white-space:nowrap}
+html[data-app=fut] header h1 .ver{margin-left:4px}
+html[data-app=fut] .ovaHome{width:34px;height:34px}
+html[data-app=fut] header .top select{padding:7px 10px}
+html[data-app=fut][data-skin] header h1{letter-spacing:1px}
+html[data-app=fut] select#ligaSel{min-width:0;width:0}
+
+html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
+
+</style>
+<script>
+(function(){
+ var d=document.documentElement;
+ d.setAttribute('data-app','fut');
+ var F={
+  oro:'family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700',
+  neon:'family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500;600;700',
+  dia:'family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700',
+  campo:'family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700',
+  cristal:'family=Manrope:wght@400;500;600;700;800'
+ };
+ window.__ovaFont=function(id){
+  if(!F[id]||document.getElementById('ovaFont-'+id)) return;
+  var l=document.createElement('link');
+  l.id='ovaFont-'+id; l.rel='stylesheet';
+  l.href='https://fonts.googleapis.com/css2?'+F[id]+'&display=swap';
+  document.head.appendChild(l);
+ };
+ try{
+  var s=localStorage.getItem('ova_skin');
+  if(s&&F[s]){ d.setAttribute('data-skin',s); window.__ovaFont(s); }
+ }catch(e){}
+})();
+
+</script>
+<!--OVA45:HEAD:END-->
+</head>
+<body>
+<header><div class="top"><h1>🏀 NBA <span class="ver">v1</span></h1></div></header>
+<main>
+ <div class="estado" id="estado">Cargando...</div>
+ <div class="vista on" id="vistaJuegos"><div class="diaSelector" id="diaSelector"></div><div id="juegos"></div></div>
+ <div class="vista" id="vistaAlgane"><div id="algane"></div></div>
+ <div class="vista" id="vistaBacktest">
+  <div class="nota" style="margin:12px 2px 0">Mide el modelo con <b>dos temporadas completas</b> (2 descargas grandes la primera vez; quedan guardadas). Cada juego se predice usando <b>solo lo que había antes</b>. «Calibrar» ajusta los parámetros con la temporada más vieja y los mide en la más nueva, que nunca vieron.</div>
+  <button id="btnMedir" class="btnAncho">Medir con los parámetros actuales</button>
+  <button id="btnCalibrar" class="btnAncho sec">Calibrar y medir (honesto)</button>
+  <div id="backtestOut"></div>
+ </div>
+ <div class="vista" id="vistaRegistro">
+  <button id="btnVerificar" class="btnAncho">Verificar picks pendientes</button>
+  <div id="registro"></div>
+  <h3>Respaldo</h3>
+  <div class="nota" style="margin-top:0">El registro vive solo en este navegador. Genera un respaldo y pégalo en Notas.</div>
+  <button id="btnResp" class="btnAncho sec">Generar respaldo (y copiar)</button>
+  <textarea id="respTxt" class="resp" placeholder="Aquí aparece el respaldo. Para restaurar, pégalo aquí."></textarea>
+  <button id="btnRest" class="btnAncho sec">Restaurar desde el cuadro</button>
+  <div id="respMsg" class="nota"></div>
+ </div>
+</main>
+<nav class="tabbar">
+ <button class="tbar-btn on" data-vista="juegos"><span class="ic">🏀</span><span class="lb">Juegos</span></button>
+ <button class="tbar-btn" data-vista="algane"><span class="ic">🏆</span><span class="lb">Al gane</span></button>
+ <button class="tbar-btn" data-vista="backtest"><span class="ic">📈</span><span class="lb">Backtest</span></button>
+ <button class="tbar-btn" data-vista="registro"><span class="ic">📒</span><span class="lb">Registro</span></button>
+</nav>
+<script>
+/* OVA NBA · motor del modelo. Puro (sin red ni pantalla): lo usan la app y las pruebas.
+   Rating en PUNTOS que se actualiza después de cada juego; ventaja de local; cansancio por juego consecutivo;
+   probabilidad con curva normal sobre el margen. Todo se mide caminando hacia adelante: cada juego se predice
+   solo con lo que había antes. */
+(function(root){
+ var DEF={k:0.05,c:0.7,hca:2.5,b2b:1.5,sig:12,sigT:18.5,al:0.07};
+ function Phi(z){ var t=1/(1+0.2316419*Math.abs(z)), d=0.3989423*Math.exp(-z*z/2),
+   p=d*t*(0.3193815+t*(-0.3565638+t*(1.781478+t*(-1.821256+t*1.330274)))); return z>0?1-p:p; }
+ function nuevo(){ return {r:{},pf:{},pa:{},g:{},last:{},temp:null,liga:{s:0,n:0},vic:{s:1,n:2},mar:{s:0,n:0},tot:{s:0,n:0}}; }
+ function ligaProm(S){ return S.liga.n?S.liga.s/S.liga.n:113; }
+ /* Al empezar una temporada nueva, cada equipo conserva una parte de su rating (c) y de su ritmo de anotación. */
+ function entrar(S,s,P){
+  if(S.temp!==null&&S.temp!==s){
+   var lg=ligaProm(S);
+   Object.keys(S.r).forEach(function(t){ S.r[t]*=P.c; });
+   Object.keys(S.pf).forEach(function(t){ S.pf[t]=0.6*S.pf[t]+0.4*lg; S.pa[t]=0.6*S.pa[t]+0.4*lg; });
+   S.g={}; S.last={};
+  }
+  S.temp=s;
+ }
+ function cansado(S,t,ts){ return (S.last[t]!=null&&ts-S.last[t]<32*3600e3)?1:0; }
+ function pred(S,h,a,ts,P){
+  var bh=cansado(S,h,ts), ba=cansado(S,a,ts);
+  var m=(S.r[h]||0)-(S.r[a]||0)+P.hca-P.b2b*bh+P.b2b*ba, lg=ligaProm(S);
+  var v=function(x,t){ return x[t]==null?lg:x[t]; };
+  var tot=((v(S.pf,h)+v(S.pa,a))/2)+((v(S.pf,a)+v(S.pa,h))/2);
+  return {m:m,p:Phi(m/P.sig),tot:tot,bh:bh,ba:ba};
+ }
+ function actualizar(S,g,P){
+  var pr=pred(S,g.h,g.a,g.ts,P), mar=g.ph-g.pa, e=Math.max(-20,Math.min(20,mar-pr.m));
+  var kh=Math.max(P.k,1/((S.g[g.h]||0)+15)), ka=Math.max(P.k,1/((S.g[g.a]||0)+15));
+  S.r[g.h]=(S.r[g.h]||0)+kh*e; S.r[g.a]=(S.r[g.a]||0)-ka*e;
+  [[g.h,g.ph,g.pa],[g.a,g.pa,g.ph]].forEach(function(z){
+   S.pf[z[0]]=S.pf[z[0]]==null?z[1]:S.pf[z[0]]+P.al*(z[1]-S.pf[z[0]]);
+   S.pa[z[0]]=S.pa[z[0]]==null?z[2]:S.pa[z[0]]+P.al*(z[2]-S.pa[z[0]]);
+   S.g[z[0]]=(S.g[z[0]]||0)+1; S.last[z[0]]=g.ts; });
+  S.liga.s+=g.ph+g.pa; S.liga.n+=2; S.vic.s+=mar>0?1:0; S.vic.n++; S.mar.s+=mar; S.mar.n++; S.tot.s+=g.ph+g.pa; S.tot.n++;
+  return pr;
+ }
+ function ordenar(gs){ return gs.slice().sort(function(a,b){ return a.ts-b.ts||(a.id<b.id?-1:1); }); }
+ /* Recorre juegos ya terminados (con .s = temporada). cb(g,pred,S) se llama ANTES de actualizar. */
+ function recorrer(games,P,cb,S){
+  S=S||nuevo();
+  ordenar(games).forEach(function(g){ entrar(S,g.s,P); var pr=pred(S,g.h,g.a,g.ts,P); if(cb) cb(g,pr,S); actualizar(S,g,P); });
+  return S;
+ }
+ function evaluar(games,P,opt){
+  opt=opt||{}; var skip=opt.saltar||0, i=0;
+  var r={n:0,ll:0,llB:0,ae:0,aeB:0,at:0,atB:0,q:{ml:{s:0,s2:0},mg:{s:0,s2:0},tot:{s:0,s2:0}},bins:[0,1,2,3].map(function(){ return {n:0,pred:0,gan:0}; }),sq:0,sqT:0};
+  var EDG=[0.55,0.65,0.75];
+  recorrer(games,P,function(g,pr,S){
+   i++; if(i<=skip||S.vic.n<20) return;
+   if(opt.solo!=null&&g.s!==opt.solo) return;
+   var mar=g.ph-g.pa, tot=g.ph+g.pa, gan=mar>0, pe=Math.min(Math.max(pr.p,1e-6),1-1e-6);
+   var lm=-Math.log(gan?pe:1-pe), p0=S.vic.s/S.vic.n, lb=-Math.log(gan?p0:1-p0);
+   var em=Math.abs(mar-pr.m), eb=Math.abs(mar-S.mar.s/S.mar.n), et=Math.abs(tot-pr.tot), etb=Math.abs(tot-S.tot.s/S.tot.n);
+   r.n++; r.ll+=lm; r.llB+=lb; r.ae+=em; r.aeB+=eb; r.at+=et; r.atB+=etb; r.sq+=(mar-pr.m)*(mar-pr.m); r.sqT+=(tot-pr.tot)*(tot-pr.tot);
+   [['ml',lb-lm],['mg',eb-em],['tot',etb-et]].forEach(function(z){ var q=r.q[z[0]]; q.s+=z[1]; q.s2+=z[1]*z[1]; });
+   var f=Math.max(pr.p,1-pr.p), fg=(pr.p>=0.5)===gan, b=f<EDG[0]?0:(f<EDG[1]?1:(f<EDG[2]?2:3));
+   r.bins[b].n++; r.bins[b].pred+=f; if(fg) r.bins[b].gan++;
+  },opt.estado);
+  return r;
+ }
+ function dif(q,n){ var d=q.s/n, v=n>1?Math.max(q.s2-q.s*q.s/n,0)/(n-1):0; return {d:d,se:Math.sqrt(v/n)}; }
+ function difs(r){ return {ml:dif(r.q.ml,r.n),mg:dif(r.q.mg,r.n),tot:dif(r.q.tot,r.n)}; }
+ /* Un ✓ o una ✗ solo salen si la diferencia es clara: más de 2 errores estándar Y más que un mínimo útil. */
+ var MIN={ml:0.003,mg:0.05,tot:0.10};
+ function veredicto(v,mercado){
+  var z=v.se>0?v.d/v.se:0, m=MIN[mercado]||0;
+  if(z>2&&v.d>m) return {t:'✓ le gana',c:'var(--good)'};
+  if(z<-2&&v.d<-m) return {t:'✗ peor',c:'var(--bad)'};
+  return {t:'≈ igual',c:'var(--mut)'};
+ }
+ function con(P,x){ var o={}; Object.keys(P).forEach(function(k){ o[k]=P[k]; }); Object.keys(x).forEach(function(k){ o[k]=x[k]; }); return o; }
+ /* Búsqueda por etapas (para no probar millones de combinaciones en el teléfono): k → hca y cansancio → sigma → alfa del total. */
+ function calibrar(games,opt){
+  opt=opt||{}; var lig=opt.ligero, B=DEF;
+  function mejor(cands,f){ var m=null; cands.forEach(function(P){ var r=evaluar(games,P,opt); if(!r.n) return; var v=f(r); if(!m||v<m.v) m={P:P,v:v}; }); return m?m.P:B; }
+  var pA=mejor((lig?[0.03,0.06,0.09]:[0.02,0.035,0.05,0.07,0.1]).map(function(k){ return con(B,{k:k}); }),function(r){ return r.ll/r.n; });
+  var cb=[]; (lig?[2,3]:[1.5,2,2.5,3,3.5]).forEach(function(h){ (lig?[0,1.5]:[0,1,2,3]).forEach(function(b){ cb.push(con(pA,{hca:h,b2b:b})); }); });
+  var pB=mejor(cb,function(r){ return r.ll/r.n; });
+  var pC=mejor((lig?[11,13]:[10.5,11.5,12.5,13.5]).map(function(s){ return con(pB,{sig:s}); }),function(r){ return r.ll/r.n; });
+  var pD=mejor((lig?[0.04,0.1]:[0.03,0.05,0.08,0.12]).map(function(a){ return con(pC,{al:a}); }),function(r){ return r.at/r.n; });
+  var re=evaluar(games,pD,opt); pD.sigT=Math.sqrt(re.sqT/Math.max(re.n,1));
+  return pD;
+ }
+ var api={DEF:DEF,Phi:Phi,nuevo:nuevo,entrar:entrar,pred:pred,actualizar:actualizar,recorrer:recorrer,evaluar:evaluar,difs:difs,veredicto:veredicto,calibrar:calibrar,con:con,ordenar:ordenar};
+ if(typeof module!=='undefined'&&module.exports) module.exports=api; else root.OVANBA=api;
+})(typeof window!=='undefined'?window:this);
+
+</script>
+<script>
+/* OVA NBA · app. Datos de ESPN (sin clave). Todo lo que sale del modelo lleva el veredicto de su propia medición. */
+var VERSION='v1';
+var C=OVANBA, ESPN='https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard';
+function $(id){ return document.getElementById(id); }
+function ls(k,def){ try{ var v=JSON.parse(localStorage.getItem(k)||'null'); return v==null?def:v; }catch(e){ return def; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+function esc(s){ return String(s==null?'':s).replace(/[<>&"]/g,function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); }
+function pad2(n){ return (n<10?'0':'')+n; }
+/* El día "de ESPN" es el día en hora del Este: restarle 5 h a la hora UTC deja el juego del 7:30 pm y el de las 10:30 pm en la misma fecha. */
+function diaEspn(ts){ var d=new Date(ts-5*3600e3); return d.getUTCFullYear()+pad2(d.getUTCMonth()+1)+pad2(d.getUTCDate()); }
+function sumaDias(ymd,n){ var d=new Date(Date.UTC(+ymd.slice(0,4),+ymd.slice(4,6)-1,+ymd.slice(6,8))+n*86400000); return d.getUTCFullYear()+pad2(d.getUTCMonth()+1)+pad2(d.getUTCDate()); }
+function temporadaDe(ts){ var d=new Date(ts); return d.getUTCMonth()>=7?d.getUTCFullYear():d.getUTCFullYear()-1; }
+function horaLocal(ts){ try{ return new Date(ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
+function etiquetaDia(ymd){ var hoy=diaEspn(Date.now()); if(ymd===hoy) return 'Hoy'; if(ymd===sumaDias(hoy,1)) return 'Mañana';
+  var d=new Date(Date.UTC(+ymd.slice(0,4),+ymd.slice(4,6)-1,+ymd.slice(6,8))), DS=['dom','lun','mar','mié','jue','vie','sáb'], MS=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return DS[d.getUTCDay()]+' '+d.getUTCDate()+' '+MS[d.getUTCMonth()]; }
+function pct(x,d){ return (x*100).toFixed(d==null?1:d)+'%'; }
+function cuotaJusta(p){ if(!p||p<=0||p>=1) return null; return p>=0.5?Math.round(-(p/(1-p))*100):Math.round(((1-p)/p)*100); }
+function am(p){ var v=cuotaJusta(p); return v==null?'—':(v>0?'+':'')+v; }
+function impProb(a){ a=+a; if(!a) return null; return a>0?100/(a+100):-a/(-a+100); }
+function decAm(a){ a=+a; if(!a) return null; return a>0?a/100+1:100/(-a)+1; }
+/* Igual que en fútbol: un número entre -99 y 99 se toma como centavos de Kalshi (1-99) y se pasa a americana. */
+function normCuota(v){ if(v===''||v==null) return null; var n=+v; if(isNaN(n)||n===0) return null; if(Math.abs(n)<100) return cuotaJusta(Math.abs(n)/100); return n; }
+function num(x){ var n=parseFloat(String(x).replace(/[^\d.+-]/g,'')); return isFinite(n)?n:null; }
+function signo(x){ return (x>0?'+':'')+x; }
+
+/* ---------- datos de ESPN ---------- */
+var EQ=ls('ova_nba_eq',{});
+function eqDe(t){ var id=String(t.id); EQ[id]={id:id,ab:t.abbreviation||EQ[id]&&EQ[id].ab||id,name:t.displayName||t.name||EQ[id]&&EQ[id].name||id,logo:t.logo||EQ[id]&&EQ[id].logo||''}; return EQ[id]; }
+function parseEvento(e){
+  try{
+    var comp=e.competitions&&e.competitions[0]; if(!comp) return null;
+    var h=null,a=null; (comp.competitors||[]).forEach(function(c){ if(c.homeAway==='home') h=c; else if(c.homeAway==='away') a=c; });
+    if(!h||!a||!h.team||!a.team) return null;
+    var st=(e.status&&e.status.type)||(comp.status&&comp.status.type)||{}, ts=Date.parse(e.date), ph=parseInt(h.score,10), pa=parseInt(a.score,10);
+    var fin=st.completed===true&&isFinite(ph)&&isFinite(pa), tp=e.season&&e.season.type!=null?+e.season.type:null;
+    var o=comp.odds&&comp.odds[0], od=null;
+    if(o){
+      var sp=null, ho=o.homeTeamOdds, ao=o.awayTeamOdds;
+      if(ho&&ho.current&&ho.current.pointSpread) sp=num(ho.current.pointSpread.american);
+      if(sp==null&&o.spread!=null) sp=num(o.spread);
+      if(sp==null&&o.details){ var m=String(o.details).match(/^([A-Za-z]{2,4})\s*([+-]?\d+(?:\.\d+)?)/); if(m){ var v=parseFloat(m[2]); sp=(m[1].toUpperCase()===String(h.team.abbreviation).toUpperCase())?v:-v; } }
+      od={spread:sp,total:o.overUnder!=null?num(o.overUnder):null,mlH:ho&&ho.moneyLine!=null?num(ho.moneyLine):null,mlA:ao&&ao.moneyLine!=null?num(ao.moneyLine):null};
+      if(od.spread==null&&od.total==null&&od.mlH==null) od=null;
+    }
+    return {id:String(e.id),ts:ts,s:temporadaDe(ts),tipo:tp,estado:st.state||'',completo:fin,h:eqDe(h.team),a:eqDe(a.team),ph:fin?ph:null,pa:fin?pa:null,odds:od};
+  }catch(x){ return null; }
+}
+function espnJSON(url){ return fetch(url).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }
+function eventos(json){ var o=[]; ((json&&json.events)||[]).forEach(function(e){ var p=parseEvento(e); if(p) o.push(p); }); return o; }
+function concurrencia(tareas,n,prog){
+  return new Promise(function(fin){ var i=0,act=0,hechos=0,out=new Array(tareas.length); if(!tareas.length) return fin(out);
+    function paso(){ while(act<n&&i<tareas.length){ (function(k){ act++; tareas[k]().then(function(r){ out[k]=r; },function(){ out[k]=null; }).then(function(){ act--; hechos++; if(prog) prog(hechos,tareas.length); if(hechos===tareas.length) fin(out); else paso(); }); })(i++); } }
+    paso(); });
+}
+/* Un mes de partidos: se prueba el rango de fechas; si ESPN responde algo fuera del rango o falla, se baja día por día. */
+function pedirMes(a,b){
+  return espnJSON(ESPN+'?dates='+a+'-'+b+'&limit=1000').then(function(j){
+    var ev=eventos(j), lo=Date.UTC(+a.slice(0,4),+a.slice(4,6)-1,+a.slice(6,8))-2*86400000, hi=Date.UTC(+b.slice(0,4),+b.slice(4,6)-1,+b.slice(6,8))+3*86400000;
+    if(ev.some(function(x){ return x.ts<lo||x.ts>hi; })) throw new Error('rango raro');
+    return ev;
+  }).catch(function(){
+    var dias=[]; for(var d=a; d<=b; d=sumaDias(d,1)) dias.push(d);
+    return concurrencia(dias.map(function(d){ return function(){ return espnJSON(ESPN+'?dates='+d+'&limit=100').then(eventos); }; }),8).then(function(rs){ return [].concat.apply([],rs.map(function(r){ return r||[]; })); });
+  });
+}
+function mesesDe(s,hasta){ var out=[]; for(var k=0;k<7;k++){ var y=s+(k<3?0:1), m=[10,11,12,1,2,3,4][k], a=y+''+pad2(m)+'01', b=y+''+pad2(m)+'31'; if(a>hasta) break; if(b>hasta) b=hasta; out.push([a,b]); } return out; }
+function regular(x){ return x.completo&&(x.tipo===2||x.tipo==null); }
+function compacto(x){ return [x.id,x.ts,x.h.id,x.a.id,x.ph,x.pa]; }
+function juegoDe(z,s){ return {id:z[0],ts:z[1],s:s,h:z[2],a:z[3],ph:z[4],pa:z[5]}; }
+function juegosCache(s){ return (ls('ova_nba_t_'+s,{juegos:[]}).juegos||[]).map(function(z){ return juegoDe(z,s); }); }
+/* Baja una temporada regular (Oct → Abr). Las pasadas se guardan para siempre; la actual se completa por incrementos. */
+function bajarTemporada(s,prog){
+  var key='ova_nba_t_'+s, c=ls(key,{juegos:[],hasta:null}), fin=(s+1)+'0430', hoy=diaEspn(Date.now()); if(hoy<fin) fin=hoy;
+  var desde=s+'1001'; if(c.hasta){ desde=sumaDias(c.hasta,-3); if(desde<s+'1001') desde=s+'1001'; }
+  var meses=mesesDe(s,fin).filter(function(m){ return m[1]>=desde; }); if(!meses.length) return Promise.resolve(c.juegos.length);
+  meses[0][0]=meses[0][0]<desde?desde:meses[0][0];
+  return concurrencia(meses.map(function(m){ return function(){ return pedirMes(m[0],m[1]); }; }),2,prog).then(function(rs){
+    var mapa={}; c.juegos.forEach(function(z){ mapa[z[0]]=z; }); var falla=false;
+    rs.forEach(function(r){ if(r===null){ falla=true; return; } r.filter(regular).forEach(function(x){ mapa[x.id]=compacto(x); }); });
+    var lista=Object.keys(mapa).map(function(k){ return mapa[k]; });
+    if(!falla&&lista.length) lsSet(key,{juegos:lista,hasta:fin}); else if(lista.length) lsSet(key,{juegos:lista,hasta:c.hasta});
+    lsSet('ova_nba_eq',EQ);
+    if(falla&&!lista.length) throw new Error('ESPN no respondió');
+    return lista.length;
+  });
+}
+
+/* ---------- modelo en vivo ---------- */
+var P=Object.assign({},C.DEF,ls('ova_nba_params_v1',{})), ESTADO=null, HOY_S=temporadaDe(Date.now());
+function construir(){
+  var todos=[]; [HOY_S-2,HOY_S-1,HOY_S].forEach(function(s){ todos=todos.concat(juegosCache(s)); });
+  ESTADO=C.recorrer(todos,P); C.entrar(ESTADO,HOY_S,P); ESTADO.n=todos.length; return todos;
+}
+function prediccion(ev){
+  var r=C.pred(ESTADO,ev.h.id,ev.a.id,ev.ts,P), m=r.m;
+  return {m:m,p:r.p,tot:r.tot,bh:r.bh,ba:r.ba,rh:ESTADO.r[ev.h.id]||0,ra:ESTADO.r[ev.a.id]||0,
+    spreadJusto:-m,pTot:function(L){ return 1-C.Phi((L-r.tot)/P.sigT); },pCubre:function(L){ return C.Phi((m+L)/P.sig); }};
+}
+function leerVeredictos(){ return ls('ova_nba_veredictos_v1',null); }
+function badge(mercado){
+  var v=leerVeredictos(); if(!v||!v[mercado]) return '<div class="nota" style="margin:0 0 8px">Este mercado: <b>sin medir</b>. Ve a Backtest → Medir para saber si el modelo le gana a lo más simple.</div>';
+  var t=C.veredicto(v[mercado],mercado), e=t.t==='✓ le gana'?'el modelo le gana a lo más simple con diferencia clara (no dice nada todavía contra el mercado).':(t.t==='≈ igual'?'no hay evidencia de que aporte; úsalo de referencia y no te fíes del «valor».':'salió claramente PEOR que lo más simple; ignora el «valor».');
+  return '<div class="nota" style="margin:0 0 8px">Este mercado en el backtest: <b style="color:'+t.c+'">'+t.t+'</b> — '+e+'</div>';
+}
+function confiable(mercado){ var v=leerVeredictos(); return v&&v[mercado]?C.veredicto(v[mercado],mercado).t==='✓ le gana':null; }
+
+/* ---------- pantalla ---------- */
+var EVENTOS=[], DIA=null;
+function arco(pH,pA,fav){
+  var g=1.2, la=Math.max(0.1,pA*100-g), lh=Math.max(0.1,pH*100-g), d='M 12 78 A 63 63 0 0 1 138 78';
+  return '<svg viewBox="0 0 150 86" aria-hidden="true"><path class="sg '+(fav==='a'?'fv':'ot')+'" d="'+d+'" pathLength="100" data-len="'+la.toFixed(2)+'" style="stroke-dasharray:0 100;stroke-dashoffset:-0.6"/>'+
+    '<path class="sg '+(fav==='h'?'fv':'ot')+'" d="'+d+'" pathLength="100" data-len="'+lh.toFixed(2)+'" style="stroke-dasharray:0 100;stroke-dashoffset:-'+(pA*100+0.6).toFixed(2)+'"/></svg>';
+}
+function animar(root){ var ps=[].slice.call(root.querySelectorAll('path.sg')), go=function(){ ps.forEach(function(p){ p.style.strokeDasharray=p.getAttribute('data-len')+' 100'; }); };
+  if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches){ go(); return; } requestAnimationFrame(function(){ requestAnimationFrame(go); }); }
+function logo(t,px){ return t.logo?'<img class="cr" src="'+esc(t.logo)+'" alt="" style="width:'+px+'px;height:'+px+'px" onerror="this.style.display=\'none\'">':''; }
+function heroHtml(ev,pr){
+  var fav=pr.p>=0.5?'h':'a', pA=1-pr.p, lado=function(t,p,f){ return '<div class="side'+(f?' fav':'')+'">'+logo(t,44)+'<span class="ab">'+esc(t.ab)+'</span><span class="pc">'+pct(p)+'</span></div>'; };
+  var fp=Math.max(pr.p,pA), mm=Math.abs(pr.m), ganador=fav==='h'?ev.h.ab:ev.a.ab;
+  return '<div class="ovaHero nba"><div class="row3">'+lado(ev.a,pA,fav==='a')+'<div class="gz">'+arco(pr.p,pA,fav)+'<div class="cx"><small>cuota justa</small><b>'+am(fp)+'</b></div></div>'+lado(ev.h,pr.p,fav==='h')+'</div>'+
+    '<div class="cap"><b>'+esc(ganador)+'</b> favorito por <b>'+mm.toFixed(1)+'</b> puntos'+(mm<2?' — muy parejo':'')+'</div></div>';
+}
+function numsHtml(ev,pr){
+  var f=function(t,b){ return esc(t.ab)+(b?' <span style="color:var(--bad)">(juega en días seguidos)</span>':' descansado'); };
+  return '<h3>Ratings (en puntos sobre el promedio)</h3><div class="lineas">'+
+    '<div class="linea"><span>'+esc(ev.h.name)+'</span><b>'+signo(pr.rh.toFixed(1))+'</b></div><div class="linea"><span>'+esc(ev.a.name)+'</span><b>'+signo(pr.ra.toFixed(1))+'</b></div>'+
+    '<div class="linea"><span>Ventaja de local</span><b>'+signo(P.hca.toFixed(1))+'</b></div>'+
+    '<div class="linea"><span>Cansancio</span><b style="font-size:11.5px;font-weight:600">'+f(ev.h,pr.bh)+' · '+f(ev.a,pr.ba)+'</b></div>'+
+    '<div class="linea"><span>Margen esperado del local</span><b>'+signo(pr.m.toFixed(1))+'</b></div>'+
+    '<div class="linea"><span>Total esperado</span><b>'+pr.tot.toFixed(1)+'</b></div></div>'+
+    '<div class="nota">Parámetros: k '+P.k+' · arrastre entre temporadas '+P.c+' · local '+P.hca+' · cansancio '+P.b2b+' · sigma '+P.sig+(ls('ova_nba_params_v1',null)?' (calibrados)':' (de arranque, sin calibrar)')+'. Sin lesiones ni descansos de estrellas: en la NBA eso mueve más que cualquier rating, así que revisa las bajas antes de apostar.</div>';
+}
+function cuotasHtml(ev,pr,id){
+  var o=ev.odds||{}, lin=o.spread!=null?o.spread:'', tot=o.total!=null?o.total:'';
+  var ref=ev.odds?'<div class="nota" style="margin:0 0 8px">Línea de referencia de ESPN: '+(o.spread!=null?esc(ev.h.ab)+' '+signo(o.spread):'—')+' · total '+(o.total!=null?o.total:'—')+(o.mlH!=null?' · ML '+esc(ev.h.ab)+' '+signo(o.mlH)+' / '+esc(ev.a.ab)+' '+signo(o.mlA):'')+'. Es una línea, no una cuota: pon el precio real de tu casa.</div>':'<div class="nota" style="margin:0 0 8px">ESPN no trae línea de este juego todavía.</div>';
+  return ref+
+   '<h3>Ganador</h3>'+badge('ml')+'<div class="cuotasbox"><div class="fila"><div style="flex:1"><label>'+esc(ev.h.ab)+' (local)</label><input type="number" id="'+id+'mlH" placeholder="-150 ó 60¢" value="'+(o.mlH!=null?o.mlH:'')+'"></div><div style="flex:1"><label>'+esc(ev.a.ab)+'</label><input type="number" id="'+id+'mlA" placeholder="+130 ó 42¢" value="'+(o.mlA!=null?o.mlA:'')+'"></div></div><div class="veredictoCuota" id="'+id+'rML"></div></div>'+
+   '<h3>Hándicap (línea del local)</h3>'+badge('mg')+'<div class="cuotasbox"><div class="fila"><div style="flex:1"><label>Línea de '+esc(ev.h.ab)+'</label><input type="number" step="0.5" id="'+id+'spL" placeholder="-5.5" value="'+lin+'"></div><div style="flex:1"><label>Cuota '+esc(ev.h.ab)+'</label><input type="number" id="'+id+'spH" placeholder="-110"></div><div style="flex:1"><label>Cuota '+esc(ev.a.ab)+'</label><input type="number" id="'+id+'spA" placeholder="-110"></div></div><div class="veredictoCuota" id="'+id+'rSP"></div></div>'+
+   '<h3>Total de puntos</h3>'+badge('tot')+'<div class="cuotasbox"><div class="fila"><div style="flex:1"><label>Línea</label><input type="number" step="0.5" id="'+id+'toL" placeholder="225.5" value="'+tot+'"></div><div style="flex:1"><label>Más (over)</label><input type="number" id="'+id+'toO" placeholder="-110"></div><div style="flex:1"><label>Menos (under)</label><input type="number" id="'+id+'toU" placeholder="-110"></div></div><div class="veredictoCuota" id="'+id+'rTO"></div></div>'+
+   '<button class="btnAncho" id="'+id+'calc">Calcular valor</button>';
+}
+/* filas: [{sel, txt, prob(0..1), odd(americana), mercado, linea, medido}] con o sin las dos cuotas para quitar el margen */
+function filasValor(filas,mercadoMed){
+  var con=filas.filter(function(f){ return f.odd!=null&&impProb(f.odd)!=null; }); if(!con.length) return '<span class="no">Mete al menos una cuota.</span>';
+  var completo=con.length===filas.length, suma=con.reduce(function(a,f){ return a+impProb(f.odd); },0), cf=confiable(mercadoMed), h='';
+  filas.forEach(function(f,i){
+    if(f.odd==null) return; var imp=impProb(f.odd), ref=completo?imp/suma:imp, dif=(f.prob-ref)*100, hay=dif>=3;
+    var et=hay?'<span class="'+(cf===true?'si':'no')+'">valor +'+dif.toFixed(1)+(cf===true?'':(cf===false?' (no confiable)':' (sin medir)'))+'</span>':'<span class="no">sin valor '+dif.toFixed(1)+'</span>';
+    h+='<div class="filaCuota"><span class="txt">'+esc(f.txt)+': modelo '+pct(f.prob)+' vs '+(completo?'mercado sin margen ':'cuota ')+pct(ref)+' — '+et+'</span><button class="btnChico gp" data-i="'+i+'">💾</button></div>';
+  });
+  if(completo) h+='<div class="nota" style="margin-top:6px">Margen de la casa ≈ '+((suma-1)*100).toFixed(1)+'%; ya descontado.</div>';
+  return h;
+}
+function pintarCuerpo(body,ev){
+  var pr=prediccion(ev), id='n'+Math.random().toString(36).slice(2);
+  var fav=pr.p>=0.5?ev.h.ab:ev.a.ab, fp=Math.max(pr.p,1-pr.p);
+  body.innerHTML='<div class="tabs" id="'+id+'t"><button class="tb on" data-t="ver">Veredicto</button><button class="tb" data-t="cuo">Cuotas</button><button class="tb" data-t="num">Números</button></div>'+
+   '<div class="pane on" id="'+id+'ver">'+heroHtml(ev,pr)+
+     '<div class="kpi"><div><b>'+signo((-pr.m).toFixed(1))+'</b><small>Hándicap justo '+esc(ev.h.ab)+'</small></div><div><b>'+pr.tot.toFixed(1)+'</b><small>Total esperado</small></div><div><b>'+(pr.bh||pr.ba?'⚠️':'✓')+'</b><small>'+(pr.bh||pr.ba?'Cansancio':'Ambos descansados')+'</small></div></div>'+
+     '<div class="pick'+(fp>=0.6?'':' no')+'"><b>'+(fp>=0.6?'Favorito: '+esc(fav):'Parejo')+'</b>'+pct(fp)+' de probabilidad · cuota justa '+am(fp)+'</div>'+
+     (ev.odds&&ev.odds.spread!=null?'<div class="observ">ESPN: '+esc(ev.h.ab)+' '+signo(ev.odds.spread)+(ev.odds.total!=null?' · total '+ev.odds.total:'')+' — el modelo dice '+signo((-pr.m).toFixed(1))+' y '+pr.tot.toFixed(1)+'. Si se separan mucho, casi siempre falta una baja o un descanso que el mercado ya sabe.</div>':'')+'</div>'+
+   '<div class="pane" id="'+id+'cuo">'+cuotasHtml(ev,pr,id)+'</div><div class="pane" id="'+id+'num">'+numsHtml(ev,pr)+'</div>';
+  animar(body);
+  body.querySelectorAll('#'+id+'t .tb').forEach(function(b){ b.addEventListener('click',function(e){ e.stopPropagation();
+    body.querySelectorAll('#'+id+'t .tb').forEach(function(z){ z.classList.remove('on'); }); b.classList.add('on');
+    body.querySelectorAll('.pane').forEach(function(pn){ pn.classList.remove('on'); }); $(id+b.dataset.t).classList.add('on'); }); });
+  var guardar=function(cont,filas){ cont.querySelectorAll('.gp').forEach(function(bt){ bt.addEventListener('click',function(){ var f=filas[+bt.dataset.i]; guardarPick({f:diaEspn(ev.ts),evId:ev.id,juego:ev.a.ab+' @ '+ev.h.ab,h:ev.h.ab,a:ev.a.ab,mercado:f.mercado,sel:f.sel,txt:f.txt,linea:f.linea,prob:f.prob,cuota:String(f.odd)}); bt.textContent='✓'; bt.disabled=true; }); }); };
+  $(id+'calc').addEventListener('click',function(){
+    var v=function(k){ return normCuota($(id+k).value); };
+    var mlH=v('mlH'), mlA=v('mlA'), L=num($(id+'spL').value), sH=v('spH'), sA=v('spA'), T=num($(id+'toL').value), tO=v('toO'), tU=v('toU');
+    var fML=[{sel:ev.h.ab,txt:ev.h.ab+' gana',prob:pr.p,odd:mlH,mercado:'ML',linea:null},{sel:ev.a.ab,txt:ev.a.ab+' gana',prob:1-pr.p,odd:mlA,mercado:'ML',linea:null}];
+    $(id+'rML').innerHTML=filasValor(fML,'ml'); guardar($(id+'rML'),fML);
+    if(L!=null){ var pc=pr.pCubre(L), fSP=[{sel:ev.h.ab,txt:ev.h.ab+' '+signo(L),prob:pc,odd:sH,mercado:'SP',linea:L},{sel:ev.a.ab,txt:ev.a.ab+' '+signo(-L),prob:1-pc,odd:sA,mercado:'SP',linea:L}]; $(id+'rSP').innerHTML=filasValor(fSP,'mg'); guardar($(id+'rSP'),fSP); } else $(id+'rSP').innerHTML='';
+    if(T!=null){ var po=pr.pTot(T), fT=[{sel:'Over',txt:'Más de '+T,prob:po,odd:tO,mercado:'TOT',linea:T},{sel:'Under',txt:'Menos de '+T,prob:1-po,odd:tU,mercado:'TOT',linea:T}]; $(id+'rTO').innerHTML=filasValor(fT,'tot'); guardar($(id+'rTO'),fT); } else $(id+'rTO').innerHTML='';
+  });
+}
+function pintarJuegos(){
+  var cont=$('juegos'), lista=EVENTOS.filter(function(e){ return DIA==='TODOS'||diaEspn(e.ts)===DIA; });
+  if(!lista.length){ cont.innerHTML='<div class="estado">'+(EVENTOS.length?'No hay juegos ese día.':'No hay juegos programados en los próximos 7 días. La temporada regular de la NBA empieza a fines de octubre. Mientras tanto usa <b>Backtest</b> para medir el modelo con dos temporadas completas.')+'</div>'; return; }
+  var h='', prev=null;
+  lista.forEach(function(e,i){
+    var d=diaEspn(e.ts); if(d!==prev){ h+='<div class="diaHead">'+etiquetaDia(d)+'</div>'; prev=d; }
+    h+='<div class="game" data-i="'+i+'"><div class="head"><div class="crestpair"><div class="eq">'+logo(e.a,24)+'<span>'+esc(e.a.name)+'</span></div><div class="eq">'+logo(e.h,24)+'<span>'+esc(e.h.name)+'</span></div></div><div class="hora"'+(e.estado==='in'?' style="color:var(--bad)"':'')+'>'+(e.estado==='in'?'🔴 en vivo':horaLocal(e.ts))+'</div><div class="chev">▾</div></div><div class="body"></div></div>';
+  });
+  cont.innerHTML=h;
+  cont.querySelectorAll('.game').forEach(function(g,idx){ g.querySelector('.head').addEventListener('click',function(){
+    var ab=g.classList.contains('open'); cont.querySelectorAll('.game.open').forEach(function(x){ x.classList.remove('open'); }); if(ab) return; g.classList.add('open');
+    var b=g.querySelector('.body'); if(!b.dataset.ok){ pintarCuerpo(b,lista[idx]); b.dataset.ok='1'; } }); });
+}
+function pintarDias(){
+  var dias=[]; EVENTOS.forEach(function(e){ var d=diaEspn(e.ts); if(dias.indexOf(d)<0) dias.push(d); }); dias.sort();
+  if(!dias.length){ $('diaSelector').innerHTML=''; DIA='TODOS'; return; }
+  if(!DIA||(DIA!=='TODOS'&&dias.indexOf(DIA)<0)) DIA=dias[0];
+  $('diaSelector').innerHTML=dias.map(function(d){ return '<button class="diaBtn'+(d===DIA?' on':'')+'" data-d="'+d+'">'+etiquetaDia(d)+'</button>'; }).join('')+'<button class="diaBtn'+(DIA==='TODOS'?' on':'')+'" data-d="TODOS">Todos</button>';
+  $('diaSelector').querySelectorAll('.diaBtn').forEach(function(b){ b.addEventListener('click',function(){ DIA=b.dataset.d; pintarDias(); pintarJuegos(); pintarAlGane(); }); });
+}
+function pintarAlGane(){
+  var lista=EVENTOS.filter(function(e){ return DIA==='TODOS'||diaEspn(e.ts)===DIA; }).map(function(e){ var pr=prediccion(e), f=pr.p>=0.5; return {n:f?e.h:e.a,r:f?e.a:e.h,p:Math.max(pr.p,1-pr.p),m:Math.abs(pr.m),d:diaEspn(e.ts)}; }).sort(function(a,b){ return b.p-a.p; });
+  $('algane').innerHTML=lista.length?lista.map(function(f,i){ return '<div class="fila-rank"><div class="pos">'+(i+1)+'</div>'+logo(f.n,22)+'<div class="nom">'+esc(f.n.name)+' vs '+esc(f.r.ab)+'<small>'+etiquetaDia(f.d)+' · por '+f.m.toFixed(1)+' pts</small></div><div class="pct">'+pct(f.p)+'</div></div>'; }).join('')+'<div class="nota">Ordenados por probabilidad pura, sin mirar cuota ni bajas. En la NBA una baja de estrella cambia todo: revisa lesiones antes de jugar.</div>':'<div class="estado">Sin juegos para calcular.</div>';
+}
+function cargarProximos(){
+  var hoy=diaEspn(Date.now()), dias=[]; for(var i=0;i<7;i++) dias.push(sumaDias(hoy,i));
+  return concurrencia(dias.map(function(d){ return function(){ return espnJSON(ESPN+'?dates='+d+'&limit=100').then(eventos); }; }),4).then(function(rs){
+    var ev=[]; rs.forEach(function(r){ (r||[]).forEach(function(e){ if(!e.completo&&(e.tipo===2||e.tipo==null||e.tipo===1||e.tipo===3)) ev.push(e); }); });
+    ev.sort(function(a,b){ return a.ts-b.ts; }); lsSet('ova_nba_eq',EQ); return {ev:ev,fallo:rs.every(function(r){ return r===null; })};
+  });
+}
+function iniciar(){
+  var est=$('estado'); est.className='estado'; est.textContent='Cargando la NBA…';
+  var falta=juegosCache(HOY_S-1).length===0;
+  var p1=falta?bajarTemporada(HOY_S-1,function(h,t){ est.textContent='Bajando la temporada pasada (una sola vez): '+h+' de '+t+' meses…'; }):Promise.resolve();
+  return p1.catch(function(){ }).then(function(){ return bajarTemporada(HOY_S,null).catch(function(){}); }).then(function(){
+    var n=construir().length;
+    if(!n){ est.className='estado bad'; est.textContent='No pude bajar la temporada pasada de ESPN. Revisa la conexión y vuelve a abrir.'; }
+    return cargarProximos();
+  }).then(function(r){
+    EVENTOS=r.ev; pintarDias(); pintarJuegos(); pintarAlGane();
+    if(ESTADO.n){ est.className='estado ok'; est.textContent='✓ NBA — '+EVENTOS.length+' juegos en los próximos 7 días · modelo con '+ESTADO.n.toLocaleString()+' juegos jugados'+(r.fallo?' (⚠️ ESPN no respondió el calendario)':'')+'.'; }
+  }).catch(function(e){ est.className='estado bad'; est.textContent='✗ '+e.message; });
+}
+
+/* ---------- registro de picks ---------- */
+function picks(){ return ls('ova_nba_registro_v1',[]); }
+function guardarPick(p){ var a=picks(); p.id=Date.now()+'_'+Math.random().toString(36).slice(2); p.estado='pendiente'; a.push(p); lsSet('ova_nba_registro_v1',a); }
+function resolverPick(p,ev){
+  var m=ev.ph-ev.pa;
+  if(p.mercado==='ML'){ var gh=m>0; return (p.sel===p.h)===gh?'ganado':'perdido'; }
+  if(p.mercado==='SP'){ var x=m+p.linea; if(x===0) return 'empate'; var cubreH=x>0; return (p.sel===p.h)===cubreH?'ganado':'perdido'; }
+  if(p.mercado==='TOT'){ var t=ev.ph+ev.pa; if(t===p.linea) return 'empate'; return ((t>p.linea)===(p.sel==='Over'))?'ganado':'perdido'; }
+  return null;
+}
+function verificar(){
+  var a=picks(), pend=a.filter(function(p){ return p.estado==='pendiente'; }); if(!pend.length) return Promise.resolve(0);
+  var fechas={}; pend.forEach(function(p){ fechas[p.f]=1; });
+  return concurrencia(Object.keys(fechas).map(function(d){ return function(){ return espnJSON(ESPN+'?dates='+d+'&limit=100').then(eventos); }; }),4).then(function(rs){
+    var mapa={}; rs.forEach(function(r){ (r||[]).forEach(function(e){ mapa[e.id]=e; }); }); var n=0;
+    a.forEach(function(p){ if(p.estado!=='pendiente') return; var e=mapa[p.evId]; if(!e||!e.completo) return; var r=resolverPick(p,e); if(r){ p.estado=r; p.marc=e.a.ab+' '+e.pa+' – '+e.ph+' '+e.h.ab; n++; } });
+    if(n) lsSet('ova_nba_registro_v1',a); return n; });
+}
+function pintarRegistro(){
+  var a=picks().slice().reverse(), c=$('registro');
+  if(!a.length){ c.innerHTML='<div class="estado">Todavía no has guardado ningún pick. Guárdalos con el botón 💾 desde la pestaña Cuotas de cada juego.</div>'; return; }
+  var g=0,pe=0,pd=0,u=0; a.forEach(function(p){ var d=decAm(p.cuota)||1.91; if(p.estado==='ganado'){ g++; u+=d-1; } else if(p.estado==='perdido'){ pe++; u-=1; } else if(p.estado==='pendiente') pd++; });
+  c.innerHTML='<div class="kpi"><div><b>'+g+'-'+pe+'</b><small>Récord (G-P)</small></div><div><b>'+pd+'</b><small>Pendientes</small></div><div><b>'+(u>=0?'+':'')+u.toFixed(2)+'u</b><small>Neto (1u por pick)</small></div></div><div class="lineas" style="margin-top:10px">'+
+   a.map(function(p){ var col=p.estado==='ganado'?'var(--good)':(p.estado==='perdido'?'var(--bad)':'var(--mut)'); return '<div class="linea"><span>'+esc(p.juego)+' — '+esc(p.txt)+' ('+esc(p.cuota)+')'+(p.marc?'<br><small style="color:var(--mut2)">cerrado solo · '+esc(p.marc)+'</small>':'')+'</span><b style="color:'+col+'">'+p.estado+'</b></div>'; }).join('')+'</div>'+
+   '<div class="nota">Sin cuota de cierre no hay CLV: es tu récord de aciertos y ganancia a stake plano. Se verifica solo contra los resultados de ESPN al abrir esta pantalla.</div>';
+}
+function respaldo(){ return JSON.stringify({app:'ova-nba',v:1,registro:picks(),params:ls('ova_nba_params_v1',null)}); }
+
+/* ---------- backtest ---------- */
+function dosTemporadas(){ var out=[], s=HOY_S; if(diaEspn(Date.now())<(s+'0701')&&false) s=s; var fin=function(t){ return diaEspn(Date.now())>((t+1)+'0630'); };
+  for(var t=HOY_S; t>=HOY_S-4&&out.length<2; t--) if(fin(t)) out.push(t); return out.sort(); }
+function bajarDos(out){
+  var ts=dosTemporadas(); if(ts.length<2){ out.innerHTML='<div class="estado bad">No hay dos temporadas completas para medir.</div>'; return Promise.reject(); }
+  var i=0; function una(){ if(i>=ts.length) return Promise.resolve(ts); var s=ts[i++]; if(juegosCache(s).length>1000) return una();
+    return bajarTemporada(s,function(h,t){ out.innerHTML='<div class="estado">Temporada '+s+'-'+String(s+1).slice(2)+': '+h+' de '+t+' meses…</div>'; }).then(una); }
+  return una();
+}
+function fila(nombre,cols,v,merc,mostrar){ var t=C.veredicto(v,merc); return '<tr><td>'+nombre+'</td>'+cols.map(function(c){ return '<td>'+c+'</td>'; }).join('')+'<td style="color:'+t.c+'">'+(mostrar?t.t:'—')+'</td></tr>'; }
+function tablaMedicion(r,titulo){
+  var d=C.difs(r), n=r.n, sin=n>=200;
+  return '<h3>'+titulo+' — '+n+' juegos medidos</h3><div class="kpi"><div><b>'+(r.ae/n).toFixed(2)+'</b><small>Error del margen (pts)</small></div><div><b>'+(r.at/n).toFixed(2)+'</b><small>Error del total (pts)</small></div><div><b>'+(r.ll/n).toFixed(3)+'</b><small>Pérdida ganador</small></div></div>'+
+   '<table class="tabla-bt"><tr><th>Mercado</th><th>Modelo</th><th>Sin modelo</th><th>Veredicto</th></tr>'+
+   fila('Ganador (pérdida)',[(r.ll/n).toFixed(3),(r.llB/n).toFixed(3)],d.ml,'ml',sin)+fila('Margen (error pts)',[(r.ae/n).toFixed(2),(r.aeB/n).toFixed(2)],d.mg,'mg',sin)+fila('Total (error pts)',[(r.at/n).toFixed(2),(r.atB/n).toFixed(2)],d.tot,'tot',sin)+'</table>'+
+   '<div class="nota" style="margin-top:0">«Sin modelo» = predecir siempre lo que llevaba la liga hasta ese día (justo, sin ver el futuro). Un ✓ o una ✗ solo salen si la diferencia es clara (más de 2 errores estándar y más que un mínimo útil).</div>'+
+   '<h3>¿Cuando dice 70%, gana 70%?</h3><table class="tabla-bt"><tr><th>Favorito con</th><th>Juegos</th><th>Dijo</th><th>Ganó</th></tr>'+['menos de 55%','55–65%','65–75%','75% o más'].map(function(e,i){ var b=r.bins[i]; return '<tr><td>'+e+'</td><td>'+b.n+'</td><td>'+(b.n?(b.pred/b.n*100).toFixed(1)+'%':'—')+'</td><td>'+(b.n?(b.gan/b.n*100).toFixed(1)+'%':'—')+'</td></tr>'; }).join('')+'</table>';
+}
+function medir(calibrar){
+  var out=$('backtestOut'); out.innerHTML='<div class="estado">Preparando…</div>';
+  return bajarDos(out).then(function(ts){
+    var A=juegosCache(ts[0]), B=juegosCache(ts[1]), todos=A.concat(B);
+    out.innerHTML='<div class="estado">Calculando…</div>';
+    return new Promise(function(ok){ setTimeout(ok,40); }).then(function(){
+      var html='', Pc=P;
+      if(calibrar){ Pc=C.calibrar(A,{saltar:Math.round(A.length*0.25)}); html+='<div class="observ"><b>Calibrado con '+ts[0]+'-'+String(ts[0]+1).slice(2)+':</b> k '+Pc.k+' · local '+Pc.hca+' · cansancio '+Pc.b2b+' · sigma '+Pc.sig+' · alfa '+Pc.al+' · sigma del total '+Pc.sigT.toFixed(1)+'</div>'; }
+      var rB=C.evaluar(todos,Pc,{solo:ts[1]}), rD=calibrar?C.evaluar(todos,C.DEF,{solo:ts[1]}):null;
+      html+=tablaMedicion(rB,'Temporada '+ts[1]+'-'+String(ts[1]+1).slice(2)+(calibrar?' (parámetros calibrados en la anterior)':''));
+      if(rD){ var a=(rD.ll/rD.n).toFixed(3), b=(rB.ll/rB.n).toFixed(3); html+='<div class="nota">Con los parámetros de arranque la pérdida del ganador era '+a+'; calibrados en la otra temporada, '+b+'. Esta es la comparación honesta: los parámetros nunca vieron los juegos que se midieron.</div>'; }
+      var d=C.difs(rB), n=rB.n, txt=[];
+      [['ml','Ganador'],['mg','Margen'],['tot','Total']].forEach(function(z){ var v=C.veredicto(d[z[0]],z[0]); txt.push(z[1]+': '+(v.t==='✓ le gana'?'le gana a lo más simple.':(v.t==='≈ igual'?'no se distingue de lo más simple.':'es peor que lo más simple.'))); });
+      html+='<div class="veredicto-bt">'+txt.join('<br>')+'<br><br><b>Ojo:</b> ganarle a «lo más simple» es lo mínimo. El mercado de la NBA es de los más eficientes: ESPN no guarda las líneas de cierre de juegos pasados, así que contra el mercado solo se mide con tu registro de picks y el tiempo.</div>';
+      html+='<button class="btnAncho" id="btnUsar">Usar estos parámetros y guardar el veredicto</button>';
+      out.innerHTML=html;
+      $('btnUsar').addEventListener('click',function(){ lsSet('ova_nba_params_v1',{k:Pc.k,c:Pc.c,hca:Pc.hca,b2b:Pc.b2b,sig:Pc.sig,sigT:Pc.sigT||P.sigT,al:Pc.al}); P=Object.assign({},C.DEF,ls('ova_nba_params_v1',{})); lsSet('ova_nba_veredictos_v1',{ml:d.ml,mg:d.mg,tot:d.tot,n:n,fuente:ts[1]}); construir(); this.disabled=true; this.textContent='Guardado ✓'; });
+    });
+  }).catch(function(e){ if(e&&e.message) out.innerHTML='<div class="estado bad">'+esc(e.message)+'</div>'; });
+}
+
+/* ---------- pestañas y botones ---------- */
+document.querySelectorAll('.tabbar .tbar-btn').forEach(function(btn){ btn.addEventListener('click',function(){
+  document.querySelectorAll('.tabbar .tbar-btn').forEach(function(b){ b.classList.remove('on'); }); btn.classList.add('on');
+  document.querySelectorAll('main > .vista').forEach(function(v){ v.classList.remove('on'); });
+  var m={juegos:'Juegos',algane:'Algane',backtest:'Backtest',registro:'Registro'}; $('vista'+m[btn.dataset.vista]).classList.add('on');
+  if(btn.dataset.vista==='registro'){ pintarRegistro(); verificar().then(function(n){ if(n) pintarRegistro(); }); } }); });
+$('btnMedir').addEventListener('click',function(){ medir(false); });
+$('btnCalibrar').addEventListener('click',function(){ medir(true); });
+$('btnVerificar').addEventListener('click',function(){ verificar().then(function(n){ $('respMsg').textContent=n?('Cerré '+n+' picks.'):'Nada nuevo por cerrar.'; pintarRegistro(); }); });
+$('btnResp').addEventListener('click',function(){ var t=respaldo(); $('respTxt').value=t; try{ navigator.clipboard.writeText(t); }catch(e){} $('respMsg').textContent='Respaldo generado ('+picks().length+' picks).'; });
+$('btnRest').addEventListener('click',function(){ try{ var d=JSON.parse($('respTxt').value); if(!d||d.app!=='ova-nba') throw 0; var a=picks(), ids={}; a.forEach(function(p){ ids[p.id]=1; }); var n=0; (d.registro||[]).forEach(function(p){ if(p&&p.id&&!ids[p.id]){ a.push(p); n++; } }); lsSet('ova_nba_registro_v1',a); $('respMsg').textContent='Restaurado: '+n+' picks nuevos.'; pintarRegistro(); }catch(e){ $('respMsg').textContent='Ese texto no es un respaldo de esta app.'; } });
+window.OVANBAAPP={parseEvento:parseEvento,prediccion:prediccion,resolverPick:resolverPick,diaEspn:diaEspn,temporadaDe:temporadaDe,normCuota:normCuota,iniciar:iniciar};
+iniciar();
+
+</script>
+<!--OVA45:BODY:BEGIN-->
+<script>
+/* OVA · administrador de temas (v44). Se guarda en localStorage 'ova_skin' y lo comparten
+   las paginas del mismo sitio (MLB, futbol). Noche = sin atributo = como siempre. */
+(function(){
+ if(window.OVASkins) return;
+ var SK=[
+  {id:'noche',n:'Noche de estadio',d:'Azul medianoche y ámbar',bg:'#070B12',card:'#0D1420',acc:'#3B82F6',hot:'#FBBF24'},
+  {id:'oro',n:'Oro negro',d:'Negro cálido, dorado, serif',bg:'#0A0908',card:'#1B1812',acc:'#C9A24A',hot:'#F0CE6B'},
+  {id:'neon',n:'Neón',d:'Cian y magenta sobre violeta',bg:'linear-gradient(135deg,#0E0B1F,#1F1A44)',card:'#161231',acc:'#19E3FF',hot:'#FF4FD0'},
+  {id:'dia',n:'Día de juego',d:'Claro, se lee con sol',bg:'#EAF0F7',card:'#FFFFFF',acc:'#1D4ED8',hot:'#B45309'},
+  {id:'campo',n:'Campo',d:'Verde césped y tiza',bg:'linear-gradient(135deg,#05130A,#10301D)',card:'#10301D',acc:'#3DDC84',hot:'#F2EA6B'},
+  {id:'cristal',n:'Cristal',d:'Vidrio esmerilado, aurora',bg:'linear-gradient(135deg,#3B3F9E,#0A0C1C 55%,#0F6F66)',card:'rgba(255,255,255,.18)',acc:'#8E96FF',hot:'#FFC27A'}
+ ];
+ function meta(){
+  var m=document.querySelector('meta[name=theme-color]');
+  if(!m){ m=document.createElement('meta'); m.name='theme-color'; document.head.appendChild(m); }
+  return m;
+ }
+ function get(){ try{ return localStorage.getItem('ova_skin')||'noche'; }catch(e){ return 'noche'; } }
+ function find(id){ for(var i=0;i<SK.length;i++) if(SK[i].id===id) return SK[i]; return SK[0]; }
+ function marcar(){
+  var cur=get();
+  var bs=document.querySelectorAll('.ovaSk');
+  for(var i=0;i<bs.length;i++) bs[i].setAttribute('aria-pressed', bs[i].getAttribute('data-sk')===cur?'true':'false');
+ }
+ function apply(id){
+  var s=find(id), d=document.documentElement;
+  if(s.id==='noche') d.removeAttribute('data-skin');
+  else { d.setAttribute('data-skin',s.id); if(window.__ovaFont) window.__ovaFont(s.id); }
+  try{ localStorage.setItem('ova_skin',s.id); }catch(e){}
+  var c=s.bg; if(c.indexOf('#')!==0) c={neon:'#0E0B1F',campo:'#05130A',cristal:'#0A0C1C'}[s.id]||'#070B12';
+  meta().setAttribute('content',c);
+  marcar();
+ }
+ function mount(box){
+  if(!box) return;
+  var g=document.createElement('div'); g.className='ovaSkins';
+  var h='';
+  for(var i=0;i<SK.length;i++){
+   var s=SK[i];
+   h+='<button type="button" class="ovaSk" data-sk="'+s.id+'" aria-pressed="false">'+
+    '<span class="pv" style="background:'+s.bg+'"><i style="background:'+s.acc+'"></i><i style="background:'+s.hot+'"></i>'+
+    '<em style="background:'+s.card+';border:2px solid '+s.acc+'"></em></span>'+
+    '<span class="tx"><b>'+s.n+'</b><span>'+s.d+'</span></span></button>';
+  }
+  g.innerHTML=h;
+  g.addEventListener('click',function(e){
+   var b=e.target.closest?e.target.closest('.ovaSk'):null;
+   if(b) apply(b.getAttribute('data-sk'));
+  });
+  box.appendChild(g);
+  marcar();
+ }
+ window.OVASkins={list:SK,apply:apply,get:get,mount:mount,marcar:marcar};
+ apply(get());
+})();
+
+</script>
+<script>
+/* OVA NBA · botón Inicio, selector de tema y versión (la app trae su propio arco de probabilidad). */
+(function(){
+ function $q(s,r){ return (r||document).querySelector(s); }
+ function inicio(){ var top=$q('header .top'); if(!top||$q('.ovaHome',top)) return;
+  var a=document.createElement('a'); a.className='ovaHome'; a.href='hub.html'; a.setAttribute('aria-label','Volver al inicio'); a.textContent='‹'; top.insertBefore(a,top.firstChild); }
+ function tema(){ var top=$q('header .top'); if(!top||$q('#ovaSkBtn')||!window.OVASkins) return;
+  var b=document.createElement('button'); b.id='ovaSkBtn'; b.className='btnChico'; b.setAttribute('aria-label','Cambiar tema'); b.textContent='🎨'; top.appendChild(b);
+  var sh=document.createElement('div'); sh.className='ovaSheet'; sh.id='ovaSheet';
+  sh.innerHTML='<div class="card"><h2>Apariencia</h2><p>Toca un tema para verlo al instante. Se guarda y lo comparten MLB, fútbol y NBA.</p></div>';
+  document.body.appendChild(sh); OVASkins.mount($q('.card',sh));
+  b.addEventListener('click',function(){ sh.classList.add('on'); OVASkins.marcar(); });
+  sh.addEventListener('click',function(e){ if(e.target===sh) sh.classList.remove('on'); }); }
+ function init(){ try{ inicio(); }catch(e){} try{ tema(); }catch(e){} }
+ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+
+</script>
+<!--OVA45:BODY:END-->
+</body>
+</html>
