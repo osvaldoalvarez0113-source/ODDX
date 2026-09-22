@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parche · marcador en vivo fútbol</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.6}
+button{background:#3B82F6;color:#020509;border:0;border-radius:10px;padding:12px 18px;font-weight:700;font-size:15px}
+button:disabled{opacity:.5}
+a{color:#60A5FA}
+</style>
+</head>
+<body>
+<h2>Parche: marcador en vivo — fútbol</h2>
+<p>Sube este archivo al repo ODDX (junto a futbol.html) y ábrelo desde ahí. Lee futbol.html y le agrega el marcador en vivo de la liga que tengas cargada (se actualiza solo cada 20 segundos).</p>
+<button id="ir">Aplicar parche</button>
+<div id="out"></div>
+
+<script>
+var MARCA_INICIO='<!--OVAPATCH:ENVIVO:BEGIN-->';
+var MARCA_FIN='<!--OVAPATCH:ENVIVO:END-->';
+
+var PARCHE = MARCA_INICIO + '\n<script>\n' +
+'/* Parche: marcador en vivo para futbol.html. Reusa ESPN_SLUG, ESPN_BASE, LIGA_ACTUAL, ymd,\n' +
+'   mismoEquipo, esc, pintarJuegos que ya existen en futbol.html. Pollea cada 20s (solo si la\n' +
+'   liga cargada tiene fuente en ESPN) mientras la pesta\u00f1a est\u00e9 visible. */\n' +
+'(function(){\n' +
+' function marcarNombres(partidos){\n' +
+'  try{\n' +
+'   document.querySelectorAll("#juegos .game").forEach(function(g){\n' +
+'    var idx=+g.getAttribute("data-idx"); var p=partidos[idx]; if(!p) return;\n' +
+'    g.setAttribute("data-local", p.local); g.setAttribute("data-visita", p.visita);\n' +
+'   });\n' +
+'  }catch(e){}\n' +
+' }\n' +
+' if(typeof pintarJuegos==="function"){\n' +
+'  var _pj=pintarJuegos;\n' +
+'  pintarJuegos=function(partidos){ _pj(partidos); marcarNombres(partidos); };\n' +
+' }\n' +
+' function actualizarVivo(){\n' +
+'  var slug=ESPN_SLUG[LIGA_ACTUAL]; if(!slug) return;\n' +
+'  var hoy=ymd(new Date());\n' +
+'  fetch(ESPN_BASE+slug+"/scoreboard?dates="+hoy).then(function(r){ return r.ok?r.json():null; }).then(function(j){\n' +
+'   if(!j) return;\n' +
+'   var cont=document.getElementById("juegos"); if(!cont) return;\n' +
+'   var filas=cont.querySelectorAll(".game[data-local]");\n' +
+'   (j.events||[]).forEach(function(e){\n' +
+'    var comp=e.competitions&&e.competitions[0]; if(!comp) return;\n' +
+'    var h=null,a=null; (comp.competitors||[]).forEach(function(c){ if(c.homeAway==="home") h=c; else if(c.homeAway==="away") a=c; });\n' +
+'    if(!h||!a||!h.team||!a.team) return;\n' +
+'    var st=(e.status&&e.status.type)||{};\n' +
+'    var nomL=h.team.displayName||h.team.name, nomV=a.team.displayName||a.team.name;\n' +
+'    var g=null;\n' +
+'    for(var i=0;i<filas.length;i++){ if(mismoEquipo(filas[i].getAttribute("data-local"),nomL)&&mismoEquipo(filas[i].getAttribute("data-visita"),nomV)){ g=filas[i]; break; } }\n' +
+'    if(!g) return;\n' +
+'    var badge=g.querySelector(".hora"); if(!badge) return;\n' +
+'    if(st.state==="in"){\n' +
+'     badge.style.color="var(--bad)";\n' +
+'     badge.innerHTML="\ud83d\udd34 "+(a.score!=null?a.score:"-")+"\u2013"+(h.score!=null?h.score:"-")+"<br><small style=\\"font-size:9px\\">"+esc(st.shortDetail||st.detail||"")+"</small>";\n' +
+'    } else if(st.state==="post"){\n' +
+'     badge.style.color="";\n' +
+'     badge.innerHTML="Termin\u00f3 "+(a.score!=null?a.score:"-")+"\u2013"+(h.score!=null?h.score:"-");\n' +
+'    }\n' +
+'   });\n' +
+'  }).catch(function(){});\n' +
+' }\n' +
+' setInterval(function(){ if(!document.hidden){ try{ actualizarVivo(); }catch(e){} } }, 20000);\n' +
+' setTimeout(function(){ try{ actualizarVivo(); }catch(e){} }, 3000);\n' +
+'})();\n' +
+'<' + '/script>\n' + MARCA_FIN;
+
+document.getElementById('ir').addEventListener('click', function(){
+  var btn=this, out=document.getElementById('out');
+  btn.disabled=true; out.innerHTML='<p>Bajando futbol.html…</p>';
+  fetch('futbol.html?v='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status+' — ¿este archivo está en la misma carpeta que futbol.html en el repo?');
+    return r.text();
+  }).then(function(html){
+    if(html.indexOf(MARCA_INICIO)>-1){
+      out.innerHTML='<p>Este parche ya estaba aplicado. No hice nada.</p>';
+      btn.disabled=false;
+      return;
+    }
+    var nuevo = html.replace('</body>', PARCHE + '\n</body>');
+    var blob = new Blob([nuevo], {type:'text/html'});
+    var url = URL.createObjectURL(blob);
+    out.innerHTML = '<p>Listo. <a href="'+url+'" download="futbol.html">Descarga el futbol.html nuevo aquí</a> y súbelo al repo encima del viejo.</p>'+
+      '<p style="font-size:12px;color:#9DB2C8">Qué hace: mientras tengas una liga cargada, cada 20 segundos revisa ESPN y actualiza el marcador de los partidos en curso — goles y minuto. Solo funciona en las ligas que ya usan ESPN como respaldo (las 5 grandes + Champions); las copas no tienen esta fuente.</p>';
+    btn.disabled=false;
+  }).catch(function(e){
+    out.innerHTML='<p style="color:#F87171">Error: '+e.message+'</p>';
+    btn.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
