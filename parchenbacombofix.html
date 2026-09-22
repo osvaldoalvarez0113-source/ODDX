@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arreglo · combo NBA</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.6}
+button{background:#3B82F6;color:#020509;border:0;border-radius:10px;padding:12px 18px;font-weight:700;font-size:15px}
+button:disabled{opacity:.5}
+a{color:#60A5FA}
+</style>
+</head>
+<body>
+<h2>Arreglo: menús del Combo — NBA</h2>
+<p>Sube este archivo al repo ODDX (junto a nba.html) y ábrelo desde ahí. Corrige que los desplegables de cada Pata queden en blanco cuando no hay juegos cargados (temporada baja).</p>
+<button id="ir">Aplicar arreglo</button>
+<div id="out"></div>
+
+<script>
+var MARCA_INICIO='<!--OVAPATCH:COMBOFIX1:BEGIN-->';
+var MARCA_FIN='<!--OVAPATCH:COMBOFIX1:END-->';
+
+var PARCHE = MARCA_INICIO + '\n<script>\n' +
+'(function(){\n' +
+' try{\n' +
+'  var MK=[["","\u2014 sin usar \u2014"],["ml","Ganador"],["sp","Hándicap"],["tot","Total"]];\n' +
+'  function corregir(){\n' +
+'   var vista=document.getElementById("vistaCombo"); if(!vista) return;\n' +
+'   vista.querySelectorAll(".cuotasbox[data-i] .cm").forEach(function(cm){\n' +
+'    if(cm.options.length) return;\n' +
+'    cm.innerHTML=MK.map(function(m){ return "<option value=\\""+m[0]+"\\">"+m[1]+"</option>"; }).join("");\n' +
+'    var box=cm.closest(".cuotasbox"), cs=box?box.querySelector(".cs"):null;\n' +
+'    if(cs){ cs.innerHTML=""; cs.style.display="none"; }\n' +
+'   });\n' +
+'  }\n' +
+'  var btn=document.querySelector(".tbar-btn[data-vista=\\"combo\\"]");\n' +
+'  if(btn) btn.addEventListener("click", function(){ setTimeout(corregir,60); });\n' +
+'  setTimeout(corregir,3000);\n' +
+' }catch(e){}\n' +
+'})();\n' +
+'<' + '/script>\n' + MARCA_FIN;
+
+document.getElementById('ir').addEventListener('click', function(){
+  var btn=this, out=document.getElementById('out');
+  btn.disabled=true; out.innerHTML='<p>Bajando nba.html…</p>';
+  fetch('nba.html?v='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status+' — ¿este archivo está en la misma carpeta que nba.html en el repo?');
+    return r.text();
+  }).then(function(html){
+    if(html.indexOf(MARCA_INICIO)>-1){
+      out.innerHTML='<p>Este arreglo ya estaba aplicado. No hice nada.</p>';
+      btn.disabled=false;
+      return;
+    }
+    var nuevo = html.replace('</body>', PARCHE + '\n</body>');
+    var blob = new Blob([nuevo], {type:'text/html'});
+    var url = URL.createObjectURL(blob);
+    out.innerHTML = '<p>Listo. <a href="'+url+'" download="nba.html">Descarga el nba.html nuevo aquí</a> y súbelo al repo encima del viejo.</p>';
+    btn.disabled=false;
+  }).catch(function(e){
+    out.innerHTML='<p style="color:#F87171">Error: '+e.message+'</p>';
+    btn.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
