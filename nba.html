@@ -1152,5 +1152,130 @@ iniciar();
 })();
 </script>
 <!--OVAPATCH:VACIO:END-->
+<!--OVAPATCH:COMBO:BEGIN-->
+<script>
+/* Parche: pantalla Combo para nba.html. Reusa EVENTOS, prediccion, cuotaJusta, signo, esc
+   que ya existen en nba.html. Multiplica probabilidades marginales — sin correlación. */
+(function(){
+ try{
+  var MK=[["","— sin usar —"],["ml","Ganador"],["sp","Hándicap"],["tot","Total"]];
+  function opt(v,t,sel){ return "<option value=\""+v+"\""+(sel?" selected":"")+">"+t+"</option>"; }
+  function selEstilo(){ return "width:100%;margin-bottom:8px;background:var(--bg1);border:1px solid var(--line2);color:var(--txt);border-radius:8px;padding:9px;font-size:13px"; }
+  function legHtml(i){
+   return "<div class=\"cuotasbox\" data-i=\""+i+"\"><label>Pata "+(i+1)+(i<2?"":" (opcional)")+"</label>"+
+    "<select class=\"cm\" style=\""+selEstilo()+"\"></select>"+
+    "<select class=\"cs\" style=\""+selEstilo()+"\"></select>"+
+    "<input type=\"number\" step=\"0.5\" class=\"cl\" placeholder=\"línea, ej. -5.5 ó 220.5\" style=\""+selEstilo()+";display:none\"></div>";
+  }
+  function sideOpts(mk,ev){
+   if(mk==="ml") return [["H",ev.h.ab+" gana"],["A",ev.a.ab+" gana"]];
+   if(mk==="sp") return [["H",ev.h.ab+" cubre"],["A",ev.a.ab+" cubre"]];
+   if(mk==="tot") return [["o","Más de"],["u","Menos de"]];
+   return [];
+  }
+  function sides(L,ev){
+   var mk=L.querySelector(".cm").value, cs=L.querySelector(".cs"), cur=cs.value;
+   var os=sideOpts(mk,ev);
+   cs.innerHTML=os.map(function(o,k){ return opt(o[0],o[1],o[0]===cur||(!cur&&k===0)); }).join("");
+   cs.style.display=os.length?"":"none";
+   L.querySelector(".cl").style.display=(mk==="sp"||mk==="tot")?"":"none";
+  }
+  function relabel(vista,ev){
+   vista.querySelectorAll(".cuotasbox[data-i] .cm").forEach(function(cm){
+    var L=cm.closest(".cuotasbox"), cur=cm.value;
+    cm.innerHTML=MK.map(function(m){ return opt(m[0],m[1],m[0]===cur); }).join("");
+    sides(L,ev);
+   });
+  }
+  function legsFrom(vista){
+   var legs=[],err=null;
+   vista.querySelectorAll(".cuotasbox[data-i]").forEach(function(L){
+    var mk=L.querySelector(".cm").value; if(!mk) return;
+    var sd=L.querySelector(".cs").value, lv=parseFloat(L.querySelector(".cl").value);
+    if(mk==="ml"){ legs.push({k:"ml",s:sd}); return; }
+    if(!isFinite(lv)){ err="Falta la línea de una pata."; return; }
+    legs.push({k:mk,s:sd,L:lv});
+   });
+   var nml=legs.filter(function(l){ return l.k==="ml"; }).length;
+   if(!err&&nml>1) err="Solo puede haber un ganador por combo.";
+   if(!err&&legs.length<2) err="Escoge al menos 2 patas para armar el combo.";
+   return {legs:legs, err:err};
+  }
+  function probLeg(l,pr){
+   if(l.k==="ml") return l.s==="H"?pr.p:1-pr.p;
+   if(l.k==="sp") return l.s==="H"?pr.pCubre(l.L):1-pr.pCubre(l.L);
+   if(l.k==="tot") return l.s==="o"?pr.pTot(l.L):1-pr.pTot(l.L);
+   return null;
+  }
+  function textoLeg(l,ev){
+   if(l.k==="ml") return (l.s==="H"?ev.h.ab:ev.a.ab)+" gana";
+   if(l.k==="sp") return (l.s==="H"?ev.h.ab:ev.a.ab)+" cubre "+l.L;
+   return "Total "+(l.s==="o"?"más de":"menos de")+" "+l.L;
+  }
+  function calcularCombo(vista){
+   var box=vista.querySelector("#ncmb_out");
+   var idx=+vista.querySelector("#ncmb_juego").value, ev=(EVENTOS||[])[idx];
+   if(!ev){ box.innerHTML="<div class=\"aviso\">Primero carga los juegos en la pestaña Juegos.</div>"; return; }
+   var lg=legsFrom(vista);
+   if(lg.err){ box.innerHTML="<div class=\"aviso\">"+lg.err+"</div>"; return; }
+   var pr=prediccion(ev), p=1, malo=false;
+   lg.legs.forEach(function(l){ var v=probLeg(l,pr); if(v==null){ malo=true; return; } p*=v; });
+   if(malo){ box.innerHTML="<div class=\"aviso\">No pude calcular una de las patas.</div>"; return; }
+   var stake=parseFloat(vista.querySelector("#ncmb_stake").value), pay=parseFloat(vista.querySelector("#ncmb_pay").value);
+   var hasPay=isFinite(stake)&&stake>0&&isFinite(pay)&&pay>stake;
+   var be=hasPay?stake/pay:null;
+   var html="<div class=\"kpi\"><div><b>"+(p*100).toFixed(1)+"%</b><small>Multiplicando las patas</small></div>"+
+    "<div><b>"+(hasPay?(be*100).toFixed(1)+"%":"—")+"</b><small>"+(hasPay?"Equilibrio del pago":"Escribe cuánto te pagan")+"</small></div></div>";
+   if(hasPay){
+    var edge=(p-be)*100;
+    if(edge<=0) html+="<div class=\"pick no\"><b>Sin valor</b>Con ese pago hace falta "+(be*100).toFixed(1)+"% y el modelo da "+(p*100).toFixed(1)+"%.</div>";
+    else html+="<div class=\"pick"+(edge>=10?" big":"")+"\"><b>+"+edge.toFixed(1)+" puntos sobre el equilibrio</b>Modelo "+(p*100).toFixed(1)+"% contra "+(be*100).toFixed(1)+"%.</div>";
+   }
+   var cj=cuotaJusta(p);
+   html+="<div class=\"nota\">Cuota justa del combo: "+(cj==null?"—":cj)+". Cada pata: "+lg.legs.map(function(l){ return textoLeg(l,ev); }).join(" · ")+".</div>";
+   html+="<div class=\"nota\">⚠️ Esto multiplica las probabilidades de cada pata por separado — el modelo de NBA no mide si dos patas del mismo juego suelen ir juntas (a diferencia de fútbol y MLB, que usan una matriz de marcadores). Trátalo como una guía floja, no como el número exacto.</div>";
+   box.innerHTML=html;
+  }
+  function montar(){
+   var main=document.querySelector("main"), tabbar=document.querySelector(".tabbar");
+   if(!main||!tabbar||document.getElementById("vistaCombo")) return;
+   var vista=document.createElement("div"); vista.className="vista"; vista.id="vistaCombo";
+   vista.innerHTML="<div class=\"cuotasbox\"><label>Juego</label><select id=\"ncmb_juego\" style=\""+selEstilo()+"\"></select></div>"+
+    legHtml(0)+legHtml(1)+legHtml(2)+
+    "<div class=\"cuotasbox\"><label>Apuestas ($)</label><input type=\"number\" id=\"ncmb_stake\" value=\"10\" style=\""+selEstilo()+"\">"+
+    "<label>Te pagan ($)</label><input type=\"number\" id=\"ncmb_pay\" placeholder=\"ej. 4.20\" style=\""+selEstilo()+"\"></div>"+
+    "<button class=\"btnAncho\" id=\"ncmb_go\">Calcular combo</button><div id=\"ncmb_out\"></div>";
+   main.appendChild(vista);
+   var btn=document.createElement("button"); btn.className="tbar-btn"; btn.setAttribute("data-vista","combo");
+   btn.innerHTML="<span class=\"ic\">🧩</span><span class=\"lb\">Combo</span>";
+   tabbar.appendChild(btn);
+   function refrescarSelector(){
+    var lista=EVENTOS||[], sel=vista.querySelector("#ncmb_juego"), prev=sel.value;
+    sel.innerHTML=lista.length?lista.map(function(e,i){ return "<option value=\""+i+"\""+(String(i)===prev?" selected":"")+">"+esc(e.a.ab)+" @ "+esc(e.h.ab)+"</option>"; }).join(""):"<option value=\"\">Sin juegos cargados</option>";
+    var idx=+sel.value, ev=lista[idx];
+    if(ev) relabel(vista,ev);
+   }
+   btn.addEventListener("click",function(){
+    document.querySelectorAll(".tbar-btn").forEach(function(b){ b.classList.toggle("on",b===btn); });
+    document.querySelectorAll("main > .vista").forEach(function(v){ v.classList.toggle("on", v===vista); });
+    refrescarSelector();
+   });
+   vista.querySelectorAll(".cuotasbox[data-i] .cm").forEach(function(cm){
+    cm.addEventListener("change",function(){
+     var lista=EVENTOS||[], ev=lista[+vista.querySelector("#ncmb_juego").value];
+     if(ev) sides(cm.closest(".cuotasbox"), ev);
+    });
+   });
+   vista.querySelector("#ncmb_juego").addEventListener("change",function(){
+    var lista=EVENTOS||[], ev=lista[+this.value];
+    if(ev) relabel(vista,ev);
+   });
+   vista.querySelector("#ncmb_go").addEventListener("click",function(){ calcularCombo(vista); });
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",montar); else montar();
+ }catch(e){}
+})();
+</script>
+<!--OVAPATCH:COMBO:END-->
 </body>
 </html>
