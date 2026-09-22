@@ -1277,5 +1277,26 @@ iniciar();
 })();
 </script>
 <!--OVAPATCH:COMBO:END-->
+<!--OVAPATCH:COMBOFIX1:BEGIN-->
+<script>
+(function(){
+ try{
+  var MK=[["","— sin usar —"],["ml","Ganador"],["sp","Hándicap"],["tot","Total"]];
+  function corregir(){
+   var vista=document.getElementById("vistaCombo"); if(!vista) return;
+   vista.querySelectorAll(".cuotasbox[data-i] .cm").forEach(function(cm){
+    if(cm.options.length) return;
+    cm.innerHTML=MK.map(function(m){ return "<option value=\""+m[0]+"\">"+m[1]+"</option>"; }).join("");
+    var box=cm.closest(".cuotasbox"), cs=box?box.querySelector(".cs"):null;
+    if(cs){ cs.innerHTML=""; cs.style.display="none"; }
+   });
+  }
+  var btn=document.querySelector(".tbar-btn[data-vista=\"combo\"]");
+  if(btn) btn.addEventListener("click", function(){ setTimeout(corregir,60); });
+  setTimeout(corregir,3000);
+ }catch(e){}
+})();
+</script>
+<!--OVAPATCH:COMBOFIX1:END-->
 </body>
 </html>
