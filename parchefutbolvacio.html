@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parche · estados vacíos fútbol</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.6}
+button{background:#3B82F6;color:#020509;border:0;border-radius:10px;padding:12px 18px;font-weight:700;font-size:15px}
+button:disabled{opacity:.5}
+a{color:#60A5FA}
+</style>
+</head>
+<body>
+<h2>Parche: estados vacíos animados — fútbol</h2>
+<p>Sube este archivo al repo ODDX (junto a futbol.html) y ábrelo desde ahí. Le agrega la tarjeta con la pelota flotando que ya tiene MLB, para cuando no hay juegos que mostrar en Juegos o en Al gane.</p>
+<button id="ir">Aplicar parche</button>
+<div id="out"></div>
+
+<script>
+var MARCA_INICIO='<!--OVAPATCH:VACIO:BEGIN-->';
+var MARCA_FIN='<!--OVAPATCH:VACIO:END-->';
+
+var PARCHE = MARCA_INICIO + '\n<style>\n' +
+'.vacio{display:flex;flex-direction:column;align-items:center;text-align:center;padding:48px 22px;margin:14px 0;\n' +
+' background:linear-gradient(180deg,var(--bg1),var(--bg2));border:1px solid var(--line2);border-radius:var(--r2);\n' +
+' color:var(--mut);font-size:13px;line-height:1.6;box-shadow:0 1px 3px rgba(0,0,0,.4),0 20px 40px -18px rgba(0,0,0,.7)}\n' +
+'.vacio .vico{position:relative;width:88px;height:88px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}\n' +
+'.vacio .vico::before{content:"";position:absolute;inset:-14px;border-radius:50%;background:radial-gradient(circle,rgba(251,191,36,.22),transparent 70%);z-index:-1}\n' +
+'.vacio .vico svg{width:42px;height:42px;color:var(--hot);stroke-width:1.4;animation:ovaFlota 3.4s ease-in-out infinite}\n' +
+'.vacio .anillo{position:absolute;inset:0;border-radius:50%;border:1px solid var(--line2);animation:ovaLate 3.4s ease-in-out infinite}\n' +
+'.vacio b{display:block;color:var(--txt);font-size:19px;font-weight:700;margin-bottom:6px}\n' +
+'.vacio.off{display:none}\n' +
+'@keyframes ovaFlota{0%,100%{transform:translateY(-2px)}50%{transform:translateY(3px)}}\n' +
+'@keyframes ovaLate{0%,100%{transform:scale(1);opacity:.75}50%{transform:scale(1.09);opacity:.35}}\n' +
+'@media (prefers-reduced-motion:reduce){.vacio .vico svg,.vacio .anillo{animation:none}}\n' +
+'<' + '/style>\n<script>\n' +
+'(function(){\n' +
+' try{\n' +
+'  var ICO_J="<circle cx=\\"12\\" cy=\\"12\\" r=\\"8\\"/><path d=\\"M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6\\"/>";\n' +
+'  var ICO_G="<path d=\\"M8 4h8v5a4 4 0 0 1-8 0z\\"/><path d=\\"M8 6H5.2v1.6A3.2 3.2 0 0 0 8.4 11M16 6h2.8v1.6A3.2 3.2 0 0 1 15.6 11M10.4 17h3.2M9 20h6\\"/>";\n' +
+'  function crear(dib,tit,txt){\n' +
+'   var d=document.createElement("div"); d.className="vacio";\n' +
+'   d.innerHTML=\'<div class="vico"><span class="anillo"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">\'+dib+\'</svg></div><b>\'+tit+\'</b>\'+txt;\n' +
+'   return d;\n' +
+'  }\n' +
+'  function vigilar(cont,caja,sel){\n' +
+'   if(!cont||!caja) return;\n' +
+'   var act=function(){ caja.classList.toggle("off", cont.querySelectorAll(sel).length>0); };\n' +
+'   act();\n' +
+'   if(window.MutationObserver) new MutationObserver(act).observe(cont,{childList:true,subtree:true});\n' +
+'  }\n' +
+'  var vJ=crear(ICO_J,"Sin partidos todavía","Escoge una liga arriba y espera a que carguen los partidos.");\n' +
+'  var vG=crear(ICO_G,"Sin ranking todavía","Aparece solo en cuanto carguen los partidos del día.");\n' +
+'  var pj=document.getElementById("vistaJuegos"); if(pj) pj.appendChild(vJ);\n' +
+'  var pg=document.getElementById("vistaAlgane"); if(pg) pg.appendChild(vG);\n' +
+'  vigilar(document.getElementById("juegos"), vJ, ".game");\n' +
+'  vigilar(document.getElementById("algane"), vG, ".fila-rank");\n' +
+' }catch(e){}\n' +
+'})();\n' +
+'<' + '/script>\n' + MARCA_FIN;
+
+document.getElementById('ir').addEventListener('click', function(){
+  var btn=this, out=document.getElementById('out');
+  btn.disabled=true; out.innerHTML='<p>Bajando futbol.html…</p>';
+  fetch('futbol.html?v='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status+' — ¿este archivo está en la misma carpeta que futbol.html en el repo?');
+    return r.text();
+  }).then(function(html){
+    if(html.indexOf(MARCA_INICIO)>-1){
+      out.innerHTML='<p>Este parche ya estaba aplicado. No hice nada.</p>';
+      btn.disabled=false;
+      return;
+    }
+    var nuevo = html.replace('</body>', PARCHE + '\n</body>');
+    var blob = new Blob([nuevo], {type:'text/html'});
+    var url = URL.createObjectURL(blob);
+    out.innerHTML = '<p>Listo. <a href="'+url+'" download="futbol.html">Descarga el futbol.html nuevo aquí</a> y súbelo al repo encima del viejo.</p>'+
+      '<p style="font-size:12px;color:#9DB2C8">Qué hace: cuando la lista de Juegos o el ranking de Al gane están vacíos, muestra una tarjeta con la pelota flotando en vez de dejar el hueco en blanco. No toca datos ni cálculos.</p>';
+    btn.disabled=false;
+  }).catch(function(e){
+    out.innerHTML='<p style="color:#F87171">Error: '+e.message+'</p>';
+    btn.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
