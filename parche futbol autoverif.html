@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parche · autoverif fútbol</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.6}
+button{background:#3B82F6;color:#020509;border:0;border-radius:10px;padding:12px 18px;font-weight:700;font-size:15px}
+button:disabled{opacity:.5}
+pre{background:#0D1420;border:1px solid #2A3E56;border-radius:10px;padding:12px;white-space:pre-wrap;font-size:12px}
+a{color:#60A5FA}
+</style>
+</head>
+<body>
+<h2>Parche: verificación automática de picks — fútbol</h2>
+<p>Sube este archivo al repo ODDX (junto a futbol.html) y ábrelo. Lee futbol.html, le agrega la verificación automática de picks pendientes en <b>todas</b> las ligas (no solo la que tengas cargada), y te da el archivo nuevo para subir encima del viejo.</p>
+<button id="ir">Aplicar parche</button>
+<div id="out"></div>
+
+<script>
+var MARCA_INICIO='<!--OVAPATCH:AUTOVERIF:BEGIN-->';
+var MARCA_FIN='<!--OVAPATCH:AUTOVERIF:END-->';
+
+var PARCHE = MARCA_INICIO + '\n<script>\n' +
+'/* Parche: verificacion automatica de picks en TODAS las ligas, no solo la cargada.\n' +
+'   Reusa las funciones y datos globales que ya existen en futbol.html: ESPN_SLUG, ESPN_BASE,\n' +
+'   claveEq, mismoEquipo, parseFecha, tsPartido, cargarRegistro, guardarRegistroArr. */\n' +
+'(function(){\n' +
+' function ymdEspn(fechaEuropea){\n' +
+'  var t=parseFecha(fechaEuropea); if(t===null) return null;\n' +
+'  var d=new Date(t);\n' +
+'  return d.getUTCFullYear()+String(d.getUTCMonth()+1).padStart(2,"0")+String(d.getUTCDate()).padStart(2,"0");\n' +
+' }\n' +
+' function ventanaFechas(ymd){\n' +
+'  var y=+ymd.slice(0,4), m=+ymd.slice(4,6)-1, d=+ymd.slice(6,8);\n' +
+'  var base=new Date(Date.UTC(y,m,d));\n' +
+'  var out=[]; [-1,0,1].forEach(function(n){ var x=new Date(base.getTime()+n*86400000); out.push(x.getUTCFullYear()+String(x.getUTCMonth()+1).padStart(2,"0")+String(x.getUTCDate()).padStart(2,"0")); });\n' +
+'  return out;\n' +
+' }\n' +
+' function bajarDia(slug,ymd){\n' +
+'  return fetch(ESPN_BASE+slug+"/scoreboard?dates="+ymd).then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })\n' +
+'   .then(function(j){ return ((j&&j.events)||[]).map(function(e){\n' +
+'    var comp=e.competitions&&e.competitions[0]; if(!comp||!comp.competitors||comp.competitors.length<2) return null;\n' +
+'    var h=null,a=null; comp.competitors.forEach(function(c){ if(c.homeAway==="home") h=c; else if(c.homeAway==="away") a=c; });\n' +
+'    if(!h||!a){ h=comp.competitors[0]; a=comp.competitors[1]; }\n' +
+'    var st=(e.status&&e.status.type)||{};\n' +
+'    if(st.completed!==true) return null;\n' +
+'    var gl=parseInt(h.score,10), gv=parseInt(a.score,10);\n' +
+'    if(!isFinite(gl)||!isFinite(gv)) return null;\n' +
+'    return {local:(h.team&&(h.team.displayName||h.team.name))||"", visita:(a.team&&(a.team.displayName||a.team.name))||"", golesLocal:gl, golesVisita:gv};\n' +
+'   }).filter(Boolean); }).catch(function(){ return []; });\n' +
+' }\n' +
+' function resolverPick(pick,partidos){\n' +
+'  var match=partidos.find(function(p){ return mismoEquipo(p.local,pick.local)&&mismoEquipo(p.visita,pick.visita); });\n' +
+'  if(!match) return null;\n' +
+'  if(pick.mercado==="1X2"){\n' +
+'   var real=match.golesLocal>match.golesVisita?pick.local:(match.golesLocal<match.golesVisita?pick.visita:"Empate");\n' +
+'   return pick.seleccion===real?"ganado":"perdido";\n' +
+'  }\n' +
+'  if(pick.mercado==="OU2.5"){\n' +
+'   var t=match.golesLocal+match.golesVisita, real2=t>2.5?"Más de 2.5":"Menos de 2.5";\n' +
+'   return pick.seleccion===real2?"ganado":"perdido";\n' +
+'  }\n' +
+'  if(pick.mercado==="BTTS"){\n' +
+'   var real3=(match.golesLocal>=1&&match.golesVisita>=1)?"Sí":"No";\n' +
+'   return pick.seleccion===real3?"ganado":"perdido";\n' +
+'  }\n' +
+'  return null;\n' +
+' }\n' +
+' var CORRIENDO=false;\n' +
+' function verificarTodasLigas(){\n' +
+'  if(CORRIENDO) return Promise.resolve(0);\n' +
+'  CORRIENDO=true;\n' +
+'  var arr=cargarRegistro(), pend=arr.filter(function(p){ return p.estado==="pendiente"&&ESPN_SLUG[p.liga]; });\n' +
+'  if(!pend.length){ CORRIENDO=false; return Promise.resolve(0); }\n' +
+'  var cambios=0, cadena=Promise.resolve();\n' +
+'  pend.forEach(function(pick){\n' +
+'   cadena=cadena.then(function(){\n' +
+'    var ymd=ymdEspn(pick.fecha); if(!ymd) return;\n' +
+'    var dias=ventanaFechas(ymd);\n' +
+'    return Promise.all(dias.map(function(d){ return bajarDia(ESPN_SLUG[pick.liga],d); })).then(function(rs){\n' +
+'     var todos=[].concat.apply([],rs);\n' +
+'     var r=resolverPick(pick,todos);\n' +
+'     if(r){ pick.estado=r; cambios++; }\n' +
+'    });\n' +
+'   });\n' +
+'  });\n' +
+'  return cadena.then(function(){\n' +
+'   if(cambios) guardarRegistroArr(arr);\n' +
+'   CORRIENDO=false;\n' +
+'   return cambios;\n' +
+'  }).catch(function(){ CORRIENDO=false; return 0; });\n' +
+' }\n' +
+' function engancharBoton(){\n' +
+'  var rb=document.querySelector(".tabbar .tbar-btn[data-vista=\\"registro\\"]");\n' +
+'  if(!rb||rb.__ovaAuto) return;\n' +
+'  rb.__ovaAuto=1;\n' +
+'  rb.addEventListener("click",function(){\n' +
+'   setTimeout(function(){\n' +
+'    verificarTodasLigas().then(function(n){ if(n&&typeof pintarRegistro==="function") pintarRegistro(); });\n' +
+'   },80);\n' +
+'  });\n' +
+' }\n' +
+' function init(){\n' +
+'  try{ engancharBoton(); }catch(e){}\n' +
+'  try{ verificarTodasLigas().then(function(n){ if(n&&typeof pintarRegistro==="function") pintarRegistro(); }); }catch(e){}\n' +
+' }\n' +
+' if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();\n' +
+'})();\n' +
+'<' + '/script>\n' + MARCA_FIN;
+
+document.getElementById('ir').addEventListener('click', function(){
+  var btn=this, out=document.getElementById('out');
+  btn.disabled=true; out.innerHTML='<p>Bajando futbol.html…</p>';
+  fetch('futbol.html?v='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status+' — ¿este archivo está en la misma carpeta que futbol.html en el repo?');
+    return r.text();
+  }).then(function(html){
+    if(html.indexOf(MARCA_INICIO)>-1){
+      out.innerHTML='<p>Este parche ya estaba aplicado. No hice nada.</p>';
+      btn.disabled=false;
+      return;
+    }
+    var nuevo = html.replace('</body>', PARCHE + '\n</body>');
+    var blob = new Blob([nuevo], {type:'text/html'});
+    var url = URL.createObjectURL(blob);
+    out.innerHTML = '<p>Listo. <a href="'+url+'" download="futbol.html">Descarga el futbol.html nuevo aquí</a> y súbelo al repo encima del viejo (GitHub → Add file → mismo nombre, sobrescribe).</p>'+
+      '<p style="font-size:12px;color:#9DB2C8">Qué hace: cuando abres la pestaña Registro, revisa TODOS tus picks pendientes contra ESPN, aunque sean de una liga distinta a la que tengas cargada en pantalla — antes solo verificaba la liga activa.</p>';
+    btn.disabled=false;
+  }).catch(function(e){
+    out.innerHTML='<p style="color:#F87171">Error: '+e.message+'</p>';
+    btn.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
