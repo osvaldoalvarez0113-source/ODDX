@@ -2989,5 +2989,94 @@ document.getElementById('ligaSel').addEventListener('change', function(){
 
 </script>
 <!--OVA45:BODY:END-->
+<!--OVAPATCH:AUTOVERIF:BEGIN-->
+<script>
+/* Parche: verificacion automatica de picks en TODAS las ligas, no solo la cargada.
+   Reusa las funciones y datos globales que ya existen en futbol.html: ESPN_SLUG, ESPN_BASE,
+   claveEq, mismoEquipo, parseFecha, tsPartido, cargarRegistro, guardarRegistroArr. */
+(function(){
+ function ymdEspn(fechaEuropea){
+  var t=parseFecha(fechaEuropea); if(t===null) return null;
+  var d=new Date(t);
+  return d.getUTCFullYear()+String(d.getUTCMonth()+1).padStart(2,"0")+String(d.getUTCDate()).padStart(2,"0");
+ }
+ function ventanaFechas(ymd){
+  var y=+ymd.slice(0,4), m=+ymd.slice(4,6)-1, d=+ymd.slice(6,8);
+  var base=new Date(Date.UTC(y,m,d));
+  var out=[]; [-1,0,1].forEach(function(n){ var x=new Date(base.getTime()+n*86400000); out.push(x.getUTCFullYear()+String(x.getUTCMonth()+1).padStart(2,"0")+String(x.getUTCDate()).padStart(2,"0")); });
+  return out;
+ }
+ function bajarDia(slug,ymd){
+  return fetch(ESPN_BASE+slug+"/scoreboard?dates="+ymd).then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+   .then(function(j){ return ((j&&j.events)||[]).map(function(e){
+    var comp=e.competitions&&e.competitions[0]; if(!comp||!comp.competitors||comp.competitors.length<2) return null;
+    var h=null,a=null; comp.competitors.forEach(function(c){ if(c.homeAway==="home") h=c; else if(c.homeAway==="away") a=c; });
+    if(!h||!a){ h=comp.competitors[0]; a=comp.competitors[1]; }
+    var st=(e.status&&e.status.type)||{};
+    if(st.completed!==true) return null;
+    var gl=parseInt(h.score,10), gv=parseInt(a.score,10);
+    if(!isFinite(gl)||!isFinite(gv)) return null;
+    return {local:(h.team&&(h.team.displayName||h.team.name))||"", visita:(a.team&&(a.team.displayName||a.team.name))||"", golesLocal:gl, golesVisita:gv};
+   }).filter(Boolean); }).catch(function(){ return []; });
+ }
+ function resolverPick(pick,partidos){
+  var match=partidos.find(function(p){ return mismoEquipo(p.local,pick.local)&&mismoEquipo(p.visita,pick.visita); });
+  if(!match) return null;
+  if(pick.mercado==="1X2"){
+   var real=match.golesLocal>match.golesVisita?pick.local:(match.golesLocal<match.golesVisita?pick.visita:"Empate");
+   return pick.seleccion===real?"ganado":"perdido";
+  }
+  if(pick.mercado==="OU2.5"){
+   var t=match.golesLocal+match.golesVisita, real2=t>2.5?"Más de 2.5":"Menos de 2.5";
+   return pick.seleccion===real2?"ganado":"perdido";
+  }
+  if(pick.mercado==="BTTS"){
+   var real3=(match.golesLocal>=1&&match.golesVisita>=1)?"Sí":"No";
+   return pick.seleccion===real3?"ganado":"perdido";
+  }
+  return null;
+ }
+ var CORRIENDO=false;
+ function verificarTodasLigas(){
+  if(CORRIENDO) return Promise.resolve(0);
+  CORRIENDO=true;
+  var arr=cargarRegistro(), pend=arr.filter(function(p){ return p.estado==="pendiente"&&ESPN_SLUG[p.liga]; });
+  if(!pend.length){ CORRIENDO=false; return Promise.resolve(0); }
+  var cambios=0, cadena=Promise.resolve();
+  pend.forEach(function(pick){
+   cadena=cadena.then(function(){
+    var ymd=ymdEspn(pick.fecha); if(!ymd) return;
+    var dias=ventanaFechas(ymd);
+    return Promise.all(dias.map(function(d){ return bajarDia(ESPN_SLUG[pick.liga],d); })).then(function(rs){
+     var todos=[].concat.apply([],rs);
+     var r=resolverPick(pick,todos);
+     if(r){ pick.estado=r; cambios++; }
+    });
+   });
+  });
+  return cadena.then(function(){
+   if(cambios) guardarRegistroArr(arr);
+   CORRIENDO=false;
+   return cambios;
+  }).catch(function(){ CORRIENDO=false; return 0; });
+ }
+ function engancharBoton(){
+  var rb=document.querySelector(".tabbar .tbar-btn[data-vista=\"registro\"]");
+  if(!rb||rb.__ovaAuto) return;
+  rb.__ovaAuto=1;
+  rb.addEventListener("click",function(){
+   setTimeout(function(){
+    verificarTodasLigas().then(function(n){ if(n&&typeof pintarRegistro==="function") pintarRegistro(); });
+   },80);
+  });
+ }
+ function init(){
+  try{ engancharBoton(); }catch(e){}
+  try{ verificarTodasLigas().then(function(n){ if(n&&typeof pintarRegistro==="function") pintarRegistro(); }); }catch(e){}
+ }
+ if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
+})();
+</script>
+<!--OVAPATCH:AUTOVERIF:END-->
 </body>
 </html>
