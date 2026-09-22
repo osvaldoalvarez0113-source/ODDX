@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parche · marcador en vivo NBA</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.6}
+button{background:#3B82F6;color:#020509;border:0;border-radius:10px;padding:12px 18px;font-weight:700;font-size:15px}
+button:disabled{opacity:.5}
+a{color:#60A5FA}
+</style>
+</head>
+<body>
+<h2>Parche: marcador en vivo — NBA</h2>
+<p>Sube este archivo al repo ODDX (junto a nba.html) y ábrelo desde ahí. Lee nba.html y le agrega el marcador en vivo (se actualiza solo cada 20 segundos mientras haya un juego en curso).</p>
+<button id="ir">Aplicar parche</button>
+<div id="out"></div>
+
+<script>
+var MARCA_INICIO='<!--OVAPATCH:ENVIVO:BEGIN-->';
+var MARCA_FIN='<!--OVAPATCH:ENVIVO:END-->';
+
+var PARCHE = MARCA_INICIO + '\n<script>\n' +
+'/* Parche: marcador en vivo para NBA. Reusa ESPN (ya sin clave), EVENTOS, DIA, diaEspn, esc, $\n' +
+'   que ya existen en nba.html. Pollea cada 20s mientras la pesta\u00f1a est\u00e9 visible. */\n' +
+'(function(){\n' +
+' function diasVisibles(){ var s={}; (EVENTOS||[]).forEach(function(e){ s[diaEspn(e.ts)]=1; }); return Object.keys(s); }\n' +
+' function bajarDia(d){ return fetch(ESPN+"?dates="+d+"&limit=100").then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }); }\n' +
+' function actualizarVivo(){\n' +
+'  var dias=diasVisibles(); if(!dias.length) return;\n' +
+'  Promise.all(dias.map(bajarDia)).then(function(rs){\n' +
+'   var mapa={};\n' +
+'   rs.forEach(function(j){ if(!j) return; (j.events||[]).forEach(function(ev){\n' +
+'    var comp=ev.competitions&&ev.competitions[0]; if(!comp) return;\n' +
+'    var h=null,a=null; (comp.competitors||[]).forEach(function(c){ if(c.homeAway==="home") h=c; else if(c.homeAway==="away") a=c; });\n' +
+'    var st=(ev.status&&ev.status.type)||{};\n' +
+'    mapa[String(ev.id)]={ph:h?parseInt(h.score,10):null, pa:a?parseInt(a.score,10):null, state:st.state, detail:st.shortDetail||st.detail||""};\n' +
+'   }); });\n' +
+'   var cont=$("juegos"); if(!cont) return;\n' +
+'   cont.querySelectorAll(".game[data-espnid]").forEach(function(g){\n' +
+'    var info=mapa[g.getAttribute("data-espnid")]; if(!info) return;\n' +
+'    var badge=g.querySelector(".hora"); if(!badge) return;\n' +
+'    if(info.state==="in"){\n' +
+'     badge.style.color="var(--bad)";\n' +
+'     badge.innerHTML="\ud83d\udd34 "+(info.pa!=null?info.pa:"-")+"\u2013"+(info.ph!=null?info.ph:"-")+"<br><small style=\\"font-size:9px\\">"+esc(info.detail)+"</small>";\n' +
+'    } else if(info.state==="post"){\n' +
+'     badge.style.color="";\n' +
+'     badge.innerHTML="Final "+(info.pa!=null?info.pa:"-")+"\u2013"+(info.ph!=null?info.ph:"-");\n' +
+'    }\n' +
+'    var ev=(EVENTOS||[]).find(function(x){ return String(x.id)===g.getAttribute("data-espnid"); });\n' +
+'    if(ev){ ev.ph=info.ph; ev.pa=info.pa; ev.estado=info.state; }\n' +
+'   });\n' +
+'  }).catch(function(){});\n' +
+' }\n' +
+' function marcarIds(){\n' +
+'  try{\n' +
+'   var lista=(EVENTOS||[]).filter(function(e){ return DIA==="TODOS"||diaEspn(e.ts)===DIA; });\n' +
+'   document.querySelectorAll("#juegos .game").forEach(function(g,i){ if(lista[i]) g.setAttribute("data-espnid", lista[i].id); });\n' +
+'  }catch(e){}\n' +
+' }\n' +
+' if(typeof pintarJuegos==="function"){\n' +
+'  var _pj=pintarJuegos;\n' +
+'  pintarJuegos=function(){ _pj(); marcarIds(); };\n' +
+' }\n' +
+' setInterval(function(){ if(!document.hidden){ try{ actualizarVivo(); }catch(e){} } }, 20000);\n' +
+' setTimeout(function(){ try{ marcarIds(); actualizarVivo(); }catch(e){} }, 3000);\n' +
+'})();\n' +
+'<' + '/script>\n' + MARCA_FIN;
+
+document.getElementById('ir').addEventListener('click', function(){
+  var btn=this, out=document.getElementById('out');
+  btn.disabled=true; out.innerHTML='<p>Bajando nba.html…</p>';
+  fetch('nba.html?v='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status+' — ¿este archivo está en la misma carpeta que nba.html en el repo?');
+    return r.text();
+  }).then(function(html){
+    if(html.indexOf(MARCA_INICIO)>-1){
+      out.innerHTML='<p>Este parche ya estaba aplicado. No hice nada.</p>';
+      btn.disabled=false;
+      return;
+    }
+    var nuevo = html.replace('</body>', PARCHE + '\n</body>');
+    var blob = new Blob([nuevo], {type:'text/html'});
+    var url = URL.createObjectURL(blob);
+    out.innerHTML = '<p>Listo. <a href="'+url+'" download="nba.html">Descarga el nba.html nuevo aquí</a> y súbelo al repo encima del viejo.</p>'+
+      '<p style="font-size:12px;color:#9DB2C8">Qué hace: cada 20 segundos, mientras tengas la app abierta, revisa ESPN y actualiza el marcador de los juegos en curso en la lista — carreras/puntos y el cuarto/tiempo. No toca el modelo ni los cálculos.</p>';
+    btn.disabled=false;
+  }).catch(function(e){
+    out.innerHTML='<p style="color:#F87171">Error: '+e.message+'</p>';
+    btn.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
