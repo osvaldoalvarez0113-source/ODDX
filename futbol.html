@@ -3078,5 +3078,55 @@ document.getElementById('ligaSel').addEventListener('change', function(){
 })();
 </script>
 <!--OVAPATCH:AUTOVERIF:END-->
+<!--OVAPATCH:ENVIVO:BEGIN-->
+<script>
+/* Parche: marcador en vivo para futbol.html. Reusa ESPN_SLUG, ESPN_BASE, LIGA_ACTUAL, ymd,
+   mismoEquipo, esc, pintarJuegos que ya existen en futbol.html. Pollea cada 20s (solo si la
+   liga cargada tiene fuente en ESPN) mientras la pestaña esté visible. */
+(function(){
+ function marcarNombres(partidos){
+  try{
+   document.querySelectorAll("#juegos .game").forEach(function(g){
+    var idx=+g.getAttribute("data-idx"); var p=partidos[idx]; if(!p) return;
+    g.setAttribute("data-local", p.local); g.setAttribute("data-visita", p.visita);
+   });
+  }catch(e){}
+ }
+ if(typeof pintarJuegos==="function"){
+  var _pj=pintarJuegos;
+  pintarJuegos=function(partidos){ _pj(partidos); marcarNombres(partidos); };
+ }
+ function actualizarVivo(){
+  var slug=ESPN_SLUG[LIGA_ACTUAL]; if(!slug) return;
+  var hoy=ymd(new Date());
+  fetch(ESPN_BASE+slug+"/scoreboard?dates="+hoy).then(function(r){ return r.ok?r.json():null; }).then(function(j){
+   if(!j) return;
+   var cont=document.getElementById("juegos"); if(!cont) return;
+   var filas=cont.querySelectorAll(".game[data-local]");
+   (j.events||[]).forEach(function(e){
+    var comp=e.competitions&&e.competitions[0]; if(!comp) return;
+    var h=null,a=null; (comp.competitors||[]).forEach(function(c){ if(c.homeAway==="home") h=c; else if(c.homeAway==="away") a=c; });
+    if(!h||!a||!h.team||!a.team) return;
+    var st=(e.status&&e.status.type)||{};
+    var nomL=h.team.displayName||h.team.name, nomV=a.team.displayName||a.team.name;
+    var g=null;
+    for(var i=0;i<filas.length;i++){ if(mismoEquipo(filas[i].getAttribute("data-local"),nomL)&&mismoEquipo(filas[i].getAttribute("data-visita"),nomV)){ g=filas[i]; break; } }
+    if(!g) return;
+    var badge=g.querySelector(".hora"); if(!badge) return;
+    if(st.state==="in"){
+     badge.style.color="var(--bad)";
+     badge.innerHTML="🔴 "+(a.score!=null?a.score:"-")+"–"+(h.score!=null?h.score:"-")+"<br><small style=\"font-size:9px\">"+esc(st.shortDetail||st.detail||"")+"</small>";
+    } else if(st.state==="post"){
+     badge.style.color="";
+     badge.innerHTML="Terminó "+(a.score!=null?a.score:"-")+"–"+(h.score!=null?h.score:"-");
+    }
+   });
+  }).catch(function(){});
+ }
+ setInterval(function(){ if(!document.hidden){ try{ actualizarVivo(); }catch(e){} } }, 20000);
+ setTimeout(function(){ try{ actualizarVivo(); }catch(e){} }, 3000);
+})();
+</script>
+<!--OVAPATCH:ENVIVO:END-->
 </body>
 </html>

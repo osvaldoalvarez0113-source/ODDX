@@ -1063,5 +1063,53 @@ iniciar();
 
 </script>
 <!--OVA45:BODY:END-->
+<!--OVAPATCH:ENVIVO:BEGIN-->
+<script>
+/* Parche: marcador en vivo para NBA. Reusa ESPN (ya sin clave), EVENTOS, DIA, diaEspn, esc, $
+   que ya existen en nba.html. Pollea cada 20s mientras la pestaña esté visible. */
+(function(){
+ function diasVisibles(){ var s={}; (EVENTOS||[]).forEach(function(e){ s[diaEspn(e.ts)]=1; }); return Object.keys(s); }
+ function bajarDia(d){ return fetch(ESPN+"?dates="+d+"&limit=100").then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }); }
+ function actualizarVivo(){
+  var dias=diasVisibles(); if(!dias.length) return;
+  Promise.all(dias.map(bajarDia)).then(function(rs){
+   var mapa={};
+   rs.forEach(function(j){ if(!j) return; (j.events||[]).forEach(function(ev){
+    var comp=ev.competitions&&ev.competitions[0]; if(!comp) return;
+    var h=null,a=null; (comp.competitors||[]).forEach(function(c){ if(c.homeAway==="home") h=c; else if(c.homeAway==="away") a=c; });
+    var st=(ev.status&&ev.status.type)||{};
+    mapa[String(ev.id)]={ph:h?parseInt(h.score,10):null, pa:a?parseInt(a.score,10):null, state:st.state, detail:st.shortDetail||st.detail||""};
+   }); });
+   var cont=$("juegos"); if(!cont) return;
+   cont.querySelectorAll(".game[data-espnid]").forEach(function(g){
+    var info=mapa[g.getAttribute("data-espnid")]; if(!info) return;
+    var badge=g.querySelector(".hora"); if(!badge) return;
+    if(info.state==="in"){
+     badge.style.color="var(--bad)";
+     badge.innerHTML="🔴 "+(info.pa!=null?info.pa:"-")+"–"+(info.ph!=null?info.ph:"-")+"<br><small style=\"font-size:9px\">"+esc(info.detail)+"</small>";
+    } else if(info.state==="post"){
+     badge.style.color="";
+     badge.innerHTML="Final "+(info.pa!=null?info.pa:"-")+"–"+(info.ph!=null?info.ph:"-");
+    }
+    var ev=(EVENTOS||[]).find(function(x){ return String(x.id)===g.getAttribute("data-espnid"); });
+    if(ev){ ev.ph=info.ph; ev.pa=info.pa; ev.estado=info.state; }
+   });
+  }).catch(function(){});
+ }
+ function marcarIds(){
+  try{
+   var lista=(EVENTOS||[]).filter(function(e){ return DIA==="TODOS"||diaEspn(e.ts)===DIA; });
+   document.querySelectorAll("#juegos .game").forEach(function(g,i){ if(lista[i]) g.setAttribute("data-espnid", lista[i].id); });
+  }catch(e){}
+ }
+ if(typeof pintarJuegos==="function"){
+  var _pj=pintarJuegos;
+  pintarJuegos=function(){ _pj(); marcarIds(); };
+ }
+ setInterval(function(){ if(!document.hidden){ try{ actualizarVivo(); }catch(e){} } }, 20000);
+ setTimeout(function(){ try{ marcarIds(); actualizarVivo(); }catch(e){} }, 3000);
+})();
+</script>
+<!--OVAPATCH:ENVIVO:END-->
 </body>
 </html>
