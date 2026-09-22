@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parche · combo fútbol</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;background:#070B12;color:#F1F5FB;padding:20px;line-height:1.6}
+button{background:#3B82F6;color:#020509;border:0;border-radius:10px;padding:12px 18px;font-weight:700;font-size:15px}
+button:disabled{opacity:.5}
+a{color:#60A5FA}
+</style>
+</head>
+<body>
+<h2>Parche: pantalla Combo — fútbol</h2>
+<p>Sube este archivo al repo ODDX (junto a futbol.html) y ábrelo desde ahí. Le agrega una pestaña <b>Combo</b> (distinta de "Combina", que ya tienes) para armar parlays del <b>mismo</b> partido — por ejemplo "Real Madrid gana" + "Más de 2.5 goles" — usando la distribución real de goles, no multiplicando a ciegas.</p>
+<button id="ir">Aplicar parche</button>
+<div id="out"></div>
+
+<script>
+var MARCA_INICIO='<!--OVAPATCH:COMBO:BEGIN-->';
+var MARCA_FIN='<!--OVAPATCH:COMBO:END-->';
+
+var PARCHE = MARCA_INICIO + '\n<script>\n' +
+'/* Parche: pantalla Combo para futbol.html. Reusa PENDIENTES_TODOS/PARTIDOS, buscarEquipo,\n' +
+'   calcular (que ya devuelve la matriz de marcadores i=goles local,j=goles visita), y\n' +
+'   cuotaJustaAmericana que ya existen en futbol.html. No guarda picks: es calculadora. */\n' +
+'(function(){\n' +
+' try{\n' +
+'  var MK=[["","\u2014 sin usar \u2014"],["gan","Ganador"],["tot","Total del juego"],["ttL","Goles de %L"],["ttV","Goles de %V"]];\n' +
+'  function opt(v,t,sel){ return "<option value=\\""+v+"\\""+(sel?" selected":"")+">"+t+"</option>"; }\n' +
+'  function juegos(){ return (typeof PENDIENTES_TODOS!=="undefined"&&PENDIENTES_TODOS&&PENDIENTES_TODOS.length)?PENDIENTES_TODOS:((typeof PARTIDOS!=="undefined"&&PARTIDOS)?PARTIDOS:[]); }\n' +
+'  function selEstilo(){ return "width:100%;margin-bottom:8px;background:var(--bg1);border:1px solid var(--line2);color:var(--txt);border-radius:8px;padding:9px;font-size:13px"; }\n' +
+'  function legHtml(i){\n' +
+'   return "<div class=\\"cuotasbox\\" data-i=\\""+i+"\\"><label>Pata "+(i+1)+(i<2?"":" (opcional)")+"</label>"+\n' +
+'    "<select class=\\"cm\\" style=\\""+selEstilo()+"\\"></select>"+\n' +
+'    "<select class=\\"cs\\" style=\\""+selEstilo()+"\\"></select>"+\n' +
+'    "<input type=\\"number\\" step=\\"0.5\\" class=\\"cl\\" placeholder=\\"línea, ej. 2.5\\" style=\\""+selEstilo()+";display:none\\"></div>";\n' +
+'  }\n' +
+'  function sideOpts(mk,n){\n' +
+'   if(mk==="gan") return [["L",n.l+" gana"],["D","Empate"],["V",n.v+" gana"]];\n' +
+'   if(mk==="tot"||mk==="ttL"||mk==="ttV") return [["o","Más de"],["u","Menos de"]];\n' +
+'   return [];\n' +
+'  }\n' +
+'  function sides(L,n){\n' +
+'   var mk=L.querySelector(".cm").value, cs=L.querySelector(".cs"), cur=cs.value;\n' +
+'   var os=sideOpts(mk,n);\n' +
+'   cs.innerHTML=os.map(function(o,k){ return opt(o[0],o[1],o[0]===cur||(!cur&&k===0)); }).join("");\n' +
+'   cs.style.display=os.length?"":"none";\n' +
+'   L.querySelector(".cl").style.display=(mk==="tot"||mk==="ttL"||mk==="ttV")?"":"none";\n' +
+'  }\n' +
+'  function relabel(vista,n){\n' +
+'   vista.querySelectorAll(".cuotasbox[data-i] .cm").forEach(function(cm){\n' +
+'    var L=cm.closest(".cuotasbox"), cur=cm.value;\n' +
+'    cm.innerHTML=MK.map(function(m){ return opt(m[0], m[1].replace("%L",n.l).replace("%V",n.v), m[0]===cur); }).join("");\n' +
+'    sides(L,n);\n' +
+'   });\n' +
+'  }\n' +
+'  function legsFrom(vista){\n' +
+'   var legs=[],err=null;\n' +
+'   vista.querySelectorAll(".cuotasbox[data-i]").forEach(function(L){\n' +
+'    var mk=L.querySelector(".cm").value; if(!mk) return;\n' +
+'    var sd=L.querySelector(".cs").value, lv=parseFloat(L.querySelector(".cl").value);\n' +
+'    if(mk==="gan"){ legs.push({k:"gan",s:sd}); return; }\n' +
+'    if(!isFinite(lv)){ err="Falta la línea de una pata (ej. 2.5)."; return; }\n' +
+'    legs.push({k:mk,d:sd,L:lv});\n' +
+'   });\n' +
+'   var nGan=legs.filter(function(l){ return l.k==="gan"; }).length;\n' +
+'   if(!err&&nGan>1) err="Solo puede haber un ganador por combo.";\n' +
+'   if(!err&&legs.length<2) err="Escoge al menos 2 patas para armar el combo.";\n' +
+'   return {legs:legs, err:err};\n' +
+'  }\n' +
+'  function joint(marc,legs){\n' +
+'   var p=0;\n' +
+'   marc.forEach(function(m){\n' +
+'    var ok=true;\n' +
+'    legs.forEach(function(l){\n' +
+'     if(l.k==="gan"){ if(l.s==="L"&&!(m.i>m.j)) ok=false; else if(l.s==="D"&&!(m.i===m.j)) ok=false; else if(l.s==="V"&&!(m.i<m.j)) ok=false; }\n' +
+'     else if(l.k==="tot"){ var t=m.i+m.j; if(l.d==="o"){ if(!(t>l.L)) ok=false; } else { if(!(t<l.L)) ok=false; } }\n' +
+'     else if(l.k==="ttL"){ if(l.d==="o"){ if(!(m.i>l.L)) ok=false; } else { if(!(m.i<l.L)) ok=false; } }\n' +
+'     else if(l.k==="ttV"){ if(l.d==="o"){ if(!(m.j>l.L)) ok=false; } else { if(!(m.j<l.L)) ok=false; } }\n' +
+'    });\n' +
+'    if(ok) p+=m.p;\n' +
+'   });\n' +
+'   return p;\n' +
+'  }\n' +
+'  function textoLeg(l,n){\n' +
+'   if(l.k==="gan") return l.s==="L"?(n.l+" gana"):(l.s==="D"?"Empate":(n.v+" gana"));\n' +
+'   var nom=l.k==="tot"?"Total":(l.k==="ttL"?n.l:n.v);\n' +
+'   return nom+" "+(l.d==="o"?"más de":"menos de")+" "+l.L;\n' +
+'  }\n' +
+'  function calcularCombo(vista){\n' +
+'   var box=vista.querySelector("#fcmb_out");\n' +
+'   var lista=juegos(), idx=+vista.querySelector("#fcmb_juego").value, p=lista[idx];\n' +
+'   if(!p){ box.innerHTML="<div class=\\"aviso\\">Primero carga una liga en Juegos.</div>"; return; }\n' +
+'   var mL=buscarEquipo(p.local), mV=buscarEquipo(p.visita);\n' +
+'   if(!mL||!mV){ box.innerHTML="<div class=\\"aviso\\">No se pudo cruzar este partido con la tabla de posiciones.</div>"; return; }\n' +
+'   var lg=legsFrom(vista);\n' +
+'   if(lg.err){ box.innerHTML="<div class=\\"aviso\\">"+lg.err+"</div>"; return; }\n' +
+'   var r=calcular(mL.eq,mV.eq);\n' +
+'   if(!r.marcadores){ box.innerHTML="<div class=\\"aviso\\">Este partido todavía no tiene la matriz de marcadores calculada.</div>"; return; }\n' +
+'   var n={l:p.local,v:p.visita};\n' +
+'   var pj=joint(r.marcadores,lg.legs);\n' +
+'   var pind=1; lg.legs.forEach(function(l){ pind*=joint(r.marcadores,[l]); });\n' +
+'   var stake=parseFloat(vista.querySelector("#fcmb_stake").value), pay=parseFloat(vista.querySelector("#fcmb_pay").value);\n' +
+'   var hasPay=isFinite(stake)&&stake>0&&isFinite(pay)&&pay>stake;\n' +
+'   var be=hasPay?stake/pay:null;\n' +
+'   var html="<div class=\\"kpi\\"><div><b>"+(pj*100).toFixed(1)+"%</b><small>Modelo, patas relacionadas</small></div>"+\n' +
+'    "<div><b>"+(pind*100).toFixed(1)+"%</b><small>Multiplicando por separado</small></div>"+\n' +
+'    "<div><b>"+(hasPay?(be*100).toFixed(1)+"%":"—")+"</b><small>"+(hasPay?"Equilibrio del pago":"Escribe cuánto te pagan")+"</small></div></div>";\n' +
+'   if(hasPay){\n' +
+'    var edge=(pj-be)*100;\n' +
+'    if(edge<=0) html+="<div class=\\"pick no\\"><b>Sin valor</b>Con ese pago hace falta "+(be*100).toFixed(1)+"% y el modelo da "+(pj*100).toFixed(1)+"%.</div>";\n' +
+'    else if(edge<8) html+="<div class=\\"pick no\\"><b>Dentro del ruido</b>+"+edge.toFixed(1)+" puntos, pero un combo con goles pide más margen para confiar (el total y las carreras por equipo salen flojos en tu backtest).</div>";\n' +
+'    else html+="<div class=\\"pick\\"><b>Valor +"+edge.toFixed(1)+" puntos</b>Modelo "+(pj*100).toFixed(1)+"% contra equilibrio "+(be*100).toFixed(1)+"%.</div>";\n' +
+'   }\n' +
+'   var cj=cuotaJustaAmericana(pj), cjTxt=(cj===null?"—":(cj>0?"+":"")+cj);\n' +
+'   html+="<div class=\\"nota\\">Cuota justa del combo: "+cjTxt+". Cada pata: "+lg.legs.map(function(l){ return textoLeg(l,n); }).join(" · ")+".</div>";\n' +
+'   html+="<div class=\\"nota\\">Sale de la misma matriz de marcadores del Veredicto (Poisson con Dixon-Coles), por eso capta cuando dos patas van casi siempre juntas — no es multiplicar a ciegas. No se guarda en el registro, es solo calculadora.</div>";\n' +
+'   box.innerHTML=html;\n' +
+'  }\n' +
+'  function montar(){\n' +
+'   var main=document.querySelector("main"), tabbar=document.querySelector(".tabbar");\n' +
+'   if(!main||!tabbar||document.getElementById("vistaCombo")) return;\n' +
+'   var vista=document.createElement("div"); vista.className="vista"; vista.id="vistaCombo";\n' +
+'   vista.innerHTML="<div class=\\"cuotasbox\\"><label>Partido</label><select id=\\"fcmb_juego\\" style=\\""+selEstilo()+"\\"></select></div>"+\n' +
+'    legHtml(0)+legHtml(1)+legHtml(2)+\n' +
+'    "<div class=\\"cuotasbox\\"><label>Apuestas ($)</label><input type=\\"number\\" id=\\"fcmb_stake\\" value=\\"10\\" style=\\""+selEstilo()+"\\">"+\n' +
+'    "<label>Te pagan ($)</label><input type=\\"number\\" id=\\"fcmb_pay\\" placeholder=\\"ej. 18.5\\" style=\\""+selEstilo()+"\\"></div>"+\n' +
+'    "<button class=\\"btnAncho\\" id=\\"fcmb_go\\">Calcular combo</button><div id=\\"fcmb_out\\"></div>";\n' +
+'   main.appendChild(vista);\n' +
+'   var btn=document.createElement("button"); btn.className="tbar-btn"; btn.setAttribute("data-vista","combo");\n' +
+'   btn.innerHTML="<span class=\\"ic\\">\ud83e\udde9</span><span class=\\"lb\\">Combo</span>";\n' +
+'   tabbar.appendChild(btn);\n' +
+'   function refrescarSelector(){\n' +
+'    var lista=juegos(), sel=vista.querySelector("#fcmb_juego"), prev=sel.value;\n' +
+'    sel.innerHTML=lista.length?lista.map(function(p,i){ return "<option value=\\""+i+"\\""+(String(i)===prev?" selected":"")+">"+p.local+" vs "+p.visita+"</option>"; }).join(""):"<option value=\\"\\">Carga una liga primero</option>";\n' +
+'    var idx=+sel.value, p=lista[idx];\n' +
+'    if(p) relabel(vista,{l:p.local,v:p.visita});\n' +
+'   }\n' +
+'   btn.addEventListener("click",function(){\n' +
+'    document.querySelectorAll(".tbar-btn").forEach(function(b){ b.classList.toggle("on",b===btn); });\n' +
+'    document.querySelectorAll("main > .vista").forEach(function(v){ v.classList.toggle("on", v===vista); });\n' +
+'    refrescarSelector();\n' +
+'   });\n' +
+'   vista.querySelectorAll(".cuotasbox[data-i] .cm").forEach(function(cm){\n' +
+'    cm.addEventListener("change",function(){\n' +
+'     var lista=juegos(), p=lista[+vista.querySelector("#fcmb_juego").value];\n' +
+'     sides(cm.closest(".cuotasbox"), p?{l:p.local,v:p.visita}:{l:"Local",v:"Visita"});\n' +
+'    });\n' +
+'   });\n' +
+'   vista.querySelector("#fcmb_juego").addEventListener("change",function(){\n' +
+'    var lista=juegos(), p=lista[+this.value];\n' +
+'    if(p) relabel(vista,{l:p.local,v:p.visita});\n' +
+'   });\n' +
+'   vista.querySelector("#fcmb_go").addEventListener("click",function(){ calcularCombo(vista); });\n' +
+'  }\n' +
+'  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",montar); else montar();\n' +
+' }catch(e){}\n' +
+'})();\n' +
+'<' + '/script>\n' + MARCA_FIN;
+
+document.getElementById('ir').addEventListener('click', function(){
+  var btn=this, out=document.getElementById('out');
+  btn.disabled=true; out.innerHTML='<p>Bajando futbol.html…</p>';
+  fetch('futbol.html?v='+Date.now()).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status+' — ¿este archivo está en la misma carpeta que futbol.html en el repo?');
+    return r.text();
+  }).then(function(html){
+    if(html.indexOf(MARCA_INICIO)>-1){
+      out.innerHTML='<p>Este parche ya estaba aplicado. No hice nada.</p>';
+      btn.disabled=false;
+      return;
+    }
+    var nuevo = html.replace('</body>', PARCHE + '\n</body>');
+    var blob = new Blob([nuevo], {type:'text/html'});
+    var url = URL.createObjectURL(blob);
+    out.innerHTML = '<p>Listo. <a href="'+url+'" download="futbol.html">Descarga el futbol.html nuevo aquí</a> y súbelo al repo encima del viejo.</p>'+
+      '<p style="font-size:12px;color:#9DB2C8">Qué hace: agrega una pestaña 🧩 Combo abajo. Escoges un partido, hasta 3 patas (ganador, total, o goles de un equipo), y calcula la probabilidad real de que se cumplan todas juntas — no solo multiplicando.</p>';
+    btn.disabled=false;
+  }).catch(function(e){
+    out.innerHTML='<p style="color:#F87171">Error: '+e.message+'</p>';
+    btn.disabled=false;
+  });
+});
+</script>
+</body>
+</html>
