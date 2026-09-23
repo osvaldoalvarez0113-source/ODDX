@@ -106,3 +106,24 @@ else document.addEventListener("DOMContentLoaded", mostrarSplash);
 
 }catch(e){}
 })();
+
+/* ---------- 4. remates finales de lujo (solo con tema Oro negro activo) ---------- */
+(function(){
+try{
+  var extra = document.createElement("style");
+  extra.id = "ovaObsExtra";
+  extra.textContent = ""
+  + "html[data-skin=oro] .pick.big{box-shadow:0 0 26px -6px rgba(240,206,107,.4);}"
+  + "html[data-skin=oro] .brand,html[data-skin=oro] header h1,html[data-skin=oro] h1{"
+  + "background:linear-gradient(100deg,var(--acc2,#E6C874) 20%,var(--hot,#F0CE6B) 40%,var(--acc2,#E6C874) 60%);"
+  + "background-size:200% auto;-webkit-background-clip:text;background-clip:text;"
+  + "-webkit-text-fill-color:transparent;animation:ovaShine 5s linear infinite;}"
+  + "@keyframes ovaShine{to{background-position:-200% center;}}"
+  + "html[data-skin=oro] .ovaHero{box-shadow:0 0 34px -14px rgba(240,206,107,.35);}"
+  + "html[data-skin=oro] .tb.on,html[data-skin=oro] .diaBtn.on,html[data-skin=oro] .navbar button.on,"
+  + "html[data-skin=oro] .tbar-btn.on{filter:drop-shadow(0 3px 10px rgba(240,206,107,.4));}"
+  + "@media (prefers-reduced-motion:reduce){html[data-skin=oro] .brand,html[data-skin=oro] header h1,"
+  + "html[data-skin=oro] h1{animation:none;}}";
+  document.head.appendChild(extra);
+}catch(e){}
+})();
