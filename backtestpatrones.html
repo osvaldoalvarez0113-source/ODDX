@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backtest Día/Noche y Viento — OVA</title>
+<style>
+  :root{
+    --bg:#0b0d10; --card:#15181c; --line:#262b31; --gold:#d4af37;
+    --text:#f0ede4; --muted:#9aa1ab;
+  }
+  *{box-sizing:border-box;}
+  body{background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; margin:0; padding:16px; max-width:720px; margin:0 auto;}
+  h1{font-size:1.3rem; color:var(--gold); margin:8px 0 4px;}
+  h2{font-size:1.05rem; color:var(--gold); margin:0 0 8px;}
+  p.sub{color:var(--muted); font-size:0.85rem; margin:0 0 18px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px;}
+  label{display:block; font-size:0.85rem; color:var(--muted); margin-bottom:6px;}
+  select, input[type=date]{width:100%; background:#0e1114; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px; font-size:0.95rem; margin-bottom:12px;}
+  .row{display:flex; gap:10px;}
+  .row > div{flex:1;}
+  button{width:100%; background:var(--gold); color:#111; border:none; border-radius:12px; padding:14px; font-size:1rem; font-weight:700; cursor:pointer;}
+  button:disabled{opacity:0.5;}
+  .bar{height:8px; background:#0e1114; border-radius:6px; overflow:hidden; margin:10px 0;}
+  .bar > div{height:100%; background:var(--gold); width:0%; transition:width 0.2s;}
+  .log{font-size:0.78rem; color:var(--muted); max-height:120px; overflow-y:auto; white-space:pre-wrap; font-family:monospace; margin-top:8px;}
+  table{width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:6px;}
+  th, td{padding:8px 6px; text-align:right; border-bottom:1px solid var(--line);}
+  th:first-child, td:first-child{text-align:left;}
+  th{color:var(--muted); font-weight:600; font-size:0.75rem; text-transform:uppercase;}
+  .veredicto{font-size:0.9rem; margin-top:14px; padding:12px; border-radius:10px; background:#0e1114; border:1px solid var(--line);}
+  .veredicto b{color:var(--gold);}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+
+<h1>⚾ Backtest: Día/Noche y Viento</h1>
+<p class="sub">Mide en una sola corrida dos patrones: (1) si el ERA del abridor en su split día/noche predice mejor que su ERA de temporada, y (2) si el viento del parque (adentro/afuera) mueve el total de carreras más allá del promedio de ese parque.</p>
+
+<div class="card">
+  <label>Temporada</label>
+  <select id="season">
+    <option value="2026">2026</option>
+    <option value="2025">2025</option>
+  </select>
+
+  <label>Rango de fechas (deja por defecto para toda la temporada regular)</label>
+  <div class="row">
+    <div><input type="date" id="startDate"></div>
+    <div><input type="date" id="endDate"></div>
+  </div>
+
+  <label>Modo</label>
+  <select id="mode">
+    <option value="full">Completo (todos los juegos, más lento)</option>
+    <option value="sample">Rápido (1 de cada 3 fechas, para probar)</option>
+  </select>
+
+  <button id="run">Correr backtest</button>
+  <div class="bar"><div id="barFill"></div></div>
+  <div id="status" style="font-size:0.85rem;color:var(--muted);"></div>
+  <div class="log" id="log"></div>
+</div>
+
+<div class="card hidden" id="resultsDN">
+  <h2>Día/Noche del abridor</h2>
+  <table>
+    <thead><tr><th>Predictor</th><th>n</th><th>r</th><th>sesgo (ERA)</th></tr></thead>
+    <tbody id="resultsDNBody"></tbody>
+  </table>
+  <div class="veredicto" id="veredictoDN"></div>
+</div>
+
+<div class="card hidden" id="resultsWind">
+  <h2>Viento por parque</h2>
+  <table>
+    <thead><tr><th>Predictor</th><th>n</th><th>r</th></tr></thead>
+    <tbody id="resultsWindBody"></tbody>
+  </table>
+  <div class="veredicto" id="veredictoWind"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function ipToOuts(ipStr){
+  const s = String(ipStr);
+  const [whole, frac] = s.split('.');
+  const w = parseInt(whole||'0',10) || 0;
+  const f = frac ? parseInt(frac,10) : 0;
+  return w*3 + (f===1?1:f===2?2:0);
+}
+function outsToIP(outs){ return outs/3; }
+
+function pearson(xs, ys){
+  const n = xs.length;
+  if(n < 3) return null;
+  const mx = xs.reduce((a,b)=>a+b,0)/n;
+  const my = ys.reduce((a,b)=>a+b,0)/n;
+  let num=0, dx2=0, dy2=0;
+  for(let i=0;i<n;i++){
+    const dx = xs[i]-mx, dy = ys[i]-my;
+    num += dx*dy; dx2 += dx*dx; dy2 += dy*dy;
+  }
+  const den = Math.sqrt(dx2*dy2);
+  return den === 0 ? null : num/den;
+}
+
+function log(msg){
+  const el = $('log');
+  el.textContent += msg + "\n";
+  el.scrollTop = el.scrollHeight;
+}
+
+async function fetchJSON(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('HTTP '+r.status+' en '+url);
+  return r.json();
+}
+
+async function pool(items, limit, worker){
+  const results = new Array(items.length);
+  let idx = 0;
+  async function next(){
+    while(idx < items.length){
+      const i = idx++;
+      try{ results[i] = await worker(items[i], i); }
+      catch(e){ results[i] = null; }
+    }
+  }
+  await Promise.all(new Array(limit).fill(0).map(next));
+  return results;
+}
+
+function parseWind(windStr, condition){
+  if(!windStr) return null;
+  const c = (condition||'').toLowerCase();
+  if(c.includes('roof') || c.includes('dome') || c.includes('indoor')) return null;
+  const w = windStr.toLowerCase();
+  if(w.includes('calm')) return {speed:0, dir:0};
+  const m = windStr.match(/(\d+)\s*mph/i);
+  if(!m) return null;
+  const speed = parseInt(m[1],10);
+  let dir = 0;
+  if(w.includes('out')) dir = 1;
+  else if(w.includes('in')) dir = -1;
+  else return null; // viento cruzado / variable, sin componente clara adentro-afuera
+  return {speed, dir};
+}
+
+async function runBacktest(){
+  $('run').disabled = true;
+  $('resultsDN').classList.add('hidden');
+  $('resultsWind').classList.add('hidden');
+  $('log').textContent = '';
+  $('barFill').style.width = '0%';
+
+  const season = $('season').value;
+  const mode = $('mode').value;
+  let startDate = $('startDate').value || (season+'-03-15');
+  let endDate = $('endDate').value || (season+'-10-01');
+
+  $('status').textContent = 'Descargando calendario...';
+  const sched = await fetchJSON(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&season=${season}&gameType=R&startDate=${startDate}&endDate=${endDate}`);
+
+  let dateGroups = (sched.dates || []).map(d => ({
+    date: d.date,
+    games: (d.games||[]).filter(g => g.status && g.status.abstractGameState === 'Final')
+                         .map(g => ({gamePk: g.gamePk, dayNight: g.dayNight || 'day'}))
+  })).filter(d => d.games.length > 0);
+
+  dateGroups.sort((a,b) => a.date.localeCompare(b.date));
+  if(mode === 'sample'){
+    dateGroups = dateGroups.filter((_, i) => i % 3 === 0);
+  }
+
+  const totalGames = dateGroups.reduce((s,d)=>s+d.games.length,0);
+  log(`Fechas: ${dateGroups.length} · Juegos: ${totalGames}`);
+
+  // pitcherId -> [{date, dayNight, ip, er}]  (solo aperturas)
+  const pitcherLog = {};
+  // venueId -> [{date, totalRuns}]
+  const venueLog = {};
+
+  function starterHistory(pitcherId, beforeDateStr){
+    const log = pitcherLog[pitcherId];
+    if(!log) return {sameSplit:{ip:0,er:0,n:0}, overall:{ip:0,er:0,n:0}};
+    return null; // no usado directamente, se calcula abajo
+  }
+
+  // muestras
+  const dn = { split:{x:[],y:[]}, season:{x:[],y:[]} };
+  const wind = { x:[], y:[] };
+
+  let processed = 0;
+  let gameErrors = 0;
+
+  for(const group of dateGroups){
+    const feeds = await pool(group.games, 5, async (g) => {
+      const feed = await fetchJSON(`https://statsapi.mlb.com/api/v1.1/game/${g.gamePk}/feed/live`);
+      return {gamePk: g.gamePk, dayNight: g.dayNight, feed};
+    });
+
+    const todaysPitcherEntries = [];
+    const todaysVenueEntries = [];
+
+    for(const item of feeds){
+      if(!item || !item.feed){ gameErrors++; continue; }
+      const feed = item.feed;
+      const gameData = feed.gameData;
+      const liveData = feed.liveData;
+      if(!gameData || !liveData || !liveData.boxscore || !liveData.linescore){ gameErrors++; continue; }
+
+      const gameDate = group.date;
+      const dayNight = item.dayNight;
+
+      // ---- Día/Noche: abridores ----
+      const boxTeams = liveData.boxscore.teams;
+      for(const side of ['home','away']){
+        const teamData = boxTeams[side];
+        if(!teamData) continue;
+        const pitcherIds = teamData.pitchers || [];
+        if(pitcherIds.length < 1) continue;
+        const starterId = pitcherIds[0];
+        const pdata = teamData.players && teamData.players['ID'+starterId];
+        if(!pdata || !pdata.stats || !pdata.stats.pitching) continue;
+        const stat = pdata.stats.pitching;
+        const outs = ipToOuts(stat.inningsPitched || '0.0');
+        const ip = outsToIP(outs);
+        const er = stat.earnedRuns || 0;
+        if(ip < 1) continue;
+        const actualERA = (er*9)/ip;
+
+        const histAll = pitcherLog[starterId] || [];
+        let sameIp=0, sameEr=0, sameN=0;
+        let allIp=0, allEr=0, allN=0;
+        for(const h of histAll){
+          allIp += h.ip; allEr += h.er; allN++;
+          if(h.dayNight === dayNight){ sameIp += h.ip; sameEr += h.er; sameN++; }
+        }
+        if(sameN >= 2 && allN >= 2 && sameIp >= 3 && allIp >= 3){
+          dn.split.x.push((sameEr*9)/sameIp);
+          dn.split.y.push(actualERA);
+          dn.season.x.push((allEr*9)/allIp);
+          dn.season.y.push(actualERA);
+        }
+
+        todaysPitcherEntries.push({pitcherId: starterId, date: gameDate, dayNight, ip, er});
+      }
+
+      // ---- Viento ----
+      const weather = gameData.weather || {};
+      const parsed = parseWind(weather.wind, weather.condition);
+      const venue = gameData.venue || {};
+      const venueId = venue.id;
+      const linescoreTeams = liveData.linescore.teams || {};
+      const homeRuns = (linescoreTeams.home && linescoreTeams.home.runs) || 0;
+      const awayRuns = (linescoreTeams.away && linescoreTeams.away.runs) || 0;
+      const totalRuns = homeRuns + awayRuns;
+
+      if(venueId){
+        const vlog = venueLog[venueId] || [];
+        if(vlog.length >= 5 && parsed){
+          const avg = vlog.reduce((s,e)=>s+e.totalRuns,0)/vlog.length;
+          const residual = totalRuns - avg;
+          const windFactor = parsed.speed * parsed.dir;
+          wind.x.push(windFactor);
+          wind.y.push(residual);
+        }
+        todaysVenueEntries.push({venueId, date: gameDate, totalRuns});
+      }
+    }
+
+    for(const e of todaysPitcherEntries){
+      if(!pitcherLog[e.pitcherId]) pitcherLog[e.pitcherId] = [];
+      pitcherLog[e.pitcherId].push(e);
+    }
+    for(const e of todaysVenueEntries){
+      if(!venueLog[e.venueId]) venueLog[e.venueId] = [];
+      venueLog[e.venueId].push(e);
+    }
+
+    processed += group.games.length;
+    const pct = Math.round(100*processed/totalGames);
+    $('barFill').style.width = pct+'%';
+    $('status').textContent = `${processed}/${totalGames} juegos · ${group.date}`;
+  }
+
+  log(`Listo. Errores de descarga: ${gameErrors}`);
+
+  // ---- resultados día/noche ----
+  const dnRows = [
+    {label:'ERA en su split día/noche', key:'split'},
+    {label:'ERA de temporada (control)', key:'season'},
+  ];
+  const dnBody = $('resultsDNBody');
+  dnBody.innerHTML = '';
+  let bestDN = null;
+  for(const row of dnRows){
+    const s = dn[row.key];
+    const n = s.x.length;
+    const r = pearson(s.x, s.y);
+    const bias = n>0 ? (s.x.reduce((a,b)=>a+b,0)/n - s.y.reduce((a,b)=>a+b,0)/n) : null;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${row.label}</td><td>${n}</td><td>${r!==null?r.toFixed(3):'—'}</td><td>${bias!==null?(bias>=0?'+':'')+bias.toFixed(2):'—'}</td>`;
+    dnBody.appendChild(tr);
+    if(r!==null && (bestDN===null || Math.abs(r)>Math.abs(bestDN.r))) bestDN = {label:row.label, r, n};
+  }
+  $('veredictoDN').innerHTML = bestDN
+    ? `<b>Mejor: ${bestDN.label}</b> (r=${bestDN.r.toFixed(3)}, n=${bestDN.n}). Compara contra el techo de 0.10-0.16 de tus otros mercados.`
+    : 'No hubo suficientes muestras pareadas.';
+  $('resultsDN').classList.remove('hidden');
+
+  // ---- resultados viento ----
+  const windBody = $('resultsWindBody');
+  windBody.innerHTML = '';
+  const rWind = pearson(wind.x, wind.y);
+  const trw = document.createElement('tr');
+  trw.innerHTML = `<td>Viento (mph × dirección) vs residual de total</td><td>${wind.x.length}</td><td>${rWind!==null?rWind.toFixed(3):'—'}</td>`;
+  windBody.appendChild(trw);
+  $('veredictoWind').innerHTML = rWind!==null
+    ? `<b>r=${rWind.toFixed(3)}</b> con n=${wind.x.length}. Compara contra el techo de 0.10-0.16. Solo cuenta juegos con viento claramente adentro/afuera (se excluyen techos cerrados y viento cruzado/variable).`
+    : 'No hubo suficientes muestras de viento direccional.';
+  $('resultsWind').classList.remove('hidden');
+
+  $('status').textContent = 'Backtest completo.';
+  $('run').disabled = false;
+}
+
+$('run').addEventListener('click', () => {
+  runBacktest().catch(e => {
+    log('ERROR: ' + e.message);
+    $('status').textContent = 'Falló — revisa el log.';
+    $('run').disabled = false;
+  });
+});
+</script>
+</body>
+</html>
