@@ -101,6 +101,18 @@ try{
     });
   }
 
+  // Espera hasta que el juego termine de renderizar sus pestanas (Veredicto,
+  // Cuotas, etc.) antes de intentar pintar la caja -- si se intenta muy rapido
+  // el juego todavia dice "Cargando numeros..." y no hay nada donde pintar.
+  function esperarYPintar(el, intentos){
+    intentos = intentos || 0;
+    var body = el.querySelector('.body');
+    var tabV = body && body.querySelector('.tab[data-t="v"]');
+    if(tabV){ pintarComparacion(el); return; }
+    if(intentos >= 15) return; // se dio por vencido tras ~4.5s
+    setTimeout(function(){ esperarYPintar(el, intentos+1); }, 300);
+  }
+
   // Observa cuando se abre un juego (clase "open" en .game) y pinta la comparacion.
   if(window.MutationObserver){
     new MutationObserver(function(muts){
@@ -108,7 +120,7 @@ try{
         if(m.type==='attributes' && m.attributeName==='class'){
           var el = m.target;
           if(el.classList && el.classList.contains('game') && el.classList.contains('open')){
-            setTimeout(function(){ pintarComparacion(el); }, 60);
+            esperarYPintar(el);
           }
         }
       });
