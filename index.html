@@ -5260,6 +5260,7 @@ document.addEventListener('visibilitychange',function(){
 
 
 
+
 <script>/*OVA_SERVIDOR_RAILWAY_PARCHE*/
 (function(){
 try{
@@ -5324,16 +5325,17 @@ try{
     });
   }
 
-  // Espera hasta que el juego termine de renderizar sus pestanas (Veredicto,
-  // Cuotas, etc.) antes de intentar pintar la caja -- si se intenta muy rapido
-  // el juego todavia dice "Cargando numeros..." y no hay nada donde pintar.
-  function esperarYPintar(el, intentos){
-    intentos = intentos || 0;
-    var body = el.querySelector('.body');
-    var tabV = body && body.querySelector('.tab[data-t="v"]');
-    if(tabV){ pintarComparacion(el); return; }
-    if(intentos >= 15) return; // se dio por vencido tras ~4.5s
-    setTimeout(function(){ esperarYPintar(el, intentos+1); }, 300);
+  // En vez de adivinar cuanto tarda OVA en cargar el juego (puede ser varios
+  // segundos por celular, con todas las llamadas que hace), nos enganchamos
+  // directamente a la MISMA promesa que usa OVA para saber cuando termino:
+  // el._cargar() ya existe en cada tarjeta de juego y se resuelve justo
+  // despues de que pintar(el) ya corrio. Llamarla de nuevo no repite el
+  // trabajo (OVA la cachea sola con el._prom).
+  function esperarYPintar(el){
+    if(typeof el._cargar !== 'function') return;
+    el._cargar().then(function(){
+      setTimeout(function(){ pintarComparacion(el); }, 50);
+    });
   }
 
   // Observa cuando se abre un juego (clase "open" en .game) y pinta la comparacion.
