@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prueba CORS — Baseball Savant</title>
+<style>
+  :root{ --bg:#0b0d10; --card:#15181c; --line:#262b31; --gold:#d4af37; --text:#f0ede4; --muted:#9aa1ab; --good:#4caf7d; --bad:#e05656; }
+  *{box-sizing:border-box;}
+  body{background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; margin:0; padding:16px; max-width:680px; margin:0 auto;}
+  h1{font-size:1.2rem; color:var(--gold); margin:8px 0 4px;}
+  p.sub{color:var(--muted); font-size:0.85rem;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px;}
+  button{width:100%; background:var(--gold); color:#111; border:none; border-radius:12px; padding:14px; font-size:1rem; font-weight:700; cursor:pointer; margin-bottom:10px;}
+  button:disabled{opacity:0.5;}
+  .result{font-size:0.95rem; padding:12px; border-radius:10px; margin-top:10px; white-space:pre-wrap; font-family:monospace; font-size:0.78rem;}
+  .ok{background:rgba(76,175,125,0.12); border:1px solid var(--good); color:var(--good);}
+  .fail{background:rgba(224,86,86,0.12); border:1px solid var(--bad); color:var(--bad);}
+  .pending{color:var(--muted);}
+  table{width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:8px;}
+  th,td{padding:6px 4px; text-align:left; border-bottom:1px solid var(--line);}
+</style>
+</head>
+<body>
+
+<h1>🔍 Prueba: ¿Baseball Savant deja fetch directo?</h1>
+<p class="sub">Intenta 3 pruebas distintas contra baseballsavant.mlb.com para ver si el navegador puede leer la respuesta (CORS abierto) o si la bloquea (habría que usar tu Cloudflare Worker como intermediario).</p>
+
+<div class="card">
+  <button id="run">Correr pruebas</button>
+  <div id="results"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+async function testFetch(label, url, opts){
+  const box = document.createElement('div');
+  box.className = 'result pending';
+  box.textContent = `${label}\nProbando...`;
+  $('results').appendChild(box);
+
+  try{
+    const r = await fetch(url, opts || {});
+    const text = await r.text();
+    const preview = text.slice(0, 200).replace(/\n/g,' ');
+    box.className = 'result ok';
+    box.textContent = `${label}\n✅ FUNCIONÓ — status ${r.status}\nPrimeros caracteres: ${preview}`;
+  }catch(e){
+    box.className = 'result fail';
+    box.textContent = `${label}\n❌ BLOQUEADO — ${e.message}\n(Esto normalmente es CORS: el navegador recibió la respuesta pero no te deja leerla)`;
+  }
+}
+
+$('run').addEventListener('click', async () => {
+  $('run').disabled = true;
+  $('results').innerHTML = '';
+
+  // Prueba 1: CSV search directo (lo que usa pybaseball)
+  await testFetch(
+    'Prueba 1: statcast_search CSV (un día de datos)',
+    'https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&player_type=pitcher&game_date_gt=2026-06-01&game_date_lt=2026-06-02'
+  );
+
+  // Prueba 2: leaderboard endpoint (json)
+  await testFetch(
+    'Prueba 2: leaderboard JSON (barrel%, xwOBA)',
+    'https://baseballsavant.mlb.com/leaderboard/custom?year=2026&type=pitcher&min=50&csv=false'
+  );
+
+  // Prueba 3: modo no-cors para confirmar si al menos el request sale (aunque no se pueda leer)
+  try{
+    const box = document.createElement('div');
+    box.className = 'result pending';
+    box.textContent = 'Prueba 3: request en modo no-cors (solo confirma si sale, no si se puede leer)\nProbando...';
+    $('results').appendChild(box);
+    const r = await fetch('https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&player_type=pitcher&game_date_gt=2026-06-01&game_date_lt=2026-06-02', {mode:'no-cors'});
+    box.className = 'result ok';
+    box.textContent = 'Prueba 3: request en modo no-cors\n✅ El request salió (type: '+r.type+'), pero esto no confirma si se puede leer el contenido — solo las pruebas 1 y 2 de arriba lo confirman.';
+  }catch(e){
+    // silencioso, prueba informativa nada más
+  }
+
+  $('run').disabled = false;
+});
+</script>
+</body>
+</html>
