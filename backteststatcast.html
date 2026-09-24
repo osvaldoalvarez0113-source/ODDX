@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backtest Statcast — OVA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  :root{ --bg:#0b0d10; --card:#15181c; --line:#262b31; --gold:#d4af37; --text:#f0ede4; --muted:#9aa1ab; }
+  *{box-sizing:border-box;}
+  body{background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; margin:0; padding:16px; max-width:720px; margin:0 auto;}
+  h1{font-size:1.3rem; color:var(--gold); margin:8px 0 4px;}
+  h2{font-size:1.05rem; color:var(--gold); margin:0 0 8px;}
+  p.sub{color:var(--muted); font-size:0.85rem; margin:0 0 18px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px;}
+  label{display:block; font-size:0.85rem; color:var(--muted); margin-bottom:6px;}
+  select, input[type=date]{width:100%; background:#0e1114; color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px; font-size:0.95rem; margin-bottom:12px;}
+  .row{display:flex; gap:10px;}
+  .row > div{flex:1;}
+  button{width:100%; background:var(--gold); color:#111; border:none; border-radius:12px; padding:14px; font-size:1rem; font-weight:700; cursor:pointer;}
+  button:disabled{opacity:0.5;}
+  .bar{height:8px; background:#0e1114; border-radius:6px; overflow:hidden; margin:10px 0;}
+  .bar > div{height:100%; background:var(--gold); width:0%; transition:width 0.2s;}
+  .log{font-size:0.78rem; color:var(--muted); max-height:120px; overflow-y:auto; white-space:pre-wrap; font-family:monospace; margin-top:8px;}
+  table{width:100%; border-collapse:collapse; font-size:0.85rem; margin-top:6px;}
+  th, td{padding:8px 6px; text-align:right; border-bottom:1px solid var(--line);}
+  th:first-child, td:first-child{text-align:left;}
+  th{color:var(--muted); font-weight:600; font-size:0.75rem; text-transform:uppercase;}
+  .veredicto{font-size:0.9rem; margin-top:14px; padding:12px; border-radius:10px; background:#0e1114; border:1px solid var(--line);}
+  .veredicto b{color:var(--gold);}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+
+<h1>⚾ Backtest Statcast</h1>
+<p class="sub">Compara ERA de temporada contra xwOBA-contra y hard-hit% (datos reales de Statcast) para ver cuál predice mejor una apertura. Además mide si el xwOBA ofensivo del equipo predice carreras anotadas mejor que lo que ya tenías.</p>
+
+<div class="card">
+  <label>Temporada</label>
+  <select id="season">
+    <option value="2026">2026</option>
+    <option value="2025">2025</option>
+  </select>
+
+  <label>Rango de fechas (deja por defecto para toda la temporada regular)</label>
+  <div class="row">
+    <div><input type="date" id="startDate"></div>
+    <div><input type="date" id="endDate"></div>
+  </div>
+
+  <label>Modo</label>
+  <select id="mode">
+    <option value="full">Completo (todos los juegos, más lento)</option>
+    <option value="sample">Rápido (1 de cada 3 fechas, para probar)</option>
+  </select>
+
+  <button id="run">Correr backtest</button>
+  <div class="bar"><div id="barFill"></div></div>
+  <div id="status" style="font-size:0.85rem;color:var(--muted);"></div>
+  <div class="log" id="log"></div>
+</div>
+
+<div class="card hidden" id="resultsPitcher">
+  <h2>Abridores: ¿qué predice mejor su ERA real?</h2>
+  <table>
+    <thead><tr><th>Predictor</th><th>n</th><th>r</th><th>sesgo</th></tr></thead>
+    <tbody id="resultsPitcherBody"></tbody>
+  </table>
+  <div class="veredicto" id="veredictoPitcher"></div>
+</div>
+
+<div class="card hidden" id="resultsTeam">
+  <h2>Ofensiva de equipo: xwOBA vs carreras anotadas</h2>
+  <table>
+    <thead><tr><th>Predictor</th><th>n</th><th>r</th></tr></thead>
+    <tbody id="resultsTeamBody"></tbody>
+  </table>
+  <div class="veredicto" id="veredictoTeam"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function ipToOuts(ipStr){
+  const s = String(ipStr);
+  const [whole, frac] = s.split('.');
+  const w = parseInt(whole||'0',10) || 0;
+  const f = frac ? parseInt(frac,10) : 0;
+  return w*3 + (f===1?1:f===2?2:0);
+}
+function outsToIP(outs){ return outs/3; }
+
+function pearson(xs, ys){
+  const n = xs.length;
+  if(n < 3) return null;
+  const mx = xs.reduce((a,b)=>a+b,0)/n;
+  const my = ys.reduce((a,b)=>a+b,0)/n;
+  let num=0, dx2=0, dy2=0;
+  for(let i=0;i<n;i++){
+    const dx = xs[i]-mx, dy = ys[i]-my;
+    num += dx*dy; dx2 += dx*dx; dy2 += dy*dy;
+  }
+  const den = Math.sqrt(dx2*dy2);
+  return den === 0 ? null : num/den;
+}
+
+function log(msg){
+  const el = $('log');
+  el.textContent += msg + "\n";
+  el.scrollTop = el.scrollHeight;
+}
+
+async function fetchJSON(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('HTTP '+r.status+' en '+url);
+  return r.json();
+}
+async function fetchText(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('HTTP '+r.status+' en '+url);
+  return r.text();
+}
+
+async function pool(items, limit, worker){
+  const results = new Array(items.length);
+  let idx = 0;
+  async function next(){
+    while(idx < items.length){
+      const i = idx++;
+      try{ results[i] = await worker(items[i], i); }
+      catch(e){ results[i] = null; }
+    }
+  }
+  await Promise.all(new Array(limit).fill(0).map(next));
+  return results;
+}
+
+function addDays(dateStr, n){
+  const d = new Date(dateStr+'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate()+n);
+  return d.toISOString().slice(0,10);
+}
+
+async function runBacktest(){
+  $('run').disabled = true;
+  $('resultsPitcher').classList.add('hidden');
+  $('resultsTeam').classList.add('hidden');
+  $('log').textContent = '';
+  $('barFill').style.width = '0%';
+
+  const season = $('season').value;
+  const mode = $('mode').value;
+  let startDate = $('startDate').value || (season+'-03-15');
+  let endDate = $('endDate').value || (season+'-10-01');
+
+  $('status').textContent = 'Descargando calendario...';
+  const sched = await fetchJSON(`https://statsapi.mlb.com/api/v1/schedule?sportId=1&season=${season}&gameType=R&startDate=${startDate}&endDate=${endDate}`);
+
+  let dateGroups = (sched.dates || []).map(d => ({
+    date: d.date,
+    gamePks: (d.games||[]).filter(g => g.status && g.status.abstractGameState === 'Final').map(g => g.gamePk)
+  })).filter(d => d.gamePks.length > 0);
+
+  dateGroups.sort((a,b) => a.date.localeCompare(b.date));
+  if(mode === 'sample'){
+    dateGroups = dateGroups.filter((_, i) => i % 3 === 0);
+  }
+
+  const totalGames = dateGroups.reduce((s,d)=>s+d.gamePks.length,0);
+  log(`Fechas: ${dateGroups.length} · Juegos: ${totalGames}`);
+
+  // cumulativos "antes de este juego"
+  const pitcherERALog = {};      // pitcherId -> {ip, er}
+  const pitcherStatcastLog = {}; // pitcherId -> {n, hardHit, xwobaSum, xwobaCount}
+  const teamOffLog = {};         // teamAbbrev -> {xwobaSum, xwobaCount}
+
+  const pit = { era:{x:[],y:[]}, xwoba:{x:[],y:[]}, hardhit:{x:[],y:[]} };
+  const team = { x:[], y:[] };
+
+  let processed = 0;
+  let gameErrors = 0;
+  let statcastErrors = 0;
+
+  for(const group of dateGroups){
+    // 1) boxscores del día
+    const boxscores = await pool(group.gamePks, 6, async (gamePk) => {
+      const box = await fetchJSON(`https://statsapi.mlb.com/api/v1/game/${gamePk}/boxscore`);
+      return {gamePk, box};
+    });
+
+    const todaysERAEntries = [];
+
+    for(const item of boxscores){
+      if(!item || !item.box){ gameErrors++; continue; }
+      const teams = item.box.teams;
+      if(!teams || !teams.home || !teams.away) { gameErrors++; continue; }
+
+      for(const side of ['home','away']){
+        const teamData = teams[side];
+        const abbrev = teamData.team && teamData.team.abbreviation;
+        const pitcherIds = teamData.pitchers || [];
+        if(pitcherIds.length < 1) continue;
+        const starterId = String(pitcherIds[0]);
+        const pdata = teamData.players && teamData.players['ID'+starterId];
+        if(!pdata || !pdata.stats || !pdata.stats.pitching) continue;
+        const stat = pdata.stats.pitching;
+        const outs = ipToOuts(stat.inningsPitched || '0.0');
+        const ip = outsToIP(outs);
+        const er = stat.earnedRuns || 0;
+
+        if(ip >= 1){
+          const actualERA = (er*9)/ip;
+
+          const eraHist = pitcherERALog[starterId];
+          const scHist = pitcherStatcastLog[starterId];
+
+          if(eraHist && eraHist.ip >= 8 && scHist && scHist.n >= 15){
+            pit.era.x.push((eraHist.er*9)/eraHist.ip);
+            pit.era.y.push(actualERA);
+
+            pit.xwoba.x.push(scHist.xwobaCount>0 ? scHist.xwobaSum/scHist.xwobaCount : null);
+            pit.xwoba.y.push(actualERA);
+
+            pit.hardhit.x.push(scHist.n>0 ? scHist.hardHit/scHist.n : null);
+            pit.hardhit.y.push(actualERA);
+          }
+
+          todaysERAEntries.push({pitcherId: starterId, ip, er});
+        }
+
+        // ---- ofensiva del equipo ----
+        const battingRuns = teamData.teamStats && teamData.teamStats.batting && teamData.teamStats.batting.runs;
+        if(abbrev && battingRuns !== undefined){
+          const offHist = teamOffLog[abbrev];
+          if(offHist && offHist.xwobaCount >= 100){
+            team.x.push(offHist.xwobaSum/offHist.xwobaCount);
+            team.y.push(battingRuns);
+          }
+        }
+      }
+    }
+
+    for(const e of todaysERAEntries){
+      if(!pitcherERALog[e.pitcherId]) pitcherERALog[e.pitcherId] = {ip:0, er:0};
+      pitcherERALog[e.pitcherId].ip += e.ip;
+      pitcherERALog[e.pitcherId].er += e.er;
+    }
+
+    // 2) Statcast del día (una sola descarga para todo el día)
+    try{
+      const nextDate = addDays(group.date, 1);
+      const csvText = await fetchText(`https://baseballsavant.mlb.com/statcast_search/csv?all=true&type=details&player_type=pitcher&game_date_gt=${group.date}&game_date_lt=${nextDate}`);
+      const parsed = Papa.parse(csvText, {header:true, dynamicTyping:true, skipEmptyLines:true});
+      const rows = parsed.data || [];
+
+      for(const row of rows){
+        const pid = row.pitcher !== undefined && row.pitcher !== null ? String(row.pitcher) : null;
+        const ls = row.launch_speed;
+        const xwoba = row.estimated_woba_using_speedangle;
+        if(pid && typeof ls === 'number' && !isNaN(ls)){
+          if(!pitcherStatcastLog[pid]) pitcherStatcastLog[pid] = {n:0, hardHit:0, xwobaSum:0, xwobaCount:0};
+          const s = pitcherStatcastLog[pid];
+          s.n += 1;
+          if(ls >= 95) s.hardHit += 1;
+          if(typeof xwoba === 'number' && !isNaN(xwoba)){ s.xwobaSum += xwoba; s.xwobaCount += 1; }
+
+          // equipo bateador: si inning_topbot = 'Top', batea el equipo visitante (away_team); si 'Bot', batea el local (home_team)
+          const topbot = row.inning_topbot;
+          const battingAbbrev = topbot === 'Top' ? row.away_team : (topbot === 'Bot' ? row.home_team : null);
+          if(battingAbbrev && typeof xwoba === 'number' && !isNaN(xwoba)){
+            if(!teamOffLog[battingAbbrev]) teamOffLog[battingAbbrev] = {xwobaSum:0, xwobaCount:0};
+            teamOffLog[battingAbbrev].xwobaSum += xwoba;
+            teamOffLog[battingAbbrev].xwobaCount += 1;
+          }
+        }
+      }
+    }catch(e){
+      statcastErrors++;
+    }
+
+    processed += group.gamePks.length;
+    const pct = Math.round(100*processed/totalGames);
+    $('barFill').style.width = pct+'%';
+    $('status').textContent = `${processed}/${totalGames} juegos · ${group.date}`;
+  }
+
+  log(`Listo. Errores boxscore: ${gameErrors} · Errores Statcast: ${statcastErrors}`);
+
+  // filtrar nulls (por si algún xwoba/hardhit venía sin datos)
+  function cleanPair(x, y){
+    const xs=[], ys=[];
+    for(let i=0;i<x.length;i++){
+      if(x[i]!==null && x[i]!==undefined && !isNaN(x[i])){ xs.push(x[i]); ys.push(y[i]); }
+    }
+    return {x:xs, y:ys};
+  }
+
+  const pitRows = [
+    {label:'ERA de temporada (control)', data: cleanPair(pit.era.x, pit.era.y)},
+    {label:'xwOBA-contra (Statcast)', data: cleanPair(pit.xwoba.x, pit.xwoba.y)},
+    {label:'Hard-hit% en contra (Statcast)', data: cleanPair(pit.hardhit.x, pit.hardhit.y)},
+  ];
+  const pitBody = $('resultsPitcherBody');
+  pitBody.innerHTML = '';
+  let bestPit = null;
+  for(const row of pitRows){
+    const n = row.data.x.length;
+    const r = pearson(row.data.x, row.data.y);
+    const bias = n>0 ? (row.data.x.reduce((a,b)=>a+b,0)/n - row.data.y.reduce((a,b)=>a+b,0)/n) : null;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${row.label}</td><td>${n}</td><td>${r!==null?r.toFixed(3):'—'}</td><td>${bias!==null?(bias>=0?'+':'')+bias.toFixed(2):'—'}</td>`;
+    pitBody.appendChild(tr);
+    if(r!==null && (bestPit===null || Math.abs(r)>Math.abs(bestPit.r))) bestPit = {label:row.label, r, n};
+  }
+  $('veredictoPitcher').innerHTML = bestPit
+    ? `<b>Mejor: ${bestPit.label}</b> (r=${bestPit.r.toFixed(3)}, n=${bestPit.n}). Nota: el ERA aquí usa como mínimo 8 IP acumuladas y el Statcast 15 bateos rastreados — la comparación es justa entre los tres.`
+    : 'No hubo suficientes muestras pareadas.';
+  $('resultsPitcher').classList.remove('hidden');
+
+  const teamBody = $('resultsTeamBody');
+  teamBody.innerHTML = '';
+  const rTeam = pearson(team.x, team.y);
+  const trT = document.createElement('tr');
+  trT.innerHTML = `<td>xwOBA ofensivo del equipo vs carreras anotadas</td><td>${team.x.length}</td><td>${rTeam!==null?rTeam.toFixed(3):'—'}</td>`;
+  teamBody.appendChild(trT);
+  $('veredictoTeam').innerHTML = rTeam!==null
+    ? `<b>r=${rTeam.toFixed(3)}</b> con n=${team.x.length}. Compara contra el 0.116/0.111 que dio "carreras por equipo" con tu fórmula actual (ERA+R/G). Si esto le gana, vale la pena sumarlo a la proyección de totales.`
+    : 'No hubo suficientes muestras.';
+  $('resultsTeam').classList.remove('hidden');
+
+  $('status').textContent = 'Backtest completo.';
+  $('run').disabled = false;
+}
+
+$('run').addEventListener('click', () => {
+  runBacktest().catch(e => {
+    log('ERROR: ' + e.message);
+    $('status').textContent = 'Falló — revisa el log.';
+    $('run').disabled = false;
+  });
+});
+</script>
+</body>
+</html>
