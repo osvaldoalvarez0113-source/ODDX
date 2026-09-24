@@ -5255,5 +5255,86 @@ document.addEventListener('visibilitychange',function(){
 <!--OVA45:BODY:END-->
  <script src="obsidiana.js"></script>
   
+
+<script>/*OVA_SERVIDOR_RAILWAY_PARCHE*/
+(function(){
+try{
+  var SERVIDOR = 'https://worker-production-be04.up.railway.app';
+  var cacheServidor = null, cacheFecha = null;
+
+  function fetchServidor(fechaISO){
+    if(cacheServidor && cacheFecha===fechaISO) return Promise.resolve(cacheServidor);
+    return fetch(SERVIDOR+'/api/analisis-hoy?fecha='+fechaISO, {cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(d){
+        cacheServidor = d; cacheFecha = fechaISO;
+        return d;
+      });
+  }
+
+  function americana(p){
+    if(p==null||p<=0||p>=100) return '—';
+    if(p>=50) return '-'+Math.round(p/(100-p)*100);
+    return '+'+Math.round((100-p)/p*100);
+  }
+
+  function pintarComparacion(el){
+    var body = el.querySelector('.body');
+    if(!body) return;
+    var tabV = body.querySelector('.tab[data-t="v"]');
+    if(!tabV) return;
+
+    var existente = tabV.querySelector('.srv-compara');
+    if(existente) existente.remove();
+
+    var fe = document.getElementById('fecha');
+    var fechaISO = (fe && fe.value) || (new Date()).toISOString().slice(0,10);
+
+    var caja = document.createElement('div');
+    caja.className = 'srv-compara';
+    caja.style.cssText = 'background:#131D2C;border:1px solid #2A3E56;border-left:3px solid #22D3EE;border-radius:10px;padding:12px 14px;margin:14px 0;font-size:12.5px;color:#9DB2C8;line-height:1.6';
+    caja.innerHTML = '<b style="color:#F1F5FB">☁️ Servidor Railway</b><br>Buscando...';
+    tabV.insertBefore(caja, tabV.firstChild);
+
+    fetchServidor(fechaISO).then(function(d){
+      var juegos = (d && d.juegos) || [];
+      var pk = el._pk;
+      var j = null;
+      for(var i=0;i<juegos.length;i++){ if(String(juegos[i].gamePk)===String(pk)){ j=juegos[i]; break; } }
+      if(!j){
+        caja.innerHTML = '<b style="color:#F1F5FB">☁️ Servidor Railway</b><br>Este juego todavía no está calculado ahí (puede que falte lineup confirmado o que el reloj no haya pasado por él todavía).';
+        return;
+      }
+      var h = j.home, a = j.away;
+      var t = j.total || {};
+      var pon = j.ponches || {};
+      var txt = '<b style="color:#F1F5FB">☁️ Servidor Railway</b> <span style="color:#6D8299">(calculado en segundo plano, compara contra tu número de arriba)</span><br>';
+      txt += (h?h.nombre:'Local')+': <b style="color:#F1F5FB">'+(h?h.chance:'—')+'%</b> ('+americana(h?h.chance:null)+') · ';
+      txt += (a?a.nombre:'Visita')+': <b style="color:#F1F5FB">'+(a?a.chance:'—')+'%</b> ('+americana(a?a.chance:null)+')<br>';
+      if(t.esperado!=null) txt += 'Total esperado: <b style="color:#F1F5FB">'+t.esperado+'</b> · ';
+      if(t.carreras_esperadas) txt += 'carreras: '+t.carreras_esperadas.away+' / '+t.carreras_esperadas.home+'<br>';
+      if(pon.away!=null || pon.home!=null) txt += 'Ponches esperados: '+(pon.away!=null?pon.away:'—')+' / '+(pon.home!=null?pon.home:'—');
+      caja.innerHTML = txt;
+    }).catch(function(e){
+      caja.innerHTML = '<b style="color:#F1F5FB">☁️ Servidor Railway</b><br><span style="color:#F87171">No se pudo conectar (''+e.message+''). Revisa tu internet o si el servidor está caido.</span>';
+    });
+  }
+
+  // Observa cuando se abre un juego (clase "open" en .game) y pinta la comparacion.
+  if(window.MutationObserver){
+    new MutationObserver(function(muts){
+      muts.forEach(function(m){
+        if(m.type==='attributes' && m.attributeName==='class'){
+          var el = m.target;
+          if(el.classList && el.classList.contains('game') && el.classList.contains('open')){
+            setTimeout(function(){ pintarComparacion(el); }, 60);
+          }
+        }
+      });
+    }).observe(document.body, {attributes:true, subtree:true, attributeFilter:['class']});
+  }
+}catch(e){ console.error('parche servidor railway:', e); }
+})();
+</script>
 </body>
 </html>
