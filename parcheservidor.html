@@ -40,6 +40,14 @@ document.getElementById('ir').addEventListener('click', async () => {
 <script>/*OVA_SERVIDOR_RAILWAY_PARCHE*/
 (function(){
 try{
+  // Marca de diagnostico: aparece apenas carga la pagina, SIN necesidad de
+  // abrir ningun juego. Si esto no aparece, el script no esta corriendo del
+  // todo (algo lo esta tumbando antes de llegar aqui). Se quita despues.
+  var marca = document.createElement('div');
+  marca.textContent = 'PARCHE CARGADO ✅';
+  marca.style.cssText = 'position:fixed;top:8px;right:8px;z-index:99999;background:#22D3EE;color:#000;font-size:11px;font-weight:700;padding:5px 9px;border-radius:8px';
+  document.body.appendChild(marca);
+
   var SERVIDOR = 'https://worker-production-be04.up.railway.app';
   var cacheServidor = null, cacheFecha = null;
 
