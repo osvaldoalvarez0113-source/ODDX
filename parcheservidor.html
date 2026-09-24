@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Parche: conectar servidor Railway</title>
+<style>
+body{background:#0A1119;color:#F1F5FB;font-family:-apple-system,sans-serif;padding:16px;font-size:15px;line-height:1.5}
+button{background:#3B82F6;color:#020509;border:0;border-radius:10px;padding:12px 18px;font-weight:600;font-size:15px}
+.log{font-size:13px;color:#9DB2C8;white-space:pre-wrap;margin-top:14px;font-family:monospace}
+.ok{color:#4ADE80}
+.err{color:#F87171}
+</style>
+</head>
+<body>
+<h2>Parche: conectar servidor Railway a OVA</h2>
+<p>Esto agrega una cajita de comparación (servidor vs tu cálculo) cuando abres un juego. No toca tu fórmula ni tu cálculo actual — solo agrega información al lado.</p>
+<button id="ir">Aplicar parche y descargar index.html</button>
+<div class="log" id="log"></div>
+
+<script>
+const log = (m, cls) => {
+  const d = document.getElementById('log');
+  d.innerHTML += `<div class="${cls||''}">${m}</div>`;
+};
+
+document.getElementById('ir').addEventListener('click', async () => {
+  try {
+    log('Buscando index.html en el mismo repo...');
+    const r = await fetch('index.html', {cache: 'no-store'});
+    if (!r.ok) throw new Error('No se pudo leer index.html (HTTP ' + r.status + ')');
+    let html = await r.text();
+    log('index.html encontrado (' + html.length + ' caracteres).', 'ok');
+
+    if (html.includes('OVA_SERVIDOR_RAILWAY_PARCHE')) {
+      log('Este parche ya estaba aplicado antes — lo voy a reemplazar por la versión nueva.', 'ok');
+      html = html.replace(/<script>\/\*OVA_SERVIDOR_RAILWAY_PARCHE\*\/[\s\S]*?<\/script>\s*<\/body>/, '</body>');
+    }
+
+    const parche = `
+<script>/*OVA_SERVIDOR_RAILWAY_PARCHE*/
+(function(){
+try{
+  var SERVIDOR = 'https://worker-production-be04.up.railway.app';
+  var cacheServidor = null, cacheFecha = null;
+
+  function fetchServidor(fechaISO){
+    if(cacheServidor && cacheFecha===fechaISO) return Promise.resolve(cacheServidor);
+    return fetch(SERVIDOR+'/api/analisis-hoy?fecha='+fechaISO, {cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(function(d){
+        cacheServidor = d; cacheFecha = fechaISO;
+        return d;
+      });
+  }
+
+  function americana(p){
+    if(p==null||p<=0||p>=100) return '\u2014';
+    if(p>=50) return '-'+Math.round(p/(100-p)*100);
+    return '+'+Math.round((100-p)/p*100);
+  }
+
+  function pintarComparacion(el){
+    var body = el.querySelector('.body');
+    if(!body) return;
+    var tabV = body.querySelector('.tab[data-t="v"]');
+    if(!tabV) return;
+
+    var existente = tabV.querySelector('.srv-compara');
+    if(existente) existente.remove();
+
+    var fe = document.getElementById('fecha');
+    var fechaISO = (fe && fe.value) || (new Date()).toISOString().slice(0,10);
+
+    var caja = document.createElement('div');
+    caja.className = 'srv-compara';
+    caja.style.cssText = 'background:#131D2C;border:1px solid #2A3E56;border-left:3px solid #22D3EE;border-radius:10px;padding:12px 14px;margin:14px 0;font-size:12.5px;color:#9DB2C8;line-height:1.6';
+    caja.innerHTML = '<b style="color:#F1F5FB">\u2601\ufe0f Servidor Railway</b><br>Buscando...';
+    tabV.insertBefore(caja, tabV.firstChild);
+
+    fetchServidor(fechaISO).then(function(d){
+      var juegos = (d && d.juegos) || [];
+      var pk = el._pk;
+      var j = null;
+      for(var i=0;i<juegos.length;i++){ if(String(juegos[i].gamePk)===String(pk)){ j=juegos[i]; break; } }
+      if(!j){
+        caja.innerHTML = '<b style="color:#F1F5FB">\u2601\ufe0f Servidor Railway</b><br>Este juego todav\u00eda no est\u00e1 calculado ah\u00ed (puede que falte lineup confirmado o que el reloj no haya pasado por \u00e9l todav\u00eda).';
+        return;
+      }
+      var h = j.home, a = j.away;
+      var t = j.total || {};
+      var pon = j.ponches || {};
+      var txt = '<b style="color:#F1F5FB">\u2601\ufe0f Servidor Railway</b> <span style="color:#6D8299">(calculado en segundo plano, compara contra tu n\u00famero de arriba)</span><br>';
+      txt += (h?h.nombre:'Local')+': <b style="color:#F1F5FB">'+(h?h.chance:'\u2014')+'%</b> ('+americana(h?h.chance:null)+') \u00b7 ';
+      txt += (a?a.nombre:'Visita')+': <b style="color:#F1F5FB">'+(a?a.chance:'\u2014')+'%</b> ('+americana(a?a.chance:null)+')<br>';
+      if(t.esperado!=null) txt += 'Total esperado: <b style="color:#F1F5FB">'+t.esperado+'</b> \u00b7 ';
+      if(t.carreras_esperadas) txt += 'carreras: '+t.carreras_esperadas.away+' / '+t.carreras_esperadas.home+'<br>';
+      if(pon.away!=null || pon.home!=null) txt += 'Ponches esperados: '+(pon.away!=null?pon.away:'\u2014')+' / '+(pon.home!=null?pon.home:'\u2014');
+      caja.innerHTML = txt;
+    }).catch(function(e){
+      caja.innerHTML = '<b style="color:#F1F5FB">\u2601\ufe0f Servidor Railway</b><br><span style="color:#F87171">No se pudo conectar (\''+e.message+'\'). Revisa tu internet o si el servidor est\u00e1 caido.</span>';
+    });
+  }
+
+  // Observa cuando se abre un juego (clase "open" en .game) y pinta la comparacion.
+  if(window.MutationObserver){
+    new MutationObserver(function(muts){
+      muts.forEach(function(m){
+        if(m.type==='attributes' && m.attributeName==='class'){
+          var el = m.target;
+          if(el.classList && el.classList.contains('game') && el.classList.contains('open')){
+            setTimeout(function(){ pintarComparacion(el); }, 60);
+          }
+        }
+      });
+    }).observe(document.body, {attributes:true, subtree:true, attributeFilter:['class']});
+  }
+}catch(e){ console.error('parche servidor railway:', e); }
+})();
+<\/script>
+</body>`;
+
+    html = html.replace(/<\/body>/i, parche);
+
+    const blob = new Blob([html], {type: 'text/html'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'index.html';
+    document.body.appendChild(a);
+    a.click();
+
+    log('Listo. Se descargó index.html actualizado.', 'ok');
+    log('Súbelo a GitHub reemplazando el index.html que ya tienes en el repo ODDX.');
+  } catch (e) {
+    log('Error: ' + e.message, 'err');
+  }
+});
+</script>
+</body>
+</html>
