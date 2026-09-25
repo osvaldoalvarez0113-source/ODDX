@@ -5321,16 +5321,10 @@ try{
       if(pon.away!=null || pon.home!=null) txt += 'Ponches esperados: '+(pon.away!=null?pon.away:'—')+' / '+(pon.home!=null?pon.home:'—');
       caja.innerHTML = txt;
     }).catch(function(e){
-      caja.innerHTML = '<b style="color:#F1F5FB">☁️ Servidor Railway</b><br><span style="color:#F87171">No se pudo conectar (''+e.message+''). Revisa tu internet o si el servidor está caido.</span>';
+      caja.innerHTML = '<b style="color:#F1F5FB">☁️ Servidor Railway</b><br><span style="color:#F87171">No se pudo conectar (' + e.message + '). Revisa tu internet o si el servidor está caido.</span>';
     });
   }
 
-  // En vez de adivinar cuanto tarda OVA en cargar el juego (puede ser varios
-  // segundos por celular, con todas las llamadas que hace), nos enganchamos
-  // directamente a la MISMA promesa que usa OVA para saber cuando termino:
-  // el._cargar() ya existe en cada tarjeta de juego y se resuelve justo
-  // despues de que pintar(el) ya corrio. Llamarla de nuevo no repite el
-  // trabajo (OVA la cachea sola con el._prom).
   function esperarYPintar(el){
     if(typeof el._cargar !== 'function') return;
     el._cargar().then(function(){
@@ -5338,7 +5332,6 @@ try{
     });
   }
 
-  // Observa cuando se abre un juego (clase "open" en .game) y pinta la comparacion.
   if(window.MutationObserver){
     new MutationObserver(function(muts){
       muts.forEach(function(m){
