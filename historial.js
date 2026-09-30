@@ -1,4 +1,4 @@
-/* OVA MLB v47 · historial de 3 años del abridor (estilo Marcel).
+/* OVA MLB v47/v48 · historial de 3 años del abridor (estilo Marcel).
    Va como archivo aparte y se engancha a la app sin tocar su codigo: envuelve
    temporada(), eraUsado() y detalle(), igual que hacen obsidiana.js y railway.js.
    APAGADO por defecto. Solo cambia el calculo si lo enciendes en Ajustes.
@@ -148,7 +148,7 @@ try{
       }
     }catch(e){}
     try{
-      [].slice.call(document.querySelectorAll('.ver')).forEach(function(e){ e.textContent='v47'; });
+      [].slice.call(document.querySelectorAll('.ver')).forEach(function(e){ e.textContent='v48'; });
       var f=document.querySelector('footer details');
       if(f&&!f.querySelector('.ovaNota47')){
         var n=document.createElement('div');
@@ -159,6 +159,69 @@ try{
     }catch(e){}
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',montar); else montar();
+
+  /* 5. IA: analisis completo en una sola respuesta (v48).
+     Antes: 150 palabras, 5 busquedas. Ahora: 10 busquedas, mas espacio, secciones
+     fijas, y una SENAL final que se puede anotar junto al pick y medir despues.
+     El Worker puede tener sus propios topes: si los tiene, mandan ellos. */
+  function iaSinAcentos(t){ return t; }
+  llamarIA=function(prompt){
+    return fetch(WORKER_URL,{
+      method:'POST',
+      headers:{
+        'content-type':'application/json',
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        max_tokens:4000,
+        messages:[{role:'user',content:prompt}],
+        tools:[{type:'web_search_20250305',name:'web_search',max_uses:10}]
+      })
+    }).then(function(r){
+      if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+' -- '+t.slice(0,180)); });
+      return r.json();
+    }).then(function(d){
+      if(d.error) throw new Error(d.error.message||'Error de la API');
+      var partes=(d.content||[]).filter(function(c){ return c.type==='text'; }).map(function(c){ return c.text; });
+      var t=partes.join('\n\n');
+      return t||'Sin respuesta de texto.';
+    });
+  };
+  var REGLAS='Reglas: no inventes nada. Si no encuentras un dato, escribe "no encontre" en vez de rellenar. '+
+    'Pon la fuente y la hora aproximada de cada dato importante. Ignora rumores de redes o comentarios sin fuente. '+
+    'Separa lo que ENCONTRASTE con fuente de lo que estas SUPONIENDO. No repitas lo que mi modelo ya dice.';
+  var CIERRE='Termina con una sola linea: "SENAL: MANTENER", "SENAL: CUIDADO" o "SENAL: EVITAR", seguida de la razon principal en una frase.';
+  promptJuego=function(juego,fecha,buenos,mlPick){
+    var l=(buenos||[]).slice(0,5).map(function(m){
+      return '- '+m.m+': mi modelo dice '+m.p.toFixed(1)+'%, ventaja '+m.v.ventaja.toFixed(1)+
+        ' puntos, EV '+(m.v.ev*100).toFixed(1)+'%';
+    }).join('\n');
+    var ml=mlPick?('\nGanador segun el modelo, sin filtrar por valor: '+mlPick.m+' '+mlPick.p.toFixed(1)+'%.'):'';
+    return 'Eres un analista de apuestas de MLB, directo y esceptico. Juego: '+juego+' el '+fecha+'. '+
+      'Mi modelo matematico usa ERA, carreras por juego y ERA de bullpen, y NO ve lineups ni noticias. '+
+      'Da este ranking de valor para el juego:\n'+(l||'(sin cuotas todavia)')+ml+'\n\n'+
+      'Investiga en internet TODO lo que afecte este juego y responde en espanol, corto y con datos concretos, en estas secciones:\n'+
+      '1) Lineups y lesiones: lineup confirmado de cada equipo, titulares que faltan, lesionados importantes, cambios de abridor.\n'+
+      '2) Abridores: forma de sus ultimas salidas, historial contra este rival y en este parque, y cualquier cosa rara (velocidad, dias de descanso).\n'+
+      '3) Bullpen: quienes lanzaron ayer y anteayer y quien esta disponible hoy.\n'+
+      '4) Contexto: que se juega cada equipo (posicion en la tabla, si ya clasifico o esta eliminado, si es probable que descanse titulares), y clima y viento si el parque es abierto.\n'+
+      '5) Contra el modelo: por cada hallazgo, di si apoya o contradice al modelo y cuanto pesa (poco, medio o mucho).\n'+
+      REGLAS+' Maximo unas 350 palabras.\n'+CIERRE;
+  };
+  promptDia=function(lista){
+    var l=(lista||[]).slice(0,8).map(function(m,i){
+      return (i+1)+'. '+m.juego+' -- modelo: '+m.gana+' '+m.p.toFixed(1)+'% (ventaja '+m.vc.toFixed(2)+' carreras)';
+    }).join('\n');
+    return 'Eres un analista de apuestas de MLB, directo y esceptico. Este es el ranking de mi modelo matematico '+
+      '(ERA, carreras por juego, ERA de bullpen; NO ve lineups ni noticias) para HOY, ordenado por probabilidad pura, sin mirar cuotas:\n'+l+'\n\n'+
+      'Investiga en internet TODO lo que afecte estos juegos: lineups confirmados, lesiones o bajas de ultima hora, cambios de abridor, '+
+      'uso reciente del bullpen, que se juega cada equipo (posicion en la tabla, descanso de titulares) y clima donde importe. '+
+      'Responde en espanol. Por cada juego de la lista, en una o dos lineas: lo que encontraste y si apoya o contradice al modelo. '+
+      'Al final: cuales 3 o 4 tienen mas chance real considerando lo que encontraste, y en cuales la informacion contradice al modelo.\n'+
+      REGLAS+' Maximo unas 450 palabras.\n'+
+      'Cierra cada juego con "SENAL: MANTENER", "SENAL: CUIDADO" o "SENAL: EVITAR".';
+  };
 
   window.OVAHist={pHistDe:pHistDe,eraHistSeason:eraHistSeason,eAppDe:eAppDe,set:function(v){HIST=v;},get:function(){return HIST;}};
 }catch(e){ if(window.console) console.error('historial.js',e); }
