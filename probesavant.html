@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Probe Savant</title>
+<style>
+  body{background:#0e0e0e;color:#eee;font-family:-apple-system,system-ui,sans-serif;margin:0;padding:16px;line-height:1.4}
+  h1{font-size:20px;margin:0 0 10px}
+  button{background:#c9a94b;color:#111;border:0;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:600}
+  button:disabled{opacity:.4}
+  .card{background:#181818;border:1px solid #2a2a2a;border-radius:12px;padding:12px;margin:12px 0;font-size:13px;word-break:break-word}
+  pre{white-space:pre-wrap;word-break:break-all;font-size:11px;color:#bbb;margin:6px 0 0}
+  .ok{color:#6fd08c}.bad{color:#ff7a7a}
+</style>
+</head>
+<body>
+<h1>Probe Savant <span style="font-size:12px;color:#c9a94b">v1</span></h1>
+<button id="go">Probar</button>
+<div id="out"></div>
+<script>
+(function(){
+  var W=[['abril 2026','2026-04-01','2026-04-30'],['agosto 2026','2026-08-01','2026-08-31']];
+  var out=document.getElementById('out'),btn=document.getElementById('go');
+  function url(a,b){
+    return 'https://baseballsavant.mlb.com/statcast_search/csv?all=true&hfGT=R%7C&hfSea=2026%7C&player_type=batter&game_date_gt='+a+'&game_date_lt='+b+'&group_by=team&min_pitches=0&min_results=0&min_pas=0';
+  }
+  function add(html){var d=document.createElement('div');d.className='card';d.innerHTML=html;out.appendChild(d);}
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');}
+  btn.onclick=async function(){
+    btn.disabled=true;out.innerHTML='';
+    for(var i=0;i<W.length;i++){
+      var w=W[i];
+      try{
+        var r=await fetch(url(w[1],w[2]));
+        var t=await r.text();
+        var lines=t.trim().split('\n');
+        add('<b>'+w[0]+'</b> · HTTP '+r.status+' · '+lines.length+' líneas · '+t.length+' caracteres'
+          +'<pre>'+esc(lines.slice(0,3).join('\n').slice(0,1800))+'</pre>');
+      }catch(e){
+        add('<b class="bad">'+w[0]+': falló</b> · '+esc(e.message));
+      }
+    }
+    btn.disabled=false;
+  };
+})();
+</script>
+</body>
+</html>
