@@ -21,8 +21,9 @@
 </head>
 <body>
 <h1>Backtest historial del abridor <span style="font-size:12px;color:#c9a94b">v1</span></h1>
-<div class="sub">Como la app: el ERA de temporada de un abridor se jala hacia el promedio de la liga (40 innings). Aquí se le suma el historial de sus últimas 3 temporadas (pesos 5-4-3, estilo Marcel) y se mide, salida por salida, si eso predice mejor las carreras limpias de ese día. Solo abridores con 40+ innings en esas 3 temporadas. Cada salida usa solo lo anterior a su fecha.</div>
+<div class="sub">Como la app: el ERA de temporada de un abridor se jala hacia el promedio de la liga (40 innings). Aquí se le suma el historial de sus últimas 3 temporadas (pesos 5-4-3, estilo Marcel) y se mide, salida por salida, si eso predice mejor las carreras limpias de ese día. Solo abridores con 40+ innings en esas 3 temporadas. Cada salida usa solo lo anterior a su fecha. Tres temporadas (2024, 2025, 2026): se ajusta con dos y se mide en la tercera, y así con cada una.</div>
 
+<button id="b24">Bajar 2024</button>
 <button id="b25">Bajar 2025</button>
 <button id="b26">Bajar 2026</button>
 <button id="bclr" style="background:#333;color:#eee">Borrar guardado</button>
@@ -205,6 +206,7 @@
       }
     }
     return {n:test.length,bHist:bB[2],bApp:bB[1],impr:(sa-sb)/sa,t:tOf(d),
+      d:d,sa:sa,sb:sb,
       cambio:dif/sw,
       bins:bin.map(function(b,k){return {n:b.d.length,impr:b.sa>0?(b.sa-b.sb)/b.sa:null,t:b.d.length>30?tOf(b.d):null};})};
   }
@@ -212,18 +214,18 @@
   function fmt(x,d){return x==null||isNaN(x)?'–':x.toFixed(d);}
   function load(s){try{var r=localStorage.getItem(KEY+s);return r?JSON.parse(r):null;}catch(e){return null;}}
 
+  var SEAS=[2024,2025,2026];
   function render(){
-    var R={2025:load(2025),2026:load(2026)},html='',v='';
-    [2025,2026].forEach(function(s){
-      if(!R[s]) return;
-      html+='<div class="card"><b>'+s+'</b> · '+R[s].length+' salidas guardadas</div>';
-    });
-    if(R[2025]&&R[2026]){
-      var pairs=[[2025,2026],[2026,2025]],res=[];
-      pairs.forEach(function(p){
-        var c=crossfit(R[p[0]],R[p[1]]);res.push(c);
+    var R={},html='',v='',hay=0;
+    SEAS.forEach(function(s){R[s]=load(s);if(R[s]){hay++;html+='<div class="card"><b>'+s+'</b> · '+R[s].length+' salidas guardadas</div>';}});
+    if(hay===3){
+      var res=[];
+      SEAS.forEach(function(test){
+        var train=[];
+        SEAS.forEach(function(o){if(o!==test) train=train.concat(R[o]);});
+        var c=crossfit(train,R[test]);c.test=test;res.push(c);
         var ok=c.impr>0&&c.t>=2,mid=c.impr>0&&c.t>=1.3&&c.t<2,cl=ok?'ok':(mid?'mid':'bad');
-        html+='<div class="card"><b>Ajustar '+p[0]+' → medir '+p[1]+'</b> · '+c.n+' salidas'
+        html+='<div class="card"><b>Ajustar con las otras dos → medir '+test+'</b> · '+c.n+' salidas'
           +'<table>'
           +'<tr><td>Peso del historial vs el del ERA de temporada</td><td>'+fmt(c.bHist,2)+' contra '+fmt(c.bApp,2)+'</td></tr>'
           +'<tr><td>Mejora total vs ERA jalado a la liga</td><td class="'+cl+'"><b>'+fmt(c.impr*100,2)+'%</b> (t '+fmt(c.t,2)+')</td></tr>'
@@ -234,25 +236,34 @@
         });
         html+='</table></div>';
       });
-      var a=res[0],b=res[1];
-      var sameSign=a.bHist>0&&b.bHist>0;
-      var both=a.impr>0&&b.impr>0;
-      var strong=both&&a.t>=2&&b.t>=2&&sameSign;
-      var mid=both&&sameSign&&!strong;
-      var all=R[2025].concat(R[2026]),ipm=0;all.forEach(function(r){ipm+=r[3];});ipm/=all.length;
-      var cambio=(a.cambio+b.cambio)/2,porSalida=cambio*ipm/9,pts=porSalida*PTS_PER_RUN;
-      if(strong) v='<div class="v ok">El historial pasa en las dos direcciones. Vale probarlo dentro de la fórmula del abridor.</div>';
-      else if(mid) v='<div class="v mid">Mejora en las dos direcciones pero sin confianza firme. Dudoso.</div>';
-      else v='<div class="v bad">El historial no aguanta la prueba cruzada: descartado.</div>';
-      v+='<div class="sub" style="margin-top:8px">Tamaño real: sumar el historial cambia el pronóstico de un abridor en promedio unas <b>'+fmt(porSalida,2)+' carreras</b> por salida, o sea unos <b>'+fmt(pts,1)+' puntos</b> de probabilidad en la escala de OVA, de ese lado.</div>';
-    }else v='<div class="sub">Baja las dos temporadas para la prueba cruzada.</div>';
+      var dAll=[],saT=0,sbT=0;
+      res.forEach(function(c){dAll=dAll.concat(c.d);saT+=c.sa;sbT+=c.sb;});
+      var tPool=tOf(dAll),imprPool=(saT-sbT)/saT;
+      var allPos=res.every(function(c){return c.impr>0&&c.bHist>0;});
+      var nFuertes=res.filter(function(c){return c.t>=2;}).length;
+      var all=[];SEAS.forEach(function(s){all=all.concat(R[s]);});
+      var ipm=0;all.forEach(function(r){ipm+=r[3];});ipm/=all.length;
+      var cambio=0;res.forEach(function(c){cambio+=c.cambio;});cambio/=res.length;
+      var porSalida=cambio*ipm/9,pts=porSalida*PTS_PER_RUN;
+      html+='<div class="card"><b>Las tres pruebas juntas</b><table>'
+        +'<tr><td>Mejora total</td><td>'+fmt(imprPool*100,2)+'%</td></tr>'
+        +'<tr><td>Confianza (t) de las tres juntas</td><td>'+fmt(tPool,2)+'</td></tr>'
+        +'<tr><td>Pruebas con t de 2 o más</td><td>'+nFuertes+' de 3</td></tr>'
+        +'<tr><td>Mejoran las tres, con peso positivo</td><td>'+(allPos?'sí':'no')+'</td></tr></table></div>';
+      var strong=allPos&&tPool>=2,mid=allPos&&tPool>=1.3&&!strong;
+      if(strong) v='<div class="v ok">Pasa: mejora en las tres pruebas y la confianza juntas llega a 2. Entra a la app como opción en Ajustes, apagada por defecto.</div>';
+      else if(mid) v='<div class="v mid">Mejora en las tres pero sin confianza firme juntas. Dudoso: se archiva.</div>';
+      else v='<div class="v bad">No aguanta las tres pruebas: descartado.</div>';
+      v+='<div class="sub" style="margin-top:8px">Tamaño real: sumar el historial cambia el pronóstico de un abridor en promedio unas <b>'+fmt(porSalida,2)+' carreras</b> por salida, o sea unos <b>'+fmt(pts,1)+' puntos</b> de probabilidad en la escala de OVA, de ese lado. Regla fijada antes de correr: pasar la estadística lo deja como opción apagada; solo pasaría a ser el valor por defecto si el tamaño llega a 1 punto.</div>';
+    }else if(hay>0) v='<div class="sub">Baja las tres temporadas (2024, 2025 y 2026) para las pruebas.</div>';
+    else v='<div class="sub">Baja las tres temporadas (2024, 2025 y 2026) para las pruebas.</div>';
     outEl.innerHTML=html;verdEl.innerHTML=v;
   }
 
   async function run(season){
     if(running) return;
     running=true;
-    document.getElementById('b25').disabled=true;document.getElementById('b26').disabled=true;
+    ['b24','b25','b26'].forEach(function(i){document.getElementById(i).disabled=true;});
     try{
       var ids=await getPitcherIds(season);
       log('Abridores encontrados: '+ids.length+'. Bajando sus salidas e historial (tarda unos minutos)…');
@@ -264,13 +275,14 @@
       render();
     }catch(e){log('Falló: '+e.message);}
     running=false;
-    document.getElementById('b25').disabled=false;document.getElementById('b26').disabled=false;
+    ['b24','b25','b26'].forEach(function(i){document.getElementById(i).disabled=false;});
   }
 
+  document.getElementById('b24').onclick=function(){run(2024);};
   document.getElementById('b25').onclick=function(){run(2025);};
   document.getElementById('b26').onclick=function(){run(2026);};
   document.getElementById('bclr').onclick=function(){
-    try{localStorage.removeItem(KEY+2025);localStorage.removeItem(KEY+2026);}catch(e){}
+    try{localStorage.removeItem(KEY+2024);localStorage.removeItem(KEY+2025);localStorage.removeItem(KEY+2026);}catch(e){}
     render();log('Borrado.');
   };
   render();
