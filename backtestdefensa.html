@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backtest defensa</title>
+<style>
+  body{background:#0e0e0e;color:#eee;font-family:-apple-system,system-ui,sans-serif;margin:0;padding:16px;line-height:1.4}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:#aaa;font-size:13px;margin-bottom:14px}
+  button{background:#c9a94b;color:#111;border:0;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:600;margin:0 8px 8px 0}
+  button:disabled{opacity:.4}
+  #log{font-size:13px;color:#bbb;margin:10px 0;min-height:20px}
+  .card{background:#181818;border:1px solid #2a2a2a;border-radius:12px;padding:12px;margin:12px 0;font-size:14px}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+  td,th{padding:6px 4px;text-align:right;border-bottom:1px solid #262626}
+  td:first-child,th:first-child{text-align:left}
+  .ok{color:#6fd08c}.bad{color:#ff7a7a}.mid{color:#e6c35c}
+  .v{font-size:16px;font-weight:700;margin-top:8px}
+</style>
+</head>
+<body>
+<h1>Backtest defensa <span style="font-size:12px;color:#c9a94b">v1</span></h1>
+<div class="sub">¿Las carreras que entran por errores (las que el ERA no cuenta) ayudan a predecir el juego, después de tener ofensiva y pitcheo? Cada juego usa solo datos anteriores a su fecha. El pitcheo se mide aquí con el ERA del equipo completo, más grueso que el de la app.</div>
+
+<button id="b25">Bajar 2025</button>
+<button id="b26">Bajar 2026</button>
+<button id="bclr" style="background:#333;color:#eee">Borrar guardado</button>
+<div id="log"></div>
+<div id="out"></div>
+<div id="verd"></div>
+
+<script>
+(function(){
+  var API='https://statsapi.mlb.com/api/v1';
+  var KEY='backtestdefensa_v1_';
+  var PTS_PER_RUN=6;
+  var logEl=document.getElementById('log'),outEl=document.getElementById('out'),verdEl=document.getElementById('verd');
+  var running=false;
+
+  function log(t){logEl.textContent=t;}
+  function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+  async function getJSON(url){
+    for(var i=0;i<4;i++){
+      try{var r=await fetch(url);if(!r.ok) throw new Error('HTTP '+r.status);return await r.json();}
+      catch(e){if(i===3) throw e;await sleep(500*(i+1));}
+    }
+  }
+  function addDays(iso,n){return new Date(new Date(iso+'T00:00:00Z').getTime()+n*86400000).toISOString().slice(0,10);}
+  function ipToNum(ip){
+    if(ip==null) return 0;
+    var n=parseFloat(String(ip));
+    if(!isFinite(n)) return 0;
+    var dec=Math.round((n-Math.trunc(n))*10);
+    return Math.trunc(n)+(dec===1?1/3:dec===2?2/3:0);
+  }
+
+  async function getGames(season){
+    var a=season+'-03-15',b=season+'-09-30',out=[],s=a,k=0;
+    while(s<=b){
+      var e=addDays(s,13);if(e>b)e=b;
+      k++;log('Calendario '+season+': tramo '+k);
+      var d=await getJSON(API+'/schedule?sportId=1&gameType=R&startDate='+s+'&endDate='+e);
+      (d.dates||[]).forEach(function(day){
+        (day.games||[]).forEach(function(g){
+          if(!g.status||g.status.abstractGameState!=='Final') return;
+          var h=g.teams.home,aw=g.teams.away;
+          if(h.score==null||aw.score==null||h.score===aw.score) return;
+          out.push({pk:g.gamePk,date:day.date,hid:h.team.id,aid:aw.team.id,hs:h.score,as:aw.score});
+        });
+      });
+      s=addDays(e,1);
+    }
+    var seen={};
+    return out.filter(function(g){if(seen[g.pk])return false;seen[g.pk]=1;return true;});
+  }
+
+  // ERA del equipo y carreras NO limpias (runs - earnedRuns), acumulado hasta S
+  async function getPitchSnap(season,S){
+    var url=API+'/teams/stats?stats=byDateRange&startDate='+season+'-03-15&endDate='+S+
+            '&group=pitching&season='+season+'&sportIds=1&gameType=R';
+    var d=await getJSON(url);
+    var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[],map={};
+    sp.forEach(function(s){
+      if(!s.team||s.team.id==null) return;
+      var st=s.stat||{},ip=ipToNum(st.inningsPitched),er=+(st.earnedRuns||0),r=+(st.runs||0);
+      if(ip<=0||!(r>=er)) return;
+      map[s.team.id]={era:er*9/ip,unearned:r-er};
+    });
+    return map;
+  }
+
+  function rgUpTo(games,S){
+    var t={};
+    games.forEach(function(g){
+      if(g.date>S) return;
+      var h=t[g.hid]||(t[g.hid]={r:0,n:0}),a=t[g.aid]||(t[g.aid]={r:0,n:0});
+      h.r+=g.hs;h.n++;a.r+=g.as;a.n++;
+    });
+    return t;
+  }
+
+  // ---------- estadística ----------
+  function solve(A,b){
+    var n=b.length,i,j,k;
+    var M=A.map(function(r,i){return r.concat([b[i]]);});
+    for(i=0;i<n;i++){
+      var p=i;
+      for(j=i+1;j<n;j++) if(Math.abs(M[j][i])>Math.abs(M[p][i])) p=j;
+      var tmp=M[i];M[i]=M[p];M[p]=tmp;
+      for(j=i+1;j<n;j++){
+        var f=M[j][i]/M[i][i];
+        for(k=i;k<=n;k++) M[j][k]-=f*M[i][k];
+      }
+    }
+    var x=new Array(n);
+    for(i=n-1;i>=0;i--){
+      var s=M[i][n];
+      for(j=i+1;j<n;j++) s-=M[i][j]*x[j];
+      x[i]=s/M[i][i];
+    }
+    return x;
+  }
+  function fit(X,y){
+    var k=X[0].length,A=[],b=[],i,j,r;
+    for(i=0;i<k;i++){A.push(new Array(k).fill(0));b.push(0);}
+    for(r=0;r<X.length;r++){
+      for(i=0;i<k;i++){
+        b[i]+=X[r][i]*y[r];
+        for(j=0;j<k;j++) A[i][j]+=X[r][i]*X[r][j];
+      }
+    }
+    return solve(A,b);
+  }
+  function dot(a,b){var s=0;for(var i=0;i<a.length;i++)s+=a[i]*b[i];return s;}
+  // fila: [rd, rg, era, une]
+  function mk(rows,conDef){
+    return rows.map(function(r){return conDef?[1,r[1],r[2],r[3]]:[1,r[1],r[2]];});
+  }
+  function crossfit(train,test){
+    var y=train.map(function(r){return r[0];});
+    var bA=fit(mk(train,false),y),bB=fit(mk(train,true),y);
+    var XA=mk(test,false),XB=mk(test,true),d=[],sa=0,sb=0,i;
+    for(i=0;i<test.length;i++){
+      var ea=test[i][0]-dot(bA,XA[i]),eb=test[i][0]-dot(bB,XB[i]);
+      d.push(ea*ea-eb*eb);sa+=ea*ea;sb+=eb*eb;
+    }
+    var n=d.length,m=0;
+    for(i=0;i<n;i++)m+=d[i];m/=n;
+    var v=0;for(i=0;i<n;i++)v+=(d[i]-m)*(d[i]-m);
+    var sd=Math.sqrt(v/(n-1));
+    return {n:n,bDef:bB[3],impr:(sa-sb)/sa,t:m/(sd/Math.sqrt(n))};
+  }
+  function sdOf(a){var m=0,i;for(i=0;i<a.length;i++)m+=a[i];m/=a.length;var v=0;for(i=0;i<a.length;i++)v+=(a[i]-m)*(a[i]-m);return Math.sqrt(v/(a.length-1));}
+  function quintiles(rows){
+    var y=rows.map(function(r){return r[0];}),bA=fit(mk(rows,false),y),XA=mk(rows,false);
+    var arr=rows.map(function(r,i){return {l:r[3],res:r[0]-dot(bA,XA[i])};});
+    arr.sort(function(a,b){return a.l-b.l;});
+    var out=[],n=arr.length;
+    for(var q=0;q<5;q++){
+      var s=Math.floor(q*n/5),e=Math.floor((q+1)*n/5),c=0,res=0,lo=arr[s].l,hi=arr[e-1].l;
+      for(var i=s;i<e;i++){c++;res+=arr[i].res;}
+      out.push({n:c,res:res/c,lo:lo,hi:hi});
+    }
+    return out;
+  }
+
+  function fmt(x,d){return x==null||isNaN(x)?'–':x.toFixed(d);}
+  function load(s){try{var r=localStorage.getItem(KEY+s);return r?JSON.parse(r):null;}catch(e){return null;}}
+
+  function render(){
+    var R={2025:load(2025),2026:load(2026)},html='',v='';
+    [2025,2026].forEach(function(s){
+      if(!R[s]) return;
+      html+='<div class="card"><b>'+s+'</b> · '+R[s].length+' juegos guardados</div>';
+    });
+    if(R[2025]&&R[2026]){
+      var pairs=[[2025,2026],[2026,2025]],res=[];
+      pairs.forEach(function(p){
+        var c=crossfit(R[p[0]],R[p[1]]);res.push(c);
+        var ok=c.impr>0&&c.t>=2,mid=c.impr>0&&c.t>=1.3&&c.t<2;
+        html+='<div class="card"><b>Ajustar '+p[0]+' → medir '+p[1]+'</b> · '+c.n+' juegos'
+          +'<table>'
+          +'<tr><td>Peso de la defensa</td><td>'+fmt(c.bDef*0.1,3)+' carreras por cada 0.10 de carreras no limpias por juego</td></tr>'
+          +'<tr><td>Mejora del error vs solo ofensiva y ERA</td><td class="'+(ok?'ok':(mid?'mid':'bad'))+'"><b>'+fmt(c.impr*100,2)+'%</b></td></tr>'
+          +'<tr><td>Confianza (t)</td><td class="'+(ok?'ok':(mid?'mid':'bad'))+'">'+fmt(c.t,2)+'</td></tr>'
+          +'</table></div>';
+      });
+      [2025,2026].forEach(function(s){
+        var q=quintiles(R[s]);
+        html+='<div class="card"><b>'+s+': carreras de más/menos que dicen ofensiva y ERA, por nivel de defensa</b>'
+          +'<table><tr><th>Grupo (no limpias local − visita)</th><th>Juegos</th><th>Carreras extra</th></tr>';
+        var names=['Local permite MENOS no limpias','','Medio','','Local permite MÁS no limpias'];
+        q.forEach(function(g,i){
+          html+='<tr><td>'+(names[i]||('Grupo '+(i+1)))+' ('+fmt(g.lo,2)+' a '+fmt(g.hi,2)+')</td><td>'+g.n+'</td><td>'+(g.res>=0?'+':'')+fmt(g.res,2)+'</td></tr>';
+        });
+        html+='</table><div class="sub" style="margin-top:6px">Si la defensa aporta algo, la columna baja de arriba a abajo: el local con la peor defensa (abajo) tiende a rendir menos de lo que dicen sus otros números.</div></div>';
+      });
+      var a=res[0],b=res[1];
+      var sameSign=a.bDef<0&&b.bDef<0;
+      var both=a.impr>0&&b.impr>0;
+      var strong=both&&a.t>=2&&b.t>=2;
+      var avg=(a.bDef+b.bDef)/2;
+      var sdAll=sdOf(R[2025].concat(R[2026]).map(function(r){return r[3];}));
+      var oneSd=Math.abs(avg)*sdAll,pts=oneSd*PTS_PER_RUN;
+      if(strong&&sameSign) v='<div class="v ok">Pasa en las dos direcciones. Vale probarla dentro de la fórmula, con tope.</div>';
+      else if(both&&sameSign) v='<div class="v mid">Mejora en las dos direcciones pero sin confianza firme. Dudosa.</div>';
+      else v='<div class="v bad">No aguanta la prueba cruzada: descartada.</div>';
+      v+='<div class="sub" style="margin-top:8px">Tamaño real: un equipo con 1 desviación de diferencia en carreras no limpias mueve el juego unas <b>'+fmt(oneSd,3)+' carreras</b>, o sea unos <b>'+fmt(pts,1)+' puntos</b> de probabilidad en la escala de OVA (6 por carrera).</div>';
+    }else v='<div class="sub">Baja las dos temporadas para la prueba cruzada.</div>';
+    outEl.innerHTML=html;verdEl.innerHTML=v;
+  }
+
+  async function run(season){
+    if(running) return;
+    running=true;
+    document.getElementById('b25').disabled=true;document.getElementById('b26').disabled=true;
+    try{
+      var games=await getGames(season);
+      log('Juegos finales: '+games.length+'. Bajando cortes semanales…');
+      var snaps=[],S=season+'-04-22',last=season+'-09-28';
+      while(S<=last){snaps.push(S);S=addDays(S,7);}
+      var data=[];
+      for(var i=0;i<snaps.length;i++){
+        log('Pitcheo '+season+': corte '+(i+1)+'/'+snaps.length+' ('+snaps[i]+')');
+        data.push({S:snaps[i],pit:await getPitchSnap(season,snaps[i]),rg:rgUpTo(games,snaps[i])});
+        await sleep(250);
+      }
+      var rows=[];
+      games.forEach(function(g){
+        var snap=null;
+        for(var i=data.length-1;i>=0;i--){if(data[i].S<g.date){snap=data[i];break;}}
+        if(!snap) return;
+        var ph=snap.pit[g.hid],pa=snap.pit[g.aid],rh=snap.rg[g.hid],ra=snap.rg[g.aid];
+        if(!ph||!pa||!rh||!ra) return;
+        if(rh.n<15||ra.n<15) return;
+        rows.push([
+          g.hs-g.as,
+          +(rh.r/rh.n-ra.r/ra.n).toFixed(4),
+          +(pa.era-ph.era).toFixed(4),
+          +(ph.unearned/rh.n-pa.unearned/ra.n).toFixed(4)
+        ]);
+      });
+      if(rows.length<200) throw new Error('muy pocos juegos utilizables ('+rows.length+')');
+      try{localStorage.setItem(KEY+season,JSON.stringify(rows));}catch(e){}
+      log('Listo '+season+': '+rows.length+' juegos medidos.');
+      render();
+    }catch(e){log('Falló: '+e.message);}
+    running=false;
+    document.getElementById('b25').disabled=false;document.getElementById('b26').disabled=false;
+  }
+
+  document.getElementById('b25').onclick=function(){run(2025);};
+  document.getElementById('b26').onclick=function(){run(2026);};
+  document.getElementById('bclr').onclick=function(){
+    try{localStorage.removeItem(KEY+2025);localStorage.removeItem(KEY+2026);}catch(e){}
+    render();log('Borrado.');
+  };
+  render();
+})();
+</script>
+</body>
+</html>
