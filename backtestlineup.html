@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backtest lineup</title>
+<style>
+  body{background:#0e0e0e;color:#eee;font-family:-apple-system,system-ui,sans-serif;margin:0;padding:16px;line-height:1.4}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:#aaa;font-size:13px;margin-bottom:14px}
+  button{background:#c9a94b;color:#111;border:0;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:600;margin:0 8px 8px 0}
+  button:disabled{opacity:.4}
+  #log{font-size:13px;color:#bbb;margin:10px 0;min-height:20px}
+  .card{background:#181818;border:1px solid #2a2a2a;border-radius:12px;padding:12px;margin:12px 0}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  td,th{padding:6px 4px;text-align:right;border-bottom:1px solid #262626}
+  td:first-child,th:first-child{text-align:left}
+  .ok{color:#6fd08c}.bad{color:#ff7a7a}.mid{color:#e6c35c}
+  .v{font-size:16px;font-weight:700;margin-top:8px}
+</style>
+</head>
+<body>
+<h1>Backtest lineup <span style="font-size:12px;color:#c9a94b">v1</span></h1>
+<div class="sub">¿La ventaja zurdo/derecho del lineup predice quién gana o por cuánto? Mide con los lineups y abridores que de verdad jugaron.</div>
+
+<button id="b25">Correr 2025</button>
+<button id="b26">Correr 2026</button>
+<button id="bclr" style="background:#333;color:#eee">Borrar guardado</button>
+<div id="log"></div>
+<div id="out"></div>
+<div id="verd"></div>
+
+<script>
+(function(){
+  var API='https://statsapi.mlb.com/api/v1';
+  var RANGES={2025:['2025-03-15','2025-09-30'],2026:['2026-03-15','2026-09-30']};
+  var KEY='backtestlineup_v1_';
+  var logEl=document.getElementById('log'),outEl=document.getElementById('out'),verdEl=document.getElementById('verd');
+  var running=false;
+
+  function log(t){logEl.textContent=t;}
+  function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+
+  async function getJSON(url){
+    for(var i=0;i<4;i++){
+      try{
+        var r=await fetch(url);
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        return await r.json();
+      }catch(e){
+        if(i===3) throw e;
+        await sleep(400*(i+1));
+      }
+    }
+  }
+
+  function monthChunks(a,b){
+    var out=[],s=new Date(a+'T00:00:00Z'),end=new Date(b+'T00:00:00Z');
+    while(s<=end){
+      var e=new Date(s.getTime()+13*86400000);
+      if(e>end) e=end;
+      out.push([s.toISOString().slice(0,10),e.toISOString().slice(0,10)]);
+      s=new Date(e.getTime()+86400000);
+    }
+    return out;
+  }
+
+  async function getGames(season){
+    var rng=RANGES[season],chunks=monthChunks(rng[0],rng[1]),games={};
+    for(var i=0;i<chunks.length;i++){
+      log('Calendario '+season+': '+(i+1)+'/'+chunks.length);
+      var d=await getJSON(API+'/schedule?sportId=1&gameType=R&startDate='+chunks[i][0]+'&endDate='+chunks[i][1]);
+      (d.dates||[]).forEach(function(day){
+        (day.games||[]).forEach(function(g){
+          if(!g.status||g.status.abstractGameState!=='Final') return;
+          var h=g.teams.home,a=g.teams.away;
+          if(h.score==null||a.score==null||h.score===a.score) return;
+          games[g.gamePk]={pk:g.gamePk,hs:h.score,as:a.score};
+        });
+      });
+    }
+    return Object.keys(games).map(function(k){return games[k];});
+  }
+
+  async function pool(items,n,fn){
+    var idx=0,done=0;
+    async function worker(){
+      while(true){
+        var i=idx++;
+        if(i>=items.length) return;
+        try{await fn(items[i]);}catch(e){items[i].err=true;}
+        done++;
+        if(done%50===0) log('Boxscores: '+done+'/'+items.length);
+      }
+    }
+    var ws=[];
+    for(var k=0;k<n;k++) ws.push(worker());
+    await Promise.all(ws);
+  }
+
+  async function loadBox(g){
+    var d=await getJSON(API+'/game/'+g.pk+'/boxscore');
+    var H=d.teams.home,A=d.teams.away;
+    var ho=(H.battingOrder||[]).slice(0,9),ao=(A.battingOrder||[]).slice(0,9);
+    var hp=(H.pitchers||[])[0],ap=(A.pitchers||[])[0];
+    if(ho.length<9||ao.length<9||!hp||!ap){g.err=true;return;}
+    g.ho=ho;g.ao=ao;g.hp=hp;g.ap=ap;
+  }
+
+  async function loadPeople(ids){
+    var map={},list=Object.keys(ids),B=80;
+    for(var i=0;i<list.length;i+=B){
+      log('Jugadores: '+Math.min(i+B,list.length)+'/'+list.length);
+      var d=await getJSON(API+'/people?personIds='+list.slice(i,i+B).join(','));
+      (d.people||[]).forEach(function(p){
+        map[p.id]={bat:p.batSide&&p.batSide.code,pit:p.pitchHand&&p.pitchHand.code};
+      });
+    }
+    return map;
+  }
+
+  // ventaja: bateador de lado contrario al abridor, o ambidiestro
+  function adv(bat,pit){
+    if(!bat||!pit) return null;
+    if(bat==='S') return 1;
+    return bat!==pit?1:0;
+  }
+  function lineupAdv(order,pitId,P){
+    var ph=P[pitId]&&P[pitId].pit;
+    if(!ph) return null;
+    var c=0;
+    for(var i=0;i<order.length;i++){
+      var v=adv(P[order[i]]&&P[order[i]].bat,ph);
+      if(v==null) return null;
+      c+=v;
+    }
+    return c;
+  }
+
+  function pearson(x,y){
+    var n=x.length,sx=0,sy=0,i;
+    for(i=0;i<n;i++){sx+=x[i];sy+=y[i];}
+    var mx=sx/n,my=sy/n,sxy=0,sxx=0,syy=0;
+    for(i=0;i<n;i++){sxy+=(x[i]-mx)*(y[i]-my);sxx+=(x[i]-mx)*(x[i]-mx);syy+=(y[i]-my)*(y[i]-my);}
+    return sxy/Math.sqrt(sxx*syy);
+  }
+
+  function analyze(rows){
+    var D=[],RD=[],W=[];
+    rows.forEach(function(r){D.push(r.d);RD.push(r.rd);W.push(r.win);});
+    var n=D.length,rRD=pearson(D,RD),rW=pearson(D,W);
+    var sx=0,sy=0,sxy=0,sxx=0,i;
+    for(i=0;i<n;i++){sx+=D[i];sy+=RD[i];}
+    var mx=sx/n,my=sy/n;
+    for(i=0;i<n;i++){sxy+=(D[i]-mx)*(RD[i]-my);sxx+=(D[i]-mx)*(D[i]-mx);}
+    var slope=sxy/sxx;
+    var buckets=[['≤ −2',function(d){return d<=-2;}],['−1',function(d){return d===-1;}],['0',function(d){return d===0;}],['+1',function(d){return d===1;}],['≥ +2',function(d){return d>=2;}]];
+    var bt=buckets.map(function(b){
+      var w=0,c=0,rd=0;
+      rows.forEach(function(r){if(b[1](r.d)){c++;w+=r.win;rd+=r.rd;}});
+      return {name:b[0],n:c,winp:c?w/c:null,rd:c?rd/c:null};
+    });
+    var hw=0;rows.forEach(function(r){hw+=r.win;});
+    return {n:n,rRD:rRD,rW:rW,slope:slope,se:1/Math.sqrt(n),homewin:hw/n,buckets:bt};
+  }
+
+  function fmt(x,d){return x==null?'–':x.toFixed(d);}
+
+  function render(){
+    var html='',seasons=[2025,2026],res={};
+    seasons.forEach(function(s){
+      var raw=null;try{raw=localStorage.getItem(KEY+s);}catch(e){}
+      if(!raw) return;
+      var a=JSON.parse(raw);res[s]=a;
+      var sig=Math.abs(a.rRD)>=2*a.se;
+      html+='<div class="card"><b>'+s+'</b> · '+a.n+' juegos · local gana '+fmt(a.homewin*100,1)+'%<br>'
+        +'r con diferencial de carreras: <b class="'+(sig?'ok':'bad')+'">'+fmt(a.rRD,3)+'</b> (ruido ±'+fmt(2*a.se,3)+')<br>'
+        +'r con ganar/perder: '+fmt(a.rW,3)+'<br>'
+        +'Cada bateador de ventaja extra ≈ <b>'+fmt(a.slope,3)+'</b> carreras<br>'
+        +'<table><tr><th>Ventaja local − visita</th><th>Juegos</th><th>Local gana</th><th>Dif. carreras</th></tr>';
+      a.buckets.forEach(function(b){
+        html+='<tr><td>'+b.name+'</td><td>'+b.n+'</td><td>'+(b.winp==null?'–':fmt(b.winp*100,1)+'%')+'</td><td>'+fmt(b.rd,2)+'</td></tr>';
+      });
+      html+='</table></div>';
+    });
+    outEl.innerHTML=html;
+    var v='';
+    if(res[2025]&&res[2026]){
+      var a=res[2025],b=res[2026];
+      var same=(a.rRD>0)===(b.rRD>0);
+      var both=Math.abs(a.rRD)>=2*a.se&&Math.abs(b.rRD)>=2*b.se;
+      if(same&&both) v='<div class="v ok">Se repite en las dos temporadas: vale la pena probarlo encima de la fórmula de OVA.</div>';
+      else v='<div class="v bad">No se repite en las dos temporadas: descartado (mismo criterio que viento y día/noche).</div>';
+      v+='<div class="sub">Ojo: esto mide la señal cruda. Si pasa, el siguiente paso es ver si aporta algo que ERA y R/G no tengan ya.</div>';
+    }else{
+      v='<div class="sub">Corre las dos temporadas para el veredicto.</div>';
+    }
+    verdEl.innerHTML=v;
+  }
+
+  async function run(season){
+    if(running) return;
+    running=true;
+    document.getElementById('b25').disabled=true;
+    document.getElementById('b26').disabled=true;
+    try{
+      var games=await getGames(season);
+      log('Juegos finales: '+games.length+'. Bajando boxscores…');
+      await pool(games,6,loadBox);
+      games=games.filter(function(g){return !g.err;});
+      var ids={};
+      games.forEach(function(g){
+        g.ho.concat(g.ao).forEach(function(i){ids[i]=1;});
+        ids[g.hp]=1;ids[g.ap]=1;
+      });
+      var P=await loadPeople(ids);
+      var rows=[];
+      games.forEach(function(g){
+        var h=lineupAdv(g.ho,g.ap,P),a=lineupAdv(g.ao,g.hp,P);
+        if(h==null||a==null) return;
+        rows.push({d:h-a,rd:g.hs-g.as,win:g.hs>g.as?1:0});
+      });
+      if(rows.length<100) throw new Error('muy pocos juegos utilizables ('+rows.length+')');
+      var res=analyze(rows);
+      try{localStorage.setItem(KEY+season,JSON.stringify(res));}catch(e){}
+      log('Listo '+season+': '+rows.length+' juegos medidos.');
+      render();
+    }catch(e){
+      log('Falló: '+e.message);
+    }
+    running=false;
+    document.getElementById('b25').disabled=false;
+    document.getElementById('b26').disabled=false;
+  }
+
+  document.getElementById('b25').onclick=function(){run(2025);};
+  document.getElementById('b26').onclick=function(){run(2026);};
+  document.getElementById('bclr').onclick=function(){
+    try{localStorage.removeItem(KEY+2025);localStorage.removeItem(KEY+2026);}catch(e){}
+    render();log('Borrado.');
+  };
+  render();
+})();
+</script>
+</body>
+</html>
