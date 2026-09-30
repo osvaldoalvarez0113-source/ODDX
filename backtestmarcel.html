@@ -250,6 +250,18 @@
         +'<tr><td>Confianza (t) de las tres juntas</td><td>'+fmt(tPool,2)+'</td></tr>'
         +'<tr><td>Pruebas con t de 2 o más</td><td>'+nFuertes+' de 3</td></tr>'
         +'<tr><td>Mejoran las tres, con peso positivo</td><td>'+(allPos?'sí':'no')+'</td></tr></table></div>';
+      // coeficientes finales: las tres temporadas juntas, mismo ajuste (pesos = innings de la salida)
+      var yF=all.map(function(r){return r[0];}),wF=all.map(function(r){return r[3];});
+      var bF=fitW(XB(all),yF,wF);
+      var ejE=3.50,ejH=4.20,ejP=bF[0]+bF[1]*ejE+bF[2]*ejH;
+      html+='<div class="card"><b>Coeficientes finales (las tres temporadas juntas)</b><table>'
+        +'<tr><td>Fijo (a)</td><td>'+fmt(bF[0],3)+'</td></tr>'
+        +'<tr><td>Peso del ERA del año jalado a la liga (b1)</td><td>'+fmt(bF[1],3)+'</td></tr>'
+        +'<tr><td>Peso del historial de 3 años (b2)</td><td>'+fmt(bF[2],3)+'</td></tr>'
+        +'<tr><td>b1 + b2</td><td>'+fmt(bF[1]+bF[2],3)+'</td></tr>'
+        +'<tr><td colspan="2" style="text-align:left;color:#aaa;border:0">Fórmula: ERA pronosticado = a + b1 × (ERA del año jalado) + b2 × (historial). Ejemplo: ERA del año 3.50 e historial 4.20 dan '+fmt(ejP,2)+'.</td></tr>'
+        +'<tr><td colspan="2" style="text-align:left;color:#aaa;border:0">COPIA ESTO: a='+bF[0].toFixed(4)+' b1='+bF[1].toFixed(4)+' b2='+bF[2].toFixed(4)+'</td></tr>'
+        +'</table><div class="sub" style="margin-top:6px">Constantes que se usaron y que van iguales en la app: 40 innings de liga para el ERA del año, 60 innings de liga para acolchar el historial, pesos 5-4-3 para los tres años previos, y solo abridores con 40 o más innings en esos tres años.</div></div>';
       var strong=allPos&&tPool>=2,mid=allPos&&tPool>=1.3&&!strong;
       if(strong) v='<div class="v ok">Pasa: mejora en las tres pruebas y la confianza juntas llega a 2. Entra a la app como opción en Ajustes, apagada por defecto.</div>';
       else if(mid) v='<div class="v mid">Mejora en las tres pero sin confianza firme juntas. Dudoso: se archiva.</div>';
