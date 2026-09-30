@@ -1,4 +1,4 @@
-/* OVA MLB v47/v48 · historial de 3 años del abridor (estilo Marcel).
+/* OVA MLB v47/v48/v49 · historial de 3 años del abridor (estilo Marcel).
    Va como archivo aparte y se engancha a la app sin tocar su codigo: envuelve
    temporada(), eraUsado() y detalle(), igual que hacen obsidiana.js y railway.js.
    APAGADO por defecto. Solo cambia el calculo si lo enciendes en Ajustes.
@@ -124,6 +124,7 @@ try{
   detalle=function(x){
     var out=_detalle(x);
     try{ out=agregar(out,x); }catch(e){}
+    try{ ctxDe(x); }catch(e){}
     return out;
   };
 
@@ -148,7 +149,7 @@ try{
       }
     }catch(e){}
     try{
-      [].slice.call(document.querySelectorAll('.ver')).forEach(function(e){ e.textContent='v48'; });
+      [].slice.call(document.querySelectorAll('.ver')).forEach(function(e){ e.textContent='v49'; });
       var f=document.querySelector('footer details');
       if(f&&!f.querySelector('.ovaNota47')){
         var n=document.createElement('div');
@@ -190,7 +191,8 @@ try{
   };
   var REGLAS='Reglas: no inventes nada. Si no encuentras un dato, escribe "no encontre" en vez de rellenar. '+
     'Pon la fuente y la hora aproximada de cada dato importante. Ignora rumores de redes o comentarios sin fuente. '+
-    'Separa lo que ENCONTRASTE con fuente de lo que estas SUPONIENDO. No repitas lo que mi modelo ya dice.';
+    'Separa lo que ENCONTRASTE con fuente de lo que estas SUPONIENDO. No repitas lo que mi modelo ya dice. '+
+    'Usa SOLO informacion de la temporada actual: descarta cualquier articulo de otros años aunque el enfrentamiento sea igual, y si una fuente no tiene fecha clara, no la uses.';
   var CIERRE='Termina con una sola linea: "SENAL: MANTENER", "SENAL: CUIDADO" o "SENAL: EVITAR", seguida de la razon principal en una frase.';
   promptJuego=function(juego,fecha,buenos,mlPick){
     var l=(buenos||[]).slice(0,5).map(function(m){
@@ -221,6 +223,55 @@ try{
       'Al final: cuales 3 o 4 tienen mas chance real considerando lo que encontraste, y en cuales la informacion contradice al modelo.\n'+
       REGLAS+' Maximo unas 450 palabras.\n'+
       'Cierra cada juego con "SENAL: MANTENER", "SENAL: CUIDADO" o "SENAL: EVITAR".';
+  };
+
+  /* 6. identificacion exacta del juego para la IA (v49).
+     Causa de un error real: CHC @ SD del 30-sep-2026 (Wild Card, juego 2) se
+     confundio con la serie del año anterior, mismos equipos, misma ronda y misma
+     fecha. Ahora el prompt lleva temporada, serie, numero de juego, parque, hora
+     y abridores, y le prohibe usar datos de otros años. */
+  var CTX={}, GJ={};
+  if(typeof fila==='function'){
+    var _fila=fila;
+    fila=function(g,year){
+      try{ if(g&&g.gamePk) GJ[g.gamePk]=g; }catch(e){}
+      return _fila(g,year);
+    };
+  }
+  function ctxDe(x){
+    var g=GJ[x.gamePk];
+    if(!g||!x.a||!x.h) return;
+    var ab=function(t){ return t.abbreviation||t.name; };
+    var fecha=ymd(x.fecha), key=ab(x.a.team)+' @ '+ab(x.h.team)+'|'+fecha, p=[];
+    p.push('temporada '+x.year+', fecha del juego '+fecha);
+    p.push(x.a.team.name+' (visita) @ '+x.h.team.name+' (local)');
+    if(x.venue) p.push('parque: '+x.venue);
+    if(g.seriesDescription){
+      p.push(g.seriesDescription+(g.gamesInSeries&&g.seriesGameNumber?', juego '+g.seriesGameNumber+' de '+g.gamesInSeries:''));
+    }
+    if(g.gameDate) p.push('primer lanzamiento (UTC): '+g.gameDate);
+    if(x.pa&&x.ph) p.push('abridores probables: '+x.pa.fullName+' ('+ab(x.a.team)+') contra '+x.ph.fullName+' ('+ab(x.h.team)+')');
+    var ra=g.teams&&g.teams.away&&g.teams.away.leagueRecord, rh=g.teams&&g.teams.home&&g.teams.home.leagueRecord;
+    if(ra&&rh&&ra.wins!=null&&rh.wins!=null) p.push('records antes del juego: '+ab(x.a.team)+' '+ra.wins+'-'+ra.losses+', '+ab(x.h.team)+' '+rh.wins+'-'+rh.losses);
+    CTX[key]=p.join('; ');
+  }
+  var AVISO_ANIO='Estos mismos equipos pueden haberse enfrentado antes: en la misma ronda, en otra fecha o en otra temporada. '+
+    'Usa SOLO informacion de la temporada indicada y de este juego exacto; descarta cualquier articulo de años anteriores. '+
+    'Si una fuente habla de un resultado de este juego, comprueba que el juego ya haya empezado segun la hora indicada; si todavia no empezo, dilo. '+
+    'Al citar un resultado, di el marcador y la fecha.';
+  var _pj=promptJuego;
+  promptJuego=function(juego,fecha,buenos,mlPick){
+    var c=CTX[juego+'|'+fecha];
+    var ident=c?('IDENTIFICACION EXACTA DEL JUEGO: '+c+'. '):('El juego es del '+fecha+' (usa solo informacion de esa temporada). ');
+    return ident+AVISO_ANIO+'\n\n'+_pj(juego,fecha,buenos,mlPick);
+  };
+  var _pd=promptDia;
+  promptDia=function(lista){
+    var fe=''; try{ fe=(document.getElementById('fecha')||{}).value||''; }catch(e){}
+    var lines=[];
+    (lista||[]).slice(0,8).forEach(function(m){ var c=CTX[m.juego+'|'+fe]; if(c) lines.push('- '+m.juego+': '+c); });
+    return (lines.length?'IDENTIFICACION EXACTA DE CADA JUEGO:\n'+lines.join('\n')+'\n':'La fecha de estos juegos es '+fe+'. ')+
+      AVISO_ANIO+'\n\n'+_pd(lista);
   };
 
   window.OVAHist={pHistDe:pHistDe,eraHistSeason:eraHistSeason,eAppDe:eAppDe,set:function(v){HIST=v;},get:function(){return HIST;}};
