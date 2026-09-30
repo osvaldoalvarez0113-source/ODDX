@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backtest rebote</title>
+<style>
+  body{background:#0e0e0e;color:#eee;font-family:-apple-system,system-ui,sans-serif;margin:0;padding:16px;line-height:1.4}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:#aaa;font-size:13px;margin-bottom:14px}
+  button{background:#c9a94b;color:#111;border:0;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:600;margin:0 8px 8px 0}
+  button:disabled{opacity:.4}
+  #log{font-size:13px;color:#bbb;margin:10px 0;min-height:20px}
+  .card{background:#181818;border:1px solid #2a2a2a;border-radius:12px;padding:12px;margin:12px 0;font-size:14px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  td,th{padding:6px 4px;text-align:right;border-bottom:1px solid #262626}
+  td:first-child,th:first-child{text-align:left}
+  .ok{color:#6fd08c}.bad{color:#ff7a7a}.mid{color:#e6c35c}
+  .v{font-size:15px;font-weight:700;margin-top:8px}
+</style>
+</head>
+<body>
+<h1>Backtest del rebote <span style="font-size:12px;color:#c9a94b">v1</span></h1>
+<div class="sub">¿Un equipo rinde distinto según cómo le fue el juego anterior? Tres señales (resultado, margen y racha del juego anterior) medidas contra las carreras por juego, en 5 temporadas (2022 a 2026), ajustando con cuatro y midiendo en la quinta. Más una mirada a los playoffs: cómo le va a un equipo después de perder un juego de la serie.</div>
+
+<button id="ball">Bajar las 5 temporadas</button>
+<button id="bclr" style="background:#333;color:#eee">Borrar guardado</button>
+<div id="log"></div>
+<div id="out"></div>
+<div id="verd"></div>
+
+<script>
+(function(){
+  var API='https://statsapi.mlb.com/api/v1';
+  var KEY='backtestrebote_v1_';
+  var SEAS=[2022,2023,2024,2025,2026];
+  var PTS_PER_RUN=6;
+  var SIGS=[
+    {name:'Ganó o perdió el juego anterior',idx:2},
+    {name:'Margen del juego anterior',idx:3},
+    {name:'Racha de ganados o perdidos',idx:4}
+  ];
+  var logEl=document.getElementById('log'),outEl=document.getElementById('out'),verdEl=document.getElementById('verd');
+  var running=false;
+
+  function log(t){logEl.textContent=t;}
+  function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+  async function getJSON(url){
+    for(var i=0;i<4;i++){
+      try{var r=await fetch(url);if(!r.ok) throw new Error('HTTP '+r.status);return await r.json();}
+      catch(e){if(i===3) throw e;await sleep(500*(i+1));}
+    }
+  }
+  function addDays(iso,n){return new Date(new Date(iso+'T00:00:00Z').getTime()+n*86400000).toISOString().slice(0,10);}
+
+  async function getGames(season,tipos,ini,fin,etiqueta){
+    var out=[],s=ini,k=0;
+    while(s<=fin){
+      var e=addDays(s,13);if(e>fin)e=fin;
+      k++;log(etiqueta+' '+season+': tramo '+k);
+      var d=await getJSON(API+'/schedule?sportId=1&gameType='+tipos+'&startDate='+s+'&endDate='+e);
+      (d.dates||[]).forEach(function(day){
+        (day.games||[]).forEach(function(g){
+          if(!g.status||g.status.abstractGameState!=='Final') return;
+          var h=g.teams.home,aw=g.teams.away;
+          if(h.score==null||aw.score==null||h.score===aw.score) return;
+          out.push({pk:g.gamePk,t:g.gameDate||day.date,hid:h.team.id,aid:aw.team.id,hs:h.score,as:aw.score,
+                    serie:(g.seriesDescription||'')});
+        });
+      });
+      s=addDays(e,1);
+    }
+    var seen={};
+    out=out.filter(function(g){if(seen[g.pk])return false;seen[g.pk]=1;return true;});
+    out.sort(function(a,b){return a.t<b.t?-1:(a.t>b.t?1:(a.pk-b.pk));});
+    return out;
+  }
+
+  function clamp(v,m){return Math.max(-m,Math.min(m,v));}
+  // juegos de temporada regular -> filas [rd, rg, resultado, margen, racha] (local menos visita)
+  function construirFilas(games){
+    var st={},rows=[];
+    function S(id){return st[id]||(st[id]={g:0,rs:0,last:null,streak:0});}
+    games.forEach(function(g){
+      var h=S(g.hid),a=S(g.aid);
+      if(h.g>=20&&a.g>=20&&h.last&&a.last){
+        rows.push([
+          g.hs-g.as,
+          +(h.rs/h.g-a.rs/a.g).toFixed(4),
+          h.last.w-a.last.w,
+          clamp(h.last.m,8)-clamp(a.last.m,8),
+          clamp(h.streak,6)-clamp(a.streak,6)
+        ]);
+      }
+      [[h,g.hs,g.as],[a,g.as,g.hs]].forEach(function(t){
+        var x=t[0],mio=t[1],suyo=t[2];
+        x.g++;x.rs+=mio;
+        x.last={w:mio>suyo?1:-1,m:mio-suyo};
+        if(mio>suyo) x.streak=x.streak>0?x.streak+1:1;
+        else x.streak=x.streak<0?x.streak-1:-1;
+      });
+    });
+    return rows;
+  }
+  function winPct(games){
+    var t={};
+    games.forEach(function(g){
+      var h=t[g.hid]||(t[g.hid]={w:0,n:0}),a=t[g.aid]||(t[g.aid]={w:0,n:0});
+      h.n++;a.n++;
+      if(g.hs>g.as) h.w++; else a.w++;
+    });
+    var o={};for(var k in t) o[k]=t[k].w/t[k].n;
+    return o;
+  }
+  function logit(p){p=Math.max(0.05,Math.min(0.95,p));return Math.log(p/(1-p));}
+  // playoffs: por cada equipo y juego (desde el 2.o de la serie): [gano, esperado, perdioAnterior, perdioAnteriorPor5]
+  function construirPost(games,wp){
+    var last={},rows=[];
+    games.forEach(function(g){
+      var par=Math.min(g.hid,g.aid)+'-'+Math.max(g.hid,g.aid)+'|'+g.serie;
+      var prev=last[par];
+      if(prev&&wp[g.hid]!=null&&wp[g.aid]!=null){
+        [[g.hid,g.aid,g.hs>g.as,1],[g.aid,g.hid,g.as>g.hs,-1]].forEach(function(t){
+          var eq=t[0],op=t[1],gano=t[2]?1:0,loc=t[3];
+          var p=1/(1+Math.exp(-(logit(wp[eq])-logit(wp[op])+0.14*loc)));
+          var perdio=prev.ganador!==eq;
+          rows.push([gano,+p.toFixed(4),perdio?1:0,(perdio&&prev.margen>=5)?1:0]);
+        });
+      }
+      last[par]={ganador:g.hs>g.as?g.hid:g.aid,margen:Math.abs(g.hs-g.as)};
+    });
+    return rows;
+  }
+
+  // ---------- estadistica ----------
+  function solve(A,b){
+    var n=b.length,i,j,k;
+    var M=A.map(function(r,i){return r.concat([b[i]]);});
+    for(i=0;i<n;i++){
+      var p=i;
+      for(j=i+1;j<n;j++) if(Math.abs(M[j][i])>Math.abs(M[p][i])) p=j;
+      var tmp=M[i];M[i]=M[p];M[p]=tmp;
+      for(j=i+1;j<n;j++){
+        var f=M[j][i]/M[i][i];
+        for(k=i;k<=n;k++) M[j][k]-=f*M[i][k];
+      }
+    }
+    var x=new Array(n);
+    for(i=n-1;i>=0;i--){
+      var s=M[i][n];
+      for(j=i+1;j<n;j++) s-=M[i][j]*x[j];
+      x[i]=s/M[i][i];
+    }
+    return x;
+  }
+  function fit(X,y){
+    var k=X[0].length,A=[],b=[],i,j,r;
+    for(i=0;i<k;i++){A.push(new Array(k).fill(0));b.push(0);}
+    for(r=0;r<X.length;r++){
+      for(i=0;i<k;i++){
+        b[i]+=X[r][i]*y[r];
+        for(j=0;j<k;j++) A[i][j]+=X[r][i]*X[r][j];
+      }
+    }
+    return solve(A,b);
+  }
+  function dot(a,b){var s=0;for(var i=0;i<a.length;i++)s+=a[i]*b[i];return s;}
+  function mkA(rows){return rows.map(function(r){return [1,r[1]];});}
+  function mkB(rows,idx){return rows.map(function(r){return [1,r[1],r[idx]];});}
+  function tOf(d){
+    var n=d.length,m=0,i;for(i=0;i<n;i++)m+=d[i];m/=n;
+    var v=0;for(i=0;i<n;i++)v+=(d[i]-m)*(d[i]-m);
+    return m/(Math.sqrt(v/(n-1))/Math.sqrt(n));
+  }
+  function sdOf(a){var m=0,i;for(i=0;i<a.length;i++)m+=a[i];m/=a.length;var v=0;for(i=0;i<a.length;i++)v+=(a[i]-m)*(a[i]-m);return Math.sqrt(v/(a.length-1));}
+  // deja una temporada fuera: ajusta con las demas, mide en esa
+  function foldsDe(porTemp){
+    var seas=Object.keys(porTemp),res=SIGS.map(function(){return {folds:[],d:[],sa:0,sb:0};});
+    seas.forEach(function(test){
+      var train=[];
+      seas.forEach(function(o){if(o!==test) train=train.concat(porTemp[o]);});
+      var y=train.map(function(r){return r[0];}),bA=fit(mkA(train),y),xa=mkA(porTemp[test]);
+      var eA=porTemp[test].map(function(r,i){return r[0]-dot(bA,xa[i]);});
+      var sa=0,i;for(i=0;i<eA.length;i++) sa+=eA[i]*eA[i];
+      SIGS.forEach(function(sg,k){
+        var bB=fit(mkB(train,sg.idx),y),xb=mkB(porTemp[test],sg.idx),sb=0,d=[];
+        for(i=0;i<xb.length;i++){
+          var eb=porTemp[test][i][0]-dot(bB,xb[i]);
+          d.push(eA[i]*eA[i]-eb*eb);sb+=eb*eb;
+        }
+        res[k].folds.push({test:test,impr:(sa-sb)/sa,b:bB[2]});
+        res[k].d=res[k].d.concat(d);res[k].sa+=sa;res[k].sb+=sb;
+      });
+    });
+    return res;
+  }
+
+  function fmt(x,d){return x==null||isNaN(x)?'–':x.toFixed(d);}
+  function load(s){try{var r=localStorage.getItem(KEY+s);return r?JSON.parse(r):null;}catch(e){return null;}}
+
+  function postFila(nombre,rows,filtro){
+    var n=0,act=0,esp=0;
+    rows.forEach(function(r){if(filtro(r)){n++;act+=r[0];esp+=r[1];}});
+    if(n<10) return '<tr><td>'+nombre+'</td><td colspan="4">muy pocos juegos ('+n+')</td></tr>';
+    var pa=act/n,pe=esp/n,se=Math.sqrt(pe*(1-pe)/n),dif=(pa-pe)*100;
+    return '<tr><td>'+nombre+'</td><td>'+n+'</td><td>'+fmt(pa*100,1)+'%</td><td>'+fmt(pe*100,1)+'%</td><td class="'+(Math.abs(dif)>=2*se*100?'ok':'')+'">'+(dif>=0?'+':'')+fmt(dif,1)+' (±'+fmt(2*se*100,1)+')</td></tr>';
+  }
+
+  function render(){
+    var R={},hay=0,html='',v='';
+    SEAS.forEach(function(s){R[s]=load(s);if(R[s])hay++;});
+    if(hay<SEAS.length){
+      v='<div class="sub">'+(hay?'Faltan temporadas guardadas ('+hay+' de 5). Toca "Bajar las 5 temporadas".':'Toca "Bajar las 5 temporadas".')+'</div>';
+      outEl.innerHTML='';verdEl.innerHTML=v;return;
+    }
+    var porTemp={},total=0,post=[];
+    SEAS.forEach(function(s){porTemp[s]=R[s].reg;total+=R[s].reg.length;post=post.concat(R[s].post);});
+    var res=foldsDe(porTemp);
+    var all=[];SEAS.forEach(function(s){all=all.concat(R[s].reg);});
+    html+='<div class="card"><b>Temporada regular</b> · '+total+' juegos, 5 temporadas<table>'+
+      '<tr><th>Señal</th><th>Mejoran</th><th>t junto</th><th>Mismo signo</th><th>1 desv. mueve</th></tr>';
+    var vere=[];
+    SIGS.forEach(function(sg,k){
+      var r=res[k],tJ=tOf(r.d);
+      var mej=r.folds.filter(function(f){return f.impr>0;}).length;
+      var pos=r.folds.filter(function(f){return f.b>0;}).length,mismo=Math.max(pos,r.folds.length-pos);
+      var avg=0;r.folds.forEach(function(f){avg+=f.b;});avg/=r.folds.length;
+      var sd=sdOf(all.map(function(x){return x[sg.idx];}));
+      var runs=Math.abs(avg)*sd,pts=runs*PTS_PER_RUN;
+      var pasa=tJ>=2&&mej>=4&&mismo>=4;
+      html+='<tr><td>'+sg.name+'</td><td class="'+(mej>=4?'ok':'bad')+'">'+mej+' de 5</td><td class="'+(tJ>=2?'ok':'bad')+'">'+fmt(tJ,2)+'</td><td class="'+(mismo>=4?'ok':'bad')+'">'+mismo+' de 5</td><td>'+fmt(runs,2)+' c · '+fmt(pts,1)+' pts</td></tr>';
+      vere.push({nombre:sg.name,pasa:pasa,coef:avg});
+    });
+    html+='</table><div class="sub" style="margin-top:6px">Cada una se mide contra el modelo de carreras por juego, dejando una temporada fuera y ajustando con las otras cuatro. Puntos en la escala de OVA (6 por carrera).</div></div>';
+
+    html+='<div class="card"><b>Playoffs 2022 a 2026</b> (desde el 2.o juego de cada serie)<table>'+
+      '<tr><th>Situación</th><th>Juegos</th><th>Ganó</th><th>Esperado</th><th>Diferencia, puntos</th></tr>'+
+      postFila('Venía de perder el juego anterior',post,function(r){return r[2]===1;})+
+      postFila('Venía de perder por 5 o más',post,function(r){return r[3]===1;})+
+      postFila('Venía de ganar el juego anterior',post,function(r){return r[2]===0;})+
+      '</table><div class="sub" style="margin-top:6px">El esperado sale de los récords de temporada regular de cada equipo y de la localía. Con tan pocos juegos, solo una diferencia mayor que el margen entre paréntesis significa algo.</div></div>';
+    outEl.innerHTML=html;
+    vere.forEach(function(x){
+      v+='<div class="v '+(x.pasa?'ok':'bad')+'">'+x.nombre+': '+(x.pasa?'pasa. Mira el tamaño antes de decidir.':'no pasa: descartada.')+'</div>';
+    });
+    v+='<div class="sub" style="margin-top:8px">Regla fijada antes de correr: pasa si la confianza (t) de las cinco pruebas juntas llega a 2, mejora en 4 de las 5 temporadas y el signo del efecto se repite en 4 de 5.</div>';
+    verdEl.innerHTML=v;
+  }
+
+  async function run(){
+    if(running) return;
+    running=true;
+    document.getElementById('ball').disabled=true;
+    try{
+      for(var i=0;i<SEAS.length;i++){
+        var s=SEAS[i];
+        var reg=await getGames(s,'R',s+'-03-15',s+'-10-02','Temporada '+s);
+        var filas=construirFilas(reg);
+        var post=[];
+        try{
+          var pg=await getGames(s,'F,D,L,W',s+'-09-25',s+'-11-15','Playoffs '+s);
+          post=construirPost(pg,winPct(reg));
+        }catch(e){post=[];}
+        if(filas.length<500) throw new Error('muy pocos juegos en '+s+' ('+filas.length+')');
+        try{localStorage.setItem(KEY+s,JSON.stringify({reg:filas,post:post}));}catch(e){}
+        log('Listo '+s+': '+filas.length+' juegos y '+post.length+' de playoffs.');
+      }
+      render();
+    }catch(e){log('Falló: '+e.message);}
+    running=false;
+    document.getElementById('ball').disabled=false;
+  }
+
+  document.getElementById('ball').onclick=run;
+  document.getElementById('bclr').onclick=function(){
+    try{SEAS.forEach(function(s){localStorage.removeItem(KEY+s);});}catch(e){}
+    render();log('Borrado.');
+  };
+  render();
+})();
+</script>
+</body>
+</html>
