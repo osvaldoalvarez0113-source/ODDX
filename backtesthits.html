@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backtest hits abridor</title>
+<style>
+  body{background:#0e0e0e;color:#eee;font-family:-apple-system,system-ui,sans-serif;margin:0;padding:16px;line-height:1.4}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:#aaa;font-size:13px;margin-bottom:14px}
+  button{background:#c9a94b;color:#111;border:0;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:600;margin:0 8px 8px 0}
+  button:disabled{opacity:.4}
+  #log{font-size:13px;color:#bbb;margin:10px 0;min-height:20px}
+  .card{background:#181818;border:1px solid #2a2a2a;border-radius:12px;padding:12px;margin:12px 0;font-size:14px}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+  td,th{padding:6px 4px;text-align:right;border-bottom:1px solid #262626}
+  td:first-child,th:first-child{text-align:left}
+  .ok{color:#6fd08c}.bad{color:#ff7a7a}.mid{color:#e6c35c}
+  .v{font-size:16px;font-weight:700;margin-top:8px}
+</style>
+</head>
+<body>
+<h1>Backtest hits del abridor <span style="font-size:12px;color:#c9a94b">v1</span></h1>
+<div class="sub">Salida por salida: ¿los hits por 9 (y los boletos) que un abridor lleva en la temporada predicen las carreras limpias que permite ese día, MÁS ALLÁ de su ERA? Cada salida usa solo lo que había antes de esa fecha, y solo cuenta abridores con 30+ innings acumulados.</div>
+
+<button id="b25">Bajar 2025</button>
+<button id="b26">Bajar 2026</button>
+<button id="bclr" style="background:#333;color:#eee">Borrar guardado</button>
+<div id="log"></div>
+<div id="out"></div>
+<div id="verd"></div>
+
+<script>
+(function(){
+  var API='https://statsapi.mlb.com/api/v1';
+  var KEY='backtesthits_v1_';
+  var PTS_PER_RUN=6;
+  var logEl=document.getElementById('log'),outEl=document.getElementById('out'),verdEl=document.getElementById('verd');
+  var running=false;
+
+  function log(t){logEl.textContent=t;}
+  function sleep(ms){return new Promise(function(r){setTimeout(r,ms);});}
+  async function getJSON(url){
+    for(var i=0;i<4;i++){
+      try{var r=await fetch(url);if(!r.ok) throw new Error('HTTP '+r.status);return await r.json();}
+      catch(e){if(i===3) throw e;await sleep(500*(i+1));}
+    }
+  }
+  function addDays(iso,n){return new Date(new Date(iso+'T00:00:00Z').getTime()+n*86400000).toISOString().slice(0,10);}
+  function ipToNum(ip){
+    if(ip==null) return 0;
+    var n=parseFloat(String(ip));
+    if(!isFinite(n)) return 0;
+    var dec=Math.round((n-Math.trunc(n))*10);
+    return Math.trunc(n)+(dec===1?1/3:dec===2?2/3:0);
+  }
+
+  // abridores probables de toda la temporada (lista de ids)
+  async function getPitcherIds(season){
+    var a=season+'-03-15',b=season+'-09-30',ids={},s=a,k=0;
+    while(s<=b){
+      var e=addDays(s,13);if(e>b)e=b;
+      k++;log('Calendario '+season+': tramo '+k);
+      var d=await getJSON(API+'/schedule?sportId=1&gameType=R&startDate='+s+'&endDate='+e+'&hydrate=probablePitcher');
+      (d.dates||[]).forEach(function(day){
+        (day.games||[]).forEach(function(g){
+          ['home','away'].forEach(function(l){
+            var p=g.teams&&g.teams[l]&&g.teams[l].probablePitcher;
+            if(p&&p.id) ids[p.id]=1;
+          });
+        });
+      });
+      s=addDays(e,1);
+    }
+    return Object.keys(ids);
+  }
+
+  // filas de un abridor: [er9 de ese dia, era previo, h9 previo, bb9 previo, ip de ese dia]
+  function filasDe(splits){
+    var sp=splits.slice().sort(function(x,y){return (x.date||'')<(y.date||'')?-1:((x.date||'')>(y.date||'')?1:0);});
+    var cum={ip:0,er:0,h:0,bb:0},rows=[];
+    sp.forEach(function(s){
+      var st=s.stat||{},ip=ipToNum(st.inningsPitched);
+      var er=+(st.earnedRuns||0),h=+(st.hits||0),bb=+(st.baseOnBalls||0),gs=+(st.gamesStarted||0);
+      if(gs===1&&ip>=1&&cum.ip>=30){
+        rows.push([
+          +(er*9/ip).toFixed(3),
+          +(cum.er*9/cum.ip).toFixed(3),
+          +(cum.h*9/cum.ip).toFixed(3),
+          +(cum.bb*9/cum.ip).toFixed(3),
+          +ip.toFixed(3)
+        ]);
+      }
+      cum.ip+=ip;cum.er+=er;cum.h+=h;cum.bb+=bb;
+    });
+    return rows;
+  }
+
+  async function bajarSeason(season,ids){
+    var rows=[],idx=0,done=0;
+    async function worker(){
+      while(true){
+        var i=idx++;
+        if(i>=ids.length) return;
+        try{
+          var d=await getJSON(API+'/people/'+ids[i]+'/stats?stats=gameLog&group=pitching&season='+season+'&gameType=R');
+          var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];
+          filasDe(sp).forEach(function(r){rows.push(r);});
+        }catch(e){}
+        done++;
+        if(done%40===0) log('Abridores '+season+': '+done+'/'+ids.length);
+      }
+    }
+    var ws=[];
+    for(var k=0;k<6;k++) ws.push(worker());
+    await Promise.all(ws);
+    return rows;
+  }
+
+  // ---------- estadística (con pesos = innings de la salida) ----------
+  function solve(A,b){
+    var n=b.length,i,j,k;
+    var M=A.map(function(r,i){return r.concat([b[i]]);});
+    for(i=0;i<n;i++){
+      var p=i;
+      for(j=i+1;j<n;j++) if(Math.abs(M[j][i])>Math.abs(M[p][i])) p=j;
+      var tmp=M[i];M[i]=M[p];M[p]=tmp;
+      for(j=i+1;j<n;j++){
+        var f=M[j][i]/M[i][i];
+        for(k=i;k<=n;k++) M[j][k]-=f*M[i][k];
+      }
+    }
+    var x=new Array(n);
+    for(i=n-1;i>=0;i--){
+      var s=M[i][n];
+      for(j=i+1;j<n;j++) s-=M[i][j]*x[j];
+      x[i]=s/M[i][i];
+    }
+    return x;
+  }
+  function fitW(X,y,w){
+    var k=X[0].length,A=[],b=[],i,j,r;
+    for(i=0;i<k;i++){A.push(new Array(k).fill(0));b.push(0);}
+    for(r=0;r<X.length;r++){
+      for(i=0;i<k;i++){
+        b[i]+=w[r]*X[r][i]*y[r];
+        for(j=0;j<k;j++) A[i][j]+=w[r]*X[r][i]*X[r][j];
+      }
+    }
+    return solve(A,b);
+  }
+  function dot(a,b){var s=0;for(var i=0;i<a.length;i++)s+=a[i]*b[i];return s;}
+  // fila: [y, era, h9, bb9, ip]
+  function mk(rows,modelo){
+    return rows.map(function(r){
+      if(modelo==='A') return [1,r[1]];
+      if(modelo==='B') return [1,r[1],r[2]];
+      return [1,r[1],r[2],r[3]];
+    });
+  }
+  function crossfit(train,test){
+    var y=train.map(function(r){return r[0];}),w=train.map(function(r){return r[4];});
+    var bA=fitW(mk(train,'A'),y,w),bB=fitW(mk(train,'B'),y,w),bC=fitW(mk(train,'C'),y,w);
+    var XA=mk(test,'A'),XB=mk(test,'B'),XC=mk(test,'C');
+    var dB=[],dC=[],sa=0,sb=0,sc=0,sw=0,i;
+    for(i=0;i<test.length;i++){
+      var wi=test[i][4];
+      var ea=test[i][0]-dot(bA,XA[i]),eb=test[i][0]-dot(bB,XB[i]),ec=test[i][0]-dot(bC,XC[i]);
+      dB.push(wi*(ea*ea-eb*eb));dC.push(wi*(ea*ea-ec*ec));
+      sa+=wi*ea*ea;sb+=wi*eb*eb;sc+=wi*ec*ec;sw+=wi;
+    }
+    function tOf(d){
+      var n=d.length,m=0,i;for(i=0;i<n;i++)m+=d[i];m/=n;
+      var v=0;for(i=0;i<n;i++)v+=(d[i]-m)*(d[i]-m);
+      return m/(Math.sqrt(v/(n-1))/Math.sqrt(n));
+    }
+    return {n:test.length,
+      bH:bB[2],imprB:(sa-sb)/sa,tB:tOf(dB),
+      bHc:bC[2],bBB:bC[3],imprC:(sa-sc)/sa,tC:tOf(dC)};
+  }
+  function sdOf(a){var m=0,i;for(i=0;i<a.length;i++)m+=a[i];m/=a.length;var v=0;for(i=0;i<a.length;i++)v+=(a[i]-m)*(a[i]-m);return Math.sqrt(v/(a.length-1));}
+  function quintiles(rows){
+    var y=rows.map(function(r){return r[0];}),w=rows.map(function(r){return r[4];});
+    var bA=fitW(mk(rows,'A'),y,w),XA=mk(rows,'A');
+    var arr=rows.map(function(r,i){return {l:r[2],res:r[0]-dot(bA,XA[i]),w:r[4]};});
+    arr.sort(function(a,b){return a.l-b.l;});
+    var out=[],n=arr.length;
+    for(var q=0;q<5;q++){
+      var s=Math.floor(q*n/5),e=Math.floor((q+1)*n/5),c=0,rw=0,sw=0,lo=arr[s].l,hi=arr[e-1].l;
+      for(var i=s;i<e;i++){c++;rw+=arr[i].res*arr[i].w;sw+=arr[i].w;}
+      out.push({n:c,res:rw/sw,lo:lo,hi:hi});
+    }
+    return out;
+  }
+
+  function fmt(x,d){return x==null||isNaN(x)?'–':x.toFixed(d);}
+  function load(s){try{var r=localStorage.getItem(KEY+s);return r?JSON.parse(r):null;}catch(e){return null;}}
+
+  function render(){
+    var R={2025:load(2025),2026:load(2026)},html='',v='';
+    [2025,2026].forEach(function(s){
+      if(!R[s]) return;
+      html+='<div class="card"><b>'+s+'</b> · '+R[s].length+' salidas guardadas</div>';
+    });
+    if(R[2025]&&R[2026]){
+      var pairs=[[2025,2026],[2026,2025]],res=[];
+      pairs.forEach(function(p){
+        var c=crossfit(R[p[0]],R[p[1]]);res.push(c);
+        var okB=c.imprB>0&&c.tB>=2,midB=c.imprB>0&&c.tB>=1.3&&c.tB<2;
+        var okC=c.imprC>0&&c.tC>=2,midC=c.imprC>0&&c.tC>=1.3&&c.tC<2;
+        html+='<div class="card"><b>Ajustar '+p[0]+' → medir '+p[1]+'</b> · '+c.n+' salidas'
+          +'<table>'
+          +'<tr><td>Peso de los hits</td><td>'+fmt(c.bH,3)+' carreras por 9 innings por cada hit extra por 9</td></tr>'
+          +'<tr><td>Solo hits: mejora vs solo ERA</td><td class="'+(okB?'ok':(midB?'mid':'bad'))+'"><b>'+fmt(c.imprB*100,2)+'%</b> (t '+fmt(c.tB,2)+')</td></tr>'
+          +'<tr><td>Hits + boletos: mejora vs solo ERA</td><td class="'+(okC?'ok':(midC?'mid':'bad'))+'"><b>'+fmt(c.imprC*100,2)+'%</b> (t '+fmt(c.tC,2)+')</td></tr>'
+          +'</table></div>';
+      });
+      [2025,2026].forEach(function(s){
+        var q=quintiles(R[s]);
+        html+='<div class="card"><b>'+s+': carreras por 9 de más/menos que dice el ERA, por nivel de hits por 9</b>'
+          +'<table><tr><th>Grupo (H/9 previo)</th><th>Salidas</th><th>Carreras extra por 9</th></tr>';
+        var names=['Pocos hits por 9','','Medio','','Muchos hits por 9'];
+        q.forEach(function(g,i){
+          html+='<tr><td>'+(names[i]||('Grupo '+(i+1)))+' ('+fmt(g.lo,1)+' a '+fmt(g.hi,1)+')</td><td>'+g.n+'</td><td>'+(g.res>=0?'+':'')+fmt(g.res,2)+'</td></tr>';
+        });
+        html+='</table><div class="sub" style="margin-top:6px">Si los hits aportan algo, la columna sube de arriba a abajo: el abridor al que le conectan mucho, dado su ERA, tiende a permitir más de lo que ese ERA dice.</div></div>';
+      });
+      var a=res[0],b=res[1];
+      var sameSign=a.bH>0&&b.bH>0;
+      var both=a.imprB>0&&b.imprB>0;
+      var strong=both&&a.tB>=2&&b.tB>=2;
+      var all=R[2025].concat(R[2026]);
+      var sd=sdOf(all.map(function(r){return r[2];}));
+      var ipm=0;all.forEach(function(r){ipm+=r[4];});ipm/=all.length;
+      var avg=(a.bH+b.bH)/2;
+      var porSalida=Math.abs(avg)*sd*ipm/9,pts=porSalida*PTS_PER_RUN;
+      if(strong&&sameSign) v='<div class="v ok">Los hits pasan la prueba en las dos direcciones. Vale probarlos en la fórmula, con tope.</div>';
+      else if(both&&sameSign) v='<div class="v mid">Mejoran en las dos direcciones pero sin confianza firme. Dudoso.</div>';
+      else v='<div class="v bad">Los hits no aguantan la prueba cruzada: descartados.</div>';
+      v+='<div class="sub" style="margin-top:8px">Tamaño real: un abridor con 1 desviación de hits por 9 (±'+fmt(sd,1)+') se mueve unas <b>'+fmt(porSalida,2)+' carreras</b> por salida ('+fmt(ipm,1)+' innings de promedio), o sea unos <b>'+fmt(pts,1)+' puntos</b> de probabilidad en la escala de OVA, y solo del lado de ese abridor.</div>';
+    }else v='<div class="sub">Baja las dos temporadas para la prueba cruzada.</div>';
+    outEl.innerHTML=html;verdEl.innerHTML=v;
+  }
+
+  async function run(season){
+    if(running) return;
+    running=true;
+    document.getElementById('b25').disabled=true;document.getElementById('b26').disabled=true;
+    try{
+      var ids=await getPitcherIds(season);
+      log('Abridores encontrados: '+ids.length+'. Bajando sus salidas…');
+      var rows=await bajarSeason(season,ids);
+      if(rows.length<500) throw new Error('muy pocas salidas utilizables ('+rows.length+')');
+      try{localStorage.setItem(KEY+season,JSON.stringify(rows));}catch(e){}
+      log('Listo '+season+': '+rows.length+' salidas medidas.');
+      render();
+    }catch(e){log('Falló: '+e.message);}
+    running=false;
+    document.getElementById('b25').disabled=false;document.getElementById('b26').disabled=false;
+  }
+
+  document.getElementById('b25').onclick=function(){run(2025);};
+  document.getElementById('b26').onclick=function(){run(2026);};
+  document.getElementById('bclr').onclick=function(){
+    try{localStorage.removeItem(KEY+2025);localStorage.removeItem(KEY+2026);}catch(e){}
+    render();log('Borrado.');
+  };
+  render();
+})();
+</script>
+</body>
+</html>
