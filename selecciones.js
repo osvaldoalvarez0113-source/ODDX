@@ -9,7 +9,7 @@
    concacafnl: {nombre:'Concacaf Nations League',  slugs:['concacaf.nations.league']},
    amistosos:  {nombre:'Amistosos de selecciones', slugs:['fifa.friendly']}
   };
-  var DIAS_ATRAS = 14, DIAS_ADELANTE = 21;
+  var DIAS_ATRAS = 90, DIAS_ADELANTE = 21;
 
   // registrar en las tablas globales que ya usa la app
   Object.keys(SEL).forEach(function(k){
@@ -146,7 +146,10 @@
     var av = bodyEl.querySelector('.aviso');
     if(av) av.textContent = '🌍 Selecciones: pocos partidos y alineaciones que cambian mucho, así que aquí no se corre el modelo Poisson. Solo forma reciente y cara a cara.';
     var h3 = bodyEl.querySelectorAll('h3');
-    if(h3[1]) h3[1].textContent = 'Cara a cara (últimas 2 semanas y próximas)';
+    if(h3[1]) h3[1].textContent = 'Cara a cara (últimos ' + DIAS_ATRAS + ' días)';
+    var hh = bodyEl.querySelector('[id$="h2h"]');
+    if(hh && /No se han enfrentado/.test(hh.textContent)) hh.textContent = 'No se han enfrentado en los últimos ' + DIAS_ATRAS + ' días.';
+    else if(hh) hh.textContent = hh.textContent.replace('Esta edición:', 'Últimos ' + DIAS_ATRAS + ' días:');
    }
   };
 
