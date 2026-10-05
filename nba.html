@@ -37,7 +37,7 @@ header h1{font-size:19px;margin:0;font-weight:800;letter-spacing:2px;flex:1;whit
 .tbar-btn{flex:1;background:transparent;border:0;color:var(--mut);padding:9px 2px 8px;display:flex;flex-direction:column;
  align-items:center;gap:3px;cursor:pointer;font-family:var(--body)}
 .tbar-btn .ic{font-size:19px;line-height:1;filter:grayscale(1);opacity:.75}
-.tbar-btn .lb{font-size:10px;font-weight:700}
+.tbar-btn .lb{font-weight:700}
 .tbar-btn.on{color:var(--hot)}
 .tbar-btn.on .ic{filter:none;opacity:1}
 main{padding:0 14px}
@@ -77,6 +77,15 @@ h3{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mut);mar
 .hero .mid{text-align:center;padding:0 4px}
 .hero .mid b{display:block;font:800 17px var(--cond);font-variant-numeric:tabular-nums}
 .hero .mid small{display:block;font-size:10.5px;color:var(--mut);margin-top:2px}
+.gz{position:relative;width:104px;height:104px}
+.gz svg{width:100%;height:100%;display:block;overflow:visible}
+.gz .tr{fill:none;stroke:var(--line2);stroke-width:9}
+.gz .sg{fill:none;stroke-width:9}
+.gz .sg.aw{stroke:var(--acc)}.gz .sg.fv{stroke:var(--hot)}
+.gz .cx{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 14px}
+.gz .cx b{font:800 15px var(--cond);font-variant-numeric:tabular-nums;white-space:nowrap}
+.gz .cx small{font-size:9.5px;color:var(--mut);line-height:1.25}
+.tbar-btn .lb{font-size:9.5px}
 .bar{height:34px;display:flex;border-radius:12px;overflow:hidden;background:var(--bg2);margin:10px 0;border:1px solid var(--line2)}
 .bar span{display:flex;align-items:center;justify-content:center;font:800 13.5px var(--cond);font-variant-numeric:tabular-nums}
 .bar .a{background:linear-gradient(90deg,var(--acc),var(--acc2));color:var(--accTx)}
@@ -139,13 +148,23 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 .ovaSk .pv i:nth-child(1){width:62%}.ovaSk .pv i:nth-child(2){width:38%;opacity:.85}
 .ovaSk .tx{display:block;padding:8px 10px 9px;background:var(--bg2)}
 .ovaSk .tx b{display:block;font-size:13px}.ovaSk .tx span{display:block;font-size:11px;color:var(--mut);margin-top:1px}
+
+.vacio{display:flex;flex-direction:column;align-items:center;text-align:center;padding:44px 22px;margin:14px 0;background:linear-gradient(180deg,var(--bg1),var(--bg2));border:1px solid var(--line2);border-radius:var(--r2);color:var(--mut);font-size:13px;line-height:1.6}
+.vacio .vico{position:relative;width:88px;height:88px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.vacio .vico svg{width:42px;height:42px;color:var(--hot);animation:ovaFlota 3.4s ease-in-out infinite}
+.vacio .anillo{position:absolute;inset:0;border-radius:50%;border:1px solid var(--line2);animation:ovaLate 3.4s ease-in-out infinite}
+.vacio b{display:block;color:var(--txt);font-size:19px;font-weight:700;margin-bottom:6px;font-family:var(--cond)}
+@keyframes ovaFlota{0%,100%{transform:translateY(-2px)}50%{transform:translateY(3px)}}
+@keyframes ovaLate{0%,100%{transform:scale(1);opacity:.75}50%{transform:scale(1.09);opacity:.35}}
+@media (prefers-reduced-motion:reduce){.vacio .vico svg,.vacio .anillo{animation:none}}
+.combo select{width:100%;margin-bottom:8px;background:var(--bg1);border:1px solid var(--line2);color:var(--txt);border-radius:8px;padding:9px;font-size:13px;font-family:var(--body)}
 </style>
 </head>
 <body>
 <header>
  <div class="top">
   <a class="ovaHome" href="hub.html" aria-label="Volver al inicio">‹</a>
-  <h1>🏀 NBA <span class="ver">v1</span></h1>
+  <h1>🏀 NBA <span class="ver">v3</span></h1>
   <button class="btnChico" id="btnTema" aria-label="Cambiar tema">🎨</button>
  </div>
 </header>
@@ -155,6 +174,11 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
  <div id="diagOut"></div>
 
  <div class="vista on" id="vJuegos"><div class="diaSelector" id="diaSel"></div><div id="juegos"></div></div>
+
+ <div class="vista" id="vAlgane">
+  <div class="nota" style="margin:12px 2px 0">Ranking de los juegos del día elegido por probabilidad pura de que gane el favorito del modelo. Es solo el orden del modelo: no compara contra ninguna cuota.</div>
+  <div id="algane"></div>
+ </div>
 
  <div class="vista" id="vRank">
   <div class="nota" style="margin:12px 2px 0">Rating en puntos: cuántos puntos por encima (o por debajo) del equipo promedio, en cancha neutral. Es lo que el modelo usa para el margen esperado de cada juego.</div>
@@ -180,12 +204,13 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
   <div id="respMsg" class="nota"></div>
  </div>
 
- <div class="vista" id="vComb"><div id="comb"></div></div>
+ <div class="vista" id="vComb"><div id="comboJuego" class="combo"></div><h3>Combinada entre juegos</h3><div id="comb"></div></div>
 </main>
 
 <nav class="tabbar">
  <button class="tbar-btn on" data-v="vJuegos"><span class="ic">🏀</span><span class="lb">Juegos</span></button>
- <button class="tbar-btn" data-v="vRank"><span class="ic">📊</span><span class="lb">Ranking</span></button>
+ <button class="tbar-btn" data-v="vAlgane"><span class="ic">🏆</span><span class="lb">Al gane</span></button>
+ <button class="tbar-btn" data-v="vRank"><span class="ic">📊</span><span class="lb">Ratings</span></button>
  <button class="tbar-btn" data-v="vBt"><span class="ic">📈</span><span class="lb">Backtest</span></button>
  <button class="tbar-btn" data-v="vReg"><span class="ic">📒</span><span class="lb">Registro</span></button>
  <button class="tbar-btn" data-v="vComb"><span class="ic">🎟️</span><span class="lb">Combina</span></button>
@@ -308,7 +333,7 @@ if(typeof module!=='undefined') module.exports={PDEF,seasonOf,dayKey,Phi,correr,
 
 <!-- ===================== APP ===================== -->
 <script>
-const VERSION='v1';
+const VERSION='v3';
 const ESPN='https://site.api.espn.com/apis/site/v2/sports/basketball/nba/';
 const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
@@ -478,11 +503,24 @@ function pintarSelector(){
   cont.innerHTML=btns.map(b=>`<button class="diaBtn${b.v===DIA?' on':''}" data-v="${b.v}">${esc(b.l)}</button>`).join('');
   cont.querySelectorAll('.diaBtn').forEach(b=>b.onclick=()=>{ DIA=b.dataset.v==='TODOS'?'TODOS':+b.dataset.v; pintarSelector(); pintarJuegos(); });
 }
+const ICO_BALON='<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.6 5.6c3.2 3.2 3.2 9.6 0 12.8M18.4 5.6c-3.2 3.2-3.2 9.6 0 12.8"/>';
+function vacioHtml(tit,txt){ return `<div class="vacio"><div class="vico"><span class="anillo"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${ICO_BALON}</svg></div><b>${tit}</b>${txt}</div>`; }
+function listaActual(){ return DIA==='TODOS'||DIA===null?PEND:PEND.filter(g=>localDay(g.ts)===DIA); }
+function pintarAlGane(){
+  const cont=$('algane'), lista=listaActual();
+  if(!lista.length||!ESTADO){ cont.innerHTML=vacioHtml('Sin ranking todavía','Aparece en cuanto haya juegos en el día elegido.'); return; }
+  const filas=lista.map(g=>{
+    const pr=prediccion(g), favH=pr.pH>=0.5, f=T(favH?g.h:g.a), r=T(favH?g.a:g.h);
+    return {f:f,r:r,loc:favH,p:Math.max(pr.pH,1-pr.pH),m:Math.abs(pr.pm),ts:g.ts,pre:g.pre};
+  }).sort((a,b)=>b.p-a.p);
+  cont.innerHTML=filas.map((x,i)=>`<div class="fila-rank"><div class="pos">${i+1}</div><img src="${esc(x.f.logo)}" alt="" onerror="this.style.display='none'"><div class="nom">${esc(x.f.n)} ${x.loc?'vs':'@'} ${esc(x.r.n)}<small>${esc(etiquetaDia(x.ts))} · ${horaTxt(x.ts)} · margen esperado ${x.m.toFixed(1)}${x.pre?' · pretemporada':''}</small></div><div class="pct">${pct1(x.p)}</div></div>`).join('');
+}
 function pintarJuegos(){
+  pintarAlGane();
   const cont=$('juegos');
-  const lista=DIA==='TODOS'||DIA===null?PEND:PEND.filter(g=>localDay(g.ts)===DIA);
+  const lista=listaActual();
   if(!lista.length){
-    cont.innerHTML='<div class="estado warn">No hay partidos en los próximos 10 días. La temporada regular arranca normalmente a finales de octubre; mientras tanto el Ranking ya muestra los ratings con el arrastre de la temporada pasada.</div>';
+    cont.innerHTML=vacioHtml('Sin partidos todavía','No hay juegos en los próximos 10 días. La temporada regular arranca normalmente a finales de octubre; mientras tanto la pestaña Ratings ya muestra los equipos con el arrastre de la temporada pasada.');
     return;
   }
   let html='', prev=null;
@@ -491,7 +529,7 @@ function pintarJuegos(){
     if(k!==prev){ html+=`<div class="diaHead">${esc(etiquetaDia(g.ts))}</div>`; prev=k; }
     const H=T(g.h),A=T(g.a);
     const hora=g.live?`<div class="hora" style="color:var(--bad)">🔴 ${g.as}–${g.hs}<br><small style="font-size:9px">${esc(g.detail)}</small></div>`:`<div class="hora">${horaTxt(g.ts)}</div>`;
-    html+=`<div class="game" data-i="${i}"><div class="head"><div class="crestpair">
+    html+=`<div class="game" data-i="${i}" data-h="${g.h}" data-a="${g.a}"><div class="head"><div class="crestpair">
       <div class="eq"><img src="${esc(A.logo)}" alt="" onerror="this.style.display='none'"><span class="n">${esc(A.n)}</span></div>
       <div class="eq"><img src="${esc(H.logo)}" alt="" onerror="this.style.display='none'"><span class="n">${esc(H.n)}</span><span class="tag">LOCAL</span></div>
       </div>${hora}<div class="chev">▾</div></div><div class="body"></div></div>`;
@@ -509,6 +547,11 @@ function pintarJuegos(){
   });
 }
 
+function ringSvg(pA,pH){
+  const g=1.4, d='M 50 8 A 42 42 0 1 1 49.99 8';
+  const seg=(p,cls,ini)=>`<path class="sg ${cls}" d="${d}" pathLength="100" style="stroke-dasharray:${Math.max(0.1,p*100-g).toFixed(2)} 100;stroke-dashoffset:-${(ini*100+g/2).toFixed(2)}"/>`;
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><path class="tr" d="${d}" pathLength="100"/>${seg(pA,'aw',0)}${seg(pH,'fv',pA)}</svg>`;
+}
 function confTxt(k){
   const v=LS.get('ova_nba_ver_v1');
   const nom={win:'Ganador',mar:'Margen/hándicap',tot:'Total'}[k];
@@ -525,7 +568,7 @@ function pintarCuerpo(body,g){
   const ver=`
    <div class="hero">
     <div class="side${favH?'':' fav'}"><img src="${esc(A.logo)}" alt="" onerror="this.style.display='none'"><span class="ab">${esc(A.ab)}</span><span class="pc">${pct1(1-pr.pH)}</span></div>
-    <div class="mid"><small>margen esperado</small><b>${esc(favH?H.ab:A.ab)} −${pmAbs.toFixed(1)}</b><small>total ${pr.pt.toFixed(1)}</small></div>
+    <div class="mid"><div class="gz">${ringSvg(1-pr.pH,pr.pH)}<div class="cx"><small>margen esperado</small><b>${esc(favH?H.ab:A.ab)} −${pmAbs.toFixed(1)}</b><small>total ${pr.pt.toFixed(1)}</small></div></div></div>
     <div class="side${favH?' fav':''}"><img src="${esc(H.logo)}" alt="" onerror="this.style.display='none'"><span class="ab">${esc(H.ab)}</span><span class="pc">${pct1(pr.pH)}</span></div>
    </div>
    <div class="bar"><span class="a" style="flex-grow:${Math.max(1-pr.pH,0.08)}">${pct1(1-pr.pH)}</span><span class="h" style="flex-grow:${Math.max(pr.pH,0.08)}">${pct1(pr.pH)}</span></div>
@@ -555,7 +598,6 @@ function pintarCuerpo(body,g){
      <div class="fila"><div><label>Cuota Más</label><input type="number" data-k="toO" placeholder="-110"></div><div><label>Cuota Menos</label><input type="number" data-k="toU" placeholder="-110"></div></div>
      <button class="btnAncho" data-a="to">Calcular valor</button><div class="veredictoCuota" data-o="to"></div></div>`;
 
-  const cH=Math.round(-pr.pm)+0.5-0.5; // centro de la escalera
   let esc1=''; const base=Math.floor(-pr.pm)+0.5;
   for(let d=-3;d<=3;d++){ const L=base+d; const c=pCover(pr.pm,pr.sM,-L); esc1+=`<div class="linea"><span>${esc(H.ab)} ${fmtL(L)}</span><b>${pct1(c.w)} · ${amTxt(c.w)}</b></div>`; }
   let esc2=''; const bt=Math.floor(pr.pt)+0.5;
@@ -571,8 +613,7 @@ function pintarCuerpo(body,g){
    <h3>Escalera de totales</h3><div class="lineas">${esc2}</div>
    <div class="nota">Cada línea: probabilidad de que el local cubra / de que el total pase, y su cuota justa. Con línea entera hay "push" (devuelven la apuesta) y aquí no se cuenta como acierto.</div>`;
 
-  const id='f'+Math.random().toString(36).slice(2);
-  const forPane=`<h3>Forma reciente</h3>${formaHtml(g.a,A,pr.mh===undefined?0:0)}${formaHtml(g.h,H)}
+  const forPane=`<h3>Forma reciente</h3>${formaHtml(g.a,A)}${formaHtml(g.h,H)}
    <h3>Lesionados (ESPN)</h3><div data-k="les" class="nota">Cargando…</div>
    <div class="nota">Rating del modelo: ${esc(A.ab)} ${(pr.ma>=0?'+':'')+pr.ma.toFixed(1)} · ${esc(H.ab)} ${(pr.mh>=0?'+':'')+pr.mh.toFixed(1)} (con arrastre de temporada si aplica).</div>`;
 
@@ -830,6 +871,7 @@ async function iniciar(){
     setEstado('Buscando los próximos partidos…');
     await cargarProximos();
     pintarSelector(); pintarJuegos(); pintarRank();
+    verificarRegistro();
     const s=sigmas(ESTADO);
     setEstado('✓ NBA — '+PEND.length+' próximos juegos, '+GAMES.length+' partidos medidos de 3 temporadas, σ margen '+s.sM.toFixed(1)+' pts — en vivo ('+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+').','ok');
   }catch(e){ setEstado('✗ No se pudo cargar la NBA: '+e.message+'. Toca 🔍 Diagnóstico.','bad'); }
@@ -838,8 +880,9 @@ document.querySelectorAll('.tabbar .tbar-btn').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tabbar .tbar-btn').forEach(x=>x.classList.remove('on')); b.classList.add('on');
   document.querySelectorAll('main > .vista').forEach(v=>v.classList.remove('on')); $(b.dataset.v).classList.add('on');
   if(b.dataset.v==='vReg'){ pintarRegistro(); verificarRegistro(); }
-  if(b.dataset.v==='vComb') pintarComb();
+  if(b.dataset.v==='vComb'){ pintarComb(); if(typeof montarCombo==='function') montarCombo(); }
   if(b.dataset.v==='vRank') pintarRank();
+  if(b.dataset.v==='vAlgane') pintarAlGane();
 });
 $('btnBtPas').onclick=btPasada; $('btnBtAct').onclick=btActual; $('btnCal').onclick=calibrar; $('btnVerif').onclick=verificarRegistro;
 $('btnDiag').onclick=()=>{ const el=$('diagOut'); if(el.style.display==='block') el.style.display='none'; else { el.textContent=armarDiag(); el.style.display='block'; } };
@@ -861,6 +904,165 @@ $('btnRest').onclick=()=>{
 };
 montarTemas();
 iniciar();
+</script>
+
+<script id="extras">
+/* ===== EN VIVO: marcador de los juegos del día cada 20 s (solo si hay juegos cerca de ahora) ===== */
+(function(){
+ async function actualizar(){
+  try{
+   if(document.hidden||!PEND.length) return;
+   if(!PEND.some(g=>g.live||Math.abs(g.ts-Date.now())<5*3600e3)) return;
+   const ev=parseEventos(await getJSON(ESPN+'scoreboard?dates='+ymd(new Date())+'&limit=300'));
+   ev.forEach(e=>{
+    const g=PEND.find(x=>x.id===e.id); if(g){ g.live=e.live; g.hs=e.hs; g.as=e.as; g.detail=e.detail; g.done=e.done; }
+    const el=document.querySelector('#juegos .game[data-h="'+e.h+'"][data-a="'+e.a+'"]'); if(!el) return;
+    const b=el.querySelector('.hora'); if(!b) return;
+    if(e.live){ b.style.color='var(--bad)'; b.innerHTML='🔴 '+e.as+'–'+e.hs+'<br><small style="font-size:9px">'+esc(e.detail)+'</small>'; }
+    else if(e.done){ b.style.color=''; b.innerHTML='Final '+e.as+'–'+e.hs; }
+   });
+  }catch(e){}
+ }
+ setInterval(actualizar,20000); setTimeout(actualizar,4000);
+})();
+
+/* ===== ÍCONOS en los títulos de sección ===== */
+(function(){
+ try{
+  const IC={
+   marcador:'<rect x="2" y="4.6" width="20" height="14.8" rx="2.4" fill="#22303E"/><rect x="2" y="4.6" width="20" height="14.8" rx="2.4" fill="none" stroke="#3A4D5F" stroke-width="1"/><path d="M5.4 8.4h4v3h-4zM5.4 12.6h4v3h-4z" fill="#F0B849"/><path d="M14.6 8.4h4v3h-4zM14.6 12.6h4v3h-4z" fill="#4F8FD6"/>',
+   balanza:'<path d="M11.1 3.4h1.8v16.8h-1.8z" fill="#93A8BA"/><path d="M6.4 20.2h11.2v1.7H6.4zM3.4 7.7h17.2v1.7H3.4z" fill="#93A8BA"/><circle cx="12" cy="4.2" r="1.5" fill="#C7D3DE"/><path d="M3.6 9.6 1.3 14.5a3 3 0 0 0 5.6 0z" fill="#F0B849"/><path d="M20.4 9.6l2.3 4.9a3 3 0 0 1-5.6 0z" fill="#4F8FD6"/>',
+   llama:'<path d="M12 2.2c3.1 4.5 5.3 6.6 5.3 10.1A5.3 5.3 0 0 1 12 17.6a5.3 5.3 0 0 1-5.3-5.3c0-2.1 1-3.5 2.3-4.5.2 1.3 1.1 2.6 2.2 2.6 0-3.4-1.1-5.6.8-8.2z" fill="#E8763C"/><path d="M12 9.8c1.4 2 2.3 3 2.3 4.4A2.3 2.3 0 0 1 12 16.5a2.3 2.3 0 0 1-2.3-2.3c0-1.1.6-2 1.3-2.6.1.6.5 1.2 1 1.2 0-1.5-.5-2.5 0-3z" fill="#F5CE6B"/>',
+   libreta:'<path d="M5.4 3.6h11.4a2.2 2.2 0 0 1 2.2 2.2v14.6H7.6a2.2 2.2 0 0 1-2.2-2.2z" fill="#E9E3D6"/><path d="M5.4 16.6h13.6v3.8H7.6a2.2 2.2 0 0 1-2.2-2.2z" fill="#C9C0AD"/><path d="M8.4 7.4h7.6M8.4 10.4h7.6M8.4 13.4h5" stroke="#8A8271" stroke-width="1.3" stroke-linecap="round"/>',
+   engrane:'<circle cx="12" cy="12" r="8.4" fill="#3A4D5F"/><path d="M12 2.4l1.5 2.2h-3zM12 21.6l-1.5-2.2h3zM2.4 12l2.2-1.5v3zM21.6 12l-2.2 1.5v-3zM5.2 5.2l2.6.5-2.1 2.1zM18.8 18.8l-2.6-.5 2.1-2.1zM18.8 5.2l-.5 2.6-2.1-2.1zM5.2 18.8l.5-2.6 2.1 2.1z" fill="#3A4D5F"/><circle cx="12" cy="12" r="3.4" fill="#0A1119"/>',
+   balon:'<circle cx="12" cy="12" r="9.1" fill="#E8763C"/><path d="M3 12h18M12 3v18M5.6 5.6c3.2 3.2 3.2 9.6 0 12.8M18.4 5.6c-3.2 3.2-3.2 9.6 0 12.8" fill="none" stroke="#2A1608" stroke-width="1.2" stroke-linecap="round"/>'
+  };
+  const MAPA=[[/forma reciente/i,'llama'],[/margen de victoria/i,'marcador'],[/escalera/i,'balanza'],[/moneyline|h[aá]ndicap|total de puntos|l[ií]nea del mercado/i,'balanza'],[/lesionados/i,'libreta'],[/ajuste manual/i,'engrane'],[/combo/i,'balon']];
+  function procesar(){
+   document.querySelectorAll('h3:not([data-ova])').forEach(h=>{
+    const t=(h.textContent||'').trim();
+    for(const m of MAPA){ if(m[0].test(t)){
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('width','16'); svg.setAttribute('height','16'); svg.style.flex='0 0 auto';
+      svg.innerHTML=IC[m[1]]; h.insertBefore(svg,h.firstChild); break; } }
+    h.setAttribute('data-ova','1');
+   });
+  }
+  let pend=false;
+  if(window.MutationObserver) new MutationObserver(()=>{ if(pend) return; pend=true; requestAnimationFrame(()=>{ pend=false; procesar(); }); }).observe(document.body,{childList:true,subtree:true});
+  procesar();
+ }catch(e){}
+})();
+
+/* ===== COMBO DEL MISMO JUEGO: probabilidad conjunta con el margen y el total del modelo =====
+   Margen y total se tratan como independientes (en la NBA su correlación es casi cero); los puntos de
+   cada equipo salen de los dos: local = (total + margen)/2, visita = (total − margen)/2. */
+(function(){
+ const MK=[['','— sin usar —'],['gan','Ganador'],['spr','Hándicap'],['tot','Total del juego'],['ttL','Puntos de %L'],['ttV','Puntos de %V']];
+ const opt=(v,t,sel)=>`<option value="${v}"${sel?' selected':''}>${t}</option>`;
+ function legHtml(i){
+  return `<div class="cuotasbox" data-i="${i}"><label>Pata ${i+1}${i<2?'':' (opcional)'}</label>
+   <select class="cm"></select><select class="cs"></select>
+   <input type="number" step="0.5" class="cl" placeholder="línea (ej. 224.5 ó −5.5)" style="display:none"></div>`;
+ }
+ function sideOpts(mk,n){
+  if(mk==='gan') return [['H',n.h+' gana'],['A',n.a+' gana']];
+  if(mk==='spr') return [['H',n.h+' cubre'],['A',n.a+' cubre']];
+  if(mk==='tot'||mk==='ttL'||mk==='ttV') return [['o','Más de'],['u','Menos de']];
+  return [];
+ }
+ function sides(L,n){
+  const mk=L.querySelector('.cm').value, cs=L.querySelector('.cs'), cur=cs.value, os=sideOpts(mk,n);
+  cs.innerHTML=os.map((o,k)=>opt(o[0],o[1],o[0]===cur||(!cur&&k===0))).join('');
+  cs.style.display=os.length?'':'none';
+  L.querySelector('.cl').style.display=(mk==='spr'||mk==='tot'||mk==='ttL'||mk==='ttV')?'':'none';
+  L.querySelector('.cl').placeholder=mk==='spr'?'línea del local (ej. −5.5)':'línea (ej. 224.5)';
+ }
+ function relabel(box,n){
+  box.querySelectorAll('.cuotasbox[data-i] .cm').forEach(cm=>{
+   const cur=cm.value;
+   cm.innerHTML=MK.map(m=>opt(m[0],m[1].replace('%L',n.h).replace('%V',n.a),m[0]===cur)).join('');
+   sides(cm.closest('.cuotasbox'),n);
+  });
+ }
+ function legsFrom(box){
+  const legs=[]; let err=null;
+  box.querySelectorAll('.cuotasbox[data-i]').forEach(L=>{
+   const mk=L.querySelector('.cm').value; if(!mk) return;
+   const sd=L.querySelector('.cs').value, lv=parseFloat(L.querySelector('.cl').value);
+   if(mk==='gan'){ legs.push({k:'gan',s:sd}); return; }
+   if(!isFinite(lv)){ err='Falta la línea de una pata.'; return; }
+   legs.push({k:mk,s:sd,L:lv});
+  });
+  if(!err&&legs.filter(l=>l.k==='gan').length>1) err='Solo puede haber un ganador por combo.';
+  if(!err&&legs.length<2) err='Escoge al menos 2 patas para armar el combo.';
+  return {legs,err};
+ }
+ function cumple(l,m,t){
+  const h=(t+m)/2, a=(t-m)/2;
+  if(l.k==='gan') return l.s==='H'?m>0:m<0;
+  if(l.k==='spr') return l.s==='H'?(m+l.L>0):(m+l.L<0);
+  if(l.k==='tot') return l.s==='o'?t>l.L:t<l.L;
+  if(l.k==='ttL') return l.s==='o'?h>l.L:h<l.L;
+  return l.s==='o'?a>l.L:a<l.L;
+ }
+ function conjunta(pr,legs){
+  let W=0,F=0;
+  const t0=Math.round(pr.pt-4.5*pr.sT), t1=Math.round(pr.pt+4.5*pr.sT);
+  for(let m=-45;m<=45;m++){
+   if(m===0) continue;
+   const wm=Phi((m+0.5-pr.pm)/pr.sM)-Phi((m-0.5-pr.pm)/pr.sM); if(wm<1e-7) continue;
+   for(let t=t0;t<=t1;t++){
+    if(((t+m)&1)!==0) continue;
+    const w=wm*(Phi((t+0.5-pr.pt)/pr.sT)-Phi((t-0.5-pr.pt)/pr.sT)); if(w<1e-10) continue;
+    W+=w; if(legs.every(l=>cumple(l,m,t))) F+=w;
+   }
+  }
+  return W>0?F/W:0;
+ }
+ function texto(l,n){
+  if(l.k==='gan') return (l.s==='H'?n.h:n.a)+' gana';
+  if(l.k==='spr') return l.s==='H'?n.h+' '+fmtL(l.L):n.a+' '+fmtL(-l.L);
+  const nom=l.k==='tot'?'Total':(l.k==='ttL'?n.h:n.a);
+  return nom+' '+(l.s==='o'?'más de':'menos de')+' '+l.L;
+ }
+ function juego(box){ return PEND[+box.querySelector('#cmb_juego').value]; }
+ function nombres(g){ return {h:T(g.h).ab,a:T(g.a).ab}; }
+ function calcular(box){
+  const out=box.querySelector('#cmb_out'), g=juego(box);
+  if(!g){ out.innerHTML='<div class="aviso">No hay juego seleccionado.</div>'; return; }
+  const lg=legsFrom(box); if(lg.err){ out.innerHTML='<div class="aviso">'+lg.err+'</div>'; return; }
+  const pr=prediccion(g), n=nombres(g);
+  const pj=conjunta(pr,lg.legs); let pind=1; lg.legs.forEach(l=>{ pind*=conjunta(pr,[l]); });
+  const stake=parseFloat(box.querySelector('#cmb_stake').value), pay=parseFloat(box.querySelector('#cmb_pay').value);
+  const hay=isFinite(stake)&&stake>0&&isFinite(pay)&&pay>stake, be=hay?stake/pay:null;
+  let h=`<div class="kpi"><div><b>${pct1(pj)}</b><small>Modelo, patas relacionadas</small></div><div><b>${pct1(pind)}</b><small>Multiplicando por separado</small></div><div><b>${hay?pct1(be):'—'}</b><small>${hay?'Equilibrio del pago':'Escribe cuánto te pagan'}</small></div></div>`;
+  if(hay){
+   const e=(pj-be)*100;
+   if(e<=0) h+=`<div class="pick no"><b>Sin valor</b>Con ese pago hace falta ${pct1(be)} y el modelo da ${pct1(pj)}.</div>`;
+   else if(e<8) h+=`<div class="pick no"><b>Dentro del ruido</b>+${e.toFixed(1)} puntos, pero un combo pide más margen para confiar: el modelo solo le gana al promedio de la liga, no a la línea del mercado.</div>`;
+   else h+=`<div class="pick"><b>Valor +${e.toFixed(1)} puntos</b>Modelo ${pct1(pj)} contra equilibrio ${pct1(be)}.</div>`;
+  }
+  h+=`<div class="nota">Cuota justa del combo: ${amTxt(pj)}. Patas: ${lg.legs.map(l=>texto(l,n)).join(' · ')}.</div>
+   <div class="nota">Sale de la misma distribución de margen y total del Veredicto. Se asume margen y total independientes; los puntos de cada equipo salen de los dos. No se guarda en el registro: es solo calculadora.</div>`;
+  out.innerHTML=h;
+ }
+ window.montarCombo=function(){
+  const box=$('comboJuego'); if(!box) return;
+  if(!box.dataset.listo){
+   box.innerHTML=`<h3>Combo del mismo juego</h3><div class="cuotasbox"><label>Partido</label><select id="cmb_juego"></select></div>`+legHtml(0)+legHtml(1)+legHtml(2)+
+    `<div class="cuotasbox"><label>Apuestas ($)</label><input type="number" id="cmb_stake" value="10"><label style="margin-top:8px">Te pagan ($)</label><input type="number" id="cmb_pay" placeholder="ej. 18.5"></div>
+     <button class="btnAncho" id="cmb_go">Calcular combo</button><div id="cmb_out"></div>`;
+   box.querySelectorAll('.cuotasbox[data-i] .cm').forEach(cm=>cm.addEventListener('change',()=>{ const g=juego(box); sides(cm.closest('.cuotasbox'),g?nombres(g):{h:'Local',a:'Visita'}); }));
+   box.querySelector('#cmb_juego').addEventListener('change',()=>{ const g=juego(box); if(g) relabel(box,nombres(g)); });
+   box.querySelector('#cmb_go').addEventListener('click',()=>calcular(box));
+   box.dataset.listo='1';
+  }
+  const sel=box.querySelector('#cmb_juego'), prev=sel.value;
+  sel.innerHTML=PEND.length?PEND.map((g,i)=>`<option value="${i}"${String(i)===prev?' selected':''}>${esc(T(g.a).ab)} @ ${esc(T(g.h).ab)} · ${esc(etiquetaDia(g.ts))}</option>`).join(''):'<option value="">Sin juegos próximos</option>';
+  const g=PEND[+sel.value]; if(g) relabel(box,nombres(g));
+ };
+})();
 </script>
 </body>
 </html>
