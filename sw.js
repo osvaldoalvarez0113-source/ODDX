@@ -3,7 +3,7 @@
    Solo si no hay red (o tarda mas de 4 s) responde con la copia guardada.
    No toca las APIs (MLB, ESPN, Kalshi, Railway...): solo archivos de este mismo sitio. */
 var CACHE = 'ova-shell-v1';
-var SHELL = ['hub.html','index.html','futbol.html','nba.html','ovaextra.js','obsidiana.js','mejoras.js','selecciones.js',
+var SHELL = ['hub.html','panel.html','index.html','futbol.html','nba.html','ovaextra.js','obsidiana.js','mejoras.js','selecciones.js',
   'historial.js','railway.js','manifest.json','icon-180.png','icon-192.png','icon-512.png'];
 
 self.addEventListener('install', function(e){

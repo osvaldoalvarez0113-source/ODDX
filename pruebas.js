@@ -9,7 +9,7 @@ function ok(nombre,cond,detalle){total++;if(!cond){fallas++;console.log('  ✗ F
 function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
-const APPS=['hub.html','index.html','futbol.html','nba.html'];
+const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html'];
 const JS=['ovaextra.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','sw.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
@@ -61,6 +61,7 @@ else{
  revisar('index.html',['ovaextra.js','obsidiana.js','railway.js','historial.js']);
  revisar('nba.html',['ovaextra.js']);
  revisar('hub.html',['ovaextra.js']);
+ revisar('panel.html',['ovaextra.js']);
  const sw=analizar(rd('sw.js'));const mal=sw.refs.filter(([n,l,sc])=>!(sc.has(n)||sw.top.has(n)||BROWSER.has(n))).map(r=>r[0]);ok('sw.js sin nombres inexistentes',mal.length===0,mal.join(','));
 }
 
@@ -233,16 +234,20 @@ const t_sw=async()=>{
 };
 
 /* ---------------- 10. hub (se ejecuta su script real con un DOM falso) ---------------- */
-sec('Hub: pantalla Hoy y Respaldo');
+sec('Hub limpio (solo las 3 tarjetas) y Panel aparte');
 {
- const h=rd('hub.html');ok('ya no resetea tu tema cada vez que entras',/if\(!localStorage\.getItem\('ova_skin'\)\)/.test(h));
+ const hh=rd('hub.html');
+ ok('el hub tiene SOLO las 3 tarjetas, sin Hoy ni Respaldo',(hh.match(/class="card /g)||[]).length===3&&!/id="hoy"|id="resp"|Respaldo|Favoritos/.test(hh));
+ ok('el hub no enlaza al panel (no estorba)',!/panel\.html/.test(hh));
+ ok('el hub ya no resetea tu tema cada vez que entras',/if\(!localStorage\.getItem\('ova_skin'\)\)/.test(hh));
+ const h=rd('panel.html');
  const ls=fakeLS();ls.setItem('ventaja_picks_v1',JSON.stringify(picksMlb));ls.setItem('ova_futbol_registro_v1',JSON.stringify(picksFut));ls.setItem('ova_skin','neon');
  const ahora=Date.now(),hoy=H.hoyLocal(new Date(ahora));
  ls.setItem('ova_hoy_fut',JSON.stringify({t:ahora-60e3,fecha:hoy,items:[{n:'PSG vs <Nice>',p:78.5,sub:'Ligue 1'}]}));
  const els={};const el=id=>els[id]||(els[id]={id,innerHTML:'',textContent:'',value:'',onclick:null,classList:{add(){},remove(){}},parentNode:null});
  const sb={localStorage:ls,document:{getElementById:el,documentElement:{setAttribute(){}}},navigator:{},console,Date,JSON,setTimeout:()=>{},Promise};sb.window=sb;sb.OVAHoy=H;sb.OVARespaldo=R;R._setStore(fakeStore());
  vm.createContext(sb);
- const scripts=scriptsInline('hub.html'),js=scripts[scripts.length-1];
+ const scripts=scriptsInline('panel.html'),js=scripts[scripts.length-1];
  let err=null;try{vm.runInContext(js,sb);}catch(e){err=e;}
  ok('el script del hub corre sin errores',err===null,err&&err.message);
  const body=el('hoyBody').innerHTML;
@@ -257,6 +262,7 @@ sec('Hub: pantalla Hoy y Respaldo');
 }
 /* ---------------- 11. ganchos conectados ---------------- */
 sec('Ganchos y archivos conectados');
+ok('el panel carga ovaextra.js',/ovaextra\.js/.test(rd('panel.html')));
 ok('index.html publica favoritos al hub',/OVAHoy\.publicar\('mlb'/.test(rd('index.html')));
 ok('futbol.html publica favoritos al hub',/OVAHoy\.publicar\('fut'/.test(rd('futbol.html')));
 ok('nba.html publica favoritos al hub',/OVAHoy\.publicar\('nba'/.test(rd('nba.html')));

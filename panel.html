@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0908">
+<title>OVA · Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="OVA">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+:root{
+ --bg:#0A0908; --bg1:#13110D; --bg2:#1B1812; --bg3:#25211A;
+ --line:#2A241B; --line2:#43381F;
+ --txt:#F7F2E7; --mut:#CBBFA5; --mut2:#A09472;
+ --acc:#C9A24A; --acc2:#E6C874; --accTx:#1A1305;
+ --hot:#F0CE6B; --hotTx:#1A1305;
+ --good:#6FD39A; --bad:#F08A78;
+ --cond:'Playfair Display',Georgia,serif;
+ --body:'Inter',-apple-system,system-ui,sans-serif;
+ box-sizing:border-box;
+ padding-top:env(safe-area-inset-top,0px);
+ padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+ min-height:100dvh;background:var(--bg);color:var(--txt);
+ font-family:var(--body);-webkit-font-smoothing:antialiased;
+ display:flex;flex-direction:column;align-items:center;
+ overflow-x:hidden;position:relative;
+ padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);
+}
+body::before{
+ content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+ background:
+   radial-gradient(55% 38% at 15% -4%, rgba(201,162,74,.13), transparent 60%),
+   radial-gradient(45% 32% at 100% 100%, rgba(201,162,74,.08), transparent 60%);
+}
+
+/* ---------- splash ---------- */
+#splash{
+ position:fixed;inset:0;z-index:9999;background:var(--bg);
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ transition:opacity .9s ease, visibility .9s ease;
+}
+#splash.hide{opacity:0;visibility:hidden;pointer-events:none}
+.seam{width:112px;height:112px;position:relative}
+.seam svg{position:absolute;inset:0;width:100%;height:100%}
+.seam path{fill:none;stroke:var(--hot);stroke-width:1.5;stroke-linecap:round;
+ stroke-dasharray:1;stroke-dashoffset:1;pathLength:1;
+ animation:draw 1.5s cubic-bezier(.65,0,.35,1) forwards;
+ filter:drop-shadow(0 0 6px rgba(240,206,107,.35))}
+.seam path:nth-child(2){animation-delay:.4s}
+.seam path:nth-child(3){animation-delay:.8s}
+@keyframes draw{to{stroke-dashoffset:0}}
+.splash-word{margin-top:22px;font-family:var(--cond);font-weight:600;font-size:14px;
+ letter-spacing:.55em;color:var(--mut);opacity:0;
+ animation:wordIn .8s ease forwards 1.3s}
+@keyframes wordIn{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.seam path,.splash-word{animation:none!important;stroke-dashoffset:0;opacity:1}}
+
+/* ---------- layout ---------- */
+.wrap{width:100%;max-width:460px;padding:0 20px calc(30px + env(safe-area-inset-bottom));
+ display:flex;flex-direction:column;align-items:center;flex:1}
+.brandbar{padding:26px 0 4px;text-align:center;opacity:0;
+ animation:riseIn .7s cubic-bezier(.22,.7,.3,1) forwards .15s}
+.brand{font-family:var(--cond);font-weight:700;font-size:15px;letter-spacing:.55em;
+ color:var(--mut2)}
+.brand span{color:var(--acc)}
+h1{font-family:var(--cond);font-weight:800;font-size:27px;line-height:1.2;
+ margin:14px 0 6px;text-align:center;opacity:0;
+ animation:riseIn .7s cubic-bezier(.22,.7,.3,1) forwards .28s}
+.sub{font-size:13px;color:var(--mut);text-align:center;max-width:32ch;margin:0 auto 30px;
+ line-height:1.5;opacity:0;animation:riseIn .7s cubic-bezier(.22,.7,.3,1) forwards .4s}
+@keyframes riseIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.grid{width:100%;display:flex;flex-direction:column;gap:15px}
+.card{
+ position:relative;display:flex;align-items:center;gap:16px;
+ padding:20px 18px;border-radius:20px;overflow:hidden;
+ background:rgba(27,24,18,.55);
+ border:1px solid rgba(201,162,74,.18);
+ -webkit-backdrop-filter:blur(18px) saturate(150%);
+ backdrop-filter:blur(18px) saturate(150%);
+ box-shadow:0 1px 0 rgba(255,255,255,.03) inset, 0 22px 46px -26px rgba(0,0,0,.9);
+ text-decoration:none;color:var(--txt);
+ transition:transform .18s ease, border-color .25s ease;
+ opacity:0;transform:translateY(16px);
+ animation:cardIn .6s cubic-bezier(.22,.7,.3,1) forwards;
+}
+.card:nth-child(1){animation-delay:.52s}
+.card:nth-child(2){animation-delay:.64s}
+.card:nth-child(3){animation-delay:.76s}
+@keyframes cardIn{to{opacity:1;transform:none}}
+.card:active{transform:scale(.975)}
+.card::before{
+ content:'';position:absolute;inset:0;border-radius:20px;padding:1px;pointer-events:none;
+ background:linear-gradient(150deg, rgba(201,162,74,.5), transparent 45%);
+ -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+ -webkit-mask-composite:xor; mask-composite:exclude;
+}
+.glow{position:absolute;top:-45%;right:-15%;width:65%;height:190%;border-radius:50%;
+ pointer-events:none;filter:blur(18px);opacity:.55}
+.mlb .glow{background:radial-gradient(circle,rgba(240,206,107,.28),transparent 70%)}
+.fut .glow{background:radial-gradient(circle,rgba(111,211,154,.22),transparent 70%)}
+.nba .glow{background:radial-gradient(circle,rgba(232,137,44,.26),transparent 70%)}
+
+.ico{position:relative;z-index:1;flex:0 0 auto;width:52px;height:52px;border-radius:14px;
+ display:flex;align-items:center;justify-content:center;font-size:24px;
+ background:rgba(240,206,107,.08);border:1px solid rgba(201,162,74,.22)}
+.txt{position:relative;z-index:1;flex:1;min-width:0}
+.txt b{display:block;font-family:var(--cond);font-weight:700;font-size:18px;
+ letter-spacing:.02em;margin-bottom:3px}
+.txt span{display:block;font-size:12px;color:var(--mut);line-height:1.4}
+.badge{position:relative;z-index:1;font-family:var(--body);font-size:10px;font-weight:700;
+ letter-spacing:.08em;color:var(--acc2);background:rgba(240,206,107,.1);
+ border:1px solid rgba(201,162,74,.28);border-radius:100px;padding:4px 10px;
+ white-space:nowrap;text-transform:uppercase}
+.arrow{position:relative;z-index:1;color:var(--mut2);font-size:18px;font-family:var(--cond)}
+
+/* ---------- pie / apariencia ---------- */
+.foot{width:100%;margin-top:34px;padding-top:22px;border-top:1px solid rgba(201,162,74,.14);
+ opacity:0;animation:riseIn .7s ease forwards .95s}
+.foot h2{font-family:var(--cond);font-size:15px;font-weight:600;margin-bottom:4px}
+.foot p{font-size:11.5px;color:var(--mut);line-height:1.5;margin-bottom:2px}
+
+/* ---------- Hoy / Respaldo ---------- */
+.sec{width:100%;margin-top:30px}
+.sec h2{font-family:var(--cond);font-size:17px;font-weight:700;margin-bottom:10px;display:flex;align-items:baseline;gap:8px}
+.sec h2 small{font-family:var(--body);font-size:11px;font-weight:400;color:var(--mut2)}
+.rec{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.rec div{background:rgba(27,24,18,.55);border:1px solid rgba(201,162,74,.18);border-radius:14px;padding:10px 8px;text-align:center}
+.rec b{display:block;font-family:var(--cond);font-size:16px;font-variant-numeric:tabular-nums}
+.rec span{display:block;font-size:10.5px;color:var(--mut);margin-top:2px}
+.rec .pos b{color:var(--good)} .rec .neg b{color:var(--bad)}
+.lin{display:flex;gap:10px;align-items:flex-start;background:rgba(27,24,18,.55);border:1px solid rgba(201,162,74,.14);
+ border-radius:12px;padding:10px 12px;margin:7px 0;font-size:12.5px;line-height:1.4}
+.lin .tg{flex:0 0 auto;font-size:9.5px;font-weight:700;letter-spacing:.06em;color:var(--acc2);border:1px solid rgba(201,162,74,.3);
+ border-radius:100px;padding:2px 7px;margin-top:1px}
+.lin .tx{flex:1;min-width:0}
+.lin .tx small{display:block;color:var(--mut2);font-size:11px;margin-top:1px}
+.lin .pc{flex:0 0 auto;font-family:var(--cond);font-weight:700;font-size:15px;color:var(--hot);font-variant-numeric:tabular-nums}
+.warn{font-size:11.5px;color:var(--hot);margin:4px 2px}
+.mut{font-size:12px;color:var(--mut);line-height:1.5;margin:6px 2px}
+.btn2{width:100%;margin:7px 0;padding:12px;border-radius:12px;border:1px solid rgba(201,162,74,.35);background:rgba(201,162,74,.1);
+ color:var(--acc2);font:600 14px var(--body);cursor:pointer}
+.btn2.sec2{background:transparent;color:var(--mut)}
+.sec textarea{width:100%;min-height:80px;margin-top:6px;padding:9px;border-radius:10px;border:1px solid rgba(201,162,74,.25);
+ background:rgba(0,0,0,.25);color:var(--txt);font:11px ui-monospace,Menlo,monospace}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+ <div class="brandbar"><div class="brand">O V A <span>&middot;</span></div></div>
+ <h1>Panel</h1>
+ <p class="sub">Tu resumen de hoy y el respaldo de tus picks.</p>
+ <div class="sec" id="hoy"><h2>Hoy <small id="hoyFecha"></small></h2><div id="hoyBody"></div></div>
+
+ <div class="sec" id="resp"><h2>Respaldo</h2>
+  <div class="mut" id="respEstado">Revisando…</div>
+  <button class="btn2" id="rBtnCompartir">Guardar copia (Archivos / compartir)</button>
+  <button class="btn2 sec2" id="rBtnCopiar">Copiar copia al portapapeles</button>
+  <textarea id="rTxt" placeholder="Para restaurar: pega aquí el texto de una copia (sirve también el respaldo viejo de cada app) y toca Restaurar."></textarea>
+  <button class="btn2 sec2" id="rBtnRest">Restaurar desde el texto</button>
+  <div class="mut" id="rMsg"></div>
+ </div>
+ <a class="btn2 sec2" href="hub.html" style="display:block;text-align:center;text-decoration:none;margin-top:22px">‹ Inicio</a>
+
+</div>
+
+<script>
+(function(){
+ try{
+  document.documentElement.setAttribute('data-app','hub');
+  try{ if(!localStorage.getItem('ova_skin')) localStorage.setItem('ova_skin','oro'); }catch(e){}
+  setTimeout(function(){
+   var s=document.getElementById('splash');
+   if(s){ s.classList.add('hide'); setTimeout(function(){ if(s.parentNode) s.parentNode.removeChild(s); }, 950); }
+  }, 1550);
+ }catch(e){}
+})();
+</script>
+<script src="ovaextra.js"></script>
+<script>
+(function(){
+ function esc(s){ return String(s==null?'':s).replace(/[<>&"]/g,function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); }
+ var NOM={mlb:'MLB',fut:'FÚT',nba:'NBA'};
+ function hace(ms){ var h=ms/3600000; if(h<1) return 'hace '+Math.max(1,Math.round(h*60))+' min'; if(h<48) return 'hace '+Math.round(h)+' h'; return 'hace '+Math.round(h/24)+' días'; }
+ function pintarHoy(){
+  var body=document.getElementById('hoyBody'); if(!body) return;
+  if(!window.OVAHoy){ body.innerHTML='<div class="mut">No cargó el módulo de resumen.</div>'; return; }
+  var R=OVAHoy.resumen(localStorage,Date.now()), h='';
+  document.getElementById('hoyFecha').textContent=OVAHoy.hoyLocal();
+  h+='<div class="rec">';
+  ['mlb','fut','nba'].forEach(function(a){
+   var r=R.rec[a], u=r.u, res=r.g+'-'+r.p+(r.e?'-'+r.e:'');
+   h+='<div class="'+(r.g+r.p+r.e? (u>=0?'pos':'neg') : '')+'"><b>'+(r.g+r.p+r.e?(u>=0?'+':'')+u.toFixed(1)+'u':'—')+'</b><span>'+NOM[a]+' · '+res+(r.pend?' · '+r.pend+' pend.':'')+'</span></div>';
+  });
+  h+='</div>';
+  if(R.pend.length){
+   h+='<div class="mut" style="margin-top:0"><b>Picks abiertos</b> ('+R.pend.length+')</div>';
+   R.pend.slice(0,10).forEach(function(p){
+    h+='<div class="lin"><span class="tg">'+NOM[p.app]+'</span><div class="tx">'+esc(p.sel)+' '+esc(p.cuota)+'<small>'+esc(p.juego)+(p.cuando?' · '+esc(p.cuando):'')+(p.corr?' · ⚠ mismo juego que otro pick: cuenta como una sola apuesta':'')+'</small></div></div>';
+   });
+   if(R.pend.length>10) h+='<div class="mut">y '+(R.pend.length-10)+' más en el Registro de cada app.</div>';
+  }else{
+   h+='<div class="mut">No tienes picks abiertos.</div>';
+  }
+  h+='<div class="mut" style="margin-top:14px"><b>Favoritos del modelo</b> (por probabilidad pura, sin mirar cuota)</div>';
+  if(R.tops.length){
+   R.tops.forEach(function(t){ h+='<div class="lin"><span class="tg">'+NOM[t.app]+'</span><div class="tx">'+esc(t.n)+'<small>'+esc(t.sub)+'</small></div><div class="pc">'+t.p.toFixed(1)+'%</div></div>'; });
+  }
+  var viejos=[];
+  ['mlb','fut','nba'].forEach(function(a){
+   var s=R.apps[a];
+   if(!s) viejos.push(NOM[a]+': aún no has corrido «Al gane»');
+   else if(!s.vigente) viejos.push(NOM[a]+': última vez '+hace(Date.now()-s.t)+' (abre la app para actualizar)');
+  });
+  if(!R.tops.length) h+='<div class="mut">Todavía no hay favoritos de hoy.</div>';
+  if(viejos.length) h+='<div class="warn">'+viejos.map(esc).join(' · ')+'</div>';
+  h+='<div class="mut">Esta pantalla solo resume lo que cada app ya calculó. No es una recomendación de apuesta: la ventaja real contra el mercado la dice tu Registro.</div>';
+  body.innerHTML=h;
+ }
+ function pintarResp(){
+  var el=document.getElementById('respEstado'); if(!el||!window.OVARespaldo) return;
+  var n=OVARespaldo.contarPicks(OVARespaldo.tomar(localStorage));
+  OVARespaldo.estado(localStorage).then(function(s){
+   var t=s?('Copia automática en este teléfono: '+new Date(s.t).toLocaleString([], {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' · '+s.picks+' picks.'):'Todavía no hay copia automática (se hace sola a los segundos de abrir cualquier app).';
+   el.innerHTML='Ahora tienes <b>'+n+'</b> picks guardados. '+t+' Además de esa copia, guarda una en Archivos de vez en cuando: si borras Safari por completo, la automática también se va.';
+  });
+ }
+ function msg(t){ var m=document.getElementById('rMsg'); if(m) m.textContent=t; }
+ function conectar(){
+  if(!window.OVARespaldo) return;
+  document.getElementById('rBtnCompartir').onclick=function(){
+   OVARespaldo.compartir(localStorage).then(function(r){
+    if(r.via==='compartir') msg('Listo, copia compartida.'); else if(r.via==='cancelado') msg('Cancelado.');
+    else if(r.via==='portapapeles') msg('Tu iPhone no deja compartir archivos desde aquí: copié el texto al portapapeles. Pégalo en Notas.');
+    else { document.getElementById('rTxt').value=r.txt; msg('Copia generada abajo: mantén presionado el texto, Seleccionar todo y Copiar.'); }
+   }).catch(function(e){ msg('No se pudo: '+e.message); });
+  };
+  document.getElementById('rBtnCopiar').onclick=function(){
+   var t=OVARespaldo.exportar(localStorage);
+   if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(function(){ msg('Copiado. Pégalo en Notas.'); },function(){ document.getElementById('rTxt').value=t; msg('Generada abajo; cópiala a mano.'); });
+   else { document.getElementById('rTxt').value=t; msg('Generada abajo; cópiala a mano.'); }
+  };
+  document.getElementById('rBtnRest').onclick=function(){
+   try{ var n=OVARespaldo.importar(document.getElementById('rTxt').value,localStorage); msg('Restaurado: '+n+' registros nuevos (los que ya estaban no se duplican).'); pintarHoy(); pintarResp(); }
+   catch(e){ msg('No se pudo restaurar: '+e.message); }
+  };
+ }
+ try{ pintarHoy(); pintarResp(); conectar(); }catch(e){ if(window.console) console.error(e); }
+})();
+</script>
+</body>
+</html>
