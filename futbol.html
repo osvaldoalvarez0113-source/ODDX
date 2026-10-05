@@ -781,15 +781,29 @@ function normalizarNombre(s){
 }
 // Identidad de equipo: quita "FC", "AFC", numeros, acentos, etc. para poder cruzar nombres entre
 // worldfootball, ESPN y lo que hay guardado en el registro.
-var TOKENS_FUERA = {fc:1,afc:1,cf:1,sc:1,ac:1,as:1,ss:1,ssc:1,us:1,rc:1,rcd:1,sv:1,vfl:1,vfb:1,fsv:1,tsg:1,ud:1,cd:1,sd:1,ca:1,og:1,ogc:1,fk:1,bsc:1,the:1,de:1};
+var TOKENS_FUERA = {fc:1,afc:1,cf:1,sc:1,ac:1,as:1,ss:1,ssc:1,us:1,rc:1,rcd:1,sv:1,vfl:1,vfb:1,fsv:1,tsg:1,ud:1,cd:1,sd:1,ca:1,og:1,ogc:1,fk:1,bsc:1,the:1,de:1,
+  /* v11: palabras de relleno que una fuente pone y la otra no ("Olympique Lyonnais" / "Lyon") */
+  olympique:1,stade:1,racing:1,losc:1,osc:1,aj:1,sl:1,hellas:1,la:1,le:1,a:1,acf:1};
 var ALIAS_EQ = {
   mancity:'manchestercity', manutd:'manchesterunited', manunited:'manchesterunited', spurs:'tottenham',
   wolves:'wolverhampton', psg:'parissaintgermain', athleticbilbao:'athleticclub', bayernmunich:'bayernmunchen',
   internazionale:'inter', intermilan:'inter', gladbach:'monchengladbach', borussiamgladbach:'monchengladbach',
-  borussiamonchengladbach:'monchengladbach', cologne:'koln'
+  borussiamonchengladbach:'monchengladbach', cologne:'koln',
+  /* v11 */
+  lyonnais:'lyon', rennais:'rennes', nottmforest:'nottinghamforest', deportivoalaves:'alaves',
+  dortmund:'borussiadortmund', oviedo:'realoviedo', valladolid:'realvalladolid', betis:'realbetis',
+  sportinglisbon:'sportingcp', sportinglisboa:'sportingcp', slaviaprague:'slaviapraha', unionsg:'unionsaintgilloise',
+  copenhagen:'kobenhavn', psv:'psveindhoven', olympiakos:'olympiacos', redstarbelgrade:'crvenazvezda'
 };
+/* v11: caracteres que NFD no separa (o con barra, ae, eszett...) */
+function sinAcentos(s){
+  return (s||'').toLowerCase().replace(/\u00f8/g,'o').replace(/\u00e6/g,'ae').replace(/\u00df/g,'ss').replace(/\u0111/g,'d').replace(/\u0142/g,'l')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
 function claveEq(nombre){
-  var s = (nombre||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/&/g,' and ');
+  var s = sinAcentos(nombre).replace(/&/g,' and ');
+  /* v11: "Paris FC" y "Paris Saint-Germain" empezaban igual y el cruce por prefijo los confundia */
+  if(/(^|[^a-z])paris f\.?c\.?($|[^a-z])/.test(s)) return 'parisfc';
   var toks = s.split(/[^a-z0-9]+/).filter(function(t){ return t && !TOKENS_FUERA[t] && !/^\d+$/.test(t); });
   var k = toks.join('');
   return ALIAS_EQ[k] || k;
@@ -3084,6 +3098,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
    mismoEquipo, esc, pintarJuegos que ya existen en futbol.html. Pollea cada 20s (solo si la
    liga cargada tiene fuente en ESPN) mientras la pestaña esté visible. */
 (function(){
+ function esc(s){ return String(s==null?"":s).replace(/[<>&]/g,function(c){ return {"<":"&lt;",">":"&gt;","&":"&amp;"}[c]; }); }
  function marcarNombres(partidos){
   try{
    document.querySelectorAll("#juegos .game").forEach(function(g){
@@ -3115,10 +3130,10 @@ document.getElementById('ligaSel').addEventListener('change', function(){
     var badge=g.querySelector(".hora"); if(!badge) return;
     if(st.state==="in"){
      badge.style.color="var(--bad)";
-     badge.innerHTML="🔴 "+(a.score!=null?a.score:"-")+"–"+(h.score!=null?h.score:"-")+"<br><small style=\"font-size:9px\">"+esc(st.shortDetail||st.detail||"")+"</small>";
+     badge.innerHTML="🔴 "+(h.score!=null?h.score:"-")+"–"+(a.score!=null?a.score:"-")+"<br><small style=\"font-size:9px\">"+esc(st.shortDetail||st.detail||"")+"</small>";
     } else if(st.state==="post"){
      badge.style.color="";
-     badge.innerHTML="Terminó "+(a.score!=null?a.score:"-")+"–"+(h.score!=null?h.score:"-");
+     badge.innerHTML="Terminó "+(h.score!=null?h.score:"-")+"–"+(a.score!=null?a.score:"-");
     }
    });
   }).catch(function(){});
@@ -3219,18 +3234,26 @@ document.getElementById('ligaSel').addEventListener('change', function(){
    if(!err&&legs.length<2) err="Escoge al menos 2 patas para armar el combo.";
    return {legs:legs, err:err};
   }
-  function joint(marc,legs){
-   var p=0;
+  function joint(marc,legs,anc){
+   /* v11: si hay pata Ganador y se conoce el % del Veredicto (anc), ese % manda y el resto
+      de las patas se condiciona a que ese resultado ocurra: asi el combo no contradice al Veredicto
+      cuando el modelo viene encogido (w<1). */
+   function cumple(m,l){
+    if(l.k==="gan"){ if(l.s==="L") return m.i>m.j; if(l.s==="D") return m.i===m.j; return m.i<m.j; }
+    var t=m.i+m.j;
+    if(l.k==="tot") return l.d==="o" ? t>l.L : t<l.L;
+    if(l.k==="ttL") return l.d==="o" ? m.i>l.L : m.i<l.L;
+    return l.d==="o" ? m.j>l.L : m.j<l.L;
+   }
+   var gan=null, otras=[];
+   legs.forEach(function(l){ if(l.k==="gan") gan=l; else otras.push(l); });
+   var p=0, w0=0;
    marc.forEach(function(m){
-    var ok=true;
-    legs.forEach(function(l){
-     if(l.k==="gan"){ if(l.s==="L"&&!(m.i>m.j)) ok=false; else if(l.s==="D"&&!(m.i===m.j)) ok=false; else if(l.s==="V"&&!(m.i<m.j)) ok=false; }
-     else if(l.k==="tot"){ var t=m.i+m.j; if(l.d==="o"){ if(!(t>l.L)) ok=false; } else { if(!(t<l.L)) ok=false; } }
-     else if(l.k==="ttL"){ if(l.d==="o"){ if(!(m.i>l.L)) ok=false; } else { if(!(m.i<l.L)) ok=false; } }
-     else if(l.k==="ttV"){ if(l.d==="o"){ if(!(m.j>l.L)) ok=false; } else { if(!(m.j<l.L)) ok=false; } }
-    });
-    if(ok) p+=m.p;
+    var okG=!gan || cumple(m,gan);
+    if(okG) w0+=m.p;
+    if(okG && otras.every(function(l){ return cumple(m,l); })) p+=m.p;
    });
+   if(gan && anc && isFinite(anc[gan.s]) && w0>0) return anc[gan.s]*(p/w0);
    return p;
   }
   function textoLeg(l,n){
@@ -3249,8 +3272,9 @@ document.getElementById('ligaSel').addEventListener('change', function(){
    var r=calcular(mL.eq,mV.eq);
    if(!r.marcadores){ box.innerHTML="<div class=\"aviso\">Este partido todavía no tiene la matriz de marcadores calculada.</div>"; return; }
    var n={l:p.local,v:p.visita};
-   var pj=joint(r.marcadores,lg.legs);
-   var pind=1; lg.legs.forEach(function(l){ pind*=joint(r.marcadores,[l]); });
+   var anc={L:r.pL,D:r.pD,V:r.pV};
+   var pj=joint(r.marcadores,lg.legs,anc);
+   var pind=1; lg.legs.forEach(function(l){ pind*=joint(r.marcadores,[l],anc); });
    var stake=parseFloat(vista.querySelector("#fcmb_stake").value), pay=parseFloat(vista.querySelector("#fcmb_pay").value);
    var hasPay=isFinite(stake)&&stake>0&&isFinite(pay)&&pay>stake;
    var be=hasPay?stake/pay:null;
