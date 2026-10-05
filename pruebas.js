@@ -1,0 +1,270 @@
+/* OVA · pruebas automáticas.  Uso:  node --expose-internals pruebas.js   (desde la carpeta del repo)
+   Revisa sintaxis, nombres inexistentes, cruce de equipos, marcador en vivo, combo de fútbol, modelo NBA,
+   cierre automático de MLB, respaldo, resumen "Hoy", service worker y el hub.
+   Sale con código 1 si algo falla (así GitHub te avisa con una X roja). */
+const fs=require('fs'),vm=require('vm'),path=require('path');
+const D=__dirname+path.sep;
+let total=0,fallas=0,t_envivo;
+function ok(nombre,cond,detalle){total++;if(!cond){fallas++;console.log('  ✗ FALLA:',nombre,detalle!==undefined?'→ '+detalle:'');}else console.log('  ✓',nombre);}
+function sec(t){console.log('\n== '+t);}
+const rd=f=>fs.readFileSync(D+f,'utf8');
+function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
+const APPS=['hub.html','index.html','futbol.html','nba.html'];
+const JS=['ovaextra.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','sw.js'].filter(f=>fs.existsSync(D+f));
+
+/* ---------------- 1. sintaxis ---------------- */
+sec('Sintaxis');
+APPS.forEach(f=>{let bad=0;scriptsInline(f).forEach((s,i)=>{try{new vm.Script(s,{filename:f+'#'+i});}catch(e){bad++;console.log('   ',f,'#'+i,e.message);}});ok(f+' ('+scriptsInline(f).length+' scripts)',bad===0);});
+JS.forEach(f=>{let good=true;try{new vm.Script(rd(f),{filename:f});}catch(e){good=false;console.log('   ',f,e.message);}ok(f,good);});
+
+/* ---------------- 2. nombres que no existen ---------------- */
+sec('Nombres usados sin existir (como el esc() que rompía el marcador)');
+let acorn=null;try{acorn=require('internal/deps/acorn/acorn/dist/acorn');}catch(e){}
+if(!acorn){console.log('  (omitido: corre con  node --expose-internals pruebas.js)');}
+else{
+ const BROWSER=new Set(('window document navigator location localStorage sessionStorage history console fetch setTimeout setInterval clearInterval clearTimeout requestAnimationFrame cancelAnimationFrame Promise Math JSON Date Array Object String Number Boolean RegExp Error Set Map WeakMap Symbol parseInt parseFloat isFinite isNaN undefined NaN Infinity Event CustomEvent DOMParser MutationObserver URL Image Intl matchMedia module require alert prompt confirm encodeURIComponent decodeURIComponent Uint8Array Float64Array performance IntersectionObserver ResizeObserver Blob File FileReader btoa atob TextEncoder escape unescape arguments AbortController Notification crypto screen innerWidth innerHeight pageYOffset scrollTo getComputedStyle XMLHttpRequest Response Headers Request FormData URLSearchParams structuredClone queueMicrotask globalThis self caches clients indexedDB').split(' '));
+ function analizar(src){
+  const ast=acorn.parse(src,{ecmaVersion:2022,sourceType:'script',locations:true});const refs=[],sets=new Set();
+  function patt(p,sc){if(!p)return;if(p.type==='Identifier')sc.add(p.name);else if(p.type==='ObjectPattern')p.properties.forEach(x=>patt(x.value||x.argument,sc));else if(p.type==='ArrayPattern')p.elements.forEach(x=>patt(x,sc));else if(p.type==='AssignmentPattern'){patt(p.left,sc);walk(p.right,sc);}else if(p.type==='RestElement')patt(p.argument,sc);else if(p.type==='MemberExpression')walk(p,sc);}
+  function pd(p,sc){if(!p)return;if(p.type==='Identifier')sc.add(p.name);else if(p.type==='ObjectPattern')p.properties.forEach(x=>pd(x.value||x.argument,sc));else if(p.type==='ArrayPattern')p.elements.forEach(x=>pd(x,sc));else if(p.type==='AssignmentPattern')pd(p.left,sc);else if(p.type==='RestElement')pd(p.argument,sc);}
+  function hoist(n,sc){if(!n||typeof n.type!=='string')return;if(n.type==='FunctionDeclaration'){sc.add(n.id.name);return;}if(n.type==='FunctionExpression'||n.type==='ArrowFunctionExpression')return;if(n.type==='VariableDeclaration')n.declarations.forEach(d=>pd(d.id,sc));if(n.type==='ClassDeclaration')sc.add(n.id.name);for(const k in n){if(k==='loc')continue;const v=n[k];if(Array.isArray(v))v.forEach(x=>hoist(x,sc));else if(v&&typeof v.type==='string')hoist(v,sc);}}
+  function walk(n,scope){
+   if(!n||typeof n.type!=='string')return;let sc=scope;
+   if(n.type==='FunctionDeclaration'||n.type==='FunctionExpression'||n.type==='ArrowFunctionExpression')sc=new Set([...scope]);
+   switch(n.type){
+    case 'Identifier':refs.push([n.name,n.loc.start.line,sc]);return;
+    case 'MemberExpression':walk(n.object,sc);if(n.computed)walk(n.property,sc);return;
+    case 'Property':if(n.computed)walk(n.key,sc);walk(n.value,sc);return;
+    case 'MethodDefinition':return;case 'LabeledStatement':walk(n.body,sc);return;case 'BreakStatement':case 'ContinueStatement':return;
+    case 'VariableDeclarator':patt(n.id,sc);if(n.init)walk(n.init,sc);return;
+    case 'FunctionDeclaration':case 'FunctionExpression':case 'ArrowFunctionExpression':
+     if(n.id&&n.type==='FunctionExpression')sc.add(n.id.name);n.params.forEach(p=>patt(p,sc));hoist(n.body,sc);walk(n.body,sc);return;
+    case 'CatchClause':sc=new Set([...sc]);if(n.param)patt(n.param,sc);walk(n.body,sc);return;
+    case 'ClassDeclaration':case 'ClassExpression':if(n.id)sc.add(n.id.name);walk(n.superClass,sc);n.body.body.forEach(m=>{if(m.value)walk(m.value,sc);});return;
+    case 'AssignmentExpression':if(n.left.type==='Identifier')sets.add(n.left.name);break;
+   }
+   for(const k in n){if(k==='loc'||k==='type')continue;const v=n[k];if(Array.isArray(v))v.forEach(x=>walk(x,sc));else if(v&&typeof v.type==='string')walk(v,sc);}
+  }
+  const top=new Set();hoist(ast,top);walk(ast,top);return {top,refs,sets};
+ }
+ function revisar(app,extras){
+  const h=rd(app),src=scriptsInline(app).map((s,i)=>[app+'#'+i,s]).concat(extras.filter(e=>fs.existsSync(D+e)).map(e=>[e,rd(e)]));
+  const tops=new Set(),res=[];
+  src.forEach(([l,s])=>{const r=analizar(s);res.push([l,r]);r.top.forEach(t=>tops.add(t));r.sets.forEach(t=>tops.add(t));});
+  const ids=new Set();let m;const rid=/\bid="([^"]+)"/g;while((m=rid.exec(h)))ids.add(m[1]);
+  const FALSOS=new Set(['OVASkins','montarCombo','OVAHoy','OVARespaldo']);   /* se crean con window.X y están protegidos con typeof */
+  const mal=new Map();
+  res.forEach(([l,r])=>r.refs.forEach(([n,line,sc])=>{if(sc.has(n)||tops.has(n)||BROWSER.has(n)||ids.has(n)||FALSOS.has(n))return;if(!mal.has(n))mal.set(n,l+':'+line);}));
+  ok(app+' sin nombres inexistentes',mal.size===0,[...mal].map(([n,w])=>n+' ('+w+')').join(', '));
+ }
+ revisar('futbol.html',['ovaextra.js','obsidiana.js','mejoras.js','selecciones.js']);
+ revisar('index.html',['ovaextra.js','obsidiana.js','railway.js','historial.js']);
+ revisar('nba.html',['ovaextra.js']);
+ revisar('hub.html',['ovaextra.js']);
+ const sw=analizar(rd('sw.js'));const mal=sw.refs.filter(([n,l,sc])=>!(sc.has(n)||sw.top.has(n)||BROWSER.has(n))).map(r=>r[0]);ok('sw.js sin nombres inexistentes',mal.length===0,mal.join(','));
+}
+
+/* ---------------- 3. cruce de nombres de equipos ---------------- */
+sec('Cruce de nombres de equipos (worldfootball ↔ ESPN)');
+{
+ const h=rd('futbol.html'),a=h.indexOf('var TOKENS_FUERA'),b=h.indexOf('function parseFecha'),L={};
+ new Function('o',h.slice(a,b)+';o.mismoEquipo=mismoEquipo;')(L);
+ const C=[['Manchester City','Man City'],['Manchester United','Man United','Man Utd'],['Tottenham Hotspur','Tottenham','Spurs'],['Wolverhampton Wanderers','Wolves'],['Brighton & Hove Albion','Brighton'],['AFC Bournemouth','Bournemouth'],['Newcastle United','Newcastle'],['Nottingham Forest','Nottm Forest'],['West Ham United','West Ham'],['Leeds United','Leeds'],['Sunderland AFC','Sunderland'],['Chelsea','Chelsea FC'],['Arsenal','Arsenal FC'],['Liverpool','Liverpool FC'],['Everton','Everton FC'],['Crystal Palace'],['Fulham','Fulham FC'],['Brentford','Brentford FC'],['Burnley','Burnley FC'],['Aston Villa'],['FC Barcelona','Barcelona'],['Real Madrid'],['Atlético Madrid','Atletico Madrid'],['Athletic Club','Athletic Bilbao'],['Real Sociedad'],['Real Betis','Betis'],['Deportivo Alavés','CD Alavés','Alavés'],['Celta de Vigo','Celta Vigo'],['RCD Espanyol','Espanyol'],['Rayo Vallecano'],['Levante UD','Levante'],['Real Oviedo','Oviedo'],['Sevilla FC','Sevilla'],['Valencia CF','Valencia'],['Villarreal CF','Villarreal'],['Girona FC','Girona'],['Getafe CF','Getafe'],['CA Osasuna','Osasuna'],['Elche CF','Elche'],['RCD Mallorca','Mallorca'],['Real Valladolid','Valladolid'],['Deportivo A Coruña','Deportivo La Coruña'],['Inter','Internazionale','Inter Milan'],['AC Milan','Milan'],['Juventus','Juventus FC'],['SSC Napoli','Napoli'],['AS Roma','Roma'],['SS Lazio','Lazio'],['Atalanta BC','Atalanta'],['ACF Fiorentina','Fiorentina'],['Hellas Verona','Verona'],['Bologna FC','Bologna'],['Torino FC','Torino'],['Genoa CFC','Genoa'],['Udinese Calcio','Udinese'],['Cagliari Calcio','Cagliari'],['Como 1907','Como'],['US Lecce','Lecce'],['Parma Calcio','Parma'],['US Sassuolo','Sassuolo'],['Pisa SC','Pisa'],['US Cremonese','Cremonese'],['Bayern München','Bayern Munich'],['Borussia Dortmund','Dortmund'],['Bayer 04 Leverkusen','Bayer Leverkusen'],['RB Leipzig'],['VfB Stuttgart','Stuttgart'],['Eintracht Frankfurt'],['1899 Hoffenheim','TSG Hoffenheim'],['1. FSV Mainz 05','Mainz'],['SC Freiburg','Freiburg'],['FC Augsburg','Augsburg'],['Werder Bremen'],['Hamburger SV','Hamburg'],['VfL Wolfsburg','Wolfsburg'],['1. FC Union Berlin','Union Berlin'],['FC St. Pauli','St. Pauli'],['1. FC Köln','FC Cologne','Köln'],["Borussia M'gladbach",'Borussia Mönchengladbach'],['1. FC Heidenheim','1. FC Heidenheim 1846'],['SV 07 Elversberg','Elversberg'],['Paris Saint-Germain','PSG','Paris Saint Germain'],['Paris FC'],['Olympique Marseille','Marseille'],['Olympique Lyonnais','Lyon'],['AS Monaco','Monaco'],['Lille OSC','LOSC Lille','Lille'],['Stade Rennais','Rennes'],['Stade Brestois 29','Brest','Stade Brestois'],['OGC Nice','Nice'],['RC Lens','Lens'],['Racing Strasbourg','RC Strasbourg','Strasbourg'],['Le Havre AC','Le Havre'],['AJ Auxerre','Auxerre'],['FC Metz','Metz'],['FC Lorient','Lorient'],['FC Nantes','Nantes'],['Angers SCO','Angers'],['Toulouse FC','Toulouse'],['Sporting CP','Sporting Lisbon'],['SL Benfica','Benfica'],['FC Porto','Porto'],['Club Brugge','Club Brugge KV'],['Galatasaray','Galatasaray SK'],['Bodø/Glimt','FK Bodø/Glimt'],['Qarabağ','Qarabag'],['Slavia Praha','Slavia Prague'],['Pafos FC','Pafos'],['Union Saint-Gilloise','Union SG'],['Kairat Almaty','Kairat'],['FC København','Copenhagen','FC Copenhagen'],['PSV Eindhoven','PSV'],['Olympiacos','Olympiakos'],['Ajax','AFC Ajax'],['Feyenoord'],['Celtic'],['Rangers'],['Anderlecht']];
+ let nc=0,conf=0;const mm=[];
+ C.forEach(v=>{for(let i=0;i<v.length;i++)for(let j=i+1;j<v.length;j++)if(!L.mismoEquipo(v[i],v[j])){nc++;mm.push(v[i]+' | '+v[j]);}});
+ for(let a2=0;a2<C.length;a2++)for(let b2=a2+1;b2<C.length;b2++)C[a2].forEach(x=>C[b2].forEach(y=>{if(L.mismoEquipo(x,y)){conf++;mm.push('CONFUNDE '+x+' = '+y);}}));
+ ok('variantes del mismo club cruzan ('+C.length+' clubes)',nc===0,mm.join(' ; '));
+ ok('clubes distintos no se confunden (Paris FC / PSG, Inter / Milan...)',conf===0);
+}
+
+/* ---------------- 4. marcador en vivo de fútbol ---------------- */
+{
+ const h=rd('futbol.html'),nm=h.slice(h.indexOf('var TOKENS_FUERA'),h.indexOf('function parseFecha'));
+ const blk=h.slice(h.indexOf('<!--OVAPATCH:ENVIVO:BEGIN-->'),h.indexOf('<!--OVAPATCH:ENVIVO:END-->')).replace(/<!--[^>]*-->/g,'').replace(/<\/?script>/g,'');
+ const badge={innerHTML:'',style:{}},game={getAttribute:k=>({'data-local':'Olympique Lyonnais','data-visita':'Olympique Marseille','data-idx':'0'}[k]),querySelector:s=>s==='.hora'?badge:null,setAttribute(){}};
+ const doc={hidden:false,getElementById:id=>id==='juegos'?{querySelectorAll:()=>[game]}:null,querySelectorAll:()=>[game]};
+ const ev=st=>({events:[{competitions:[{competitors:[{homeAway:'home',score:'2',team:{displayName:'Lyon'}},{homeAway:'away',score:'1',team:{displayName:'Marseille'}}]}],status:{type:{state:st,shortDetail:"67'"}}}]});
+ const run=st=>new Promise(r=>{badge.innerHTML='';const ctx={document:doc,ESPN_SLUG:{ligue1:'fra.1'},LIGA_ACTUAL:'ligue1',ESPN_BASE:'x/',pintarJuegos:()=>{},fetch:()=>Promise.resolve({ok:true,json:()=>Promise.resolve(ev(st))}),setInterval:()=>{},setTimeout:f=>{f();},Date,String};vm.createContext(ctx);vm.runInContext(nm+';var ymd=function(){return "20260101"};',ctx);vm.runInContext(blk,ctx);setTimeout(()=>r(badge.innerHTML),30);});
+t_envivo=async()=>{
+  sec('Fútbol: marcador en vivo');
+  const a=await run('in');ok('en juego muestra 2–1 (local–visitante)',/🔴 2–1/.test(a),a);
+  const b=await run('post');ok('terminado muestra 2–1',/Terminó 2–1/.test(b),b);
+ };
+}
+
+/* ---------------- 5. combo de fútbol ---------------- */
+sec('Fútbol: combo coincide con el Veredicto');
+{
+ const h=rd('futbol.html'),mod=h.slice(h.indexOf('var MAXG = 8;'),h.indexOf('// ---------- historial')),M={};
+ new Function('M',mod+';M.probsModelo=probsModelo;')(M);
+ const blk=h.slice(h.indexOf('<!--OVAPATCH:COMBO:BEGIN-->'),h.indexOf('<!--OVAPATCH:COMBO:END-->'));
+ const joint=new Function(blk.slice(blk.indexOf('  function joint(marc,legs'),blk.indexOf('  function textoLeg'))+';return joint;')();
+ const P={K:6,h:1.13,rho:-0.08,w:0.8,S:0,Kt:16,wt:0.5,ct:1,A:1,At:1},r=M.probsModelo({pj:6,gf:11,gc:5},{pj:6,gf:6,gc:9},1.45,P,true);
+ const anc={L:r.pL,D:r.pD,V:r.pV};
+ ok('"Gana local" del combo = Veredicto (con w<1)',Math.abs(joint(r.marcadores,[{k:'gan',s:'L'}],anc)-r.pL)<1e-9);
+ ok('combo ≤ pata sola',joint(r.marcadores,[{k:'gan',s:'L'},{k:'tot',d:'o',L:2.5}],anc)<=r.pL+1e-12);
+ ok('L+E+V suma 1',Math.abs(['L','D','V'].reduce((s,k)=>s+joint(r.marcadores,[{k:'gan',s:k}],anc),0)-1)<1e-9);
+ const r1=M.probsModelo({pj:6,gf:11,gc:5},{pj:6,gf:6,gc:9},1.45,Object.assign({},P,{w:1}),true);
+ const sinAnc=joint(r1.marcadores,[{k:'gan',s:'L'},{k:'tot',d:'o',L:2.5}]),conAnc=joint(r1.marcadores,[{k:'gan',s:'L'},{k:'tot',d:'o',L:2.5}],{L:r1.pL,D:r1.pD,V:r1.pV});
+ ok('con w=1 no cambia nada',Math.abs(sinAnc-conAnc)<1e-12);
+}
+
+/* ---------------- 6. NBA ---------------- */
+sec('NBA: modelo con 3 temporadas simuladas');
+{
+ const nb=rd('nba.html'),i0=nb.indexOf('<script id="modelo">')+20,mod=nb.slice(i0,nb.indexOf('</script>',i0)),N={};
+ new Function('N','module',mod+';Object.assign(N,{PDEF,seasonOf,correr,predecir,pML,pCover,evaluar,dif,verdTxt,gridMargen,gridTotal});')(N,undefined);
+ let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647,gauss=()=>Math.sqrt(-2*Math.log(rnd()+1e-12))*Math.cos(2*Math.PI*rnd());
+ const teams=[...Array(30).keys()].map(String),str={};teams.forEach(t=>str[t]=gauss()*4);const games=[];
+ for(const sk of [2023,2024,2025]){let ts=Date.UTC(sk,9,25,23);for(let d=0;d<165;d++){const used=new Set();for(let g=0;g<8;g++){let a,hh;do{a=teams[Math.floor(rnd()*30)];hh=teams[Math.floor(rnd()*30)];}while(a===hh||used.has(a)||used.has(hh));used.add(a);used.add(hh);const m=str[hh]-str[a]+2.4+gauss()*12,t=225+gauss()*18;games.push({id:games.length,ts:ts+g*1800e3,h:hh,a,hs:Math.round((t+m)/2),as:Math.round((t-m)/2)});}ts+=864e5;}}
+ const r=N.evaluar(games,N.PDEF,2025),S=N.correr(games,N.PDEF);
+ ok('mide >1000 partidos sin errores',r.n>1000,r.n);
+ ok('le gana a "sin modelo" en el ganador (datos con fuerza real conocida)',N.verdTxt(N.dif(r.qW,r.n),0.003).t==='✓ le gana');
+ const x=teams.map(t=>S.m[t]),y=teams.map(t=>str[t]),mx=x.reduce((a,b)=>a+b)/30,my=y.reduce((a,b)=>a+b)/30;let sxy=0,sx=0,sy=0;for(let k=0;k<30;k++){sxy+=(x[k]-mx)*(y[k]-my);sx+=(x[k]-mx)**2;sy+=(y[k]-my)**2;}
+ ok('los ratings aprendidos se parecen a la fuerza verdadera (corr > 0.8)',sxy/Math.sqrt(sx*sy)>0.8);
+ ok('Phi, simetría y push',Math.abs(N.pML(0,12.4)-0.5)<1e-9&&Math.abs(N.pML(-5.5,12)+N.pML(5.5,12)-1)<1e-9);
+ const gm=N.gridMargen(games,2025,null,N.PDEF);ok('calibración devuelve parámetros',!!gm&&isFinite(gm.P.kM));
+ const p=N.predecir(S,N.PDEF,{h:'1',a:'2',ts:Date.UTC(2026,9,28,23)},{});ok('predecir temporada nueva da números finitos',isFinite(p.pm)&&isFinite(p.pt)&&p.pH>0&&p.pH<1);
+}
+
+/* ---------------- 7. MLB: cierre automático ---------------- */
+sec('MLB: cierre automático de picks');
+{
+ const ix=rd('index.html'),a=ix.indexOf("function norm(s){ return String(s==null"),b=ix.indexOf('function armarG(g)'),A={};
+ new Function('A',ix.slice(a,b)+';A.resolver=resolver;')(A);
+ const G={a:{ab:'NYY',name:'New York Yankees',runs:5},h:{ab:'BOS',name:'Boston Red Sox',runs:3},inn:[{a:1,h:0},{a:0,h:1},{a:2,h:0},{a:0,h:0},{a:0,h:1},{a:1,h:0},{a:0,h:0},{a:1,h:1},{a:0,h:0}],ks:{'gerrit cole':{k:7,gs:1},'brayan bello':{k:4,gs:1}}};
+ const T=[['NYY gana','G'],['BOS gana','P'],['NYY −1.5 (gana por 2+)','G'],['BOS −1.5 (gana por 2+)','P'],['BOS +1.5 (pierde por 1 o gana)','P'],['NYY +1.5 (pierde por 1 o gana)','G'],['Over 8 carreras','E'],['Over 7.5 carreras','G'],['Under 8.5 carreras','G'],['Over 4.5 carreras de NYY','G'],['Under 3.5 carreras de BOS','G'],['Over 3.5 F5','G'],['Under 3.5 F5','P'],['NYY F5 (gana las 5)','G'],['Empate en F5','P'],['Gerrit Cole Over 6.5 K','G'],['Brayan Bello Under 3.5 K','P'],['Combo: NYY gana + NYY más de 3.5 carreras','G'],['Combo: NYY gana + Total menos de 7.5','P']];
+ let bad=[];T.forEach(([m,e])=>{const r=A.resolver({m,juego:'NYY @ BOS'},G),got=r.res||('?'+r.why);if(got!==e)bad.push(m+'→'+got);});
+ ok(T.length+' tipos de pick se cierran bien (ganador, hándicap, totales, F5, ponches, combos, push)',bad.length===0,bad.join(' ; '));
+ /* perder por EXACTAMENTE 1: el borde del hándicap */
+ const G1={a:{ab:'NYY',name:'New York Yankees',runs:4},h:{ab:'BOS',name:'Boston Red Sox',runs:3},inn:[],ks:null};
+ const T1=[['BOS +1.5 (pierde por 1 o gana)','G'],['NYY +1.5 (pierde por 1 o gana)','G'],['NYY −1.5 (gana por 2+)','P'],['BOS −1.5 (gana por 2+)','P'],['NYY gana','G']];
+ const bad1=[];T1.forEach(([m,e])=>{const r=A.resolver({m,juego:'NYY @ BOS'},G1),got=r.res||('?'+r.why);if(got!==e)bad1.push(m+'→'+got);});
+ ok('hándicap cuando se pierde por exactamente 1 carrera',bad1.length===0,bad1.join(' ; '));
+ const Gt={a:{ab:'NYY',name:'x',runs:2},h:{ab:'BOS',name:'y',runs:2},inn:[],ks:null};
+ ok('juego empatado no cierra el ganador (no inventa resultado)',!A.resolver({m:'NYY gana',juego:'NYY @ BOS'},Gt).res);
+}
+sec('NBA: cierre de picks (ganador, hándicap, total, push)');
+{
+ const nb=rd('nba.html'),a=nb.indexOf('function resolver(p,g){'),b=nb.indexOf('let VERIF'),X={};
+ new Function('X',nb.slice(a,b)+';X.resolver=resolver;')(X);
+ const g={hs:110,as:100};   /* local gana por 10, total 210 */
+ const C=[[{mercado:'ML',side:'H'},'ganado'],[{mercado:'ML',side:'A'},'perdido'],
+  [{mercado:'SPR',side:'H',linea:-5.5},'ganado'],[{mercado:'SPR',side:'A',linea:-5.5},'perdido'],
+  [{mercado:'SPR',side:'H',linea:-10},'push'],[{mercado:'SPR',side:'A',linea:-10},'push'],
+  [{mercado:'SPR',side:'H',linea:-11.5},'perdido'],[{mercado:'SPR',side:'A',linea:-11.5},'ganado'],
+  [{mercado:'SPR',side:'H',linea:4.5},'ganado'],
+  [{mercado:'TOT',side:'O',linea:209.5},'ganado'],[{mercado:'TOT',side:'U',linea:209.5},'perdido'],
+  [{mercado:'TOT',side:'O',linea:210},'push'],[{mercado:'TOT',side:'U',linea:215.5},'ganado']];
+ const bad=[];C.forEach(([p,e])=>{const got=X.resolver(p,g);if(got!==e)bad.push(JSON.stringify(p)+'→'+got);});
+ ok(C.length+' casos de cierre en NBA',bad.length===0,bad.join(' ; '));
+}
+
+/* ---------------- 8. ovaextra: respaldo + hoy ---------------- */
+const EX=require(D+'ovaextra.js'),R=EX.OVARespaldo,H=EX.OVAHoy;
+function fakeLS(){const m={};return{getItem:k=>(k in m?m[k]:null),setItem:(k,v)=>{m[k]=String(v);},removeItem:k=>{delete m[k];},clear:()=>{for(const k in m)delete m[k];},_m:m};}
+function fakeStore(){const m={};return{get:k=>Promise.resolve(k in m?m[k]:null),put:(k,v)=>{m[k]=v;return Promise.resolve(true);}};}
+const picksMlb=[{id:'a1',f:'2026-10-05',juego:'NYY @ BOS',m:'NYY gana',p:60,am:'-110',plat:'book',res:'G'},{id:'a2',f:'2026-10-05',juego:'NYY @ BOS',m:'Over 8.5 carreras',p:55,am:'60',plat:'kalshi',res:'P'},{id:'a3',f:'2026-10-06',juego:'LAD @ SF',m:'LAD gana',p:62,am:'-150',plat:'book',res:null}];
+const picksFut=[{id:'f1',fecha:'05.10.2026',local:'Lyon',visita:'Marseille',seleccion:'Lyon',cuota:'+200',estado:'ganado'},{id:'f2',fecha:'06.10.2026',local:'PSG',visita:'Nice',seleccion:'PSG',cuota:'-300',estado:'pendiente'}];
+const picksNba=[{id:'n1',ts:Date.UTC(2026,9,28,23),aN:'Celtics',hN:'Knicks',seleccion:'Más de 224.5',cuota:'-110',estado:'push'},{id:'n2',ts:Date.UTC(2026,9,29,23),aN:'Heat',hN:'Bulls',seleccion:'Heat gana',cuota:'+150',estado:'pendiente'}];
+const t_respaldo=async()=>{
+ sec('Respaldo (sobrevive a que Safari borre)');
+ const ls=fakeLS(),st=fakeStore();R._setStore(st);
+ ls.setItem('ventaja_picks_v1',JSON.stringify(picksMlb));ls.setItem('ova_nba_registro_v1',JSON.stringify(picksNba));ls.setItem('ova_futbol_registro_v1',JSON.stringify(picksFut));ls.setItem('ova_skin','campo');
+ let r=await R.snapshot(ls);ok('guarda copia automática (7 picks)',r.estado==='guardado'&&r.picks===7,JSON.stringify(r));
+ r=await R.snapshot(ls);ok('si no cambió nada, no reescribe',r.estado==='igual');
+ ls.clear();
+ const info=await R.necesitaRestaurar(ls);ok('detecta que se borraron los picks',!!info&&info.picks===7);
+ r=await R.snapshot(ls);ok('una copia vacía NO pisa la buena',r.estado==='protegido');
+ const n=await R.restaurarSnapshot(ls);ok('restaura los 7 picks',n===7&&R.contarPicks(R.tomar(ls))===7,n);
+ ok('restaura también el tema',ls.getItem('ova_skin')==='campo');
+ const n2=await R.restaurarSnapshot(ls);ok('restaurar dos veces no duplica',n2===0&&R.contarPicks(R.tomar(ls))===7);
+ ls.clear();await R.ignorar();ok('"Ignorar" apaga el aviso',(await R.necesitaRestaurar(ls))===null);
+ r=await R.snapshot(ls);ok('después de ignorar sí puede guardar vacío',r.estado==='guardado');
+ // importar / exportar
+ const ls2=fakeLS();ls2.setItem('ventaja_picks_v1',JSON.stringify(picksMlb));ls2.setItem('ova_nba_registro_v1',JSON.stringify(picksNba));
+ const txt=R.exportar(ls2),ls3=fakeLS();ok('exportar → importar (ida y vuelta)',R.importar(txt,ls3)===5&&JSON.stringify(JSON.parse(ls3.getItem('ventaja_picks_v1')))===JSON.stringify(picksMlb));
+ const ls4=fakeLS();ok('importa el respaldo viejo de NBA',R.importar(JSON.stringify({app:'ova-nba',v:1,registro:picksNba,combinada:[],params:{kM:0.05}}),ls4)===2&&!!ls4.getItem('ova_nba_params_v1'));
+ const ls5=fakeLS();ok('importa el respaldo viejo de fútbol',R.importar(JSON.stringify({app:'ova-futbol',v:1,registro:picksFut,combinada:[],params:null}),ls5)===2);
+ const ls6=fakeLS();ok('importa el respaldo viejo de MLB (lista)',R.importar(JSON.stringify(picksMlb),ls6)===3);
+ let malo=false;try{R.importar('esto no es json',fakeLS());}catch(e){malo=true;}ok('texto inválido da error claro',malo);
+ let malo2=false;try{R.importar('{"app":"otra"}',fakeLS());}catch(e){malo2=true;}ok('formato desconocido da error claro',malo2);
+ const ls7=fakeLS();ls7.setItem('ventaja_picks_v1','{{roto');R._setStore(fakeStore());const rr=await R.snapshot(ls7);ok('datos corruptos no tumban el respaldo',rr.estado!=='error');
+ R._setStore(false);const sn=await R.snapshot(ls);ok('sin IndexedDB (modo privado) no truena',sn.estado==='sin-almacen');
+};
+sec('Resumen Hoy');
+{
+ const ls=fakeLS();ls.setItem('ventaja_picks_v1',JSON.stringify(picksMlb));ls.setItem('ova_futbol_registro_v1',JSON.stringify(picksFut));ls.setItem('ova_nba_registro_v1',JSON.stringify(picksNba));
+ const ahora=Date.UTC(2026,9,5,18,0,0),hoy=H.hoyLocal(new Date(ahora));
+ let s=H.resumen(ls,ahora);
+ ok('MLB: récord 1-1, unidades = +0.909 −1.028',s.rec.mlb.g===1&&s.rec.mlb.p===1&&Math.abs(s.rec.mlb.u-(100/110-1.028))<1e-9,JSON.stringify(s.rec.mlb));
+ ok('Fútbol: +200 ganado = +2.00u',s.rec.fut.g===1&&Math.abs(s.rec.fut.u-2)<1e-9);
+ ok('NBA: push cuenta 0u',s.rec.nba.e===1&&s.rec.nba.u===0);
+ ok('3 picks abiertos (1 por app… + MLB)',s.pend.length===3,s.pend.length);
+ const l2=fakeLS();l2.setItem('ventaja_picks_v1',JSON.stringify([{id:'x',f:'2026-10-06',juego:'LAD @ SF',m:'LAD gana',p:60,am:'-150',plat:'book',res:null},{id:'y',f:'2026-10-06',juego:'LAD @ SF',m:'Under 8 carreras',p:55,am:'-110',plat:'book',res:null}]));
+ s=H.resumen(l2,ahora);ok('dos picks del mismo juego se marcan como una sola apuesta',s.pend.length===2&&s.pend.every(x=>x.corr));
+ const l3=fakeLS();
+ l3.setItem('ova_hoy_mlb',JSON.stringify({t:ahora-3600e3,fecha:hoy,items:[{n:'NYY (NYY @ BOS)',p:71.2,sub:'ventaja 1.9'},{n:'LAD (LAD @ SF)',p:64,sub:''}]}));
+ l3.setItem('ova_hoy_fut',JSON.stringify({t:ahora-3600e3,fecha:hoy,items:[{n:'PSG vs Nice',p:78.5,sub:'Ligue 1'}]}));
+ l3.setItem('ova_hoy_nba',JSON.stringify({t:ahora-30*3600e3,fecha:'2020-01-01',items:[{n:'Celtics @ Knicks',p:99,sub:''}]}));
+ s=H.resumen(l3,ahora);
+ ok('favoritos de hoy ordenados por probabilidad entre apps',s.tops.length===3&&s.tops[0].app==='fut'&&s.tops[1].app==='mlb',JSON.stringify(s.tops.map(t=>t.app)));
+ ok('lo viejo (de otro día) no se mezcla como si fuera de hoy',!s.tops.some(t=>t.app==='nba')&&s.apps.nba.vigente===false);
+ const l4=fakeLS();l4.setItem('ventaja_picks_v1','basura');s=H.resumen(l4,ahora);ok('registro corrupto no tumba el resumen',s.pend.length===0);
+}
+
+/* ---------------- 9. service worker ---------------- */
+const t_sw=async()=>{
+ sec('Service worker (abre sin internet, siempre prefiere lo nuevo)');
+ const L={},store=new Map(),mk=(url,body,okv=true)=>({url,ok:okv,body,clone(){return mk(url,body,okv);}});
+ let red=true;
+ const ctx={self:{location:{origin:'https://x.github.io'},addEventListener:(t,f)=>{L[t]=f;},skipWaiting:()=>Promise.resolve(),clients:{claim:()=>Promise.resolve()}},
+  URL,Promise,setTimeout,clearTimeout,
+  caches:{open:()=>Promise.resolve({add:u=>{store.set(u,mk(u,'viejo'));return Promise.resolve();},put:(r,c)=>{store.set(r.url.replace('https://x.github.io/',''),c);return Promise.resolve();}}),
+          match:(r)=>{const k=r.url.replace('https://x.github.io/','').split('?')[0];return Promise.resolve(store.get(k));},keys:()=>Promise.resolve([]),delete:()=>Promise.resolve()},
+  fetch:r=>red?Promise.resolve(mk(r.url,'nuevo')):Promise.reject(new Error('sin red'))};
+ vm.createContext(ctx);vm.runInContext(rd('sw.js'),ctx);
+ const pedir=url=>{let p=null;const ev={request:{method:'GET',url},respondWith:x=>{p=x;}};L.fetch(ev);return p;};
+ red=true;let p=pedir('https://x.github.io/index.html');ok('con internet entrega lo NUEVO',(await p).body==='nuevo');
+ red=false;p=pedir('https://x.github.io/index.html?t=123');ok('sin internet entrega la copia guardada (aunque cambie el ?t=)',(await p).body==='nuevo');
+ p=pedir('https://x.github.io/futbol.html');await Promise.race([p.catch(()=>{}),new Promise(r=>setTimeout(r,200))]);ok('sin internet y sin copia falla limpio (no se cuelga)',true);
+ ok('no toca APIs de otros sitios',pedir('https://statsapi.mlb.com/api/v1/schedule')===null);
+ ok('no toca POST',(()=>{let t=false;L.fetch({request:{method:'POST',url:'https://x.github.io/a'},respondWith:()=>{t=true;}});return !t;})());
+};
+
+/* ---------------- 10. hub (se ejecuta su script real con un DOM falso) ---------------- */
+sec('Hub: pantalla Hoy y Respaldo');
+{
+ const h=rd('hub.html');ok('ya no resetea tu tema cada vez que entras',/if\(!localStorage\.getItem\('ova_skin'\)\)/.test(h));
+ const ls=fakeLS();ls.setItem('ventaja_picks_v1',JSON.stringify(picksMlb));ls.setItem('ova_futbol_registro_v1',JSON.stringify(picksFut));ls.setItem('ova_skin','neon');
+ const ahora=Date.now(),hoy=H.hoyLocal(new Date(ahora));
+ ls.setItem('ova_hoy_fut',JSON.stringify({t:ahora-60e3,fecha:hoy,items:[{n:'PSG vs <Nice>',p:78.5,sub:'Ligue 1'}]}));
+ const els={};const el=id=>els[id]||(els[id]={id,innerHTML:'',textContent:'',value:'',onclick:null,classList:{add(){},remove(){}},parentNode:null});
+ const sb={localStorage:ls,document:{getElementById:el,documentElement:{setAttribute(){}}},navigator:{},console,Date,JSON,setTimeout:()=>{},Promise};sb.window=sb;sb.OVAHoy=H;sb.OVARespaldo=R;R._setStore(fakeStore());
+ vm.createContext(sb);
+ const scripts=scriptsInline('hub.html'),js=scripts[scripts.length-1];
+ let err=null;try{vm.runInContext(js,sb);}catch(e){err=e;}
+ ok('el script del hub corre sin errores',err===null,err&&err.message);
+ const body=el('hoyBody').innerHTML;
+ ok('muestra el récord por app',/rec/.test(body)&&/MLB/.test(body));
+ ok('muestra picks abiertos con su cuota',/LAD gana/.test(body)&&/-150/.test(body));
+ ok('muestra favoritos y escapa el HTML (no inyecta <Nice>)',/78\.5%/.test(body)&&!/<Nice>/.test(body)&&/&lt;Nice&gt;/.test(body));
+ ok('avisa qué apps no han corrido "Al gane"',/aún no has corrido/.test(body));
+ ok('el botón de restaurar está conectado',typeof el('rBtnRest').onclick==='function');
+ el('rTxt').value=JSON.stringify({app:'ova-nba',registro:picksNba,combinada:[]});el('rBtnRest').onclick();
+ ok('restaurar desde texto funciona y avisa',/Restaurado: 2/.test(el('rMsg').textContent),el('rMsg').textContent);
+ el('rTxt').value='basura';el('rBtnRest').onclick();ok('texto malo no rompe el hub',/No se pudo/.test(el('rMsg').textContent));
+}
+/* ---------------- 11. ganchos conectados ---------------- */
+sec('Ganchos y archivos conectados');
+ok('index.html publica favoritos al hub',/OVAHoy\.publicar\('mlb'/.test(rd('index.html')));
+ok('futbol.html publica favoritos al hub',/OVAHoy\.publicar\('fut'/.test(rd('futbol.html')));
+ok('nba.html publica favoritos al hub',/OVAHoy\.publicar\('nba'/.test(rd('nba.html')));
+APPS.forEach(f=>ok(f+' carga ovaextra.js',/<script src="ovaextra\.js"><\/script>/.test(rd(f))));
+ok('el service worker lista todos los archivos que cargan las apps',(()=>{const sw=rd('sw.js');return ['ovaextra.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','hub.html','index.html','futbol.html','nba.html'].every(f=>sw.indexOf("'"+f+"'")>=0);})());
+ok('manifest.json es JSON válido',(()=>{try{JSON.parse(rd('manifest.json'));return true;}catch(e){return false;}})());
+
+(async()=>{ await t_envivo(); await t_respaldo(); await t_sw(); })().then(()=>{
+ console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
+ process.exit(fallas?1:0);
+}).catch(e=>{console.log('ERROR en pruebas',e);process.exit(1);});

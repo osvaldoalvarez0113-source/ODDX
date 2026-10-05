@@ -4072,6 +4072,7 @@ function pintarAlGane(){
     return;
   }
   lista.sort(function(a,b){ return b.p-a.p; });
+  try{ if(window.OVAHoy){ var _fe=($('fecha')&&$('fecha').value)||''; OVAHoy.publicar('mlb',lista.slice(0,10).map(function(z){ return {n:z.gana+' ('+z.juego+')',p:z.p,sub:'ventaja '+z.vc.toFixed(2)+' carr · '+_fe}; })); } }catch(e){}
   for(var kk in COMBI){
     var fresco=null;
     lista.forEach(function(z){ if(String(z.pk)===String(kk)) fresco=z; });
@@ -5349,5 +5350,6 @@ try{
 })();
 </script>
 <script src="historial.js"></script>
+<script src="ovaextra.js"></script>
 </body>
 </html>

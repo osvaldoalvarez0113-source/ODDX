@@ -2060,6 +2060,7 @@ function pintarAlGane(partidos){
     });
   });
   filas.sort(function(a,b){ return b.pct-a.pct; });
+  try{ if(window.OVAHoy){ var _lg=(LIGAS[LIGA_ACTUAL]&&LIGAS[LIGA_ACTUAL].nombre)||''; OVAHoy.publicar('fut',filas.slice(0,10).map(function(z){ return {n:z.nombre+' vs '+z.rival,p:z.pct*100,sub:z.cuando+(_lg?' · '+_lg:'')}; })); } }catch(e){}
   if(!filas.length){ cont.innerHTML = '<div class="estado bad">No hay partidos para calcular el ranking.</div>'; return; }
   cont.innerHTML = filas.map(function(f,i){
     return '<div class="fila-rank"><div class="pos">'+(i+1)+'</div><img src="'+f.escudo+'">'+
@@ -3390,5 +3391,6 @@ h3{display:flex;align-items:center;gap:6px}
 <script src="mejoras.js"></script>
 <script src="selecciones.js"></script>
 
+<script src="ovaextra.js"></script>
 </body>
 </html>

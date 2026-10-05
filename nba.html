@@ -513,6 +513,7 @@ function pintarAlGane(){
     const pr=prediccion(g), favH=pr.pH>=0.5, f=T(favH?g.h:g.a), r=T(favH?g.a:g.h);
     return {f:f,r:r,loc:favH,p:Math.max(pr.pH,1-pr.pH),m:Math.abs(pr.pm),ts:g.ts,pre:g.pre};
   }).sort((a,b)=>b.p-a.p);
+  try{ if(window.OVAHoy) OVAHoy.publicar('nba',filas.slice(0,10).map(x=>({n:x.f.n+(x.loc?' vs ':' @ ')+x.r.n,p:x.p*100,sub:etiquetaDia(x.ts)+' · '+horaTxt(x.ts)+(x.pre?' · pretemporada':'')}))); }catch(e){}
   cont.innerHTML=filas.map((x,i)=>`<div class="fila-rank"><div class="pos">${i+1}</div><img src="${esc(x.f.logo)}" alt="" onerror="this.style.display='none'"><div class="nom">${esc(x.f.n)} ${x.loc?'vs':'@'} ${esc(x.r.n)}<small>${esc(etiquetaDia(x.ts))} · ${horaTxt(x.ts)} · margen esperado ${x.m.toFixed(1)}${x.pre?' · pretemporada':''}</small></div><div class="pct">${pct1(x.p)}</div></div>`).join('');
 }
 function pintarJuegos(){
@@ -1067,5 +1068,6 @@ iniciar();
  };
 })();
 </script>
+<script src="ovaextra.js"></script>
 </body>
 </html>
