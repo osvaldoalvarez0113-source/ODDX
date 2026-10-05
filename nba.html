@@ -164,7 +164,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 <header>
  <div class="top">
   <a class="ovaHome" href="hub.html" aria-label="Volver al inicio">‹</a>
-  <h1>🏀 NBA <span class="ver">v3</span></h1>
+  <h1>🏀 NBA <span class="ver">v3.1</span></h1>
   <button class="btnChico" id="btnTema" aria-label="Cambiar tema">🎨</button>
  </div>
 </header>
@@ -333,7 +333,7 @@ if(typeof module!=='undefined') module.exports={PDEF,seasonOf,dayKey,Phi,correr,
 
 <!-- ===================== APP ===================== -->
 <script>
-const VERSION='v3';
+const VERSION='v3.1';
 const ESPN='https://site.api.espn.com/apis/site/v2/sports/basketball/nba/';
 const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
@@ -529,7 +529,7 @@ function pintarJuegos(){
     if(k!==prev){ html+=`<div class="diaHead">${esc(etiquetaDia(g.ts))}</div>`; prev=k; }
     const H=T(g.h),A=T(g.a);
     const hora=g.live?`<div class="hora" style="color:var(--bad)">🔴 ${g.as}–${g.hs}<br><small style="font-size:9px">${esc(g.detail)}</small></div>`:`<div class="hora">${horaTxt(g.ts)}</div>`;
-    html+=`<div class="game" data-i="${i}" data-h="${g.h}" data-a="${g.a}"><div class="head"><div class="crestpair">
+    html+=`<div class="game" data-i="${i}" data-id="${g.id}" data-h="${g.h}" data-a="${g.a}"><div class="head"><div class="crestpair">
       <div class="eq"><img src="${esc(A.logo)}" alt="" onerror="this.style.display='none'"><span class="n">${esc(A.n)}</span></div>
       <div class="eq"><img src="${esc(H.logo)}" alt="" onerror="this.style.display='none'"><span class="n">${esc(H.n)}</span><span class="tag">LOCAL</span></div>
       </div>${hora}<div class="chev">▾</div></div><div class="body"></div></div>`;
@@ -912,11 +912,14 @@ iniciar();
  async function actualizar(){
   try{
    if(document.hidden||!PEND.length) return;
-   if(!PEND.some(g=>g.live||Math.abs(g.ts-Date.now())<5*3600e3)) return;
-   const ev=parseEventos(await getJSON(ESPN+'scoreboard?dates='+ymd(new Date())+'&limit=300'));
-   ev.forEach(e=>{
+   const ahora=Date.now(), cerca=PEND.filter(g=>g.live||Math.abs(g.ts-ahora)<8*3600e3);
+   if(!cerca.length) return;
+   // se pide cada día de calendario de ESPN que tenga juegos cerca de ahora (cubre los que cruzan la medianoche)
+   const dias=new Set([ymd(new Date())]); cerca.forEach(g=>dias.add(ymdUTC(g.ts)));
+   const res=await Promise.all([...dias].map(d=>getJSON(ESPN+'scoreboard?dates='+d+'&limit=300').then(parseEventos).catch(()=>[])));
+   [].concat(...res).forEach(e=>{
     const g=PEND.find(x=>x.id===e.id); if(g){ g.live=e.live; g.hs=e.hs; g.as=e.as; g.detail=e.detail; g.done=e.done; }
-    const el=document.querySelector('#juegos .game[data-h="'+e.h+'"][data-a="'+e.a+'"]'); if(!el) return;
+    const el=document.querySelector('#juegos .game[data-id="'+e.id+'"]'); if(!el) return;
     const b=el.querySelector('.hora'); if(!b) return;
     if(e.live){ b.style.color='var(--bad)'; b.innerHTML='🔴 '+e.as+'–'+e.hs+'<br><small style="font-size:9px">'+esc(e.detail)+'</small>'; }
     else if(e.done){ b.style.color=''; b.innerHTML='Final '+e.as+'–'+e.hs; }
