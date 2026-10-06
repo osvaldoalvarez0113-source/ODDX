@@ -116,7 +116,7 @@ function mostrarSplash(){
     }, 1650);
   }catch(e){}
 }
-if(document.body) mostrarSplash(); else document.addEventListener("DOMContentLoaded", mostrarSplash);
+/* v-sin-splash: la animacion de OVA al abrir una app se quitó a pedido. (mostrarSplash queda sin usar) */
 
 
 /* ================= 2. cuatro temas nuevos para 🎨 ================= */

@@ -99,6 +99,8 @@ html[data-ui="cristal"] .bar span{animation:uiBar .9s cubic-bezier(.2,.8,.2,1) b
 html[data-ui="cristal"] h3{border-bottom-color:rgba(255,255,255,.12)}
 html[data-ui="cristal"] input[type=text],html[data-ui="cristal"] input[type=number],html[data-ui="cristal"] select{border-radius:16px;background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16)}
 html[data-ui="cristal"] button.ghost{border-radius:16px;background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16)}
+html[data-ui] .fila{opacity:1;transform:none}
+html[data-ui] .fila.gris{opacity:.5}
 html[data-ui="cristal"] .fila,html[data-ui="cristal"] .fila-rank{border-radius:22px;border:1px solid rgba(255,255,255,.12)!important;background:rgba(255,255,255,.055)!important;margin:9px 0;padding:12px 14px;animation:uiRise .5s cubic-bezier(.2,.8,.2,1) backwards}
 html[data-ui="cristal"] .fila .pct,html[data-ui="cristal"] .fila-rank .pct{font-size:19px}
 html[data-ui="cristal"] .vacio{border-radius:30px;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14)}
@@ -140,7 +142,7 @@ html[data-ui="broadcast"] .game .chev{margin-top:8px}
 html[data-ui="broadcast"] .game .head .crestpair .eq{font:900 italic 20px/1.05 "Avenir Next Condensed","Barlow Condensed","Arial Narrow",Inter,system-ui,sans-serif;text-transform:uppercase}
 html[data-ui="broadcast"] .game .head .crestpair .eq img{width:34px;height:34px}
 html[data-ui="broadcast"] .game .head .hora{border:0;border-radius:0;background:var(--hot);color:var(--hotTx);font-weight:900;transform:skewX(-12deg)}
-html[data-ui="broadcast"] .tabs{background:transparent!important;gap:4px!important;padding:2px 2px 10px!important;border-bottom:3px solid var(--line2)}
+html[data-ui="broadcast"] .tabs{background:var(--bg1)!important;gap:4px!important;padding:2px 2px 10px!important;border-bottom:3px solid var(--line2)}
 html[data-ui="broadcast"] .tb{border-radius:0!important;transform:skewX(-14deg);background:var(--bg2)!important;color:var(--mut)!important;font-weight:900!important;text-transform:uppercase;letter-spacing:.04em;padding:9px 15px!important}
 html[data-ui="broadcast"] .tb.on{background:var(--hot)!important;color:var(--hotTx)!important;box-shadow:0 8px 0 -4px var(--hot)}
 html[data-ui="broadcast"] .tab,html[data-ui="broadcast"] .pane.on{animation:uiFade .35s ease}
@@ -166,6 +168,15 @@ html[data-ui="broadcast"] .fila .pct,html[data-ui="broadcast"] .fila-rank .pct{f
 html[data-ui="broadcast"] .vacio{border-radius:0;border:0;border-top:5px solid var(--hot)}
 html[data-ui="broadcast"] .ajustes{border-radius:0;border-left:5px solid var(--hot)}
 
+/* ---------- seccion dentro de Apariencia ---------- */
+.uiSec{margin:12px 0 6px}
+.uiSec .uiTit{font:700 12px system-ui,-apple-system,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:0 2px 8px}
+.uiSec .uiRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.uiSec .ovaSk .pv{height:50px}
+.uiSec .ovaSk .tx{padding:7px 6px 8px;text-align:center}
+.uiSec .ovaSk .tx b{font-size:12.5px}
+.uiSec .uiTit.col{margin-top:16px}
+.uiSec .uiTile.on{border-color:var(--hot,#FBBF24)!important;box-shadow:0 0 0 3px rgba(255,255,255,.1)}
 /* ---------- hoja para elegir ---------- */
 #uiSheet{position:fixed;inset:0;z-index:100001;display:none;align-items:flex-end;background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
 #uiSheet.on{display:flex}
@@ -234,8 +245,27 @@ function aplicar(id,opts){
   opts=opts||{}; if(!BY[id]) id='clasico'; ST.id=id; inyectar();
   if(opts.guardar!==false){ try{ root.localStorage.setItem(KEY,id); }catch(e){} }
   if(id==='clasico') html.removeAttribute('data-ui'); else html.setAttribute('data-ui',id);
-  if(!opts.inicial){ iconos(); colorear(); }
+  if(!opts.inicial){ iconos(); colorear(); marcar(); }
   return id;
+}
+function marcar(){ [].forEach.call(doc.querySelectorAll('.uiSec .uiTile'),function(b){ var on=b.getAttribute('data-ui-id')===ST.id; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false'); }); }
+function seccion(){
+  var s=doc.createElement('div'); s.className='uiSec'; var t='';
+  UIS.forEach(function(u){ t+='<button type="button" class="ovaSk uiTile" data-ui-id="'+u.id+'" aria-pressed="false"><span class="pv" style="background:'+u.sw+'"></span><span class="tx"><b>'+u.n+'</b></span></button>'; });
+  s.innerHTML='<div class="uiTit">Diseño de adentro</div><div class="uiRow">'+t+'</div><div class="uiTit col">Tema de color</div>';
+  s.addEventListener('click',function(ev){
+    var el=ev.target; while(el&&el!==s){ if(el.getAttribute&&el.getAttribute('data-ui-id')){ aplicar(el.getAttribute('data-ui-id'),{}); marcar(); return; } el=el.parentNode; }
+  });
+  return s;
+}
+function montar(){
+  /* MLB: Ajustes → Apariencia.  Fútbol y NBA: la hoja del botón 🎨.  Se mete debajo del texto de arriba, antes de los temas de color. */
+  var hosts=[].slice.call(doc.querySelectorAll('#pane-ajustes .ovaApar, .ovaSheet .card'));
+  hosts.forEach(function(h){
+    if(h.querySelector('.uiSec')) return;
+    var p=h.querySelector('p'); h.insertBefore(seccion(),p?p.nextSibling:h.firstChild);
+  });
+  marcar();
 }
 function abrirHoja(){
   var h=doc.getElementById('uiSheet');
@@ -271,8 +301,8 @@ function arrancar(){
   function listo(){
     try{
       [].forEach.call(doc.querySelectorAll('.topbar .brand, header h1'),pulsacion);
-      iconos(); colorear();
-      [250,800,1800,3500].forEach(function(ms){ root.setTimeout(function(){ iconos(); colorear(); },ms); });
+      iconos(); colorear(); montar();
+      [250,800,1800,3500,6000].forEach(function(ms){ root.setTimeout(function(){ iconos(); colorear(); montar(); },ms); });
       var slate=doc.getElementById('slate');
       if(slate&&root.MutationObserver) new root.MutationObserver(function(){ colorear(); }).observe(slate,{childList:true});
       var nav=doc.querySelector('.navbar, .tabbar');
@@ -282,7 +312,7 @@ function arrancar(){
   if(doc.readyState==='loading') doc.addEventListener('DOMContentLoaded',listo); else listo();
 }
 
-var API={UIS:UIS,css:CSS,aplicar:aplicar,leer:leer,abrirHoja:abrirHoja,actual:function(){ return ST.id; },_icons:IC,_clave:claveIcono};
+var API={UIS:UIS,css:CSS,aplicar:aplicar,leer:leer,abrirHoja:abrirHoja,actual:function(){ return ST.id; },_icons:IC,_clave:claveIcono,_seccion:seccion};
 root.OVAInterior=API;
 if(typeof module!=='undefined'&&module.exports){ module.exports=API; }
 else if(doc&&html){ try{ arrancar(); }catch(e){} }
