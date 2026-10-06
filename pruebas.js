@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html'];
-const JS=['ovaextra.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','sw.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ovaextra.js','hubestilos.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','sw.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -60,7 +60,7 @@ else{
  revisar('futbol.html',['ovaextra.js','obsidiana.js','mejoras.js','selecciones.js']);
  revisar('index.html',['ovaextra.js','obsidiana.js','railway.js','historial.js']);
  revisar('nba.html',['ovaextra.js']);
- revisar('hub.html',['ovaextra.js']);
+ revisar('hub.html',['ovaextra.js','hubestilos.js']);
  revisar('panel.html',['ovaextra.js']);
  const sw=analizar(rd('sw.js'));const mal=sw.refs.filter(([n,l,sc])=>!(sc.has(n)||sw.top.has(n)||BROWSER.has(n))).map(r=>r[0]);ok('sw.js sin nombres inexistentes',mal.length===0,mal.join(','));
 }
@@ -261,13 +261,62 @@ sec('Hub limpio (solo las 3 tarjetas) y Panel aparte');
  el('rTxt').value='basura';el('rBtnRest').onclick();ok('texto malo no rompe el hub',/No se pudo/.test(el('rMsg').textContent));
 }
 /* ---------------- 11. ganchos conectados ---------------- */
+sec('Presentaciones del hub (6 estilos)');
+{
+ const hub=rd('hub.html'),i1=hub.indexOf('hubestilos.js'),i2=hub.indexOf('<style>');
+ ok('el hub carga hubestilos.js en la cabecera (antes que sus estilos, así no parpadea)',i1>0&&i1<i2);
+ /* DOM falso mínimo para cargar el módulo */
+ const el=()=>{const a={};return {id:'',className:'',innerHTML:'',textContent:'',style:{setProperty(){},cssText:''},children:[],parentNode:null,firstChild:null,
+  classList:{_s:new Set(),add(c){this._s.add(c);},remove(c){this._s.delete(c);},toggle(c,f){f?this._s.add(c):this._s.delete(c);},contains(c){return this._s.has(c);}},
+  setAttribute(k,v){a[k]=v;},getAttribute(k){return k in a?a[k]:null;},removeAttribute(k){delete a[k];},addEventListener(){},removeEventListener(){},
+  appendChild(c){c.parentNode=this;this.children.push(c);if(!this.firstChild)this.firstChild=c;return c;},insertBefore(c){c.parentNode=this;this.children.unshift(c);this.firstChild=c;return c;},
+  removeChild(c){this.children=this.children.filter(x=>x!==c);c.parentNode=null;return c;},querySelectorAll(){return [];},getContext:()=>null};};
+ const root=el(),body=el(),head=el(),byId={};
+ const D={documentElement:root,body,head,readyState:'complete',hidden:false,
+  createElement:()=>el(),getElementById:id=>{const f=n=>{if(n.id===id)return n;for(const c of n.children){const r=f(c);if(r)return r;}return null;};return f(body)||f(head);},
+  querySelectorAll:()=>[],addEventListener(){}};
+ const store={},mk=()=>({getItem:k=>(k in store?store[k]:null),setItem:(k,v)=>{store[k]=String(v);}});
+ let recargas=0;
+ globalThis.addEventListener=()=>{};globalThis.removeEventListener=()=>{};
+ globalThis.document=D;globalThis.localStorage=mk();globalThis.sessionStorage=mk();globalThis.location={search:'',reload(){recargas++;}};
+ globalThis.setTimeout=globalThis.setTimeout;
+ delete require.cache[require.resolve(D0())];
+ function D0(){return path.join(__dirname,'hubestilos.js');}
+ const HB=require(D0());
+ ['document','localStorage','sessionStorage','location'].forEach(k=>{});
+ ok('hay 6 estilos con id único',HB.ESTILOS.length===6&&new Set(HB.ESTILOS.map(e=>e.id)).size===6);
+ ok('el clásico es "oro" y viene primero',HB.ESTILOS[0].id==='oro');
+ const css=HB.css;
+ let nivel=0,okb=true;for(const c of css){if(c==='{')nivel++;if(c==='}'){nivel--;if(nivel<0)okb=false;}}
+ ok('el CSS tiene llaves balanceadas',okb&&nivel===0);
+ const kf=new Set([...css.matchAll(/@keyframes\s+([\w-]+)/g)].map(m=>m[1]));['riseIn','cardIn','draw','wordIn'].forEach(k=>kf.add(k));   /* estos 4 ya viven en hub.html */
+ const falta=new Set(),KW=new Set(['infinite','alternate','alternate-reverse','forwards','both','none','linear','ease','ease-in','ease-out','ease-in-out','paused','running','backwards','reverse','normal']);
+ [...css.matchAll(/animation:\s*([^;}]+)/g)].forEach(m=>{m[1].replace(/[\w-]+\([^)]*\)/g,'').split(/[\s,]+/).forEach(tk=>{if(!tk||KW.has(tk)||/^-?[\d.]+m?s$/.test(tk)||/^\d+$/.test(tk))return;if(!kf.has(tk))falta.add(tk);});});
+ ok('todas las animaciones usadas están definidas',falta.size===0,[...falta].join(','));
+ HB.ESTILOS.filter(e=>e.id!=='oro').forEach(e=>ok('estilo '+e.id+': tiene su CSS, fondo e intro',css.indexOf('html[data-hub="'+e.id+'"]')>=0&&css.indexOf('hi-'+e.id)>=0));
+ const sueltos=css.split('\n').filter(l=>l&&!/^(@|html|#hub|\.hub|\.brandbar|\.hb-|\}|\/\*)/.test(l.replace(/^'/,'')));
+ ok('ningún selector suelto puede afectar a las apps ni al clásico',sueltos.length===0,sueltos.slice(0,2).join(' | '));
+ ok('el clásico no recibe ninguna regla (solo se oculta lo nuevo con :not([data-hub="oro"]))',!/html\[data-hub="oro"\]\s*[^:{]/.test(css.replace(/:not\(\[data-hub="oro"\]\)/g,'')));
+ ok('respeta "reducir movimiento"',/prefers-reduced-motion:reduce/.test(css));
+ HB.aplicar('aurora',{intro:true});
+ ok('aplicar Aurora: marca el estilo, lo guarda y crea fondo + intro',root.getAttribute('data-hub')==='aurora'&&store.ova_hub==='aurora'&&!!D.getElementById('hubBg')&&!!D.getElementById('hubIntro'));
+ ok('la intro tiene su seguro (nunca deja las tarjetas congeladas)',/ms\+3500/.test(rd('hubestilos.js')));
+ HB.aplicar('neon',{intro:false});
+ ok('cambiar de estilo quita el fondo anterior (sin acumular)',D.body.children.filter(c=>c.id==='hubBg').length===1&&root.getAttribute('data-hub')==='neon');
+ HB.aplicar('invalido');
+ ok('un estilo inválido cae al clásico',root.getAttribute('data-hub')===null);
+ ok('volver al clásico recarga para que traiga su animación original',recargas>=1);
+ globalThis.localStorage.setItem('ova_hub','<script>');ok('guardado corrupto se lee como clásico',HB.leer()==='oro');
+ delete globalThis.addEventListener;delete globalThis.removeEventListener;
+ delete globalThis.document;delete globalThis.localStorage;delete globalThis.sessionStorage;delete globalThis.location;
+}
 sec('Ganchos y archivos conectados');
 ok('el panel carga ovaextra.js',/ovaextra\.js/.test(rd('panel.html')));
 ok('index.html publica favoritos al hub',/OVAHoy\.publicar\('mlb'/.test(rd('index.html')));
 ok('futbol.html publica favoritos al hub',/OVAHoy\.publicar\('fut'/.test(rd('futbol.html')));
 ok('nba.html publica favoritos al hub',/OVAHoy\.publicar\('nba'/.test(rd('nba.html')));
 APPS.forEach(f=>ok(f+' carga ovaextra.js',/<script src="ovaextra\.js"><\/script>/.test(rd(f))));
-ok('el service worker lista todos los archivos que cargan las apps',(()=>{const sw=rd('sw.js');return ['ovaextra.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','hub.html','index.html','futbol.html','nba.html'].every(f=>sw.indexOf("'"+f+"'")>=0);})());
+ok('el service worker lista todos los archivos que cargan las apps',(()=>{const sw=rd('sw.js');return ['ovaextra.js','hubestilos.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','hub.html','index.html','futbol.html','nba.html'].every(f=>sw.indexOf("'"+f+"'")>=0);})());
 ok('manifest.json es JSON válido',(()=>{try{JSON.parse(rd('manifest.json'));return true;}catch(e){return false;}})());
 
 (async()=>{ await t_envivo(); await t_respaldo(); await t_sw(); })().then(()=>{
