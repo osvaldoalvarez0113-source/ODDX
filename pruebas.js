@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html'];
-const JS=['ovaextra.js','hubestilos.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','sw.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ovaextra.js','hubestilos.js','interior.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','sw.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -57,9 +57,9 @@ else{
   res.forEach(([l,r])=>r.refs.forEach(([n,line,sc])=>{if(sc.has(n)||tops.has(n)||BROWSER.has(n)||ids.has(n)||FALSOS.has(n))return;if(!mal.has(n))mal.set(n,l+':'+line);}));
   ok(app+' sin nombres inexistentes',mal.size===0,[...mal].map(([n,w])=>n+' ('+w+')').join(', '));
  }
- revisar('futbol.html',['ovaextra.js','obsidiana.js','mejoras.js','selecciones.js']);
- revisar('index.html',['ovaextra.js','obsidiana.js','railway.js','historial.js']);
- revisar('nba.html',['ovaextra.js']);
+ revisar('futbol.html',['ovaextra.js','interior.js','obsidiana.js','mejoras.js','selecciones.js']);
+ revisar('index.html',['ovaextra.js','interior.js','obsidiana.js','railway.js','historial.js']);
+ revisar('nba.html',['ovaextra.js','interior.js']);
  revisar('hub.html',['ovaextra.js','hubestilos.js']);
  revisar('panel.html',['ovaextra.js']);
  const sw=analizar(rd('sw.js'));const mal=sw.refs.filter(([n,l,sc])=>!(sc.has(n)||sw.top.has(n)||BROWSER.has(n))).map(r=>r[0]);ok('sw.js sin nombres inexistentes',mal.length===0,mal.join(','));
@@ -302,6 +302,25 @@ sec('Presentaciones del hub (6 diseños)');
  HB.aplicar('paneles',{inicial:true});ok('el modo inicial solo marca el diseño (para no parpadear)',root.getAttribute('data-hub')==='paneles');
  globalThis.localStorage.setItem('ova_hub','<script>');ok('guardado corrupto se lee como clásico',HB.leer()==='oro');
  delete globalThis.addEventListener;delete globalThis.removeEventListener;delete globalThis.document;delete globalThis.localStorage;delete globalThis.sessionStorage;delete globalThis.location;
+}
+sec('Diseño interior de las apps (Clásico · Cristal · Broadcast)');
+{
+ const UI=require(path.join(__dirname,'interior.js'));
+ ok('3 diseños: clásico, cristal y broadcast',JSON.stringify(UI.UIS.map(u=>u.id))===JSON.stringify(['clasico','cristal','broadcast']));
+ const css=UI.css;let nv=0,okb=true;for(const c of css){if(c==='{')nv++;if(c==='}'){nv--;if(nv<0)okb=false;}}
+ ok('el CSS tiene llaves balanceadas',okb&&nv===0);
+ const kf=new Set([...css.matchAll(/@keyframes\s+([\w-]+)/g)].map(m=>m[1]));
+ const falta=new Set(),KW=new Set(['infinite','alternate','alternate-reverse','forwards','both','none','linear','ease','ease-in','ease-out','ease-in-out','paused','running','backwards','reverse','normal']);
+ [...css.matchAll(/animation:\s*([^;}]+)/g)].forEach(m=>{m[1].replace(/[\w-]+\([^)]*\)/g,'').split(/[\s,]+/).forEach(tk=>{if(!tk||KW.has(tk)||/^-?[\d.]+m?s$/.test(tk)||/^\d+$/.test(tk))return;if(!kf.has(tk)) falta.add(tk);});});
+ ok('todas las animaciones usadas están definidas',falta.size===0,[...falta].join(','));
+ const sueltos=css.split('\n').filter(l=>l&&!/^(@|html|#uiSheet|\.topbar|\}|\/\*)/.test(l));
+ ok('ninguna regla suelta puede afectar al Clásico',sueltos.length===0,sueltos.slice(0,2).join(' | '));
+ ok('toda regla de diseño cuelga de html[data-ui]',css.split('\n').filter(l=>/^html/.test(l)).every(l=>l.indexOf('data-ui')>=0));
+ ok('el diseño Clásico no recibe reglas (solo existen cristal y broadcast)',!/data-ui="clasico"/.test(css));
+ ['juegos','al gane','combo','combina','mis picks','registro','ajustes','ratings','backtest'].forEach(l=>ok('icono nuevo para «'+l+'»',!!UI._icons[UI._clave(l)]));
+ ok('respeta "reducir movimiento"',/prefers-reduced-motion:reduce/.test(css));
+ ['index.html','futbol.html','nba.html'].forEach(f=>{const h=rd(f),i1=h.indexOf('interior.js'),i2=h.indexOf('<style>');ok(f+' carga interior.js en la cabecera (sin parpadeo)',i1>0&&i1<i2);});
+ ok('el service worker guarda interior.js para abrir sin internet',/'interior\.js'/.test(rd('sw.js')));
 }
 sec('Ganchos y archivos conectados');
 ok('el panel carga ovaextra.js',/ovaextra\.js/.test(rd('panel.html')));
