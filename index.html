@@ -1353,6 +1353,11 @@ var PLATA='book';
 var LIMPIAR=false;
 var KFEE=0.07;
 var MULT=6;
+/* Localia en carreras. Era 0.12 (~0.7 puntos de probabilidad), pero el backtest contra el mercado (ESPN/DraftKings) de la temporada 2025 completa,
+   2,067 juegos, mostro que el modelo daba 50.7% al local cuando el mercado daba 53.2% y el local gano 53.4%. Ajustado en una mitad y
+   probado en la otra salio +2.6 y +3.0 puntos extra (estable), y la muestra independiente de ago-oct 2026 dio la misma brecha (~2.8).
+   2.8 puntos / x6 = 0.47 carreras extra  ->  0.12 + 0.47 = 0.59. */
+var BONO_LOCAL=0.59;
 /* Cuantos innings de promedio de liga se le suman al abridor antes de creerle
    su ERA. Con 40, un novato de 10 innings entra con 20% de su propio numero y
    80% de la liga. Ese 40 es un SUPUESTO: nunca se midio, a diferencia del ×6.
@@ -1567,7 +1572,7 @@ function matriz(la,lh,fn){
 /* ---------- formula ---------- */
 function ventaja(d){
   var p1=(d.eraA-d.eraH)*0.65, p2=(d.rgH-d.rgA)*0.5, p3=(d.bpA-d.bpH)*0.25;
-  var delta=p1+p2+p3+0.12;
+  var delta=p1+p2+p3+BONO_LOCAL;
   var pct=50+delta*MULT;
   var capped=pct>78||pct<22;
   pct=Math.max(22,Math.min(78,pct));
@@ -3777,7 +3782,7 @@ function desglose(r,nomA,nomH){
     '<div><span>Abridores × 0.65</span><b>'+sg(r.p1)+'</b></div>'+
     '<div><span>Ofensivas × 0.50</span><b>'+sg(r.p2)+'</b></div>'+
     '<div><span>Bullpens × 0.25</span><b>'+sg(r.p3)+'</b></div>'+
-    '<div><span>Localía</span><b>+0.120</b></div>'+
+    '<div><span>Localía</span><b>+'+BONO_LOCAL.toFixed(3)+'</b></div>'+
     '<div class="tot"><span>Δ carreras a favor de '+(r.delta>=0?nomH:nomA)+'</span><b>'+Math.abs(r.delta).toFixed(3)+'</b></div>'+
     '<div><span>50% + (Δ × '+MULT+')</span><b>'+(50+r.delta*MULT).toFixed(1)+'%</b></div>'+
   '</div>';
