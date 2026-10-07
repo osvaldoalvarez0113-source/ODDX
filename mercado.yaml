@@ -1,0 +1,20 @@
+name: Backtest contra el mercado
+
+on:
+  workflow_dispatch:
+    inputs:
+      dias:
+        description: Dias hacia atras (45) o escribe S2025 para la temporada 2025 completa
+        default: "45"
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr el backtest
+        run: node correr_mercado.js "${{ github.event.inputs.dias }}"

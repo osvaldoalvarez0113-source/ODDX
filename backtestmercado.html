@@ -49,7 +49,7 @@
   <div class="caja">
     <h2>2. Medir contra el mercado</h2>
     <label for="dias">Cuántos días hacia atrás (hasta ayer)</label>
-    <select id="dias"><option value="21">21 días (rápido)</option><option value="45" selected>45 días</option><option value="75">75 días</option><option value="120">120 días (lento)</option></select>
+    <select id="dias"><option value="21">21 días (rápido)</option><option value="45" selected>45 días</option><option value="75">75 días</option><option value="120">120 días (lento)</option><option value="S2025">Temporada 2025 completa (~2,400 juegos, muy lento: mejor en GitHub Actions)</option></select>
     <button id="b2">Medir</button>
     <button id="b3" class="sec" style="display:none">Parar</button>
     <div class="barra"><i id="barra"></i></div>
@@ -266,7 +266,7 @@ function pintar(e,info){
     h+=tabla(['Peso en la regresión','Valor','± (2 err.)'],[
       ['Mercado (1.00 = lo toma entero)',r.b[1].toFixed(2),(2*r.se[1]).toFixed(2)],
       ['Modelo OVA (0 = no aporta)',r.b[2].toFixed(2),(2*r.se[2]).toFixed(2)]]);
-    var vr=(Math.abs(zm)<2)?'<span class="mal">El modelo NO aporta información que el mercado no tenga ya.</span> Su señal está dentro del precio.':(zm>2?'<span class="ok">El modelo aporta información extra sobre el mercado.</span> Esto es lo que habría que confirmar con más juegos.':'<span class="mal">El modelo empuja en la dirección contraria al mercado: sus ventajas son ruido.</span>');
+    var vr=(Math.abs(zm)<2)?((2*r.se[2]>=0.8)?'<span class="gris">No se puede saber con esta muestra.</span> El peso del modelo tiene un margen de ±'+(2*r.se[2]).toFixed(2)+', demasiado ancho para decir si aporta o no. Hacen falta muchos más juegos (la temporada completa).':'<span class="mal">El modelo NO aporta información que el mercado no tenga ya.</span> Su señal está dentro del precio.'):(zm>2?'<span class="ok">El modelo aporta información extra sobre el mercado.</span> Esto es lo que habría que confirmar con más juegos.':'<span class="mal">El modelo empuja en la dirección contraria al mercado: sus ventajas son ruido.</span>');
     h+='<div class="veredicto">'+vr+'</div>';
     t+='REGRESION mercado '+r.b[1].toFixed(3)+'±'+(2*r.se[1]).toFixed(3)+' modelo '+r.b[2].toFixed(3)+'±'+(2*r.se[2]).toFixed(3)+'\n';
   }
@@ -290,7 +290,9 @@ function pintar(e,info){
 /* ---------- el proceso completo ---------- */
 async function medir(dias){
   PARAR=false; CACHE={}; $('res').innerHTML=''; $('b4').style.display='none';
-  var hoy=new Date(), fin=sumaDias(hoy.toISOString().slice(0,10),-1), ini=sumaDias(fin,-(dias-1));
+  var hoy=new Date(), fin, ini;
+  if(dias==='S2025'){ ini='2025-03-27'; fin='2025-09-28'; }
+  else { dias=+dias; fin=sumaDias(hoy.toISOString().slice(0,10),-1); ini=sumaDias(fin,-(dias-1)); }
   progreso('Buscando juegos terminados de MLB…',0.02);
   var tm=await gj(MLB+'/teams?sportId=1'), abr={};
   (tm.teams||[]).forEach(function(x){ abr[x.id]=norm(x.abbreviation); });
@@ -391,7 +393,7 @@ if(typeof document!=='undefined' && document.getElementById('b1')){
   $('b1').onclick=probar;
   $('b2').onclick=async function(){
     $('b2').disabled=true; $('b3').style.display=''; $('b4').textContent='Copiar resultado para pegarlo en el chat';
-    try{ await medir(+$('dias').value); }catch(e){ $('res').innerHTML='<div class="veredicto"><span class="mal">No pude terminar:</span> '+esc(e.message)+'</div>'; progreso('',0); }
+    try{ await medir($('dias').value); }catch(e){ $('res').innerHTML='<div class="veredicto"><span class="mal">No pude terminar:</span> '+esc(e.message)+'</div>'; progreso('',0); }
     $('b2').disabled=false; $('b3').style.display='none';
   };
   $('b3').onclick=function(){ PARAR=true; };
