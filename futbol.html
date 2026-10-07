@@ -1577,7 +1577,7 @@ function acumConTiros(e){
   var x = buscarEnMapa(XLIVE.mapa, e.nombre);
   return {pj:e.pj, gf:e.gf, gc:e.gc, px:(x?x.px:0), xf:(x?x.xf:0), xc:(x?x.xc:0)};
 }
-function calcular(eL, eV, P){
+function calcularBase(eL, eV, P){
   P = P || PARAMS;
   var totalGF=0, totalPJ=0;
   EQUIPOS.forEach(function(e){ totalGF+=e.gf; totalPJ+=e.pj; });
@@ -1591,6 +1591,85 @@ function calcular(eL, eV, P){
   var d = probsModelo(eL1, eV1, lp, P, true, eL2, eV2);
   return {lamL:d.lamL, lamV:d.lamV, pL:d.pL, pD:d.pD, pV:d.pV,
     overLin:{1.5:d.o15, 2.5:d.o25, 3.5:d.o35}, pBtts:d.btts, marcadores:d.marcadores};
+}
+
+
+// ---------- v4: Dixon-Coles con peso por antigüedad ----------
+// Medido contra las cuotas de cierre de Pinnacle (5,256 partidos de PL, La Liga, Serie A, Bundesliga y Ligue 1, 2023-24 a 2025-26):
+//   pérdida 1X2: modelo anterior 1.0059 -> Dixon-Coles 0.9888 (mercado 0.9637) | Más/Menos 2.5: 0.6855 -> 0.6774 (mercado 0.6656)
+// El mercado sigue ganando (z=11): esto acerca el modelo, no lo pone por encima. Mezclar con la cuota no aportó nada (peso 0).
+// Cada equipo tiene ataque y defensa ajustados con TODOS sus partidos (esta temporada + la pasada), pesando más los recientes
+// (xi = caída por año), y un empujón hacia el promedio (Kp partidos de "creencia"). Los ascendidos arrancan con un prior más flojo.
+var DC_CFG = {xi:1.6, Kp:5, rho:-0.06, promo:1, wt:0.5, win:1100, ligas:{pl:1, laliga:1, seriea:1, bundesliga:1, ligue1:1}};
+var DCFIT = null;   // {liga, eq:{claveEq:{att,def}}, c, gam, hAvg, aAvg, n}
+function dcAjustar(lista, hoyDia, cfg){
+  var tr = [];
+  lista.forEach(function(p){
+    if(p.golesLocal===null || p.golesLocal===undefined || p.golesVisita===null || p.golesVisita===undefined) return;
+    var t = tsPartido(p); if(!t) return;
+    var d = Math.floor(t/864e5);
+    if(d > hoyDia || d < hoyDia - cfg.win) return;
+    tr.push({h:claveEq(p.local), a:claveEq(p.visita), gh:p.golesLocal, ga:p.golesVisita, day:d});
+  });
+  if(tr.length < 60) return null;
+  var idx = {}, nombres = [];
+  tr.forEach(function(m){ [m.h, m.a].forEach(function(k){ if(idx[k]===undefined){ idx[k] = nombres.length; nombres.push(k); } }); });
+  var n = nombres.length, att = [], def = [], cnt = [], a0 = [], d0 = [], H = [], A = [], W = [], i, it;
+  for(i=0;i<n;i++){ att.push(1); def.push(1); cnt.push(0); }
+  tr.forEach(function(m, j){ H.push(idx[m.h]); A.push(idx[m.a]); W.push(Math.exp(-cfg.xi*(hoyDia-m.day)/365)); cnt[H[j]]++; cnt[A[j]]++; });
+  for(i=0;i<n;i++){ if(cfg.promo && cnt[i]<8){ a0.push(0.85); d0.push(1.15); } else { a0.push(1); d0.push(1); } }
+  var c = 1.35, gam = 1.25, L = tr.length;
+  for(it=0; it<28; it++){
+    var nA=[], dA=[], nD=[], dD=[], sgh=0, sg=0;
+    for(i=0;i<n;i++){ nA.push(0); dA.push(0); nD.push(0); dD.push(0); }
+    for(var j=0;j<L;j++){
+      var m = tr[j], w = W[j], h = H[j], a = A[j];
+      nA[h] += w*m.gh; dA[h] += w*c*def[a]*gam; nA[a] += w*m.ga; dA[a] += w*c*def[h];
+      nD[a] += w*m.gh; dD[a] += w*c*att[h]*gam; nD[h] += w*m.ga; dD[h] += w*c*att[a];
+      sgh += w*m.gh; sg += w*(m.gh+m.ga);
+    }
+    for(i=0;i<n;i++){ att[i] = (nA[i]+cfg.Kp*c*a0[i])/(dA[i]+cfg.Kp*c); def[i] = (nD[i]+cfg.Kp*c*d0[i])/(dD[i]+cfg.Kp*c); }
+    var ma=0, md=0; for(i=0;i<n;i++){ ma += att[i]; md += def[i]; } ma /= n; md /= n;
+    for(i=0;i<n;i++){ att[i] /= ma; def[i] /= md; }
+    var e2 = 0; for(j=0;j<L;j++) e2 += W[j]*att[H[j]]*def[A[j]];
+    gam = sgh/Math.max(c*e2, 1e-9);
+    var eg = 0; for(j=0;j<L;j++) eg += W[j]*(att[H[j]]*def[A[j]]*gam + att[A[j]]*def[H[j]]);
+    c = sg/Math.max(eg, 1e-9);
+  }
+  var sw=0, sh=0, sa=0; for(j=0;j<L;j++){ sw += W[j]; sh += W[j]*tr[j].gh; sa += W[j]*tr[j].ga; }
+  var eq = {}; for(i=0;i<n;i++) eq[nombres[i]] = {att:att[i], def:def[i]};
+  return {eq:eq, c:c, gam:gam, hAvg:sh/sw, aAvg:sa/sw, n:L};
+}
+function calcularDC(eL, eV){
+  var f = DCFIT, pr = DC_CFG.promo ? {att:0.85, def:1.15} : {att:1, def:1};
+  var xl = buscarEnMapa(f.eq, eL.nombre) || pr, xv = buscarEnMapa(f.eq, eV.nombre) || pr;
+  var lamL = f.c*xl.att*xv.def*f.gam, lamV = f.c*xv.att*xl.def;
+  var d = distribucion(lamL, lamV, DC_CFG.rho, true);
+  var g0 = distribucion(f.hAvg, f.aAvg, DC_CFG.rho, false);
+  var g = mezclar(d, g0, DC_CFG.wt, CLAVES_GOLES);
+  return {lamL:lamL, lamV:lamV, pL:d.pL, pD:d.pD, pV:d.pV,
+    overLin:{1.5:g.o15, 2.5:g.o25, 3.5:g.o35}, pBtts:g.btts, marcadores:d.marcadores, dc:true};
+}
+function calcular(eL, eV, P){
+  if(P===undefined && DCFIT && DCFIT.liga===LIGA_ACTUAL && !LIGA_ES_COPA){
+    try{ return calcularDC(eL, eV); }catch(e){}
+  }
+  return calcularBase(eL, eV, P);
+}
+// Arma el ajuste con la temporada pasada (de la memoria del teléfono o de ESPN) + lo que va de esta. Mientras se prepara, el modelo anterior responde.
+function prepararDC(clave, mio){
+  DCFIT = null;
+  if(LIGA_ES_COPA || !DC_CFG.ligas[clave] || !ESPN_SLUG[clave] || !TERMINADOS || !TERMINADOS.length) return;
+  var actuales = TERMINADOS.slice();
+  obtenerTemporada(1, null).then(function(l1){ return l1; }, function(){ return []; }).then(function(l1){
+    if(mio!==CARGA_ID) return;
+    var fit = null;
+    try{ fit = dcAjustar((l1||[]).concat(actuales), Math.floor(Date.now()/864e5)+1, DC_CFG); }catch(e){ fit = null; }
+    DIAG.dc = fit ? {partidos:fit.n, equipos:Object.keys(fit.eq).length, pasada:(l1||[]).length} : {partidos:0, equipos:0, pasada:(l1||[]).length};
+    if(!fit) return;
+    fit.liga = clave; DCFIT = fit;
+    try{ pintarEstado(LIGAS[clave]); aplicarSelectorDias(); }catch(e){}
+  });
 }
 
 // ---------- cruce de nombres con la tabla ----------
@@ -1702,8 +1781,9 @@ function pintarFilasValor(filas, out, p){
     var ref = completo ? imp/sumaImp : imp;
     var diff = (f.modelo - ref)*100;
     var hayValor = diff >= 3;
-    var etiquetaValor = hayValor ? '<span class="'+(confiable===false ? 'no' : 'si')+'">valor +'+diff.toFixed(1)+(confiable===false ? ' (no confiable)' : '')+'</span>' :
-      '<span class="no">sin valor '+diff.toFixed(1)+'</span>';
+    // medido en 5,256 partidos contra Pinnacle: apostar donde el modelo difiere del mercado perdio (ROI -14% con 2+ pts), asi que ya no se pinta como "valor"
+    var etiquetaValor = hayValor ? '<span class="no">el modelo ve +'+diff.toFixed(1)+' (no es valor: apostar así perdió en la medición)</span>' :
+      '<span class="no">sin diferencia '+diff.toFixed(1)+'</span>';
     html += '<div class="filaCuota"><span class="txt">'+f.sel+': modelo '+(f.modelo*100).toFixed(1)+'% vs '+
       (completo?'mercado sin margen ':'cuota ')+(ref*100).toFixed(1)+'% — '+etiquetaValor+
       '</span>'+
@@ -1711,6 +1791,7 @@ function pintarFilasValor(filas, out, p){
       '<button class="btnChico agregarCombinada" data-sel="'+f.sel+'" data-prob="'+f.modelo+'">🔗</button>'+
       '</div>';
   });
+  html += '<div class="nota" style="margin-top:6px">Medido en 5,256 partidos de 5 ligas contra Pinnacle: cuando el modelo difería del mercado por 2+ puntos y se apostaba, el resultado fue −14% (±5%) con cuota Pinnacle y −16% con cuota promedio; con 8+ puntos, −17%. Una diferencia grande suele ser error del modelo (lesiones, rotaciones), no una oportunidad.</div>';
   if(completo){
     html += '<div class="nota" style="margin-top:6px">Margen de la casa ≈ '+((sumaImp-1)*100).toFixed(1)+'%; la comparación ya lo descuenta.</div>';
   } else if(filas.length>1){
@@ -1752,7 +1833,8 @@ function pintarGameBody(bodyEl, p, eL, eV){
       '<button class="tb" data-t="for">Forma</button>' +
     '</div>' +
     '<div class="pane on" id="'+id+'ver">' + base.veredictoHtml +
-      '<div class="nota">Modelo Poisson con encogimiento (K='+PARAMS.K+'), localía (h='+PARAMS.h+') y corrección de marcadores bajos (ρ='+PARAMS.rho+')'+(PARAMS.w<1?', confianza reducida (w='+PARAMS.w+')':'')+(PARAMS.S&&Object.keys(SEMILLA).length?', con historial de la temporada pasada (S='+PARAMS.S+')':'')+'. Más/Menos y Ambos anotan usan su propio encogimiento fuerte (K='+PARAMS.Kt+', w='+PARAMS.wt+'). Parámetros: '+estadoParams+'. Sin lesiones ni alineaciones. Datos en vivo de worldfootball.net.</div>' +
+      (base.r.dc ? '<div class="nota">Modelo v4: Dixon-Coles con peso por antigüedad (ataque y defensa de cada equipo ajustados con esta temporada y la pasada, más peso a los partidos recientes; ascendidos con prior más flojo; corrección de marcadores bajos ρ='+DC_CFG.rho+'). Medido contra las cuotas de cierre de Pinnacle en 5,256 partidos de las 5 grandes ligas: error 1X2 0.989 vs 1.006 del modelo anterior y 0.964 del mercado. El mercado sigue acertando más, así que esto es una referencia, no una ventaja. Sin lesiones ni alineaciones.</div>' : '') +
+      (base.r.dc ? '' : '<div class="nota">Modelo Poisson con encogimiento (K='+PARAMS.K+'), localía (h='+PARAMS.h+') y corrección de marcadores bajos (ρ='+PARAMS.rho+')'+(PARAMS.w<1?', confianza reducida (w='+PARAMS.w+')':'')+(PARAMS.S&&Object.keys(SEMILLA).length?', con historial de la temporada pasada (S='+PARAMS.S+')':'')+'. Más/Menos y Ambos anotan usan su propio encogimiento fuerte (K='+PARAMS.Kt+', w='+PARAMS.wt+'). Parámetros: '+estadoParams+'. Sin lesiones ni alineaciones. Datos en vivo de worldfootball.net.</div>') +
     '</div>' +
     '<div class="pane" id="'+id+'cuo">' +
       '<h3>Ganador (1X2)</h3>' + badgeMercado('x12') +
@@ -2646,7 +2728,7 @@ function pintarEstado(liga){
   var txt = '✓ '+liga.nombre+' — '+(LIGA_ES_COPA ? '' : EQUIPOS.length+' equipos, ')+
     PARTIDOS.length+' '+plural(PARTIDOS.length,'partido','partidos')+' '+cuando+', '+
     TERMINADOS.length+' terminados medibles'+(TERMINADOS.length ? ' ('+FUENTE_TERM+')' : '')+
-    ' — en vivo ('+ahora+').'+(LIGA_ES_COPA ? ' Copa: sin modelo.' : '');
+    ' — en vivo ('+ahora+').'+(LIGA_ES_COPA ? ' Copa: sin modelo.' : (DCFIT&&DCFIT.liga===LIGA_ACTUAL ? ' Modelo v4 (Dixon-Coles) activo.' : ''));
   if(!TERMINADOS.length){
     txt += ' ⚠️ No se leyó ningún resultado terminado: Forma, Cara a cara y Backtest quedan vacíos. Toca 🔍 Diagnóstico.';
     estado.className = 'estado warn';
@@ -2683,6 +2765,7 @@ function armarDiag(){
     L.push('ESPN temporada pasada: modo '+DIAG.pasada.modo+' · '+DIAG.pasada.nota);
     L.push('  '+DIAG.pasada.leidos+' leídos, '+DIAG.pasada.terminados+' terminados'+(DIAG.pasada.errores.length?' · '+DIAG.pasada.errores.length+' errores, ej: '+DIAG.pasada.errores.slice(0,2).join(' | '):''));
   }
+  L.push('Modelo v4 Dixon-Coles: '+(DCFIT&&DCFIT.liga===LIGA_ACTUAL ? 'activo con '+DCFIT.n+' partidos, '+Object.keys(DCFIT.eq).length+' equipos (temporada pasada: '+(DIAG.dc?DIAG.dc.pasada:0)+' partidos)' : 'no activo (se usa el modelo anterior)')+' · xi '+DC_CFG.xi+' Kp '+DC_CFG.Kp+' rho '+DC_CFG.rho);
   L.push('Fuente usada para terminados: '+FUENTE_TERM+' ('+TERMINADOS.length+')');
   L.push('Tiros de ESPN guardados: '+Object.keys(TIROS).length+' partidos de esta liga'+(DIAG.tirosMuestra ? '\n  '+DIAG.tirosMuestra : ''));
   if(DIAG.tablaDeResultados) L.push('La tabla de posiciones de worldfootball no se pudo leer: se armó con los resultados.');
@@ -2747,6 +2830,7 @@ function cargarLiga(clave){
       }
       PENDIENTES_TODOS = pendientes;
       DIA_SELECCIONADO = null;
+      DCFIT = null;
       pintarSelectorDias();
       aplicarSelectorDias();
       if(LIGA_ES_COPA){
@@ -2754,6 +2838,7 @@ function cargarLiga(clave){
           '<div class="estado">"Al gane" no aplica a copas de eliminación directa — no hay modelo de probabilidad sin tabla de temporada.</div>';
       }
       pintarEstado(liga);
+      prepararDC(clave, mio);
     });
   }).catch(function(e){
     if(mio!==CARGA_ID) return;
@@ -2869,7 +2954,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
 /* OVA Fútbol · v10: anillo de probabilidad, doble oportunidad, selector de tema, pulido (atenuar
    porcentajes de goles no medidos, apagar Kalshi tras un 429, verificar picks al abrir Registro). */
 (function(){
- var VER='v10';
+ var VER='v11';
  function $q(s,r){ return (r||document).querySelector(s); }
  function pct(x){ return (x*100).toFixed(1)+'%'; }
  function am(p){

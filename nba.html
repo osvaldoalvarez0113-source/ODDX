@@ -347,7 +347,7 @@ if(typeof module!=='undefined') module.exports={PDEF,seasonOf,dayKey,Phi,correr,
 
 <!-- ===================== APP ===================== -->
 <script>
-const VERSION='v3.2';
+const VERSION='v3.3';
 const ESPN='https://site.api.espn.com/apis/site/v2/sports/basketball/nba/';
 const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
@@ -490,8 +490,28 @@ function ultimoDia(id,ts){
   PEND.forEach(g=>{ if(g.ts<ts&&(g.h===id||g.a===id)){ const k=dayKey(g.ts); if(d===undefined||k>d) d=k; } });
   return d;
 }
+// Peso del modelo cuando hay linea de ESPN. Medido en 2,486 juegos reales (2024-25 y 2025-26): el modelo no agrega informacion
+// sobre la linea (peso ajustado 0.00-0.06), asi que la linea manda y el modelo pesa 5%. Los ajustes manuales (lesiones) se suman despues.
+const LAM_M=0.05, LAM_T=0.05, ESC_SIG=0.96;   // ESC_SIG: la linea se equivoca ~4% menos que el modelo (13.9 vs 14.4 pts)
+const logitP=p=>Math.log(p/(1-p)), sigP=z=>1/(1+Math.exp(-z));
 function prediccion(g){
-  return predecir(ESTADO,PARAMS,{h:g.h,a:g.a,ts:g.ts,adjH:g.adjH,adjA:g.adjA},{dH:ultimoDia(g.h,g.ts),dA:ultimoDia(g.a,g.ts)});
+  const pr=predecir(ESTADO,PARAMS,{h:g.h,a:g.a,ts:g.ts,adjH:0,adjA:0},{dH:ultimoDia(g.h,g.ts),dA:ultimoDia(g.a,g.ts)});
+  const o=g.odds, adj=(g.adjH||0)-(g.adjA||0);
+  pr.pmMod=pr.pm; pr.ptMod=pr.pt; pr.pHMod=pr.pH; pr.conLinea=false; pr.conML=false;
+  const sM0=pr.sM, pm0=pr.pm;
+  if(o&&o.spread!==undefined&&isFinite(o.spread)){ pr.pm=-o.spread+LAM_M*(pm0+o.spread); pr.sM=sM0*ESC_SIG; pr.conLinea=true; }
+  if(o&&o.total!==undefined&&isFinite(o.total)){ pr.pt=o.total+LAM_T*(pr.pt-o.total); pr.sT=pr.sT*ESC_SIG; }
+  // probabilidad de ganar: parte del moneyline sin vig si lo hay; si no, del margen
+  let zb=logitP(Math.min(Math.max(pML(pr.pm,pr.sM),1e-4),1-1e-4));
+  const pmB=pr.pm;
+  if(o&&isFinite(o.mlH)&&isFinite(o.mlA)&&o.mlH&&o.mlA){
+    const iH=impProb(o.mlH), iA=impProb(o.mlA), pk=iH/(iH+iA), zm=logitP(pr.pHMod>1e-4&&pr.pHMod<1-1e-4?pr.pHMod:0.5);
+    zb=logitP(pk)+LAM_M*(zm-logitP(pk)); pr.conML=true;
+  }
+  pr.pm=pmB+adj;
+  const dz=adj?(logitP(Math.min(Math.max(pML(pr.pm,pr.sM),1e-4),1-1e-4))-logitP(Math.min(Math.max(pML(pmB,pr.sM),1e-4),1-1e-4))):0;
+  pr.pH=sigP(zb+dz);
+  return pr;
 }
 const T=id=>TEAMS[id]||{n:'?',ab:'?',logo:''};
 
@@ -596,7 +616,7 @@ function pintarCuerpo(body,g){
    <div class="ajuste"><div><label>${esc(A.ab)} (pts, ej. −4)</label><input type="number" step="0.5" data-k="adjA" value="${g.adjA||0}"></div><div><label>${esc(H.ab)} (pts, ej. −4)</label><input type="number" step="0.5" data-k="adjH" value="${g.adjH||0}"></div></div>
    <button class="btnAncho sec" data-a="adj" style="margin-top:0">Aplicar ajuste</button>
    <div class="nota">Si falta una estrella, resta puntos a su equipo (ejemplo: −4 si es titular clave). El modelo NO sabe de lesiones por sí solo: mira la pestaña Forma.</div>
-   <div class="nota">Ratings en puntos con arrastre entre temporadas (parámetros ${PARAMS.calibrado?'calibrados con datos reales':'de arranque, sin calibrar: ve a Backtest'}). Ventaja de local ${PARAMS.H} pts; back-to-back ${PARAMS.R} pts.${(PARAMS.Z!==undefined&&PARAMS.Z<1)?' Confianza en la diferencia de ratings ×'+PARAMS.Z.toFixed(2)+' (medida en el backtest).':''} Desviación típica del margen ${pr.sM.toFixed(1)} pts, del total ${pr.sT.toFixed(1)}.</div>`;
+   <div class="nota">Ratings en puntos con arrastre entre temporadas (parámetros ${PARAMS.calibrado?'calibrados con datos reales':'de arranque, sin calibrar: ve a Backtest'}). Ventaja de local ${PARAMS.H} pts; back-to-back ${PARAMS.R} pts.${(PARAMS.Z!==undefined&&PARAMS.Z<1)?' Confianza en la diferencia de ratings ×'+PARAMS.Z.toFixed(2)+' (medida en el backtest).':''} Desviación típica del margen ${pr.sM.toFixed(1)} pts, del total ${pr.sT.toFixed(1)}. ${pr.conLinea?'Base: línea de ESPN (el modelo pesa '+Math.round(LAM_M*100)+'%'+(pr.conML?', ganador desde el moneyline':'')+'); tus ajustes de lesiones se suman encima.':'Sin línea de ESPN todavía: aquí es el modelo solo (referencia; cuando salga la línea, ella manda).'}</div>`;
 
   const cuo=`
    <h3>Moneyline</h3>${confTxt('win')}
@@ -666,10 +686,10 @@ function pintarCuerpo(body,g){
 }
 function mercadoHtml(g,pr,H,A){
   const o=g.odds, f=[];
-  if(o.spread!==undefined){ const fair=-pr.pm, d=fair-o.spread; f.push(`<div><b>${esc(H.ab)} ${fmtL(o.spread)}</b><small>Línea ESPN</small></div><div><b>${(d>=0?'+':'')+d.toFixed(1)}</b><small>Modelo vs línea (pts)</small></div>`); }
-  if(o.total!==undefined){ const d=pr.pt-o.total; f.push(`<div><b>${o.total}</b><small>Total ESPN</small></div><div><b>${(d>=0?'+':'')+d.toFixed(1)}</b><small>Modelo vs total</small></div>`); }
+  if(o.spread!==undefined){ const fair=-pr.pmMod, d=fair-o.spread; f.push(`<div><b>${esc(H.ab)} ${fmtL(o.spread)}</b><small>Línea ESPN</small></div><div><b>${(d>=0?'+':'')+d.toFixed(1)}</b><small>Modelo vs línea (pts)</small></div>`); }
+  if(o.total!==undefined){ const d=pr.ptMod-o.total; f.push(`<div><b>${o.total}</b><small>Total ESPN</small></div><div><b>${(d>=0?'+':'')+d.toFixed(1)}</b><small>Modelo vs total</small></div>`); }
   if(!f.length) return '';
-  return `<h3>Línea del mercado</h3><div class="kpi" style="grid-template-columns:repeat(${f.length*2>=4?4:2},1fr)">${f.join('')}</div><div class="nota" style="margin-top:-4px">La línea del mercado casi siempre es más precisa que un modelo simple de ratings. Si el modelo difiere mucho de ella, normalmente el error es del modelo (lesiones, descanso, rotaciones). Úsalo para dudar, no para apostar a ciegas.</div>`;
+  return `<h3>Línea del mercado</h3><div class="kpi" style="grid-template-columns:repeat(${f.length*2>=4?4:2},1fr)">${f.join('')}</div><div class="nota" style="margin-top:-4px">Las probabilidades de este juego parten de la línea de ESPN: en 2,486 juegos medidos (2024-25 y 2025-26) la línea acertó más que el modelo (error de margen 13.9 vs 14.4 pts) y el modelo casi no aportó nada encima de ella (peso ${Math.round(LAM_M*100)}%). Apostar contra la línea cuando el modelo difiere perdió: 3+ pts de diferencia → 50.6% de acierto (−3.5%); 5+ pts → 47.5% (−9.4%). Las diferencias de arriba son para dudar, no para apostar.</div>`;
 }
 function formaHtml(id,Tm){
   const js=GAMES.filter(x=>x.h===id||x.a===id).sort((a,b)=>b.ts-a.ts).slice(0,10);
