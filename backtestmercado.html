@@ -36,14 +36,14 @@
 </head>
 <body>
 <header>
-  <div class="marca">&#9918; Contra el mercado <span class="v">v1</span></div>
-  <p>Mide el modelo de OVA (ganador MLB) contra el precio de cierre de Kalshi, partido por partido. Es la prueba que dice si de verdad hay algo que vender.</p>
+  <div class="marca">&#9918; Contra el mercado <span class="v">v2</span></div>
+  <p>Mide el modelo de OVA (ganador MLB) contra la línea de cierre de DraftKings que publica ESPN, juego por juego. Sin Kalshi. Es la prueba que dice si de verdad hay algo que vender.</p>
 </header>
 <main>
   <div class="caja">
     <h2>1. Probar conexión</h2>
-    <div class="nota">Revisa que el teléfono pueda hablar con Kalshi y con la MLB, y enseña un ejemplo de lo que devuelven.</div>
-    <button id="b1">Probar Kalshi y MLB</button>
+    <div class="nota">Revisa que el teléfono pueda leer la MLB y las líneas de ESPN, y enseña un ejemplo de lo que devuelven.</div>
+    <button id="b1">Probar MLB y ESPN</button>
     <pre id="o1" style="display:none"></pre>
   </div>
   <div class="caja">
@@ -59,15 +59,16 @@
   </div>
 </main>
 <script>
-/* ===== Backtest contra el mercado =====
+/* ===== Backtest contra el mercado (v2: ESPN / DraftKings) =====
    Para cada juego final de MLB en el rango:
-   - modelo: la formula de OVA (ganador) calculada SOLO con lo que se sabia el dia anterior
-     (ERA del abridor regresado al FIP, ultimas 5, carreras por juego 70/30 con 14 dias, ERA del staff como proxy del bullpen,
-      ventaja de local 0.12, x6, tope 22-78).  No usa splits de mano (la MLB no los da por fecha).
-   - mercado: precio de Kalshi (mercado KXMLBGAME del equipo local) en el ultimo minuto con libro antes del primer lanzamiento.
+   - modelo: la formula de OVA (ganador) calculada SOLO con lo que se sabia antes de ese dia
+     (ERA del abridor regresado al FIP, ultimas 5, carreras por juego 70/30 con 14 dias, carreras permitidas del equipo como proxy
+      del bullpen, ventaja de local 0.12, x6, tope 22-78). No usa splits de mano (la MLB no los da por fecha).
+   - mercado: moneyline de cierre de DraftKings que publica ESPN (endpoint core de odds), con el vig quitado.
    El abridor es el que de verdad lanzo (boxscore); el mercado lo sabia casi siempre, asi que es lo justo. */
-var KALSHI_BASES=['https://api.elections.kalshi.com/trade-api/v2','https://external-api.kalshi.com/trade-api/v2'];
-var KB=null, MLB='https://statsapi.mlb.com/api/v1', SERIE='KXMLBGAME';
+var MLB='https://statsapi.mlb.com/api/v1';
+var ESPN_SB='https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?limit=300&dates=';
+function espnOdds(id){ return 'https://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/'+id+'/competitions/'+id+'/odds'; }
 var PARAR=false, ULTIMO_TEXTO='';
 var PESO_ABRIDOR=0.65, PESO_OFENSIVA=0.50, PESO_BULLPEN=0.25, BONO_LOCAL=0.12, MULT=6, PRIOR_ERA=40;
 
@@ -83,13 +84,6 @@ async function gj(url){
   }
   throw new Error('HTTP 429 (demasiadas llamadas seguidas) '+url.slice(0,90));
 }
-async function kj(path){
-  var bases=KB?[KB]:KALSHI_BASES, err=null;
-  for(var i=0;i<bases.length;i++){
-    try{ var j=await gj(bases[i]+path); KB=bases[i]; return j; }catch(e){ err=e; }
-  }
-  throw err;
-}
 async function pool(tareas,n,cb){
   var out=new Array(tareas.length), i=0, hechas=0;
   async function w(){ while(i<tareas.length && !PARAR){ var k=i++; try{ out[k]=await tareas[k](); }catch(e){ out[k]=null; } hechas++; if(cb) cb(hechas,tareas.length); } }
@@ -98,65 +92,50 @@ async function pool(tareas,n,cb){
 }
 function progreso(txt,frac){ $('prog').textContent=txt; if(frac!=null) $('barra').style.width=Math.round(frac*100)+'%'; }
 
-/* ---------- equipos ---------- */
-var ALIAS={AZ:'ARI',OAK:'ATH',CHW:'CWS',WAS:'WSH',TBR:'TB',SDP:'SD',SFG:'SF',KCR:'KC',LA:'LAD'};
+/* ---------- equipos: MLB y ESPN escriben distinto algunas abreviaturas ---------- */
+var ALIAS={AZ:'ARI',OAK:'ATH',CHW:'CWS',WAS:'WSH',TBR:'TB',SDP:'SD',SFG:'SF',KCR:'KC'};
 function norm(c){ c=String(c||'').toUpperCase(); return ALIAS[c]||c; }
-var MESES={JAN:1,FEB:2,MAR:3,APR:4,MAY:5,JUN:6,JUL:7,AUG:8,SEP:9,OCT:10,NOV:11,DEC:12};
-function tzOffsetMin(utcMs,tz){
-  var f=new Intl.DateTimeFormat('en-US',{timeZone:tz,hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  var p={}; f.formatToParts(new Date(utcMs)).forEach(function(x){ p[x.type]=x.value; });
-  var h=+p.hour; if(h===24) h=0;
-  var asUTC=Date.UTC(+p.year,+p.month-1,+p.day,h,+p.minute,+p.second);
-  return Math.round((asUTC-utcMs)/60000);
-}
-function etAEpoch(y,m,d,hh,mm){
-  var guess=Date.UTC(y,m-1,d,hh,mm);
-  var off=tzOffsetMin(guess,'America/New_York');
-  var t=guess-off*60000; off=tzOffsetMin(t,'America/New_York'); return guess-off*60000;
-}
-/* KXMLBGAME-26MAY051945MILSTL-STL  ->  {evento, fecha, epoch, codigo, ev} */
-function parseTicker(tk){
-  var p=String(tk).split('-'); if(p.length<3) return null;
-  var m=/^(\d{2})([A-Z]{3})(\d{2})(\d{4})([A-Z]+)$/.exec(p[1]); if(!m) return null;
-  var y=2000+(+m[1]), mo=MESES[m[2]], d=+m[3]; if(!mo) return null;
-  var hh=+m[4].slice(0,2), mm=+m[4].slice(2);
-  return {evento:p[0]+'-'+p[1], serie:p[0], equipos:m[5], codigo:p[2], fecha:y+'-'+('0'+mo).slice(-2)+'-'+('0'+d).slice(-2), epoch:Math.floor(etAEpoch(y,mo,d,hh,mm)/1000)};
-}
 
-/* ---------- Kalshi ---------- */
-function px(o){
-  if(!o) return null;
-  var v=(o.close_dollars!=null&&o.close_dollars!=='')?o.close_dollars:((o.close!=null&&o.close!=='')?(+o.close)/100:null);
-  if(v==null) return null; v=+v; return (isFinite(v)&&v>0&&v<1)?v:null;
+/* ---------- ESPN: lineas ---------- */
+function americano(v){
+  if(v==null) return null;
+  var n=parseFloat(String(v).replace(/[−‒–—―‐‑]/g,'-').replace(/[＋+\s,]/g,''));
+  return (isFinite(n)&&Math.abs(n)>=100)?n:null;
 }
-async function listaMercados(desdeTs,hastaTs,log){
-  var todos=[], cursor='', pag=0, base='/markets?series_ticker='+SERIE+'&status=settled&limit=1000&min_close_ts='+desdeTs+'&max_close_ts='+hastaTs;
-  try{ await kj(base.replace('limit=1000','limit=1')); }catch(e){ base='/markets?series_ticker='+SERIE+'&status=settled&limit=1000'; }   /* si rechaza los filtros de fecha, pide todo y filtramos nosotros */
-  do{
-    var j=await kj(base+(cursor?'&cursor='+encodeURIComponent(cursor):''));
-    (j.markets||[]).forEach(function(m){ todos.push(m); });
-    cursor=j.cursor||''; pag++; if(log) log('Kalshi: '+todos.length+' mercados…');
-  }while(cursor && pag<40 && !PARAR);
-  return todos;
+function impAm(a){ return a<0?(-a)/((-a)+100):100/(a+100); }
+function decAm(a){ return a<0?1+100/(-a):1+a/100; }
+function mlDe(lado){
+  if(!lado) return null;
+  var o=null, c=lado.close&&lado.close.moneyLine, k=lado.current&&lado.current.moneyLine;
+  o=americano(c&&c.american); if(o==null) o=americano(k&&k.american); if(o==null) o=americano(lado.moneyLine);
+  return o;
 }
-async function listaHistorica(log){
-  var todos=[], cursor='', pag=0;
-  do{
-    var j=await kj('/historical/markets?series_ticker='+SERIE+'&limit=1000'+(cursor?'&cursor='+encodeURIComponent(cursor):''));
-    (j.markets||[]).forEach(function(m){ todos.push(m); });
-    cursor=j.cursor||''; pag++; if(log) log('Kalshi historico: '+todos.length+' mercados…');
-  }while(cursor && pag<40 && !PARAR);
-  return todos;
+/* devuelve {h,a,prov} con los moneylines americanos de cierre, o null */
+function parseOdds(j){
+  var items=(j&&j.items)||[], mejor=null;
+  for(var i=0;i<items.length;i++){
+    var it=items[i], h=mlDe(it.homeTeamOdds), a=mlDe(it.awayTeamOdds);
+    if(h==null||a==null) continue;
+    var nombre=(it.provider&&it.provider.name)||'?';
+    var cand={h:h,a:a,prov:nombre,dk:/draftkings/i.test(nombre)};
+    if(!mejor||(cand.dk&&!mejor.dk)) mejor=cand;
+  }
+  if(!mejor) return null;
+  var s=impAm(mejor.h)+impAm(mejor.a);
+  if(s<1.0||s>1.15) return null;     /* par de precios que no es un moneyline normal */
+  return mejor;
 }
-async function precioCierre(ticker,inicioEpoch){
-  var q='?start_ts='+(inicioEpoch-7200)+'&end_ts='+inicioEpoch+'&period_interval=1&include_latest_before_start=true', j;
-  try{ j=await kj('/series/'+SERIE+'/markets/'+ticker+'/candlesticks'+q); }
-  catch(e){ j=await kj('/historical/markets/'+ticker+'/candlesticks'+q); }
-  var cs=(j.candlesticks||[]).filter(function(c){ return c.end_period_ts<=inicioEpoch; }).sort(function(a,b){ return a.end_period_ts-b.end_period_ts; });
-  var i,b,a;
-  for(i=cs.length-1;i>=0;i--){ b=px(cs[i].yes_bid); a=px(cs[i].yes_ask); if(b!=null&&a!=null&&a>=b) return {bid:b,ask:a,t:cs[i].end_period_ts,libro:true}; }
-  for(i=cs.length-1;i>=0;i--){ var p=px(cs[i].price); if(p!=null) return {bid:Math.max(0.01,p-0.01),ask:Math.min(0.99,p+0.01),t:cs[i].end_period_ts,libro:false}; }
-  return null;
+async function eventosDelDia(ymd){
+  var j=await gj(ESPN_SB+ymd), out=[];
+  (j.events||[]).forEach(function(ev){
+    try{
+      var c=ev.competitions[0], h=null, a=null;
+      c.competitors.forEach(function(x){ if(x.homeAway==='home') h=x; else a=x; });
+      out.push({id:ev.id, ts:Date.parse(ev.date), h:norm(h.team.abbreviation), a:norm(a.team.abbreviation), sH:+h.score, sA:+a.score,
+        done:!!(ev.status&&ev.status.type&&ev.status.type.completed)});
+    }catch(e){}
+  });
+  return out;
 }
 
 /* ---------- MLB: datos hasta el dia anterior ---------- */
@@ -235,32 +214,31 @@ function regLogistica(rows){
   return {b:beta, se:[Math.sqrt(Hinv[0][0]),Math.sqrt(Hinv[1][1]),Math.sqrt(Hinv[2][2])], n:n};
 }
 function mediaSe(v){ var n=v.length; if(!n) return {m:0,se:0}; var m=v.reduce(function(a,b){return a+b;},0)/n, s=0; v.forEach(function(x){ s+=(x-m)*(x-m); }); return {m:m, se:n>1?Math.sqrt(s/(n-1)/n):0}; }
-function feeK(c){ return 0.07*c*(1-c); }
 function evaluar(rows){
   var n=rows.length, base=rows.reduce(function(a,r){ return a+r.y; },0)/n;
-  var dM=[],dB=[],dBr=[],dBl=[], brM=0,brK=0,brB=0,llM=0,llK=0,llB=0,llMix=0;
+  var dM=[], brM=0,brK=0,brB=0,llM=0,llK=0,llB=0;
   rows.forEach(function(r){
-    var a=ll(r.pM,r.y), b=ll(r.pK,r.y), c=ll(base,r.y), mix=ll((r.pM+r.pK)/2,r.y);
-    llM+=a;llK+=b;llB+=c;llMix+=mix; dM.push(a-b);
+    var a=ll(r.pM,r.y), b=ll(r.pK,r.y), c=ll(base,r.y);
+    llM+=a;llK+=b;llB+=c; dM.push(a-b);
     brM+=(r.pM-r.y)*(r.pM-r.y); brK+=(r.pK-r.y)*(r.pK-r.y); brB+=(base-r.y)*(base-r.y);
   });
   var d=mediaSe(dM);
-  var out={n:n, base:base, llM:llM/n, llK:llK/n, llB:llB/n, llMix:llMix/n, brM:brM/n, brK:brK/n, brB:brB/n, dif:d.m, difSe:d.se, z:d.se>0?d.m/d.se:0};
+  var out={n:n, base:base, llM:llM/n, llK:llK/n, llB:llB/n, brM:brM/n, brK:brK/n, brB:brB/n, dif:d.m, difSe:d.se, z:d.se>0?d.m/d.se:0};
   out.reg=n>=60?regLogistica(rows):null;
   // calibracion por tramos del modelo
   var cortes=[0,0.4,0.5,0.6,0.7,1.01], bins=[];
   for(var i=0;i<cortes.length-1;i++) bins.push({lo:cortes[i],hi:cortes[i+1],n:0,pM:0,pK:0,y:0});
   rows.forEach(function(r){ for(var i=0;i<bins.length;i++) if(r.pM>=bins[i].lo&&r.pM<bins[i].hi){ bins[i].n++;bins[i].pM+=r.pM;bins[i].pK+=r.pK;bins[i].y+=r.y; break; } });
   out.bins=bins;
-  // apuestas: comprar el lado donde el modelo ve mas ventaja, a precio de ask, con comision de Kalshi
+  // apuestas: el lado donde el modelo ve mas ventaja contra el precio REAL (con vig) de DraftKings; 1 unidad por apuesta
   out.roi=[1,2,3,4,5,6,8].map(function(t){
     var rets=[], gan=0;
     rows.forEach(function(r){
-      var cH=r.ask, cA=1-r.bid, eH=r.pM-cH, eA=(1-r.pM)-cA, lado=null, c=0;
-      if(eH>=eA && eH*100>=t){ lado='H'; c=cH; } else if(eA>eH && eA*100>=t){ lado='A'; c=cA; }
+      var eH=r.pM-r.iH, eA=(1-r.pM)-r.iA, lado=null, dec=0;
+      if(eH>=eA && eH*100>=t){ lado='H'; dec=r.dH; } else if(eA>eH && eA*100>=t){ lado='A'; dec=r.dA; }
       if(!lado) return;
-      var gano=(lado==='H')?r.y===1:r.y===0, f=feeK(c), neto=gano?(1-c-f):(-c-f);
-      rets.push(neto/(c+f)); if(gano) gan++;
+      var gano=(lado==='H')?r.y===1:r.y===0;
+      rets.push(gano?(dec-1):-1); if(gano) gan++;
     });
     var s=mediaSe(rets); return {t:t,n:rets.length,gan:gan,roi:s.m,se:s.se};
   });
@@ -273,7 +251,7 @@ function tabla(cab,filas){ return '<table><tr>'+cab.map(function(c){return '<th>
 function pintar(e,info){
   var h='', t='';
   h+='<h3>Resultado — '+e.n+' juegos medidos</h3>';
-  h+=tabla(['Error (pérdida log)','Modelo OVA','Mercado Kalshi','Solo promedio'],[
+  h+=tabla(['Error (pérdida log)','Modelo OVA','Mercado (sin vig)','Solo promedio'],[
     ['Pérdida (menor = mejor)',e.llM.toFixed(4),e.llK.toFixed(4),e.llB.toFixed(4)],
     ['Brier',e.brM.toFixed(4),e.brK.toFixed(4),e.brB.toFixed(4)]]);
   var vMk;
@@ -283,7 +261,7 @@ function pintar(e,info){
   h+='<div class="veredicto">'+vMk+'</div>';
   t+='JUEGOS '+e.n+' | perdida modelo '+e.llM.toFixed(4)+' mercado '+e.llK.toFixed(4)+' promedio '+e.llB.toFixed(4)+' | dif '+e.dif.toFixed(4)+' z '+e.z.toFixed(2)+'\n';
   if(e.reg){
-    var r=e.reg, zm=r.se[2]>0?r.b[2]/r.se[2]:0, zk=r.se[1]>0?r.b[1]/r.se[1]:0;
+    var r=e.reg, zm=r.se[2]>0?r.b[2]/r.se[2]:0;
     h+='<h3>¿El modelo agrega algo que el mercado no sabe?</h3>';
     h+=tabla(['Peso en la regresión','Valor','± (2 err.)'],[
       ['Mercado (1.00 = lo toma entero)',r.b[1].toFixed(2),(2*r.se[1]).toFixed(2)],
@@ -297,7 +275,7 @@ function pintar(e,info){
     var cl=x.n?(x.roi-2*x.se>0?'ok':(x.roi+2*x.se<0?'mal':'gris')):'gris';
     return ['≥ '+x.t+' pts',x.n,x.n?pc(x.gan/x.n,0):'—','<span class="'+cl+'">'+(x.n?(x.roi>=0?'+':'')+pc(x.roi):'—')+'</span>',x.n?pc(2*x.se,0):'—'];
   }));
-  h+='<div class="nota">Compra a precio de ask (el lado que paga), con la comisión de Kalshi (0.07 × precio × (1 − precio)) ya restada. Verde/rojo solo si el intervalo no cruza el cero. Pocas apuestas = mucho ruido.</div>';
+  h+='<div class="nota">Una unidad por apuesta, al precio real de cierre de DraftKings (con su vig). Verde/rojo solo si el intervalo no cruza el cero. Pocas apuestas = mucho ruido.</div>';
   e.roi.forEach(function(x){ t+='ROI>='+x.t+'pts n='+x.n+' gan='+x.gan+' roi='+(x.roi*100).toFixed(1)+'%±'+(200*x.se).toFixed(1)+'\n'; });
   h+='<h3>¿Cuando el modelo dice X, qué pasa?</h3>';
   h+=tabla(['Modelo dice (local)','Juegos','Modelo','Mercado','Ganó local'],e.bins.filter(function(b){return b.n>0;}).map(function(b){
@@ -327,63 +305,59 @@ async function medir(dias){
   armarCalendario(todosJuegos);
   var juegos=todosJuegos.filter(function(g){ return g.fecha>=ini; });
   if(!juegos.length) throw new Error('La MLB no devolvió juegos terminados entre '+ini+' y '+fin);
-  progreso(juegos.length+' juegos de MLB. Buscando mercados de Kalshi…',0.06);
-  var desde=Math.floor(Date.parse(ini+'T00:00:00Z')/1000)-86400, hasta=Math.floor(Date.parse(fin+'T00:00:00Z')/1000)+86400*20;
-  var mk=await listaMercados(desde,hasta,function(t){ progreso(t,0.08); });
-  var usoHist=false;
-  if(!mk.length){ try{ mk=await listaHistorica(function(t){ progreso(t,0.08); }); usoHist=true; }catch(e){} }
-  if(!mk.length) throw new Error('Kalshi no devolvió mercados '+SERIE+' en ese rango (ni en el histórico).');
-  // agrupar por evento
-  var ev={};
-  mk.forEach(function(m){ var p=parseTicker(m.ticker); if(!p||p.fecha<ini||p.fecha>fin) return;
-    var e=ev[p.evento]||(ev[p.evento]={info:p,mercados:{}}); e.mercados[norm(p.codigo)]={ticker:m.ticker,result:m.result}; });
-  var evs=Object.keys(ev).map(function(k){ return ev[k]; }).filter(function(e){ return Object.keys(e.mercados).length>=1; });
-  // cruzar con juegos de MLB
-  var porPar={}; juegos.forEach(function(g){ var k=[g.hC,g.aC].sort().join('|'); (porPar[k]||(porPar[k]=[])).push(g); });
-  var cruz=[], sinPar=[], usados={};
-  evs.forEach(function(e){
-    var codes=Object.keys(e.mercados); if(codes.length<2){ sinPar.push(e.info.evento); return; }
-    var k=codes.slice().sort().join('|'), cand=(porPar[k]||[]).filter(function(g){ return Math.abs(Date.parse(g.fecha+'T12:00:00Z')-Date.parse(e.info.fecha+'T12:00:00Z'))<=86400000*1.01 && !usados[g.pk]; });
-    if(!cand.length){ sinPar.push(e.info.evento); return; }
-    cand.sort(function(a,b){ return Math.abs(a.ini-e.info.epoch*1000)-Math.abs(b.ini-e.info.epoch*1000); });
-    var g=cand[0]; usados[g.pk]=1;
-    var mH=e.mercados[g.hC]; if(!mH){ sinPar.push(e.info.evento); return; }
-    cruz.push({g:g, tickerH:mH.ticker, resH:mH.result});
+
+  progreso(juegos.length+' juegos de MLB. Buscando los mismos juegos en ESPN…',0.06);
+  var fechas={}; juegos.forEach(function(g){ fechas[g.fecha]=1; });
+  var lista=Object.keys(fechas).sort();
+  var porDia=await pool(lista.map(function(f){ return function(){ return eventosDelDia(f.replace(/-/g,'')); }; }),6,function(a,b){ progreso('Calendario de ESPN '+a+'/'+b,0.06+0.08*a/b); });
+  var eventos=[]; porDia.forEach(function(x){ (x||[]).forEach(function(e){ eventos.push(e); }); });
+  if(!eventos.length) throw new Error('ESPN no devolvió ningún juego en ese rango.');
+  var usados={}, cruz=[], sinPar=0, marcadorMal=0, malos=[];
+  juegos.forEach(function(g){
+    var cand=eventos.filter(function(e){ return e.h===g.hC && e.a===g.aC && !usados[e.id] && Math.abs(e.ts-g.ini)<4*3600e3; });
+    if(!cand.length){ sinPar++; return; }
+    cand.sort(function(a,b){ return Math.abs(a.ts-g.ini)-Math.abs(b.ts-g.ini); });
+    var e=cand[0]; usados[e.id]=1;
+    if(e.done && (e.sH!==g.rH||e.sA!==g.rA)){ marcadorMal++; if(malos.length<3) malos.push(e.id+' vs MLB '+g.pk); return; }
+    cruz.push({g:g, ev:e});
   });
-  if(!cruz.length) throw new Error('No pude cruzar ningún mercado de Kalshi con un juego de MLB (sin cruce: '+sinPar.slice(0,3).join(', ')+').');
-  progreso(cruz.length+' juegos con mercado. Bajando abridores…',0.12);
-  var box=await pool(cruz.map(function(c){ return function(){ return gj(MLB+'/game/'+c.g.pk+'/boxscore'); }; }),8,function(a,b){ progreso('Abridores '+a+'/'+b,0.12+0.18*a/b); });
-  cruz.forEach(function(c,i){ var b=box[i]; try{ c.pH=b.teams.home.pitchers[0]; c.pA=b.teams.away.pitchers[0]; }catch(e){} });
-  var buenos=cruz.filter(function(c){ return c.pH&&c.pA; });
-  var yrs={}; buenos.forEach(function(c){ yrs[c.g.fecha.slice(0,4)]=1; });
+  if(!cruz.length) throw new Error('No pude cruzar ningún juego de ESPN con uno de la MLB (sin cruce: '+sinPar+').');
+
+  progreso(cruz.length+' juegos cruzados. Bajando líneas de cierre…',0.15);
+  var odds=await pool(cruz.map(function(c){ return function(){ return gj(espnOdds(c.ev.id)); }; }),8,function(a,b){ progreso('Líneas de ESPN '+a+'/'+b,0.15+0.25*a/b); });
+  var conLinea=[], sinLinea=0, proveedores={};
+  cruz.forEach(function(c,i){ var o=odds[i]?parseOdds(odds[i]):null; if(!o){ sinLinea++; return; } c.o=o; proveedores[o.prov]=(proveedores[o.prov]||0)+1; conLinea.push(c); });
+  if(conLinea.length<20) throw new Error('ESPN solo trajo línea para '+conLinea.length+' de '+cruz.length+' juegos. Prueba con más días.');
+
+  progreso(conLinea.length+' juegos con línea. Bajando abridores…',0.42);
+  var box=await pool(conLinea.map(function(c){ return function(){ return gj(MLB+'/game/'+c.g.pk+'/boxscore'); }; }),8,function(a,b){ progreso('Abridores '+a+'/'+b,0.42+0.15*a/b); });
+  conLinea.forEach(function(c,i){ var b=box[i]; try{ c.pH=b.teams.home.pitchers[0]; c.pA=b.teams.away.pitchers[0]; }catch(e){} });
+  var buenos=conLinea.filter(function(c){ return c.pH&&c.pA; });
   var ids={}; buenos.forEach(function(c){ ids[c.pH]=c.g.fecha.slice(0,4); ids[c.pA]=c.g.fecha.slice(0,4); });
   var tareas=[];
   Object.keys(ids).forEach(function(id){ tareas.push(function(){ return logPitcher(id,ids[id]); }); });
-  await pool(tareas,8,function(a,b){ progreso('Historial de abridores '+a+'/'+b,0.30+0.35*a/b); });
+  await pool(tareas,8,function(a,b){ progreso('Historial de abridores '+a+'/'+b,0.57+0.35*a/b); });
   if(PARAR) throw new Error('Parado.');
-  progreso('Bajando precios de cierre de Kalshi…',0.66);
-  var precios=await pool(buenos.map(function(c){ return function(){ return precioCierre(c.tickerH, Math.floor(c.g.ini/1000)); }; }),6,function(a,b){ progreso('Precios de Kalshi '+a+'/'+b,0.66+0.30*a/b); });
-  var filas=[], desc={sinPrecio:0,ilíquido:0,pocosDatos:0,sinResultado:0,mismatch:0}, muestra=[], malos=[];
+
+  progreso('Calculando el modelo juego por juego…',0.94);
+  var filas=[], pocos=0, muestra=[];
   for(var i=0;i<buenos.length;i++){
-    var c=buenos[i], g=c.g, pr=precios[i], yr=g.fecha.slice(0,4);
-    if(!pr){ desc.sinPrecio++; continue; }
-    if(pr.ask-pr.bid>0.10){ desc.ilíquido++; continue; }
+    var c=buenos[i], g=c.g, yr=g.fecha.slice(0,4);
     var lp=await Promise.all([logPitcher(c.pH,yr),logPitcher(c.pA,yr)]);
     var L=eraLiga(g.fecha);
     var pH=acumPitcher(lp[0],g.fecha), pA=acumPitcher(lp[1],g.fecha);
     var cH=CAL[g.hId]||[], cA=CAL[g.aId]||[];
     var oH=acumRuns(cH,g.fecha), oA=acumRuns(cA,g.fecha), sH=acumStaff(cH,g.fecha), sA=acumStaff(cA,g.fecha);
-    if(pH.ip<5||pA.ip<5||oH.g<15||oA.g<15||sH.era==null||sA.era==null){ desc.pocosDatos++; continue; }
+    if(pH.ip<5||pA.ip<5||oH.g<15||oA.g<15||sH.era==null||sA.era==null){ pocos++; continue; }
     var rgH=oH.rg14!=null?oH.rg*0.7+oH.rg14*0.3:oH.rg, rgA=oA.rg14!=null?oA.rg*0.7+oA.rg14*0.3:oA.rg;
     var pM=chanceLocal({eraH:eraUsado(pH,L),eraA:eraUsado(pA,L),rgH:rgH,rgA:rgA,bpH:sH.era,bpA:sA.era});
-    var pK=(pr.bid+pr.ask)/2;
-    if(c.resH==='yes'&&g.y!==1||c.resH==='no'&&g.y!==0){ desc.mismatch++; if(malos.length<3) malos.push(c.tickerH+' vs MLB '+g.pk); }
-    filas.push({pM:pM,pK:Math.min(0.97,Math.max(0.03,pK)),bid:pr.bid,ask:pr.ask,y:g.y});
-    if(muestra.length<2) muestra.push(g.fecha+' '+g.aC+'@'+g.hC+' modelo '+pc(pM)+' mercado '+pc(pK)+' ganó local '+g.y);
+    var iH=impAm(c.o.h), iA=impAm(c.o.a), pK=iH/(iH+iA);
+    filas.push({pM:pM,pK:Math.min(0.97,Math.max(0.03,pK)),iH:iH,iA:iA,dH:decAm(c.o.h),dA:decAm(c.o.a),y:g.y});
+    if(muestra.length<2) muestra.push(g.fecha+' '+g.aC+'@'+g.hC+' modelo '+pc(pM)+' mercado '+pc(pK)+' ('+c.o.h+'/'+c.o.a+') ganó local '+g.y);
   }
-  if(filas.length<20) throw new Error('Solo quedaron '+filas.length+' juegos con todo (sin precio '+desc.sinPrecio+', ilíquidos '+desc.ilíquido+', pocos datos '+desc.pocosDatos+'). Prueba con más días.');
-  var info='Rango '+ini+' a '+fin+'. Juegos finales MLB: '+juegos.length+' · con mercado en Kalshi: '+cruz.length+' · medidos: '+filas.length+'. Descartados: sin precio '+desc.sinPrecio+', libro ilíquido (spread &gt; 10¢) '+desc.ilíquido+', pocos datos del dia '+desc.pocosDatos+(sinPar.length?', eventos sin cruce '+sinPar.length:'')+'. '+(desc.mismatch?('<b>Ojo:</b> '+desc.mismatch+' juegos donde el resultado de Kalshi no coincide con el de la MLB ('+malos.join(', ')+'). '):'')+
-    'El modelo usa solo datos del día anterior. Como la MLB no da el bullpen por fecha, se usa carreras permitidas por juego del equipo × 0.92 (proxy del ERA del staff, parecido a lo que hace la app en fechas pasadas) y no se usan splits de mano; por eso puede diferir un poco de la app. '+(usoHist?'Se usó el histórico de Kalshi. ':'')+'Ejemplos: '+muestra.join(' · ');
+  if(filas.length<20) throw new Error('Solo quedaron '+filas.length+' juegos con todo (pocos datos del día '+pocos+'). Prueba con más días.');
+  var prov=Object.keys(proveedores).map(function(k){ return k+' '+proveedores[k]; }).join(', ');
+  var info='Rango '+ini+' a '+fin+'. Juegos finales MLB: '+juegos.length+' · cruzados con ESPN: '+cruz.length+' · con línea: '+conLinea.length+' · medidos: '+filas.length+'. Descartados: sin cruce '+sinPar+', sin línea '+sinLinea+', pocos datos del día '+pocos+(marcadorMal?(', marcador distinto entre ESPN y MLB '+marcadorMal+' ('+malos.join(', ')+')'):'')+'. Fuente de la línea: '+prov+' (se toma la línea final que ESPN guarda del juego, con el vig quitado para comparar probabilidades). El modelo usa solo datos de antes de ese día. Como la MLB no da el bullpen por fecha, se usa carreras permitidas por juego del equipo × 0.92 (proxy del ERA del staff) y no se usan splits de mano; por eso puede diferir un poco de la app. Ejemplos: '+muestra.join(' · ');
   pintar(evaluar(filas),info);
   progreso('Listo: '+filas.length+' juegos medidos.',1);
 }
@@ -392,17 +366,21 @@ async function medir(dias){
 async function probar(){
   var o=$('o1'); o.style.display=''; o.textContent='Probando…\n';
   var add=function(t){ o.textContent+=t+'\n'; };
+  var ayer=sumaDias(new Date().toISOString().slice(0,10),-2);
   try{
-    var s=await gj(MLB+'/schedule?sportId=1&date='+sumaDias(new Date().toISOString().slice(0,10),-2)); add('MLB OK · juegos ese día: '+((s.dates&&s.dates[0]&&s.dates[0].games.length)||0));
+    var s=await gj(MLB+'/schedule?sportId=1&date='+ayer); add('MLB OK · juegos el '+ayer+': '+((s.dates&&s.dates[0]&&s.dates[0].games.length)||0));
   }catch(e){ add('MLB FALLÓ: '+e.message); }
+  var evs=[];
   try{
-    var hasta=Math.floor(Date.now()/1000), desde=hasta-86400*10;
-    var j=await kj('/markets?series_ticker='+SERIE+'&status=settled&limit=3&min_close_ts='+desde+'&max_close_ts='+(hasta+86400*20));
-    add('Kalshi OK ('+KB+') · mercados de ejemplo: '+(j.markets||[]).length);
-    if(j.markets&&j.markets[0]){ var m=j.markets[0]; add('ejemplo: '+m.ticker+' · result='+m.result+' · campos: '+Object.keys(m).slice(0,14).join(', '));
-      var p=parseTicker(m.ticker); add('ticker leído: '+(p?(p.fecha+' '+p.equipos+' → '+p.codigo):'NO LO PUDE LEER'));
-      if(p){ try{ var pr=await precioCierre(m.ticker,p.epoch); add('precio de cierre: '+(pr?('bid '+pr.bid+' ask '+pr.ask+(pr.libro?'':' (solo último precio)')):'sin precio')); }catch(e){ add('Candlesticks FALLÓ: '+e.message); } } }
-  }catch(e){ add('Kalshi FALLÓ: '+e.message+'\n(Si dice Failed to fetch, el navegador no deja leer Kalshi desde aquí: avísame y lo paso por tu servidor de Railway.)'); }
+    evs=await eventosDelDia(ayer.replace(/-/g,'')); add('ESPN calendario OK · juegos: '+evs.length+(evs[0]?' · ejemplo '+evs[0].a+'@'+evs[0].h+' '+evs[0].sA+'-'+evs[0].sH+' (id '+evs[0].id+')':''));
+  }catch(e){ add('ESPN calendario FALLÓ: '+e.message); }
+  if(evs[0]){
+    try{
+      var j=await gj(espnOdds(evs[0].id)), p=parseOdds(j);
+      add('ESPN líneas OK · proveedores: '+((j.items||[]).map(function(x){ return x.provider&&x.provider.name; }).join(', ')||'ninguno'));
+      add(p?('moneyline leído: local '+p.h+' / visita '+p.a+' ('+p.prov+')'):'no pude leer un moneyline de ese juego (puede que ese juego no tenga línea)');
+    }catch(e){ add('ESPN líneas FALLÓ: '+e.message+'\n(Si dice Load failed o Failed to fetch, Safari no deja leer ese servidor desde aquí: sube correr_mercado.js y mercado.yml y se corre en GitHub Actions.)'); }
+  }
 }
 function copiar(){
   var t=ULTIMO_TEXTO;
