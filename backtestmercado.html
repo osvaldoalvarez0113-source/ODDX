@@ -230,8 +230,21 @@ function evaluar(rows){
   for(var i=0;i<cortes.length-1;i++) bins.push({lo:cortes[i],hi:cortes[i+1],n:0,pM:0,pK:0,y:0});
   rows.forEach(function(r){ for(var i=0;i<bins.length;i++) if(r.pM>=bins[i].lo&&r.pM<bins[i].hi){ bins[i].n++;bins[i].pM+=r.pM;bins[i].pK+=r.pK;bins[i].y+=r.y; break; } });
   out.bins=bins;
-  // apuestas: el lado donde el modelo ve mas ventaja contra el precio REAL (con vig) de DraftKings; 1 unidad por apuesta
-  out.roi=[1,2,3,4,5,6,8].map(function(t){
+  out.roi=roiDe(rows);
+  // sesgo de local: promedio de lo que dice cada uno contra lo que paso
+  var sM=0,sK=0,sY=0; rows.forEach(function(r){ sM+=r.pM; sK+=r.pK; sY+=r.y; });
+  out.sesgo={mM:sM/n, mK:sK/n, mY:sY/n};
+  // ajustes del modelo probados con validacion cruzada: se ajusta con una mitad de la temporada y se prueba en la otra
+  out.cf=[false,true].map(function(conPend){
+    var c=crossFit(rows,conPend), d=difVs(c.rows,rows);
+    return {conPend:conPend, pa:c.pa, pb:c.pb, loss:d.loss, dif:d.dif, z:d.z, roi:roiDe(c.rows)};
+  });
+  return out;
+}
+
+function roiDe(rows){
+  // apuestas: el lado donde el modelo ve mas ventaja contra el precio REAL (con vig) de la casa; 1 unidad por apuesta
+  return [1,2,3,4,5,6,8].map(function(t){
     var rets=[], gan=0;
     rows.forEach(function(r){
       var eH=r.pM-r.iH, eA=(1-r.pM)-r.iA, lado=null, dec=0;
@@ -242,7 +255,27 @@ function evaluar(rows){
     });
     var s=mediaSe(rets); return {t:t,n:rets.length,gan:gan,roi:s.m,se:s.se};
   });
-  return out;
+}
+function sig(z){ return 1/(1+Math.exp(-z)); }
+function ajusta(rows,conPend){
+  var a=0,b=1;
+  for(var it=0;it<40;it++){
+    var g0=0,g1=0,h00=0,h01=0,h11=0;
+    rows.forEach(function(r){ var x=logit(r.pM), p=sig(a+b*x), w=p*(1-p); g0+=r.y-p; g1+=(r.y-p)*x; h00+=w; h01+=w*x; h11+=w*x*x; });
+    if(!conPend){ var da=g0/h00; a+=da; if(Math.abs(da)<1e-9) break; }
+    else { var det=h00*h11-h01*h01; if(Math.abs(det)<1e-12) break; var da2=(h11*g0-h01*g1)/det, db=(h00*g1-h01*g0)/det; a+=da2; b+=db; if(Math.abs(da2)+Math.abs(db)<1e-9) break; }
+  }
+  return {a:a,b:b};
+}
+function crossFit(rows,conPend){
+  var m=Math.floor(rows.length/2), A=rows.slice(0,m), B=rows.slice(m), pa=ajusta(A,conPend), pb=ajusta(B,conPend);
+  function apl(r,p){ return Object.assign({},r,{pM:Math.min(0.97,Math.max(0.03,sig(p.a+p.b*logit(r.pM))))}); }
+  return {rows:A.map(function(r){ return apl(r,pb); }).concat(B.map(function(r){ return apl(r,pa); })), pa:pa, pb:pb};
+}
+function difVs(rowsX,rowsRef){
+  var d=[], l=0;
+  rowsX.forEach(function(r,i){ var v=ll(r.pM,r.y); l+=v; d.push(v-ll(rowsRef[i].pK,rowsRef[i].y)); });
+  var s=mediaSe(d); return {loss:l/rowsX.length, dif:s.m, z:s.se>0?s.m/s.se:0};
 }
 
 /* ---------- pantalla ---------- */
@@ -277,6 +310,28 @@ function pintar(e,info){
   }));
   h+='<div class="nota">Una unidad por apuesta, al precio real de cierre de DraftKings (con su vig). Verde/rojo solo si el intervalo no cruza el cero. Pocas apuestas = mucho ruido.</div>';
   e.roi.forEach(function(x){ t+='ROI>='+x.t+'pts n='+x.n+' gan='+x.gan+' roi='+(x.roi*100).toFixed(1)+'%±'+(200*x.se).toFixed(1)+'\n'; });
+  var sg=e.sesgo;
+  h+='<h3>Ventaja de local: ¿cuánto le da cada uno?</h3>';
+  h+=tabla(['Promedio de probabilidad del local','Valor'],[['Modelo OVA',pc(sg.mM)],['Mercado',pc(sg.mK)],['Lo que pasó (local ganó)',pc(sg.mY)]]);
+  t+='LOCAL modelo '+pc(sg.mM)+' mercado '+pc(sg.mK)+' real '+pc(sg.mY)+'\n';
+  var ptsA=(sig(e.cf[0].pa.a)-0.5)*100, ptsB=(sig(e.cf[0].pb.a)-0.5)*100;
+  var difSesgo=(sg.mY-sg.mM)*100;
+  h+='<div class="veredicto">'+(Math.abs(difSesgo)<1.5?'<span class="gris">El modelo da una ventaja de local parecida a la real.</span>':'<span class="mal">El modelo '+(difSesgo>0?'se queda corto':'se pasa')+' con la ventaja de local por '+Math.abs(difSesgo).toFixed(1)+' puntos.</span> Si el sesgo es el mismo en todo el año, corregirlo mejora el modelo sin tocar nada más.')+'</div>';
+  h+='<h3>¿Mejora el modelo si se corrige? (ajustado en una mitad, probado en la otra)</h3>';
+  h+=tabla(['Versión','Pérdida','vs mercado','z'],[
+    ['Modelo actual',e.llM.toFixed(4),(e.dif>=0?'+':'')+e.dif.toFixed(4),e.z.toFixed(1)],
+    ['+ ventaja de local corregida',e.cf[0].loss.toFixed(4),(e.cf[0].dif>=0?'+':'')+e.cf[0].dif.toFixed(4),e.cf[0].z.toFixed(1)],
+    ['+ local y pendiente',e.cf[1].loss.toFixed(4),(e.cf[1].dif>=0?'+':'')+e.cf[1].dif.toFixed(4),e.cf[1].z.toFixed(1)],
+    ['Mercado',e.llK.toFixed(4),'0','—']]);
+  h+='<div class="nota">"vs mercado": positivo = el modelo pierde contra el mercado, cerca de 0 o negativo = lo alcanza o le gana. Cada mitad se corrige con parámetros ajustados en la OTRA mitad, así que ningún juego se midió con parámetros que lo hayan visto. Ventaja de local que sale del ajuste: '+ptsA.toFixed(1)+' y '+ptsB.toFixed(1)+' puntos extra sobre 50% (en las dos mitades).</div>';
+  t+='AJUSTE local: perdida '+e.cf[0].loss.toFixed(4)+' dif '+e.cf[0].dif.toFixed(4)+' z '+e.cf[0].z.toFixed(2)+' | extra local '+ptsA.toFixed(2)+'/'+ptsB.toFixed(2)+' pts\n';
+  t+='AJUSTE local+pendiente: perdida '+e.cf[1].loss.toFixed(4)+' dif '+e.cf[1].dif.toFixed(4)+' z '+e.cf[1].z.toFixed(2)+' | b '+e.cf[1].pa.b.toFixed(2)+'/'+e.cf[1].pb.b.toFixed(2)+'\n';
+  h+='<h3>Apostando con la ventaja de local corregida</h3>';
+  h+=tabla(['Ventaja mínima','Apuestas','Ganadas','Retorno','± (2 err.)'],e.cf[0].roi.map(function(x){
+    var cl=x.n?(x.roi-2*x.se>0?'ok':(x.roi+2*x.se<0?'mal':'gris')):'gris';
+    return ['≥ '+x.t+' pts',x.n,x.n?pc(x.gan/x.n,0):'—','<span class="'+cl+'">'+(x.n?(x.roi>=0?'+':'')+pc(x.roi):'—')+'</span>',x.n?pc(2*x.se,0):'—'];
+  }));
+  e.cf[0].roi.forEach(function(x){ t+='ROI_CORR>='+x.t+'pts n='+x.n+' gan='+x.gan+' roi='+(x.roi*100).toFixed(1)+'%±'+(200*x.se).toFixed(1)+'\n'; });
   h+='<h3>¿Cuando el modelo dice X, qué pasa?</h3>';
   h+=tabla(['Modelo dice (local)','Juegos','Modelo','Mercado','Ganó local'],e.bins.filter(function(b){return b.n>0;}).map(function(b){
     return [pc(b.lo,0)+'–'+pc(Math.min(b.hi,1),0),b.n,pc(b.pM/b.n),pc(b.pK/b.n),pc(b.y/b.n)];
