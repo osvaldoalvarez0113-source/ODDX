@@ -221,7 +221,10 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 
 <!-- ===================== MODELO (sin DOM, probado aparte) ===================== -->
 <script id="modelo">
-const PDEF={kM:0.06,kT:0.05,carry:0.65,H:2.4,R:1.5};
+const PDEF={kM:0.06,kT:0.05,carry:0.65,H:2.4,R:1.5,Z:1};
+// Z = cuánto se le cree a la DIFERENCIA de ratings (1 = todo, como antes). Los ratings se estiman con ruido, y las diferencias
+// grandes son en parte ruido: el favorito fuerte gana menos de lo que el rating dice. Z<1 encoge solo esa diferencia hacia 0
+// (no toca ni la ventaja de local ni el back-to-back). Se mide como la pendiente de regresar el margen real contra el rating.
 // Rating de cada equipo en PUNTOS de margen (estilo Elo de margen de victoria).
 //  margen esperado (local) = rating local - rating visita + ventaja de local + ajuste por descanso (back-to-back)
 //  total esperado = promedio corrido de la liga + tendencia de total de cada equipo
@@ -251,7 +254,7 @@ function paso(S,g,P,cb){
   const pm=mh-ma+P.H+(bA?P.R:0)-(bH?P.R:0);
   const pt=S.lg+th+ta;
   const mar=g.hs-g.as, tot=g.hs+g.as;
-  if(cb) cb(g,{pm:pm,pt:pt,mar:mar,tot:tot,cH:S.cnt[g.h]||0,cA:S.cnt[g.a]||0,S:S,lg:S.lg});
+  if(cb) cb(g,{pm:pm,pt:pt,mar:mar,tot:tot,cH:S.cnt[g.h]||0,cA:S.cnt[g.a]||0,S:S,lg:S.lg,rd:mh-ma,b0:pm-(mh-ma)});
   let e=Math.max(-20,Math.min(20,mar-pm));
   S.m[g.h]=mh+P.kM*e; S.m[g.a]=ma-P.kM*e;
   let eT=Math.max(-30,Math.min(30,tot-pt));
@@ -269,7 +272,8 @@ function predecir(S,P,g,rest){
   const sk=seasonOf(g.ts), esc=(S.season!==null && sk>S.season)?P.carry:1, dk=dayKey(g.ts);
   const bH=rest.dH!==undefined && dk-rest.dH===1, bA=rest.dA!==undefined && dk-rest.dA===1;
   const mh=(S.m[g.h]||0)*esc, ma=(S.m[g.a]||0)*esc, th=(S.t[g.h]||0)*esc, ta=(S.t[g.a]||0)*esc;
-  const pm=mh-ma+P.H+(bA?P.R:0)-(bH?P.R:0)+(g.adjH||0)-(g.adjA||0);
+  const Zc=(P.Z===undefined?1:P.Z);
+  const pm=(mh-ma)*Zc+P.H+(bA?P.R:0)-(bH?P.R:0)+(g.adjH||0)-(g.adjA||0);
   const pt=S.lg+th+ta, sg=sigmas(S);
   return {pm:pm,pt:pt,sM:sg.sM,sT:sg.sT,bH:bH,bA:bA,pH:pML(pm,sg.sM),mh:mh,ma:ma};
 }
@@ -283,16 +287,17 @@ function pRango(mu,s,a,b){ return Phi((b+0.5-mu)/s)-Phi((a-0.5-mu)/s); }
 
 function evaluar(games,P,sk,opt){
   opt=opt||{};
-  const r={n:0,ok:0,ll:0,llb:0,aeM:0,aeMb:0,aeT:0,aeTb:0,sqM:0,sqT:0,
+  const r={n:0,ok:0,ll:0,llb:0,aeM:0,aeMb:0,aeT:0,aeTb:0,sqM:0,sqT:0,sl:{n:0,sxx:0,sxy:0,syy:0},
     qW:{s:0,s2:0},qM:{s:0,s2:0},qT:{s:0,s2:0},bins:[{n:0,pred:0,won:0},{n:0,pred:0,won:0},{n:0,pred:0,won:0},{n:0,pred:0,won:0}]};
   let frH=1,frA=1,mb=2.5;
   correr(games,P,function(g,x){
     const mar=x.mar,tot=x.tot,real=mar>0;
     if(seasonOf(g.ts)===sk && x.cH>=5 && x.cA>=5 && (!opt.filtro||opt.filtro(g))){
-      const sg=sigmas(x.S), pH=pML(x.pm,sg.sM);
+      const Zc=(P.Z===undefined?1:P.Z), pmZ=x.b0+Zc*x.rd, sg=sigmas(x.S), pH=pML(pmZ,sg.sM);
+      const yS=x.mar-x.b0; r.sl.n++; r.sl.sxx+=x.rd*x.rd; r.sl.sxy+=x.rd*yS; r.sl.syy+=yS*yS;
       const lm=-Math.log(Math.max(real?pH:1-pH,1e-9)), lb=-Math.log((real?frH:frA)/(frH+frA));
       r.n++; if((pH>=0.5)===real) r.ok++; r.ll+=lm; r.llb+=lb;
-      const eM=Math.abs(mar-x.pm), eMb=Math.abs(mar-mb), eT=Math.abs(tot-x.pt), eTb=Math.abs(tot-x.lg);
+      const eM=Math.abs(mar-pmZ), eMb=Math.abs(mar-mb), eT=Math.abs(tot-x.pt), eTb=Math.abs(tot-x.lg);
       r.aeM+=eM; r.aeMb+=eMb; r.aeT+=eT; r.aeTb+=eTb;
       r.sqM+=eM*eM; r.sqT+=eT*eT;
       [[r.qW,lb-lm],[r.qM,eMb-eM],[r.qT,eTb-eT]].forEach(function(z){ z[0].s+=z[1]; z[0].s2+=z[1]*z[1]; });
@@ -304,6 +309,14 @@ function evaluar(games,P,sk,opt){
   });
   return r;
 }
+// Pendiente de regresar (margen real - resto del margen esperado) contra la diferencia de ratings. 1 = bien calibrado; <1 = el modelo exagera.
+function pendiente(sl){
+  if(!sl||sl.n<100||sl.sxx<=0) return {b:1,se:Infinity,z:0,n:sl?sl.n:0};
+  const b=sl.sxy/sl.sxx, sse=Math.max(sl.syy-b*sl.sxy,0), se=Math.sqrt(sse/Math.max(sl.n-1,1)/sl.sxx);
+  return {b:b,se:se,z:se>0?(1-b)/se:0,n:sl.n};
+}
+// Z recomendado: solo se mueve de 1 si la pendiente es claramente menor que 1 (mas de 2 errores estandar), igual que el resto de vereditos.
+function zRecomendado(sl){ const p=pendiente(sl); if(p.z>2) return Math.max(0.7,Math.min(1,Math.round(p.b*100)/100)); return 1; }
 function dif(q,n){ const m=n?q.s/n:0, v=n>1?Math.max(q.s2-q.s*q.s/n,0)/(n-1):0; return {d:m,se:Math.sqrt(v/Math.max(n,1)),n:n}; }
 function verdTxt(v,minD){
   const z=v.se>0?v.d/v.se:0;
@@ -329,12 +342,12 @@ function gridTotal(games,sk,filtro,base){
   });
   return best;
 }
-if(typeof module!=='undefined') module.exports={PDEF,seasonOf,dayKey,Phi,correr,predecir,pML,pCover,pRango,evaluar,dif,verdTxt,gridMargen,gridTotal,sigmas};
+if(typeof module!=='undefined') module.exports={PDEF,seasonOf,dayKey,Phi,correr,predecir,pML,pCover,pRango,evaluar,dif,verdTxt,gridMargen,gridTotal,sigmas,pendiente,zRecomendado};
 </script>
 
 <!-- ===================== APP ===================== -->
 <script>
-const VERSION='v3.1';
+const VERSION='v3.2';
 const ESPN='https://site.api.espn.com/apis/site/v2/sports/basketball/nba/';
 const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
@@ -583,7 +596,7 @@ function pintarCuerpo(body,g){
    <div class="ajuste"><div><label>${esc(A.ab)} (pts, ej. −4)</label><input type="number" step="0.5" data-k="adjA" value="${g.adjA||0}"></div><div><label>${esc(H.ab)} (pts, ej. −4)</label><input type="number" step="0.5" data-k="adjH" value="${g.adjH||0}"></div></div>
    <button class="btnAncho sec" data-a="adj" style="margin-top:0">Aplicar ajuste</button>
    <div class="nota">Si falta una estrella, resta puntos a su equipo (ejemplo: −4 si es titular clave). El modelo NO sabe de lesiones por sí solo: mira la pestaña Forma.</div>
-   <div class="nota">Ratings en puntos con arrastre entre temporadas (parámetros ${PARAMS.calibrado?'calibrados con datos reales':'de arranque, sin calibrar: ve a Backtest'}). Ventaja de local ${PARAMS.H} pts; back-to-back ${PARAMS.R} pts. Desviación típica del margen ${pr.sM.toFixed(1)} pts, del total ${pr.sT.toFixed(1)}.</div>`;
+   <div class="nota">Ratings en puntos con arrastre entre temporadas (parámetros ${PARAMS.calibrado?'calibrados con datos reales':'de arranque, sin calibrar: ve a Backtest'}). Ventaja de local ${PARAMS.H} pts; back-to-back ${PARAMS.R} pts.${(PARAMS.Z!==undefined&&PARAMS.Z<1)?' Confianza en la diferencia de ratings ×'+PARAMS.Z.toFixed(2)+' (medida en el backtest).':''} Desviación típica del margen ${pr.sM.toFixed(1)} pts, del total ${pr.sT.toFixed(1)}.</div>`;
 
   const cuo=`
    <h3>Moneyline</h3>${confTxt('win')}
@@ -702,7 +715,7 @@ function pintarRank(){
 function renderBt(tit,r,sk,guardar){
   if(!r.n) return `<div class="estado bad">${tit}: no hay partidos medibles.</div>`;
   const n=r.n, dW=dif(r.qW,n), dM=dif(r.qM,n), dT=dif(r.qT,n);
-  const vW=verdTxt(dW,0.003), vM=verdTxt(dM,0.1), vT=verdTxt(dT,0.1);
+  const vW=verdTxt(dW,0.003), vM=verdTxt(dM,0.1), vT=verdTxt(dT,0.1), sP=pendiente(r.sl);
   if(guardar&&n>=300) LS.set('ova_nba_ver_v1',{win:Object.assign({},dW,{minD:0.003}),mar:Object.assign({},dM,{minD:0.1}),tot:Object.assign({},dT,{minD:0.1})});
   const etq=['menos de 60%','60–70%','70–80%','80% o más'];
   let h=`<h3>${tit} — ${n} partidos medidos</h3>
@@ -710,8 +723,9 @@ function renderBt(tit,r,sk,guardar){
    <table class="tabla-bt"><tr><th>Mercado</th><th>Modelo</th><th>Sin modelo</th><th>Veredicto</th></tr>
    <tr><td>Ganador (pérdida)</td><td>${(r.ll/n).toFixed(3)}</td><td>${(r.llb/n).toFixed(3)}</td><td style="color:${vW.c}">${vW.t}</td></tr>
    <tr><td>Margen (error pts)</td><td>${(r.aeM/n).toFixed(2)}</td><td>${(r.aeMb/n).toFixed(2)}</td><td style="color:${vM.c}">${vM.t}</td></tr>
-   <tr><td>Total (error pts)</td><td>${(r.aeT/n).toFixed(2)}</td><td>${(r.aeTb/n).toFixed(2)}</td><td style="color:${vT.c}">${vT.t}</td></tr></table>
-   <div class="nota" style="margin-top:0">Un ✓ o ✗ solo sale si la diferencia es clara (más de 2 errores estándar); si no, ≈ igual. "Sin modelo" es el promedio de la liga, no la línea del mercado.</div>`;
+   <tr><td>Total (error pts)</td><td>${(r.aeT/n).toFixed(2)}</td><td>${(r.aeTb/n).toFixed(2)}</td><td style="color:${vT.c}">${vT.t}</td></tr>
+   <tr><td>Pendiente del margen (1.00 = ideal)</td><td>${sP.b.toFixed(2)} ±${(2*sP.se).toFixed(2)}</td><td>1.00</td><td style="color:${sP.z>2?'var(--bad)':(sP.z<-2?'var(--bad)':'var(--good)')}">${sP.z>2?'exagera':(sP.z<-2?'se queda corto':'≈ bien')}</td></tr></table>
+   <div class="nota" style="margin-top:0">Un ✓ o ✗ solo sale si la diferencia es clara (más de 2 errores estándar); si no, ≈ igual. "Sin modelo" es el promedio de la liga, no la línea del mercado. La pendiente dice si los márgenes grandes del modelo se cumplen: si sale por debajo de 1 y marca "exagera", los favoritos fuertes ganan menos de lo que dice el rating — "Calibrar" lo corrige solo con el factor Z.</div>`;
   const malos=[]; if(vM.t!=='✓ le gana') malos.push('el margen'); if(vT.t!=='✓ le gana') malos.push('el total');
   h+=`<div class="veredicto-bt">${vW.t==='✓ le gana'?'En el <b>ganador</b> el modelo sí le gana a la referencia.':'En el <b>ganador</b> el modelo no le gana claramente a la referencia.'}${malos.length?' En '+malos.join(' y ')+' <b>no hay ventaja clara</b> sobre el promedio de la liga.':''} Eso es lo mínimo que se le pide: todavía no dice nada sobre la línea del mercado.</div>`;
   h+='<h3>¿Cuando dice 70%, gana 70%?</h3><table class="tabla-bt"><tr><th>Favorito con</th><th>Partidos</th><th>Dijo</th><th>Ganó</th></tr>'+
@@ -736,28 +750,30 @@ function calibrar(){
   const mid=eva[Math.floor(eva.length/2)].ts, f1=g=>g.ts<mid, f2=g=>g.ts>=mid;
   const paso=(txt,fn)=>new Promise(res=>{ out.innerHTML='<div class="estado">'+txt+'</div>'; setTimeout(()=>res(fn()),40); });
   (async()=>{
-    const A=await paso('Calibrando margen (1 de 5)…',()=>gridMargen(GAMES,sk,null,PARAMS));
+    const base1=Object.assign({},PARAMS,{Z:1});
+    const A=await paso('Calibrando margen (1 de 5)…',()=>gridMargen(GAMES,sk,null,base1));
     const B=await paso('Calibrando total (2 de 5)…',()=>gridTotal(GAMES,sk,null,A.P));
-    const mej=B.P;
-    const H1=await paso('Chequeo honesto 3 de 5…',()=>{ const a=gridMargen(GAMES,sk,f1,PARAMS); return gridTotal(GAMES,sk,f1,a.P).P; });
-    const H2=await paso('Chequeo honesto 4 de 5…',()=>{ const a=gridMargen(GAMES,sk,f2,PARAMS); return gridTotal(GAMES,sk,f2,a.P).P; });
+    const mej=Object.assign({},B.P,{Z:zRecomendado(evaluar(GAMES,B.P,sk).sl)});
+    const H1=await paso('Chequeo honesto 3 de 5…',()=>{ const a=gridMargen(GAMES,sk,f1,base1), P1=gridTotal(GAMES,sk,f1,a.P).P; return Object.assign({},P1,{Z:zRecomendado(evaluar(GAMES,P1,sk,{filtro:f1}).sl)}); });
+    const H2=await paso('Chequeo honesto 4 de 5…',()=>{ const a=gridMargen(GAMES,sk,f2,base1), P2=gridTotal(GAMES,sk,f2,a.P).P; return Object.assign({},P2,{Z:zRecomendado(evaluar(GAMES,P2,sk,{filtro:f2}).sl)}); });
     const fin=await paso('Midiendo (5 de 5)…',()=>{
-      const sum=(a,b)=>({n:a.n+b.n,aeM:a.aeM+b.aeM,aeMb:a.aeMb+b.aeMb,aeT:a.aeT+b.aeT,aeTb:a.aeTb+b.aeTb});
+      const sum=(a,b)=>({n:a.n+b.n,aeM:a.aeM+b.aeM,aeMb:a.aeMb+b.aeMb,aeT:a.aeT+b.aeT,aeTb:a.aeTb+b.aeTb,ll:a.ll+b.ll,llb:a.llb+b.llb});
       const act=sum(evaluar(GAMES,PARAMS,sk,{filtro:f2}),evaluar(GAMES,PARAMS,sk,{filtro:f1}));
       const cru=sum(evaluar(GAMES,H1,sk,{filtro:f2}),evaluar(GAMES,H2,sk,{filtro:f1}));
       return {act:act,cru:cru};
     });
-    const tx=P=>`kM ${P.kM} · arrastre ${P.carry} · local +${P.H} · B2B ${P.R} · kTotal ${P.kT}`;
+    const tx=P=>`kM ${P.kM} · arrastre ${P.carry} · local +${P.H} · B2B ${P.R} · kTotal ${P.kT} · confianza Z ${(P.Z===undefined?1:P.Z).toFixed(2)}`;
     const f=(r,k)=>(r[k]/r.n).toFixed(2);
     out.innerHTML=`<h3>Calibración (temporada ${sk}-${String(sk+1).slice(2)}, ${fin.act.n} partidos)</h3>
      <div class="observ"><b>Actual:</b> ${tx(PARAMS)}</div><div class="observ"><b>Calibrado:</b> ${tx(mej)}</div>
      <h3>Chequeo honesto cruzado</h3>
      <table class="tabla-bt"><tr><th>Error (pts)</th><th>Actual</th><th>Calibrado</th><th>Sin modelo</th></tr>
+     <tr><td>Ganador (pérdida)</td><td>${(fin.act.ll/fin.act.n).toFixed(3)}</td><td>${(fin.cru.ll/fin.cru.n).toFixed(3)}</td><td>${(fin.act.llb/fin.act.n).toFixed(3)}</td></tr>
      <tr><td>Margen</td><td>${f(fin.act,'aeM')}</td><td>${f(fin.cru,'aeM')}</td><td>${f(fin.act,'aeMb')}</td></tr>
      <tr><td>Total</td><td>${f(fin.act,'aeT')}</td><td>${f(fin.cru,'aeT')}</td><td>${f(fin.act,'aeTb')}</td></tr></table>
      <div class="nota" style="margin-top:0">Cada mitad de la temporada se mide con parámetros calibrados en la OTRA mitad, así que ningún partido se midió con parámetros que lo hayan visto. Más bajo = mejor.</div>
      <button id="btnUsar" class="btnAncho">Usar los parámetros calibrados</button><button id="btnReset" class="btnAncho sec">Volver a valores de arranque</button>`;
-    $('btnUsar').onclick=function(){ LS.set('ova_nba_params_v1',{kM:mej.kM,kT:mej.kT,carry:mej.carry,H:mej.H,R:mej.R}); PARAMS=Object.assign({},PDEF,mej,{calibrado:true}); recalc(); pintarRank(); out.insertAdjacentHTML('beforeend','<div class="estado ok">Guardado. Los partidos que abras desde ahora usan estos parámetros. Vuelve a tocar "Medir temporada pasada" para refrescar los veredictos.</div>'); this.disabled=true; };
+    $('btnUsar').onclick=function(){ LS.set('ova_nba_params_v1',{kM:mej.kM,kT:mej.kT,carry:mej.carry,H:mej.H,R:mej.R,Z:mej.Z}); PARAMS=Object.assign({},PDEF,mej,{calibrado:true}); recalc(); pintarRank(); out.insertAdjacentHTML('beforeend','<div class="estado ok">Guardado. Los partidos que abras desde ahora usan estos parámetros. Vuelve a tocar "Medir temporada pasada" para refrescar los veredictos.</div>'); this.disabled=true; };
     $('btnReset').onclick=function(){ try{localStorage.removeItem('ova_nba_params_v1');}catch(e){} PARAMS=Object.assign({},PDEF,{calibrado:false}); recalc(); pintarRank(); out.insertAdjacentHTML('beforeend','<div class="estado ok">Parámetros de arranque restablecidos.</div>'); this.disabled=true; };
   })().catch(e=>{ out.innerHTML='<div class="estado bad">No pude calibrar: '+esc(e.message)+'</div>'; });
 }
