@@ -1,7 +1,7 @@
-/* mercado.js
+/* pinnacle.js
    Muestra dentro de OVA lo que dice el mercado (Pinnacle, sin margen) y el precio maximo
    que conviene pagar en Kalshi. Los datos vienen de pinnacle-datos.json, que escribe el escaner
-   "Valor vs Pinnacle". Este archivo SOLO LEE: no cambia ningun calculo ni ningun pick de OVA.
+   "Valor vs Pinnacle". Este archivo SOLO LEE: no cambia ningun calculo ni ningun pick de OVA (el aviso de bullpen es solo una nota).
    Si pinnacle-datos.json no existe o falla, no pasa nada y la app queda igual. */
 (function(){
   'use strict';
@@ -80,14 +80,102 @@
     m.appendChild(s);
   }
 
+  /* ---------- juegos de bullpen: el "abridor" es en realidad un relevista u opener ---------- */
+  function esFalso(se,l5,o){
+    if(!se||!o||!(o.g>=40)) return null;               /* temprano en la temporada no se puede saber */
+    var gs=se.gs||0, ipx=(l5&&l5.ipxAb!=null)?l5.ipxAb:null;
+    if(gs===0) return {gs:0,ipx:2};                    /* nunca ha abierto un juego */
+    if(gs<=3) return (ipx==null||ipx<4.5)?{gs:gs,ipx:(ipx!=null?ipx:2)}:null;
+    if(l5&&l5.nAb>=2&&ipx!=null&&ipx<3.5) return {gs:gs,ipx:ipx};  /* abre pero casi no lanza */
+    return null;
+  }
+  function fix1(x){ return (Math.round(x*10)/10).toFixed(1); }
+  /* cuanto cambiaria el numero de OVA si el abridor lanzara lo que de verdad lanza y el resto lo hiciera el bullpen */
+  function ajusteBullpen(el){
+    try{
+      var d=el&&el._d, c=el&&el._calc;
+      if(!d||!c||typeof eraUsado!=='function'||typeof MULT==='undefined') return null;
+      var fa=esFalso(d.sea,d.l5a,d.oa), fh=esFalso(d.seh,d.l5h,d.oh);
+      if(!fa&&!fh) return null;
+      var delta=(c.pH-50)/MULT, quien=[], w, u, ef;
+      if(fa){
+        u=eraUsado(d.sea,d.l5a);
+        if(u!=null&&d.ba&&d.ba.era!=null){ w=Math.max(0.15,Math.min(1,fa.ipx/6)); ef=w*u+(1-w)*d.ba.era; delta+=0.65*(ef-u); }
+        quien.push({nombre:(d.pa&&d.pa.fullName)||'el abridor visitante',eq:c.nomA,gs:fa.gs,ipx:fa.ipx});
+      }
+      if(fh){
+        u=eraUsado(d.seh,d.l5h);
+        if(u!=null&&d.bh&&d.bh.era!=null){ w=Math.max(0.15,Math.min(1,fh.ipx/6)); ef=w*u+(1-w)*d.bh.era; delta+=0.65*(u-ef); }
+        quien.push({nombre:(d.ph&&d.ph.fullName)||'el abridor local',eq:c.nomH,gs:fh.gs,ipx:fh.ipx});
+      }
+      var nuevo=Math.max(22,Math.min(78,50+delta*MULT));
+      return {quien:quien,nuevoHome:nuevo,cambioHome:nuevo-c.pH};
+    }catch(e){ return null; }
+  }
+  function txtBullpen(ab){
+    var q=ab.quien.map(function(z){
+      return z.nombre+' ('+(z.gs===0?'no ha abierto ning\u00fan juego':z.gs+(z.gs===1?' apertura':' aperturas')+', promedia '+fix1(z.ipx)+' innings')+')';
+    }).join(' y ');
+    return '\u26a0 Juego de bullpen: '+q+'. El n\u00famero de OVA depende de un abridor que casi no lanzar\u00e1, as\u00ed que es menos fiable.';
+  }
+  function juegoDeFila(pk){
+    var j=document.querySelectorAll('.game');
+    for(var a=0;a<j.length;a++) if(String(j[a]._pk)===String(pk)) return j[a];
+    return null;
+  }
+  /* lineas extra en la tarjeta del juego: bullpen y desacuerdo OVA vs mercado */
+  function aplicarExtras(el){
+    var m=el.querySelector('.match'); if(!m) return;
+    var c=el._calc, sig='';
+    var ab=ajusteBullpen(el), aviso='';
+    if(c){
+      sig=String(Math.round(c.pH*100))+'|'+VER+'|'+(ab?'b':'');
+      if(ab){
+        aviso+=txtBullpen(ab);
+        var camb=ab.cambioHome;
+        if(Math.abs(camb)>=1){
+          var pHn=ab.nuevoHome, fav=pHn>=50?c.nomH:c.nomA, pf=pHn>=50?pHn:100-pHn;
+          aviso+=' Si cuento el bullpen, OVA quedar\u00eda en '+esc(fav)+' '+fix1(pf)+'% ('+(camb>0?'+':'')+fix1(camb)+' pts para el local).';
+        }
+      }
+      var g=DATA?buscar(el._d&&el._d.a?el._d.a.team.name+' '+el._d.h.team.name:m.textContent):null;
+      if(g&&g.fair&&g.tope&&el._d&&el._d.a){
+        var iA=lado(g,el._d.a.team.name), iF=g.fair[0]>=g.fair[1]?0:1;
+        if(iA>=0){
+          var ova=(iF===iA)?c.pA:c.pH, mk=g.fair[iF]*100, dif=ova-mk;
+          if(Math.abs(dif)>=7)
+            aviso+=(aviso?' ':'')+'\u26a0 OVA da '+esc(g.n[iF])+' '+fix1(ova)+'% y el mercado '+fix1(mk)+'% ('+(dif>0?'+':'')+Math.round(dif)+' pts): gu\u00edate por el mercado.';
+        }
+      }
+    }
+    var ya=m.querySelector('.mkt.ex');
+    if(!aviso){ if(ya) ya.parentNode.removeChild(ya); return; }
+    if(ya&&ya.getAttribute('data-ex')===sig) return;
+    if(ya) ya.parentNode.removeChild(ya);
+    var s=document.createElement('small'); s.className='mkt ex'; s.setAttribute('data-ex',sig);
+    s.style.cssText='display:block;margin-top:3px;font-size:11.5px;color:#F59E0B';
+    s.innerHTML=aviso;
+    m.appendChild(s);
+  }
+
   /* fila del ranking "Al gane" */
   function aplicarFila(f){
-    if(f.getAttribute('data-mk')===String(VER)) return;
-    f.setAttribute('data-mk',String(VER));
     var t=f.querySelector('.txt'); if(!t) return;
-    var viejo=t.querySelectorAll('.mkt'); for(var q=0;q<viejo.length;q++) viejo[q].parentNode.removeChild(viejo[q]);
-    var b=t.querySelector('b'), sp=t.querySelector('span');
-    var g=buscar(t.textContent); if(!g||!g.fair||!g.tope) return;
+    var sig=String(VER)+'|'+(DATA?'d':'n');
+    if(f.getAttribute('data-mk')===sig) return;
+    f.setAttribute('data-mk',sig);
+    var viejo=t.querySelectorAll('.mkt,.bpw'); for(var q=0;q<viejo.length;q++) viejo[q].parentNode.removeChild(viejo[q]);
+    var b=t.querySelector('b');
+    var el=juegoDeFila(f.getAttribute('data-pk')), ab=el?ajusteBullpen(el):null;
+    if(ab){
+      var w=document.createElement('span'); w.className='bpw';
+      w.style.cssText='display:block;margin-top:2px;font-size:11.5px;color:#F59E0B';
+      w.textContent='\u26a0 juego de bullpen ('+ab.quien.map(function(z){return z.nombre;}).join(', ')+'): n\u00famero menos fiable';
+      t.appendChild(w);
+    }
+    /* la fila trae siglas (CWS @ CLE): para emparejar uso los nombres completos del juego */
+    var txt=(el&&el._d&&el._d.a&&el._d.h)?(el._d.a.team.name+' '+el._d.h.team.name):t.textContent;
+    var g=DATA?buscar(txt):null; if(!g||!g.fair||!g.tope) return;
     var i=lado(g,b?b.textContent:''); if(i<0) return;
     var mkt=g.fair[i]*100, pc=f.querySelector('.pct'), ova=pc?parseFloat(pc.textContent):NaN;
     var linea='\ud83d\udcca Mercado '+pct(g.fair[i])+' \u00b7 '+kalshiTxt(g,i,true);
@@ -117,11 +205,11 @@
   }
 
   function pasar(){
-    if(!DATA) return;
     try{
-      var j=document.querySelectorAll('.game'); for(var a=0;a<j.length;a++) aplicarJuego(j[a]);
+      var j=document.querySelectorAll('.game');
+      for(var a=0;a<j.length;a++){ if(DATA) aplicarJuego(j[a]); aplicarExtras(j[a]); }
       var f=document.querySelectorAll('#algane .fila'); for(var b=0;b<f.length;b++) aplicarFila(f[b]);
-      nota();
+      if(DATA) nota();
     }catch(e){}
   }
   function agendar(){ if(TIMER) return; TIMER=setTimeout(function(){ TIMER=null; pasar(); },200); }
@@ -149,7 +237,7 @@
   }
 
   function iniciar(){
-    cargar();
+    cargar(); pasar();
     try{ new MutationObserver(agendar).observe(document.body,{childList:true,subtree:true}); }catch(e){}
     document.addEventListener('visibilitychange',function(){
       if(!document.hidden&&(!DATA||Date.now()-ULT>10*60000)) cargar();
