@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Backtest playoffs</title>
+<style>
+:root{--bg:#070B12;--c:#0D1420;--c2:#131D2C;--l:#2A3E56;--t:#F1F5FB;--m:#9DB2C8;--a:#3B82F6;--h:#FBBF24;--g:#34D399;--r:#F87171}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--t);font:15px/1.5 -apple-system,system-ui,Inter,sans-serif;padding:16px 14px 60px;max-width:640px;margin:0 auto;font-variant-numeric:tabular-nums}
+h1{font-size:22px;margin:6px 0 4px} h3{font-size:15px;margin:22px 0 6px;border-bottom:1px solid var(--l);padding-bottom:6px}
+p{margin:8px 0;color:var(--m);font-size:13.5px} .nota{font-size:12px}
+.ver{background:var(--c2);border-left:3px solid var(--h);border-radius:0 10px 10px 0;padding:12px 14px;margin:14px 0;color:var(--t);font-size:14.5px}
+button{background:var(--a);color:#020509;border:0;border-radius:10px;padding:12px 18px;font-size:16px;font-weight:600}
+button:disabled{opacity:.45} .ghost{background:var(--c);color:var(--m);border:1px solid var(--l)}
+label{margin-right:12px;font-size:14px;color:var(--t);white-space:nowrap}
+.yrs{margin:12px 0;line-height:2}
+#prog{height:8px;background:var(--c2);border-radius:5px;overflow:hidden;margin:12px 0 2px;display:none}
+#barra{height:100%;width:0;background:var(--h);transition:width .2s}
+#ptxt{font-size:12px;color:var(--m)} #log{font-size:12.5px;color:var(--m);margin-top:8px}
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin:6px 0}
+th,td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--c2)} th:first-child,td:first-child{text-align:left}
+th{color:var(--m);font-weight:600;font-size:11.5px} tr.ok td{color:var(--g);font-weight:600}
+.mal{color:var(--r)}
+textarea{width:100%;height:220px;background:var(--c);color:var(--t);border:1px solid var(--l);border-radius:8px;font-size:12px;margin-top:8px;display:none}
+</style></head><body>
+<h1>Backtest de playoffs</h1>
+<p>Toma todos los juegos de postemporada ya terminados, calcula el % que OVA habría dado antes de cada uno (con la misma fórmula) y mide si acertó lo que decía. Tarda un par de minutos; no cierres la pantalla.</p>
+<div class="yrs">
+<label><input type="checkbox" class="yr" value="2022" checked> 2022</label>
+<label><input type="checkbox" class="yr" value="2023" checked> 2023</label>
+<label><input type="checkbox" class="yr" value="2024" checked> 2024</label>
+<label><input type="checkbox" class="yr" value="2025" checked> 2025</label>
+<label><input type="checkbox" class="yr" value="2026" checked> 2026</label>
+</div>
+<button id="go">Correr backtest</button>
+<div id="prog"><div id="barra"></div></div><div id="ptxt"></div>
+<div id="log"></div>
+<div id="out"></div>
+<div style="margin-top:16px"><button id="copiar" class="ghost" style="display:none">Copiar resultados</button> <span id="cmsg" class="nota"></span>
+<textarea id="plano" readonly></textarea></div>
+<script>
+/* Backtest de playoffs para OVA. Replica la formula de index.html (v46) tal como
+   corre en octubre: estadisticas de TEMPORADA REGULAR (gameType=R), ERA mezclado
+   70/30 con regresion hacia la liga, ofensiva 70/30 con 14 dias, ERA de bullpen
+   con el split real de relevistas, localia 0.59, multiplicador 6, tope 22-78%.
+   NO replica (a proposito, por costo): splits zurdo/derecho del lineup (tope +-10%
+   en carreras por juego) ni la penalizacion de bullpen quemado. */
+var BT=(function(){
+ var API='https://statsapi.mlb.com/api/v1';
+ var ERR=0, C={};
+ var BASE={w:[0.65,0.5,0.25],bono:0.59,mult:6};
+
+ function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+ function jget(url,tries){
+  tries=(tries==null?3:tries);
+  return fetch(url).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+   .catch(function(e){
+     if(tries>1) return sleep(350).then(function(){ return jget(url,tries-1); });
+     ERR++; throw e;
+   });
+ }
+ function memo(name,key,fn){ var c=C[name]||(C[name]={}); if(!c[key]) c[key]=fn(); return c[key]; }
+ function mapLimit(items,n,fn,onTick){
+  var i=0,done=0,res=new Array(items.length);
+  return new Promise(function(ok){
+   if(!items.length) return ok(res);
+   function next(){
+    if(i>=items.length) return;
+    var k=i++;
+    Promise.resolve().then(function(){ return fn(items[k],k); })
+     .then(function(v){ res[k]=v; },function(){ res[k]=null; })
+     .then(function(){ done++; if(onTick) onTick(done,items.length);
+        if(done===items.length) ok(res); else next(); });
+   }
+   for(var w=0;w<Math.min(n,items.length);w++) next();
+  });
+ }
+ function ipToNum(ip){
+  if(ip==null) return 0;
+  var n=parseFloat(String(ip)); if(!isFinite(n)) return 0;
+  var dec=Math.round((n-Math.trunc(n))*10);
+  return Math.trunc(n)+(dec===1?1/3:dec===2?2/3:0);
+ }
+ function ymd(dt){ var p=function(n){ return String(n).padStart(2,'0'); };
+  return dt.getUTCFullYear()+'-'+p(dt.getUTCMonth()+1)+'-'+p(dt.getUTCDate()); }
+ function diaBase(s){ var pt=String(s).split('-'); return new Date(Date.UTC(+pt[0],+pt[1]-1,+pt[2],12,0,0)); }
+
+ /* ---------- formula (copiada de index.html) ---------- */
+ function reg(era,ip,prior,ancla,L0){
+  if(era==null||!isFinite(era)) return null;
+  var L=(ancla!=null&&isFinite(ancla))?ancla:(L0!=null?L0:4.10);
+  return (era*ip + L*prior)/(ip+prior);
+ }
+ function eraUsado(se,l5,LIGA){
+  var PRIOR=40, anc=null;
+  if(se.fip!=null&&isFinite(se.fip)&&se.ip>0){
+   var L=(LIGA!=null?LIGA:4.10);
+   anc=(se.fip*se.ip + L*30)/(se.ip+30);
+  }
+  var s=reg(se.era,se.ip,PRIOR,anc,LIGA), l=reg(l5.era,l5.ip,PRIOR*0.625,anc,LIGA);
+  if(s!=null&&l!=null) return s*0.70+l*0.30;
+  return s!=null?s:l;
+ }
+ function rgMix(o,o14){
+  if(!o14||o14.rg==null) return o.rg;
+  if(o.rg==null) return o14.rg;
+  return o.rg*0.70+o14.rg*0.30;
+ }
+ function pctLocal(dE,dR,dB,w,bono,mult){
+  var d=w[0]*dE+w[1]*dR+w[2]*dB+bono;
+  return Math.max(22,Math.min(78,50+d*mult));
+ }
+
+ /* ---------- datos ---------- */
+ function parseSched(d){
+  var out=[];
+  (d.dates||[]).forEach(function(dd){ (dd.games||[]).forEach(function(g){
+   if(!g.status||g.status.abstractGameState!=='Final') return;
+   if('FDLW'.indexOf(g.gameType)<0) return;
+   var T=g.teams; if(!T||!T.home||!T.away||!T.home.team||!T.away.team) return;
+   if(T.home.score==null||T.away.score==null||T.home.score===T.away.score) return;
+   out.push({pk:g.gamePk,f:g.officialDate||dd.date,tipo:g.gameType,
+    h:{id:T.home.team.id,n:T.home.team.abbreviation||T.home.team.name},
+    a:{id:T.away.team.id,n:T.away.team.abbreviation||T.away.team.name},
+    y:T.home.score>T.away.score?1:0,rh:T.home.score,ra:T.away.score});
+  }); });
+  return out;
+ }
+ function dedupe(a){ var v={}; return a.filter(function(g){ if(v[g.pk]) return false; v[g.pk]=1; return true; }); }
+ function schedule(year){
+  var base=API+'/schedule?sportId=1&startDate='+year+'-09-20&endDate='+year+'-11-20&hydrate=team&gameType=';
+  return jget(base+'F,D,L,W').then(parseSched).then(function(g){
+   if(g.length) return dedupe(g);
+   return Promise.all(['F','D','L','W'].map(function(t){
+     return jget(base+t).then(parseSched).catch(function(){ return []; });
+   })).then(function(a){ return dedupe([].concat.apply([],a)); });
+  });
+ }
+ function startersDe(b){
+  var h=b&&b.teams&&b.teams.home&&b.teams.home.pitchers, a=b&&b.teams&&b.teams.away&&b.teams.away.pitchers;
+  return (h&&h.length&&a&&a.length)?{h:h[0],a:a[0]}:null;
+ }
+ function starters(pk){
+  return jget(API+'/game/'+pk+'/boxscore?fields=teams,home,away,pitchers').then(function(b){
+   var s=startersDe(b); if(s) return s; throw new Error('vacio');
+  }).catch(function(){
+   return jget(API+'/game/'+pk+'/boxscore').then(startersDe);
+  });
+ }
+ function temporada(id,y){ return memo('sea',id+'-'+y,function(){
+  return jget(API+'/people/'+id+'/stats?stats=season&group=pitching&season='+y+'&gameType=R').then(function(d){
+   var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
+   if(!s) return {era:null,ip:0,fip:null};
+   var st=s.stat, ip=ipToNum(st.inningsPitched);
+   var era=(st.era!=null&&isFinite(parseFloat(st.era)))?parseFloat(st.era):null;
+   var hr=+(st.homeRuns||0),bb=+(st.baseOnBalls||0),hbp=+(st.hitByPitch||0),so=+(st.strikeOuts||0);
+   return {era:era,ip:ip,fip:ip>=10?(13*hr+3*(bb+hbp)-2*so)/ip+3.15:null};
+  }).catch(function(){ return {era:null,ip:0,fip:null}; });
+ }); }
+ function ultimas5(id,y){ return memo('l5',id+'-'+y,function(){
+  return jget(API+'/people/'+id+'/stats?stats=gameLog&group=pitching&season='+y+'&gameType=R').then(function(d){
+   var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];
+   var sal=sp.filter(function(s){ return +(s.stat.gamesStarted||0)===1; });
+   var use=(sal.length?sal:sp).slice(-5), er=0, ip=0;
+   use.forEach(function(s){ er+=+(s.stat.earnedRuns||0); ip+=ipToNum(s.stat.inningsPitched); });
+   return {era:ip>0?er*9/ip:null,ip:ip,n:use.length};
+  }).catch(function(){ return {era:null,ip:0,n:0}; });
+ }); }
+ function teamHit(id,y){ return memo('hit',id+'-'+y,function(){
+  return jget(API+'/teams/'+id+'/stats?stats=season&group=hitting&season='+y+'&gameType=R').then(function(d){
+   var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0], st=s?s.stat:{};
+   var g=+(st.gamesPlayed||0), r=+(st.runs||0);
+   return {rg:g>0?r/g:null,g:g};
+  }).catch(function(){ return {rg:null,g:0}; });
+ }); }
+ function rg14(id,fecha,y){ return memo('o14',id+'-'+fecha,function(){
+  var b=diaBase(fecha);
+  var ini=ymd(new Date(b.getTime()-14*86400000)), fin=ymd(new Date(b.getTime()-86400000));
+  return jget(API+'/teams/'+id+'/stats?stats=byDateRange&startDate='+ini+'&endDate='+fin+
+    '&group=hitting&season='+y+'&gameType=R').then(function(d){
+   var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0], st=s?s.stat:{};
+   var g=+(st.gamesPlayed||0), r=+(st.runs||0);
+   return {rg:g>=5?r/g:null,g:g};
+  }).catch(function(){ return {rg:null,g:0}; });
+ }); }
+ function teamPen(id,y){ return memo('pen',id+'-'+y,function(){
+  return jget(API+'/teams/'+id+'/stats?stats=statSplits&sitCodes=rp&group=pitching&season='+y+'&gameType=R').then(function(d){
+   var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
+   if(s&&s.stat&&s.stat.era!=null&&isFinite(parseFloat(s.stat.era))) return {era:parseFloat(s.stat.era),aprox:false};
+   throw new Error('sin split');
+  }).catch(function(){
+   return jget(API+'/teams/'+id+'/stats?stats=season&group=pitching&season='+y+'&gameType=R').then(function(d){
+    var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
+    return {era:(s&&s.stat&&s.stat.era!=null)?parseFloat(s.stat.era):null,aprox:true};
+   }).catch(function(){ return {era:null,aprox:true}; });
+  });
+ }); }
+ function ligaEra(y){ return memo('liga',String(y),function(){
+  return jget(API+'/teams/stats?stats=season&group=pitching&season='+y+'&sportIds=1&gameType=R').then(function(d){
+   var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[], er=0, ip=0;
+   sp.forEach(function(s){ er+=+(s.stat.earnedRuns||0); ip+=ipToNum(s.stat.inningsPitched); });
+   return ip>0?er*9/ip:4.10;
+  }).catch(function(){ return 4.10; });
+ }); }
+
+ function prep(g){
+  var y=+String(g.f).slice(0,4);
+  return starters(g.pk).then(function(st){
+   if(!st) return {skip:'sin abridores en el boxscore',g:g};
+   return Promise.all([temporada(st.a,y),temporada(st.h,y),ultimas5(st.a,y),ultimas5(st.h,y),
+     teamHit(g.a.id,y),teamHit(g.h.id,y),teamPen(g.a.id,y),teamPen(g.h.id,y),
+     rg14(g.a.id,g.f,y),rg14(g.h.id,g.f,y),ligaEra(y)]).then(function(r){
+    var L=r[10];
+    var eA=eraUsado(r[0],r[2],L), eH=eraUsado(r[1],r[3],L);
+    var rgA=rgMix(r[4],r[8]), rgH=rgMix(r[5],r[9]);
+    var bA=r[6].era, bH=r[7].era;
+    if(eA==null||eH==null||rgA==null||rgH==null||bA==null||bH==null||
+       !isFinite(bA)||!isFinite(bH)) return {skip:'faltan datos de temporada',g:g};
+    return {g:g,y:y,f:g.f,dE:eA-eH,dR:rgH-rgA,dB:bA-bH,out:g.y};
+   });
+  });
+ }
+
+ /* ---------- analisis ---------- */
+ function pBase(r){ return pctLocal(r.dE,r.dR,r.dB,BASE.w,BASE.bono,BASE.mult)/100; }
+ function brier(rows,pf){ var s=0; rows.forEach(function(r){ var e=pf(r)-r.out; s+=e*e; }); return rows.length?s/rows.length:null; }
+ function paired(rows,pA,pB){
+  var d=[], by={};
+  rows.forEach(function(r){
+   var ea=pA(r)-r.out, eb=pB(r)-r.out, x=ea*ea-eb*eb;
+   d.push(x);
+   var o=by[r.y]||(by[r.y]={n:0,s:0}); o.n++; o.s+=x;
+  });
+  var n=d.length; if(n<2) return {n:n,dif:null,t:null,anios:by};
+  var m=d.reduce(function(a,b){ return a+b; },0)/n;
+  var v=d.reduce(function(a,b){ return a+(b-m)*(b-m); },0)/(n-1);
+  var se=Math.sqrt(v/n);
+  return {n:n,dif:m,t:se>0?m/se:null,anios:by};
+ }
+ function experimentos(){
+  var sh=function(s){ return function(r){ return 0.5+(pBase(r)-0.5)*s; }; };
+  var wt=function(w,b,m){ return function(r){ return pctLocal(r.dE,r.dR,r.dB,w,b,m||BASE.mult)/100; }; };
+  return [
+   {id:'s80',nom:'Encoger 20% hacia 50%',f:sh(0.8)},
+   {id:'s60',nom:'Encoger 40% hacia 50%',f:sh(0.6)},
+   {id:'s40',nom:'Encoger 60% hacia 50%',f:sh(0.4)},
+   {id:'s20',nom:'Encoger 80% hacia 50%',f:sh(0.2)},
+   {id:'bp40',nom:'Bullpen 0.40 (antes 0.25)',f:wt([0.65,0.5,0.40],0.59)},
+   {id:'bp40ab',nom:'Bullpen 0.40 y abridor 0.45',f:wt([0.45,0.5,0.40],0.59)},
+   {id:'ab40',nom:'Abridor 0.40, bullpen 0.30',f:wt([0.40,0.5,0.30],0.59)},
+   {id:'of30',nom:'Ofensiva 0.30 (antes 0.50)',f:wt([0.65,0.30,0.25],0.59)},
+   {id:'lo12',nom:'Localía 0.12 (antes 0.59)',f:wt(BASE.w,0.12)},
+   {id:'lo30',nom:'Localía 0.30',f:wt(BASE.w,0.30)},
+   {id:'comb',nom:'Bullpen 0.40 + abridor 0.45 + encoger 40%',f:function(r){ return 0.5+(pctLocal(r.dE,r.dR,r.dB,[0.45,0.5,0.40],0.59,6)/100-0.5)*0.6; }}
+  ];
+ }
+ function calib(rows){
+  var tr=[['50-55%',50,55],['55-60%',55,60],['60% o más',60,101]];
+  return tr.map(function(t){
+   var g=rows.filter(function(r){ var c=Math.max(pBase(r),1-pBase(r))*100; return c>=t[1]&&c<t[2]; });
+   if(!g.length) return {t:t[0],n:0};
+   var hit=0, dicho=0;
+   g.forEach(function(r){ var p=pBase(r), fav=p>=0.5?1:0; dicho+=Math.max(p,1-p); if(r.out===fav) hit++; });
+   return {t:t[0],n:g.length,dicho:dicho/g.length*100,real:hit/g.length*100};
+  });
+ }
+ function porAnio(rows){
+  var ys={}; rows.forEach(function(r){ (ys[r.y]||(ys[r.y]=[])).push(r); });
+  return Object.keys(ys).sort().map(function(y){
+   var g=ys[y], hit=0, dicho=0, home=0;
+   g.forEach(function(r){ var p=pBase(r); dicho+=Math.max(p,1-p); if(r.out===(p>=0.5?1:0)) hit++; home+=r.out; });
+   return {y:y,n:g.length,hit:hit/g.length*100,dicho:dicho/g.length*100,brier:brier(g,pBase),home:home/g.length*100};
+  });
+ }
+ /* Poisson-binomial: probabilidad de exactamente k aciertos */
+ function pb(ps){ var d=[1]; ps.forEach(function(p){ var n=new Array(d.length+1).fill(0);
+   for(var k=0;k<d.length;k++){ n[k]+=d[k]*(1-p); n[k+1]+=d[k]*p; } d=n; }); return d; }
+ function topDia(rows,topN){
+  var dias={}; rows.forEach(function(r){ (dias[r.f]||(dias[r.f]=[])).push(r); });
+  var out={dias:0,aciertos:0,esperados:0,pocos:0,pocosEsp:0,hist:{}};
+  Object.keys(dias).forEach(function(f){
+   var g=dias[f].map(function(r){ var p=pBase(r); return {c:Math.max(p,1-p),ok:r.out===(p>=0.5?1:0)}; })
+     .sort(function(a,b){ return b.c-a.c; });
+   if(g.length<topN) return;
+   var t=g.slice(0,topN), ok=t.filter(function(x){ return x.ok; }).length, ps=t.map(function(x){ return x.c; });
+   var d=pb(ps), esp=ps.reduce(function(a,b){ return a+b; },0);
+   out.dias++; out.aciertos+=ok; out.esperados+=esp; out.hist[ok]=(out.hist[ok]||0)+1;
+   if(ok<=1){ out.pocos++; }
+   out.pocosEsp+=d[0]+(d[1]||0);
+  });
+  return out;
+ }
+ function analizar(rows){
+  var base={brier:brier(rows,pBase),azar:0.25};
+  var home=rows.reduce(function(a,r){ return a+r.out; },0)/(rows.length||1);
+  base.constante=brier(rows,function(){ return home; });
+  base.home=home*100;
+  var ex=experimentos().map(function(e){
+   var p=paired(rows,pBase,e.f);
+   var anios=Object.keys(p.anios).filter(function(y){ return p.anios[y].n>=15; });
+   var mej=anios.filter(function(y){ return p.anios[y].s>0; }).length;
+   return {id:e.id,nom:e.nom,brier:brier(rows,e.f),dif:p.dif,t:p.t,mej:mej,elig:anios.length,
+     pasa:(p.dif!=null&&p.dif>0&&p.t!=null&&p.t>=2&&mej>=anios.length-1&&anios.length>=3)};
+  });
+  return {n:rows.length,base:base,anios:porAnio(rows),calib:calib(rows),ex:ex,top3:topDia(rows,3),top4:topDia(rows,4)};
+ }
+
+ function run(years,ui){
+  ui=ui||{};
+  var log=ui.log||function(){}, tick=ui.tick||function(){};
+  ERR=0;
+  return mapLimit(years,3,function(y){ return schedule(y); }).then(function(sc){
+   var games=[]; years.forEach(function(y,i){ log('Año '+y+': '+((sc[i]||[]).length)+' juegos de playoffs terminados'); games=games.concat(sc[i]||[]); });
+   if(!games.length) throw new Error('No se bajó ningún juego de playoffs. Revisa la conexión.');
+   log('Bajando datos de '+games.length+' juegos…');
+   return mapLimit(games,6,prep,function(d,n){ tick(d,n); });
+  }).then(function(res){
+   var rows=[], skip={}, nulos=0;
+   res.forEach(function(r){ if(!r){ nulos++; return; } if(r.skip){ skip[r.skip]=(skip[r.skip]||0)+1; return; } rows.push(r); });
+   return {rows:rows,skip:skip,nulos:nulos,errores:ERR,analisis:analizar(rows)};
+  });
+ }
+ return {run:run,analizar:analizar,eraUsado:eraUsado,reg:reg,rgMix:rgMix,pctLocal:pctLocal,pBase:pBase,
+   paired:paired,brier:brier,topDia:topDia,calib:calib,prep:prep,schedule:schedule,mapLimit:mapLimit,pb:pb,BASE:BASE};
+})();
+
+</script>
+<script>
+(function(){
+ var $=function(id){ return document.getElementById(id); };
+ var f1=function(x){ return x==null?'—':x.toFixed(1); };
+ var f4=function(x){ return x==null?'—':x.toFixed(4); };
+ var sg=function(x,d){ return x==null?'—':(x>=0?'+':'')+x.toFixed(d); };
+ var ULT_TXT='';
+ function esc(s){ return String(s).replace(/[<>&]/g,function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c]; }); }
+
+ function render(r){
+  var a=r.analisis, T=[], H=[];
+  var n=a.n, b=a.base;
+  var margen=1.96*Math.sqrt(0.25/Math.max(n,1))*100;
+  var hitT=0, dichoT=0;
+  a.anios.forEach(function(y){ hitT+=y.hit*y.n; dichoT+=y.dicho*y.n; });
+  hitT/=n; dichoT/=n;
+  var pasan=a.ex.filter(function(e){ return e.pasa; });
+  var veredicto;
+  if(n<60) veredicto='Muy pocos juegos ('+n+') para concluir nada. Corre otra vez o revisa los errores de abajo.';
+  else if(pasan.length) veredicto='Pasa la regla: '+pasan.map(function(e){ return e.nom; }).join(' · ')+'. Es candidato a "modo playoffs", todavía sin tocar la fórmula.';
+  else veredicto='Ninguna variante pasa la regla (t ≥ 2 y mejora en casi todos los años). No hay evidencia en estos datos de que cambiar la fórmula ayude en playoffs.';
+
+  H.push('<div class="ver"><b>Veredicto</b><br>'+esc(veredicto)+'</div>');
+  T.push('VEREDICTO: '+veredicto);
+
+  H.push('<h3>Cómo le va a OVA en playoffs</h3>');
+  var l1='Juegos medidos: '+n+'. El favorito del modelo ganó '+f1(hitT)+'% y el modelo decía '+f1(dichoT)+'% (diferencia '+sg(hitT-dichoT,1)+' puntos; con '+n+' juegos el error normal es ±'+f1(margen)+').';
+  var l2='Brier del modelo '+f4(b.brier)+' · de tirar siempre 50% '+f4(b.azar)+' · de poner siempre la tasa de local ('+f1(b.home)+'%) '+f4(b.constante)+'. En temporada regular dio 0.2459 (2025) y 0.2452 (2026). Menor es mejor.';
+  H.push('<p>'+esc(l1)+'</p><p>'+esc(l2)+'</p>'); T.push(l1,l2);
+
+  H.push('<table><tr><th>Año</th><th>Juegos</th><th>Favorito ganó</th><th>Modelo decía</th><th>Brier</th></tr>');
+  T.push('AÑO | JUEGOS | FAV GANÓ | DECÍA | BRIER');
+  a.anios.forEach(function(y){
+   H.push('<tr><td>'+y.y+'</td><td>'+y.n+'</td><td>'+f1(y.hit)+'%</td><td>'+f1(y.dicho)+'%</td><td>'+f4(y.brier)+'</td></tr>');
+   T.push(y.y+' | '+y.n+' | '+f1(y.hit)+'% | '+f1(y.dicho)+'% | '+f4(y.brier));
+  });
+  H.push('</table>');
+
+  H.push('<h3>Cuando dice… ¿qué pasa?</h3><table><tr><th>Confianza</th><th>Juegos</th><th>Decía</th><th>Pasó</th></tr>');
+  T.push('','CALIBRACIÓN (confianza | juegos | decía | pasó)');
+  a.calib.forEach(function(c){
+   if(!c.n){ H.push('<tr><td>'+c.t+'</td><td>0</td><td>—</td><td>—</td></tr>'); T.push(c.t+' | 0'); return; }
+   H.push('<tr><td>'+c.t+'</td><td>'+c.n+'</td><td>'+f1(c.dicho)+'%</td><td>'+f1(c.real)+'%</td></tr>');
+   T.push(c.t+' | '+c.n+' | '+f1(c.dicho)+'% | '+f1(c.real)+'%');
+  });
+  H.push('</table>');
+
+  [[a.top3,3],[a.top4,4]].forEach(function(p){
+   var t=p[0], N=p[1];
+   if(!t.dias) return;
+   var s='Tus '+N+' mejores picks de cada día ('+t.dias+' días con '+N+'+ juegos): acertaron '+t.aciertos+' de '+(t.dias*N)+' (el modelo esperaba ~'+f1(t.esperados)+'). Días con 1 acierto o menos: '+t.pocos+', y por azar se esperaban ~'+f1(t.pocosEsp)+'.';
+   H.push('<p>'+esc(s)+'</p>'); T.push('',s);
+  });
+
+  H.push('<h3>Variantes probadas (misma data, mismos juegos)</h3><div class="nota">Dif = cuánto baja el Brier contra la fórmula actual (positivo = mejor). t ≥ 2 y mejora en casi todos los años para pasar.</div>');
+  H.push('<table><tr><th>Variante</th><th>Brier</th><th>Dif</th><th>t</th><th>Años</th></tr>');
+  T.push('','VARIANTES (Brier | dif | t | años que mejoran)');
+  a.ex.forEach(function(e){
+   H.push('<tr'+(e.pasa?' class="ok"':'')+'><td>'+esc(e.nom)+'</td><td>'+f4(e.brier)+'</td><td>'+sg(e.dif,4)+'</td><td>'+f1(e.t)+'</td><td>'+e.mej+'/'+e.elig+'</td></tr>');
+   T.push(e.nom+' | '+f4(e.brier)+' | '+sg(e.dif,4)+' | t '+f1(e.t)+' | '+e.mej+'/'+e.elig+(e.pasa?' | PASA':''));
+  });
+  H.push('</table>');
+
+  var sk=Object.keys(r.skip).map(function(k){ return r.skip[k]+' '+k; });
+  var nota='Juegos usados '+n+(sk.length?' · omitidos: '+sk.join(', '):'')+(r.nulos?' · '+r.nulos+' fallaron al bajar':'')+' · errores de red: '+r.errores+'.';
+  var simp='Simplificaciones: no incluye el ajuste por zurdo/derecho ni el bullpen quemado (los dos mueven poco). Usa solo estadísticas de temporada regular, igual que OVA en octubre.';
+  H.push('<p class="nota">'+esc(nota)+'</p><p class="nota">'+esc(simp)+'</p>');
+  T.push('',nota,simp);
+  ULT_TXT=T.join('\n');
+  $('out').innerHTML=H.join('');
+  $('copiar').style.display='';
+ }
+
+ function pintaProg(d,n){ $('barra').style.width=(d/n*100).toFixed(0)+'%'; $('ptxt').textContent=d+' de '+n+' juegos'; }
+ $('go').addEventListener('click',function(){
+  var ys=[].slice.call(document.querySelectorAll('.yr:checked')).map(function(x){ return +x.value; });
+  if(!ys.length){ $('log').textContent='Marca al menos un año.'; return; }
+  var btn=$('go'); btn.disabled=true; $('out').innerHTML=''; $('copiar').style.display='none';
+  $('log').textContent='Buscando los juegos de playoffs…'; $('prog').style.display='';
+  pintaProg(0,1);
+  BT.run(ys,{log:function(s){ $('log').innerHTML+='<br>'+esc(s); },tick:pintaProg}).then(function(r){
+   $('prog').style.display='none'; $('log').innerHTML+='<br>Listo.'; render(r);
+  }).catch(function(e){
+   $('log').innerHTML+='<br><b class="mal">Falló: '+esc(e.message)+'</b>';
+  }).then(function(){ btn.disabled=false; });
+ });
+ $('copiar').addEventListener('click',function(){
+  var m=$('cmsg');
+  var fallback=function(){ var t=$('plano'); t.style.display=''; t.value=ULT_TXT; t.focus(); t.select(); m.textContent='Selecciona y copia el texto de abajo.'; };
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(ULT_TXT).then(function(){ m.textContent='Copiado. Pégalo en el chat.'; },fallback);
+  else fallback();
+ });
+})();
+
+</script>
+</body></html>
