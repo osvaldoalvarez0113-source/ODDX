@@ -110,6 +110,36 @@ sec('Fútbol: combo coincide con el Veredicto');
  ok('con w=1 no cambia nada',Math.abs(sinAnc-conAnc)<1e-12);
 }
 
+/* ---------------- Fútbol: modelo Dixon-Coles (liga simulada de fuerza conocida) ---------------- */
+sec('Fútbol: modelo Dixon-Coles');
+{
+ const h=rd('futbol.html'),F={};
+ const pre=h.slice(h.indexOf('var TOKENS_FUERA'),h.indexOf('function parseFecha'))+h.slice(h.indexOf('function parseFecha'),h.indexOf('// worldfootball.net muestra las horas'));
+ const mod=h.slice(h.indexOf('var MAXG = 8;'),h.indexOf('// ---------- historial'));
+ const bm=h.slice(h.indexOf('function buscarEnMapa'),h.indexOf('var buscarSemilla'));
+ const dc=h.slice(h.indexOf('var DC_CFG'),h.indexOf('function calcularDC'));
+ new Function('F',pre+mod+bm+dc+';F.distribucion=distribucion;F.dcAjustar=dcAjustar;F.DC_CFG=DC_CFG;F.claveEq=claveEq;')(F);
+ let sd=11;const rn=()=>(sd=(sd*16807)%2147483647)/2147483647,po=l=>{const L=Math.exp(-l);let k=0,p=1;do{k++;p*=rn();}while(p>L);return k-1;};
+ const N=20,at=[],df=[];for(let i=0;i<N;i++){at.push(Math.exp((rn()-.5)*.7));df.push(Math.exp((rn()-.5)*.7));}
+ const gs=[],t0=Date.UTC(2024,7,15);
+ for(let s=0;s<2;s++)for(let r=0;r<38;r++)for(let i=0;i<N;i+=2){let x=(i+r)%N,y=(i+r*3+1)%N;if(x===y)y=(y+1)%N;
+  gs.push({local:'Team'+x+' FC',visita:'Team'+y+' FC',golesLocal:po(1.3*at[x]*df[y]*1.25),golesVisita:po(1.3*at[y]*df[x]),ts:t0+(s*38+r)*5*864e5});}
+ const hoy=Math.floor((t0+76*5*864e5)/864e5)+1,fit=F.dcAjustar(gs,hoy,F.DC_CFG);
+ const cor=(x,y)=>{const n=x.length,mx=x.reduce((a,b)=>a+b)/n,my=y.reduce((a,b)=>a+b)/n;let a=0,b=0,c=0;for(let i=0;i<n;i++){a+=(x[i]-mx)*(y[i]-my);b+=(x[i]-mx)**2;c+=(y[i]-my)**2;}return a/Math.sqrt(b*c);};
+ const ea=[],ed=[];for(let i=0;i<N;i++){const e=fit.eq[F.claveEq('Team'+i+' FC')];ea.push(e.att);ed.push(e.def);}
+ ok('el ajuste usa todos los partidos simulados',fit&&fit.n===gs.length,fit&&fit.n);
+ ok('recupera el ataque verdadero de cada equipo (corr > 0.7)',cor(at,ea)>0.7,cor(at,ea).toFixed(2));
+ ok('recupera la defensa verdadera de cada equipo (corr > 0.65)',cor(df,ed)>0.65,cor(df,ed).toFixed(2));
+ let malas=0;[0,-0.06,-0.12].forEach(rho=>[[0.3,0.3],[1.5,1.1],[3.5,0.6],[5,5]].forEach(([a,b])=>{const x=F.distribucion(a,b,rho,true);
+  const sm=x.marcadores.reduce((s,m)=>s+m.p,0);
+  if(Math.abs(x.pL+x.pD+x.pV-1)>1e-9||Math.abs(sm-1)>1e-9||x.o15<x.o25||x.o25<x.o35||x.btts<0||x.btts>1) malas++;}));
+ ok('las probabilidades suman 1 y Más/Menos es coherente (3 ρ × 4 partidos)',malas===0,malas);
+ ok('ρ negativo sube los empates (Dixon-Coles)',F.distribucion(1.4,1.1,-0.08,false).pD>F.distribucion(1.4,1.1,0,false).pD);
+ let ex=0;gs.forEach(g=>{const l=fit.eq[F.claveEq(g.local)],v=fit.eq[F.claveEq(g.visita)];ex+=fit.c*l.att*v.def*fit.gam+fit.c*v.att*l.def;});
+ const real=gs.reduce((s,g)=>s+g.golesLocal+g.golesVisita,0)/gs.length;
+ ok('los goles totales del ajuste coinciden con los reales (±6 %)',Math.abs(ex/gs.length/real-1)<0.06,(ex/gs.length).toFixed(2)+' vs '+real.toFixed(2));
+}
+
 /* ---------------- 6. NBA ---------------- */
 sec('NBA: modelo con 3 temporadas simuladas');
 {

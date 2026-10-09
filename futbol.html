@@ -1214,6 +1214,52 @@ function bajarResultadosESPN(slug, desde, hasta, progreso){
 function leerJSON(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
 // Resultados terminados de la temporada actual desde ESPN, con cache INCREMENTAL: la primera vez baja todo lo que va
 // de temporada; despues solo los ultimos dias (antes bajaba la temporada entera cada vez que abrias una liga).
+/* ---------- worldfootball: no fiarse de una respuesta vacia ---------- */
+// Si el sitio contesta con un error HTTP (403 de Cloudflare, 429, 500...) la pagina antes salia en verde con "0 partidos",
+// igual que un dia sin juegos. Ahora se guarda el codigo y la barra de estado avisa.
+function wfTexto(url){
+  return fetch(url+'?v='+Date.now()).then(function(r){
+    if(!r.ok){ DIAG.wfHttp = r.status; }
+    return r.text();
+  });
+}
+// Proximos partidos desde ESPN (respaldo cuando worldfootball no lista ninguno). Un dia por peticion: es el formato documentado para futbol.
+function pendientesDesdeESPN(slug){
+  var hoy = new Date(), inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime(), dias = [];
+  for(var k=0;k<=7;k++) dias.push(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()+k));
+  return Promise.all(dias.map(function(d){
+    return espnJSON(ESPN_BASE+slug+'/scoreboard?dates='+ymd(d)).catch(function(){ return null; });
+  })).then(function(js){
+    var vistos = {}, out = [];
+    js.forEach(function(j){
+      ((j && j.events) || []).forEach(function(e){
+        var p = parseESPN({events:[e]})[0];
+        if(!p || p.terminado || !p.ts || p.ts < inicioHoy || vistos[p.id]) return;
+        vistos[p.id] = true;
+        var comp = e.competitions[0], logoL = '', logoV = '';
+        comp.competitors.forEach(function(c){
+          if(c.homeAway==='home') logoL = (c.team && c.team.logo) || '';
+          else if(c.homeAway==='away') logoV = (c.team && c.team.logo) || '';
+        });
+        var dt = new Date(p.ts), hl = dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+        out.push({clave:p.local+'|'+p.visita+'|'+p.fecha+'|ESPN', local:p.local, visita:p.visita, escudoLocal:logoL, escudoVisita:logoV,
+          hrefLocal:null, hrefVisita:null, hora:hl, horaLocal:hl, fecha:p.fecha, terminado:false, enVivo:false, marcadorVivo:null,
+          golesLocal:null, golesVisita:null, ts:p.ts});
+      });
+    });
+    out.sort(function(a,b){ return a.ts-b.ts; });
+    return out;
+  });
+}
+function avisoWorldfootball(){
+  if(!DIAG) return '';
+  var w = DIAG.wf, http = DIAG.wfHttp, desdeEspn = DIAG.pendientesESPN;
+  if(http) return '⚠️ worldfootball respondió HTTP '+http+' (error o bloqueo del sitio). '+(desdeEspn ? 'Los próximos partidos salen de ESPN (sin cruces ni escudos de worldfootball).' : 'No se pueden mostrar los próximos partidos.');
+  if(w && w.total===0) return '⚠️ worldfootball no devolvió ningún partido (puede estar bloqueado o haber cambiado). '+(desdeEspn ? 'Los próximos partidos salen de ESPN.' : 'Si hoy hay juegos, toca 🔍 Diagnóstico.');
+  if(desdeEspn) return 'ℹ️ worldfootball no listó partidos próximos; se muestran los de ESPN.';
+  return '';
+}
+
 function completarResultados(clave, terminadosWF){
   DIAG.espn = null;
   if(!ESPN_SLUG[clave]) return Promise.resolve({lista:terminadosWF, fuente:'worldfootball'});
@@ -2729,12 +2775,14 @@ function pintarEstado(liga){
     PARTIDOS.length+' '+plural(PARTIDOS.length,'partido','partidos')+' '+cuando+', '+
     TERMINADOS.length+' terminados medibles'+(TERMINADOS.length ? ' ('+FUENTE_TERM+')' : '')+
     ' — en vivo ('+ahora+').'+(LIGA_ES_COPA ? ' Copa: sin modelo.' : (DCFIT&&DCFIT.liga===LIGA_ACTUAL ? ' Modelo v4 (Dixon-Coles) activo.' : ''));
+  var avisoWF = avisoWorldfootball();
   if(!TERMINADOS.length){
     txt += ' ⚠️ No se leyó ningún resultado terminado: Forma, Cara a cara y Backtest quedan vacíos. Toca 🔍 Diagnóstico.';
     estado.className = 'estado warn';
   } else {
     estado.className = 'estado ok';
   }
+  if(avisoWF){ txt += ' ' + avisoWF; estado.className = 'estado warn'; }
   estado.textContent = txt;
 }
 function armarDiag(){
@@ -2742,6 +2790,8 @@ function armarDiag(){
   L.push('App '+VERSION+' · liga '+LIGA_ACTUAL+' · '+new Date().toLocaleString());
   L.push('Parámetros: h='+PARAMS.h+' K='+PARAMS.K+' ρ='+PARAMS.rho+' w='+PARAMS.w+' S='+PARAMS.S+' A='+PARAMS.A+' | goles: K='+PARAMS.Kt+' w='+PARAMS.wt+' ×'+PARAMS.ct+' A='+PARAMS.At+(PARAMS.calibrado?' (calibrados)':' (arranque)')+' · historial: '+Object.keys(SEMILLA).length+' equipos');
   var w = DIAG.wf;
+  if(DIAG.wfHttp) L.push('worldfootball respondió HTTP '+DIAG.wfHttp+' (error del sitio o bloqueo).');
+  if(DIAG.pendientesESPN) L.push('Próximos partidos: '+DIAG.pendientesESPN+' tomados de ESPN porque worldfootball no listó ninguno.');
   if(w){
     L.push('worldfootball: '+w.total+' partidos leídos → '+w.terminados+' terminados con marcador, '+w.sinMarcador+' terminados sin marcador legible, '+w.pendientes+' por jugar ('+w.sinFecha+' de ellos sin fecha)');
     L.push('Lo que ve el parser (un partido POR JUGAR):');
@@ -2804,9 +2854,8 @@ function cargarLiga(clave){
   FUENTE_TERM = '—';
 
   var pedidos = LIGA_ES_COPA ?
-    [Promise.resolve(''), fetch(liga.urlPartidos+'?v='+Date.now()).then(function(r){ return r.text(); })] :
-    [fetch(liga.url+'?v='+Date.now()).then(function(r){ return r.text(); }),
-     fetch(liga.urlPartidos+'?v='+Date.now()).then(function(r){ return r.text(); })];
+    [Promise.resolve(''), wfTexto(liga.urlPartidos)] :
+    [wfTexto(liga.url), wfTexto(liga.urlPartidos)];
 
   Promise.all(pedidos).then(function(res){
     var todos = extraerPartidos(res[1]);
@@ -2820,7 +2869,11 @@ function cargarLiga(clave){
     if(!LIGA_ES_COPA) EQUIPOS = extraerTabla(res[0]);
     if(LIGA_ES_COPA && !todos.length){ throw new Error('no se encontraron partidos'); }
 
-    return completarResultados(clave, termWF).then(function(r){
+    var espPend = (!pendientes.length && ESPN_SLUG[clave]) ? pendientesDesdeESPN(ESPN_SLUG[clave]).catch(function(){ return []; }) : Promise.resolve([]);
+    return espPend.then(function(pe){
+      if(pe.length){ pendientes = pe; DIAG.pendientesESPN = pe.length; }
+      return completarResultados(clave, termWF);
+    }).then(function(r){
       if(mio!==CARGA_ID) return;
       TERMINADOS = r.lista; FUENTE_TERM = r.fuente;
       armarXLive();
