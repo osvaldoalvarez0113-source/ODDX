@@ -165,7 +165,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 <header>
  <div class="top">
   <a class="ovaHome" href="hub.html" aria-label="Volver al inicio">‹</a>
-  <h1>🏀 NBA <span class="ver">v3.1</span></h1>
+  <h1>🏀 NBA <span class="ver">v3.4</span></h1>
   <button class="btnChico" id="btnTema" aria-label="Cambiar tema">🎨</button>
  </div>
 </header>
@@ -347,7 +347,7 @@ if(typeof module!=='undefined') module.exports={PDEF,seasonOf,dayKey,Phi,correr,
 
 <!-- ===================== APP ===================== -->
 <script>
-const VERSION='v3.3';
+const VERSION='v3.4';
 const ESPN='https://site.api.espn.com/apis/site/v2/sports/basketball/nba/';
 const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
@@ -555,7 +555,7 @@ function pintarJuegos(){
   const cont=$('juegos');
   const lista=listaActual();
   if(!lista.length){
-    cont.innerHTML=vacioHtml('Sin partidos todavía','No hay juegos en los próximos 10 días. La temporada regular arranca normalmente a finales de octubre; mientras tanto la pestaña Ratings ya muestra los equipos con el arrastre de la temporada pasada.');
+    cont.innerHTML=vacioHtml('Sin partidos todavía','No hay juegos en los próximos 10 días. La temporada regular arranca normalmente a finales de octubre; mientras tanto Ajustes → Avanzado → Ratings ya muestra los equipos con el arrastre de la temporada pasada.');
     return;
   }
   let html='', prev=null;
@@ -590,7 +590,7 @@ function ringSvg(pA,pH){
 function confTxt(k){
   const v=LS.get('ova_nba_ver_v1');
   const nom={win:'Ganador',mar:'Margen/hándicap',tot:'Total'}[k];
-  if(!v||!v[k]) return `<div class="nota" style="margin:0 0 8px">${nom}: <b>sin medir</b>. Ve a Backtest → Medir temporada pasada.</div>`;
+  if(!v||!v[k]) return `<div class="nota" style="margin:0 0 8px">${nom}: <b>sin medir</b>. Ve a Ajustes → Avanzado → Backtest → Medir temporada pasada.</div>`;
   const t=verdTxt(v[k],v[k].minD);
   const ex=t.t==='✓ le gana'?'le gana al promedio de la liga con diferencia clara (eso NO es ganarle a la línea del mercado).':(t.t==='≈ igual'?'no se distingue de predecir el promedio; usa el "valor" solo de referencia.':'salió peor que el promedio de la liga; ignora el "valor".');
   return `<div class="nota" style="margin:0 0 8px">${nom} en el backtest: <b style="color:${t.c}">${t.t}</b> — ${ex}</div>`;
@@ -616,7 +616,7 @@ function pintarCuerpo(body,g){
    <div class="ajuste"><div><label>${esc(A.ab)} (pts, ej. −4)</label><input type="number" step="0.5" data-k="adjA" value="${g.adjA||0}"></div><div><label>${esc(H.ab)} (pts, ej. −4)</label><input type="number" step="0.5" data-k="adjH" value="${g.adjH||0}"></div></div>
    <button class="btnAncho sec" data-a="adj" style="margin-top:0">Aplicar ajuste</button>
    <div class="nota">Si falta una estrella, resta puntos a su equipo (ejemplo: −4 si es titular clave). El modelo NO sabe de lesiones por sí solo: mira la pestaña Forma.</div>
-   <div class="nota">Ratings en puntos con arrastre entre temporadas (parámetros ${PARAMS.calibrado?'calibrados con datos reales':'de arranque, sin calibrar: ve a Backtest'}). Ventaja de local ${PARAMS.H} pts; back-to-back ${PARAMS.R} pts.${(PARAMS.Z!==undefined&&PARAMS.Z<1)?' Confianza en la diferencia de ratings ×'+PARAMS.Z.toFixed(2)+' (medida en el backtest).':''} Desviación típica del margen ${pr.sM.toFixed(1)} pts, del total ${pr.sT.toFixed(1)}. ${pr.conLinea?'Base: línea de ESPN (el modelo pesa '+Math.round(LAM_M*100)+'%'+(pr.conML?', ganador desde el moneyline':'')+'); tus ajustes de lesiones se suman encima.':'Sin línea de ESPN todavía: aquí es el modelo solo (referencia; cuando salga la línea, ella manda).'}</div>`;
+   <div class="nota">Ratings en puntos con arrastre entre temporadas (parámetros ${PARAMS.calibrado?'calibrados con datos reales':'de arranque, sin calibrar: ve a Ajustes → Avanzado → Backtest'}). Ventaja de local ${PARAMS.H} pts; back-to-back ${PARAMS.R} pts.${(PARAMS.Z!==undefined&&PARAMS.Z<1)?' Confianza en la diferencia de ratings ×'+PARAMS.Z.toFixed(2)+' (medida en el backtest).':''} Desviación típica del margen ${pr.sM.toFixed(1)} pts, del total ${pr.sT.toFixed(1)}. ${pr.conLinea?'Base: línea de ESPN (el modelo pesa '+Math.round(LAM_M*100)+'%'+(pr.conML?', ganador desde el moneyline':'')+'); tus ajustes de lesiones se suman encima.':'Sin línea de ESPN todavía: aquí es el modelo solo (referencia; cuando salga la línea, ella manda).'}</div>`;
 
   const cuo=`
    <h3>Moneyline</h3>${confTxt('win')}
@@ -911,7 +911,7 @@ async function iniciar(){
     pintarSelector(); pintarJuegos(); pintarRank();
     verificarRegistro();
     const s=sigmas(ESTADO);
-    setEstado('✓ NBA — '+PEND.length+' próximos juegos, '+GAMES.length+' partidos medidos de 3 temporadas, σ margen '+s.sM.toFixed(1)+' pts — en vivo ('+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+').','ok');
+    setEstado('✓ NBA · '+PEND.length+' próximos juegos · actualizado '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})+'.','ok');
   }catch(e){ setEstado('✗ No se pudo cargar la NBA: '+e.message+'. Toca 🔍 Diagnóstico.','bad'); }
 }
 document.querySelectorAll('.tabbar .tbar-btn').forEach(b=>b.onclick=()=>{
@@ -1106,5 +1106,6 @@ iniciar();
 })();
 </script>
 <script src="ovaextra.js"></script>
+<script src="diseno.js"></script>
 </body>
 </html>

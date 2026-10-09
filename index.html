@@ -3190,7 +3190,9 @@ function hoyISO(){
 $('fecha').value=hoyISO();
 
 /* ---------- carga ---------- */
+var CARGA_TK=0;
 function cargar(){
+  var _tk=++CARGA_TK;
   var iso=$('fecha').value;
   if(!iso){ $('status').textContent='Falta la fecha.'; return; }
   var pt=iso.split('-'), y=pt[0], m=pt[1], d=pt[2];
@@ -3213,9 +3215,10 @@ function cargar(){
   }
   kLiga(+y); ligaEra(+y); standings(+y);
   j(API+'/schedule?sportId=1&date='+m+'/'+d+'/'+y+'&hydrate=probablePitcher,team,venue(location,fieldInfo),linescore').then(function(data){
+    if(_tk!==CARGA_TK) return;
     var games=(data.dates&&data.dates[0]&&data.dates[0].games)||[];
     if(!games.length){ $('status').textContent='No hay juegos de MLB ese día.'; return; }
-    $('status').innerHTML=games.length+' juegos. Toca uno para correr los números, o dale a Ranking al gane para calcularlos todos.'+
+    $('status').innerHTML=games.length+(games.length===1?' juego':' juegos')+'. Toca uno para correr los números, o dale a Ranking al gane para calcularlos todos.'+
       (CORTE?'<br><br>📅 <b>Fecha pasada.</b> Las estadísticas van recortadas al '+esc(CORTE)+
         ', o sea sin nada de lo que pasó después — así el número que ves es el que habrías tenido '+
         'ese día. El ERA de bullpen sí queda en el del staff completo: el split de relevistas no '+
@@ -5273,5 +5276,6 @@ document.addEventListener('visibilitychange',function(){
 
 <script src="historial.js"></script>
 <script src="ovaextra.js"></script>
+<script src="diseno.js"></script>
 </body>
 </html>

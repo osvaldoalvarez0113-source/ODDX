@@ -149,7 +149,7 @@ try{
       }
     }catch(e){}
     try{
-      [].slice.call(document.querySelectorAll('.ver')).forEach(function(e){ e.textContent='v50'; });
+      [].slice.call(document.querySelectorAll('.ver')).forEach(function(e){ e.textContent='v51'; });
       var f=document.querySelector('footer details');
       if(f&&!f.querySelector('.ovaNota47')){
         var n=document.createElement('div');

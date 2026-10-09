@@ -40,7 +40,7 @@ html[data-ui="cristal"] .ovaHome::before{content:"‹";font-size:28px;line-heigh
 /* dock flotante */
 html[data-ui="cristal"] .navbar,html[data-ui="cristal"] .tabbar{left:12px!important;right:12px!important;bottom:calc(env(safe-area-inset-bottom,0px) + 10px)!important;border-radius:30px!important;padding:7px!important;gap:3px;border:1px solid rgba(255,255,255,.18)!important;background:rgba(14,19,34,.6)!important;-webkit-backdrop-filter:blur(28px) saturate(190%)!important;backdrop-filter:blur(28px) saturate(190%)!important;box-shadow:0 22px 44px -14px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.2)!important}
 html[data-ui="cristal"] .navbar button,html[data-ui="cristal"] .tabbar .tbar-btn{border-radius:22px!important;padding:9px 2px 7px!important;color:var(--mut)!important;transition:background .3s,color .3s,transform .2s}
-html[data-ui="cristal"] .navbar button span,html[data-ui="cristal"] .tabbar .lb{font-size:10px!important;font-weight:700}
+html[data-ui="cristal"] .navbar button span,html[data-ui="cristal"] .tabbar .lb{font-size:11px!important;font-weight:700}
 html[data-ui="cristal"] .navbar button.on,html[data-ui="cristal"] .tabbar .tbar-btn.on{background:linear-gradient(145deg,rgba(255,255,255,.2),rgba(255,255,255,.07))!important;color:#fff!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.26),0 0 26px -6px var(--acc)}
 html[data-ui="cristal"] .navbar button.on svg,html[data-ui="cristal"] .tabbar .tbar-btn.on svg{filter:drop-shadow(0 0 7px var(--acc2))}
 html[data-ui="cristal"] .navbar button:active,html[data-ui="cristal"] .tabbar .tbar-btn:active{transform:scale(.92)}
@@ -117,7 +117,7 @@ html[data-ui="broadcast"] .ovaHome{border-radius:0;clip-path:polygon(0 0,100% 0,
 /* barra de abajo plana con muesca */
 html[data-ui="broadcast"] .navbar,html[data-ui="broadcast"] .tabbar{background:var(--bg1)!important;border-top:4px solid var(--acc)!important;border-radius:0!important;box-shadow:0 -14px 30px -14px rgba(0,0,0,.8)}
 html[data-ui="broadcast"] .navbar button,html[data-ui="broadcast"] .tabbar .tbar-btn{position:relative;border-radius:0!important;color:var(--mut)!important;text-transform:uppercase;letter-spacing:.05em}
-html[data-ui="broadcast"] .navbar button span,html[data-ui="broadcast"] .tabbar .lb{font-size:10px!important;font-weight:800}
+html[data-ui="broadcast"] .navbar button span,html[data-ui="broadcast"] .tabbar .lb{font-size:11px!important;font-weight:800}
 html[data-ui="broadcast"] .navbar button.on,html[data-ui="broadcast"] .tabbar .tbar-btn.on{color:var(--txt)!important;background:linear-gradient(180deg,rgba(255,255,255,.12),transparent)!important}
 html[data-ui="broadcast"] .navbar button.on::before,html[data-ui="broadcast"] .tabbar .tbar-btn.on::before{content:"";position:absolute;top:-4px;left:14%;right:14%;height:4px;background:var(--hot);box-shadow:0 0 18px 2px var(--hot)}
 html[data-ui="broadcast"] .navbar button.on svg,html[data-ui="broadcast"] .tabbar .tbar-btn.on svg{color:var(--hot);filter:drop-shadow(0 0 6px var(--hot))}

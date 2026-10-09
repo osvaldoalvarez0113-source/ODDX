@@ -113,9 +113,27 @@ try{
   function notaPropia(c, j){
     if(!c || c.pH == null || c.pA == null || !j || !j.home || j.home.chance == null) return '';
     var d = Math.abs(c.pH - j.home.chance);
-    var col = d >= AVISO_DIF ? '#FBBF24' : '#6D8299';
+    var col = d >= AVISO_DIF ? '#FBBF24' : '#9DB2C8';
     return '<br><span style="color:'+col+'">OVA propio: '+c.nomA+' <b>'+c.pA.toFixed(1)+'%</b> · '+c.nomH+' <b>'+c.pH.toFixed(1)+'%</b>'+
-      ' (difiere '+d.toFixed(1)+' pts del servidor). El ranking de valor, «Guardar», «Al gane» y el combo usan SIEMPRE el número propio de OVA.</span>';
+      ' (difiere '+d.toFixed(1)+' pts del servidor). «Guardar», «Al gane» y el combo usan el número propio de OVA.</span>';
+  }
+
+  /* Una línea: lo que dice el servidor y si coincide con OVA. Al tocar se despliega el detalle. */
+  function chipHtml(c, j, h, a){
+    var partes = '☁️ <b style="color:#F1F5FB">Servidor</b> · '+(a?a.nombre:'Visita')+' '+(a?a.chance:'—')+'% · '+(h?h.nombre:'Local')+' '+(h?h.chance:'—')+'%';
+    var cola = '';
+    if(c && c.pH != null && h && h.chance != null){
+      var d = Math.abs(c.pH - h.chance);
+      cola = d >= AVISO_DIF ? ' · <span style="color:#FBBF24">⚠ OVA propio difiere '+d.toFixed(1)+' pts</span>' : ' · <span style="color:#34D399">✓ coincide con OVA</span>';
+    }
+    return '<div class="srv-chip" role="button" tabindex="0" style="cursor:pointer;display:flex;gap:8px;align-items:center;justify-content:space-between"><span>'+partes+cola+'</span><span class="srv-fl" style="color:#9DB2C8">▾</span></div>';
+  }
+  function ligarChip(caja){
+    var chip = caja.querySelector('.srv-chip'), det = caja.querySelector('.srv-det');
+    if(!chip || !det) return;
+    function alt(){ det.hidden = !det.hidden; var f = caja.querySelector('.srv-fl'); if(f) f.textContent = det.hidden ? '▾' : '▴'; }
+    chip.addEventListener('click', alt);
+    chip.addEventListener('keydown', function(e){ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); alt(); } });
   }
 
   function pintarComparacion(el){
@@ -136,7 +154,7 @@ try{
 
     var caja = document.createElement('div');
     caja.className = 'srv-compara';
-    caja.style.cssText = 'background:#131D2C;border:1px solid #2A3E56;border-left:3px solid #22D3EE;border-radius:10px;padding:12px 14px;margin:14px 0;font-size:12.5px;color:#9DB2C8;line-height:1.6';
+    caja.style.cssText = 'background:#131D2C;border:1px solid #2A3E56;border-left:3px solid #22D3EE;border-radius:10px;padding:9px 12px;margin:10px 0;font-size:12.5px;color:#9DB2C8;line-height:1.5';
     caja.innerHTML = '<b style="color:#F1F5FB">☁️ Servidor Railway</b><br>Buscando...';
     tabV.insertBefore(caja, tabV.firstChild);
 
@@ -154,7 +172,7 @@ try{
       var h = j.home, a = j.away;
       var t = j.total || {};
       var pon = j.ponches || {};
-      var txt = '<b style="color:#F1F5FB">☁️ Servidor Railway</b> <span style="color:#6D8299">'+
+      var txt = '<b style="color:#F1F5FB">☁️ Servidor Railway</b> <span style="color:#9DB2C8">'+
         (APLICAR_ARRIBA ? '(ya aplicado arriba en el Veredicto)' : '(solo comparación: el Veredicto usa el cálculo propio de OVA)')+'</span><br>';
       txt += (h?h.nombre:'Local')+': <b style="color:#F1F5FB">'+(h?h.chance:'—')+'%</b> ('+americana(h?h.chance:null)+') · ';
       txt += (a?a.nombre:'Visita')+': <b style="color:#F1F5FB">'+(a?a.chance:'—')+'%</b> ('+americana(a?a.chance:null)+')<br>';
@@ -162,7 +180,8 @@ try{
       if(t.carreras_esperadas) txt += 'carreras: '+t.carreras_esperadas.away+' / '+t.carreras_esperadas.home+'<br>';
       if(pon.away!=null || pon.home!=null) txt += 'Ponches esperados: '+(pon.away!=null?pon.away:'—')+' / '+(pon.home!=null?pon.home:'—');
       txt += notaPropia(el._calc, j);
-      caja.innerHTML = txt;
+      caja.innerHTML = chipHtml(el._calc, j, h, a) + '<div class="srv-det" hidden style="margin-top:8px;border-top:1px solid #2A3E56;padding-top:8px">' + txt + '</div>';
+      ligarChip(caja);
       caja.dataset.listo = '1';
     }).catch(function(e){
       caja.innerHTML = '<b style="color:#F1F5FB">☁️ Servidor Railway</b><br><span style="color:#F87171">No se pudo conectar (' + e.message + '). Revisa tu internet o si el servidor está caido. Se muestran los números propios de OVA.</span>';

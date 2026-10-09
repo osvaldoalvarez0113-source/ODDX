@@ -17,11 +17,12 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 | `sw.js`, `manifest.json`, `icon-*.png` | Service worker (red primero, sin internet usa copia), manifest e iconos de la app instalada. |
 | `ovaextra.js` | Respaldo de picks en IndexedDB, exportar/importar y resumen «Hoy». Lo cargan las cinco páginas. |
 | `interior.js`, `obsidiana.js`, `hubestilos.js` | Diseños (Clásico/Cristal/Broadcast), tema «Oro negro» y los 6 estilos del hub. |
+| `diseno.js` | Barra de abajo igual en MLB, fútbol y NBA (Juegos · Al gane · Combo · Mis picks · Ajustes), lo técnico (Backtest, Ratings, Diagnóstico) en Ajustes → Avanzado, versión visible en Ajustes y carga automática de MLB. No cambia ningún cálculo. |
 | `historial.js` | MLB v47-v50: historial del abridor a 3 años (apagado por defecto), botón 🦈 de IA con análisis completo, y la etiqueta de versión que se ve junto al título. |
 | `railway.js` | Compara (o aplica) el cálculo del servidor Railway sobre el Veredicto de MLB. **Única copia** de ese parche. |
 | `pinnacle.js` + `pinnacle-datos.json` | Muestra lo que dice el mercado (Pinnacle sin margen). El JSON lo escribe el escáner de GitHub Actions. |
 | `mejoras.js`, `selecciones.js` | Lesionados + clima (fútbol) y selecciones (ESPN). |
-| `pruebas.js` | 150 pruebas automáticas. `node --expose-internals pruebas.js` |
+| `pruebas.js` | 170 pruebas automáticas. `node --expose-internals pruebas.js` |
 | `backtests/` | Páginas de medición (se abren en el navegador). Cada decisión de la fórmula salió de una de ellas. Índice en `backtests/index.html`. |
 | `scripts/` | Lo que corre en GitHub Actions o a mano: `valor.js` (escáner Pinnacle), `correr_mercado.js`, `correr_deportes.js`, `ova_formula.py`. |
 | `worker/ova-ia.js` | Versión **endurecida** del Worker de Cloudflare del botón 🦈 (ver abajo). |

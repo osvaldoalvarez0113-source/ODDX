@@ -45,8 +45,10 @@ html[data-hub]:not([data-hub="oro"]),html[data-hub]:not([data-hub="oro"]) body{o
 #hubLay .art{width:100%;height:100%;color:var(--c)}
 #hubLay .art svg{width:100%;height:100%;overflow:visible}
 #hubLay .art svg *{fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;animation:hlDraw 2s .35s ease forwards}
-#hubLay .liv{display:inline-flex;align-items:center;gap:6px;font:800 10px Inter;letter-spacing:.12em;padding:5px 10px;border-radius:99px;border:1px solid var(--c);color:var(--c);background:rgba(0,0,0,.35)}
+#hubLay .liv{display:inline-flex;align-items:center;gap:6px;font:800 11px Inter;letter-spacing:.08em;padding:5px 10px;border-radius:99px;border:1px solid var(--c);color:var(--c);background:rgba(0,0,0,.35)}
 #hubLay .liv i{width:6px;height:6px;border-radius:50%;background:var(--c);animation:hlLive 1.4s ease-in-out infinite}
+#hubLay .liv em{font-style:normal}
+#hubLay .liv.off i{animation:none;opacity:.4}
 
 /* ============================ CARRUSEL 3D ============================ */
 html[data-hub="carrusel"] body{background:#06070d}
@@ -140,7 +142,7 @@ html[data-hub="tablero"] body{background:#0a0a0c}
 .L-tablero .row::before{left:8px}.L-tablero .row::after{right:8px}
 .L-tablero .fls{display:flex;justify-content:center;gap:4px}
 .L-tablero .meta{display:flex;align-items:center;justify-content:space-between;margin:9px 8px 0;font:500 10.5px ui-monospace,Menlo,monospace;color:#a89a6c;letter-spacing:.07em;text-transform:uppercase}
-.L-tablero .meta .liv{font-size:9px;padding:3px 8px}
+.L-tablero .meta .liv{font-size:11px;padding:3px 8px}
 .L-tablero .fl{--hh:27px;position:relative;width:37px;height:54px;perspective:260px;font:700 33px/54px ui-monospace,"SF Mono",Menlo,monospace;color:#FFC83D;text-align:center}
 .L-tablero .hdr .fl{--hh:14px;width:18px;height:28px;font-size:17px;line-height:28px;color:#e9e1c4}
 .L-tablero .clk .fl{--hh:16px;width:22px;height:32px;font-size:21px;line-height:32px;color:#e9e1c4}
@@ -193,6 +195,29 @@ var ARTS={
  fut:'<rect x="6" y="20" width="108" height="80" rx="4"/><path d="M60 20 V100"/><circle cx="60" cy="60" r="14"/><circle cx="60" cy="60" r="1.5"/><rect x="6" y="40" width="20" height="40"/><rect x="94" y="40" width="20" height="40"/><rect x="6" y="51" width="8" height="18"/><rect x="106" y="51" width="8" height="18"/><path d="M26 52 A10 10 0 0 1 26 68"/><path d="M94 52 A10 10 0 0 0 94 68"/>',
  nba:'<rect x="8" y="12" width="104" height="96" rx="4"/><rect x="40" y="12" width="40" height="44"/><circle cx="60" cy="56" r="16"/><path d="M20 12 V34 A40 40 0 0 0 100 34 V12"/><circle cx="60" cy="22" r="4"/><path d="M52 12 H68"/>'
 };
+function livTxt(k){
+  try{
+    var H=root.OVAHoy; if(!H||!root.localStorage) return null;
+    var r=H.resumen(root.localStorage), ap=r.apps&&r.apps[k], pend=0;
+    (r.pend||[]).forEach(function(x){ if(x.app===k) pend++; });
+    if(ap&&ap.vigente&&ap.items&&ap.items.length){
+      var p=+ap.items[0].p; if(p>0&&p<=1) p*=100;
+      if(isFinite(p)&&p>0) return {t:'Top '+Math.round(p)+'% hoy',on:true};
+      return {t:'Al gane listo',on:true};
+    }
+    if(pend) return {t:pend+(pend===1?' pendiente':' pendientes'),on:true};
+    return {t:'Abrir',on:false};
+  }catch(e){ return null; }
+}
+function livHtml(k,st){ return '<span class="liv off" data-k="'+k+'"'+(st?' style="'+st+'"':'')+'><i></i><em>Abrir</em></span>'; }
+function actualizarLiv(raiz){
+  [].forEach.call((raiz||doc).querySelectorAll('.liv[data-k]'),function(e){
+    var v=livTxt(e.getAttribute('data-k')); if(!v) return;
+    var em=e.querySelector('em'); if(em) em.textContent=v.t;
+    e.classList.toggle('off',!v.on);
+  });
+}
+try{ root.addEventListener('load',function(){ actualizarLiv(); }); }catch(e){}
 function art(k){ return '<div class="art"><svg viewBox="0 0 120 120" aria-hidden="true">'+ARTS[k].replace(/<(path|rect|circle) /g,'<$1 pathLength="1" ')+'</svg></div>'; }
 function brand(){ return '<div class="hl-brand">OVA <span>·</span></div>'; }
 function pad(s,n){ s=String(s); while(s.length<n) s+=' '; return s; }
@@ -202,7 +227,7 @@ function htmlCarrusel(){
   var bg='',s='';
   DEP.forEach(function(d,i){
     bg+='<i class="bg'+i+'" style="--c:'+d.c+'"></i>';
-    s+='<a class="slide" href="'+d.href+'" style="--c:'+d.c+';--c2:'+d.c2+'">'+art(d.k)+'<span class="emo">'+d.e+'</span><span class="liv"><i></i>LIVE</span><b class="nm">'+d.n+'</b><p>'+d.d+'</p><span class="go">ENTRAR ›</span></a>';
+    s+='<a class="slide" href="'+d.href+'" style="--c:'+d.c+';--c2:'+d.c2+'">'+art(d.k)+'<span class="emo">'+d.e+'</span>'+livHtml(d.k)+'<b class="nm">'+d.n+'</b><p>'+d.d+'</p><span class="go">ENTRAR ›</span></a>';
   });
   return '<div class="bgfx">'+bg+'</div>'+brand()+'<div class="car">'+s+'</div><div class="dots"><i class="on"></i><i></i><i></i></div>';
 }
@@ -268,7 +293,7 @@ function initOrbita(lay){
 function htmlPaneles(){
   var s='';
   DEP.forEach(function(d,i){
-    s+='<a class="pn pn'+i+'" href="'+d.href+'"><div class="pat"></div><span class="emo">'+d.e+'</span><span class="liv"><i></i>LIVE</span><b class="big">'+d.n+'</b><span class="sm">'+d.d+'</span></a>';
+    s+='<a class="pn pn'+i+'" href="'+d.href+'"><div class="pat"></div><span class="emo">'+d.e+'</span>'+livHtml(d.k)+'<b class="big">'+d.n+'</b><span class="sm">'+d.d+'</span></a>';
   });
   return '<div class="stack">'+s+'</div>'+brand();
 }
@@ -277,7 +302,7 @@ function htmlPaneles(){
 function htmlMazo(){
   var s='';
   DEP.forEach(function(d){
-    s+='<a class="cd" href="'+d.href+'" style="--c:'+d.c+';--c2:'+d.c2+'">'+art(d.k)+'<span class="emo">'+d.e+'</span><span class="liv"><i></i>LIVE</span><b class="nm">'+d.n+'</b><p>'+d.d+'</p><span class="go">ENTRAR ›</span></a>';
+    s+='<a class="cd" href="'+d.href+'" style="--c:'+d.c+';--c2:'+d.c2+'">'+art(d.k)+'<span class="emo">'+d.e+'</span>'+livHtml(d.k)+'<b class="nm">'+d.n+'</b><p>'+d.d+'</p><span class="go">ENTRAR ›</span></a>';
   });
   return '<div class="bgfx"><i class="m1"></i><i class="m2"></i></div>'+brand()+'<div class="deck">'+s+'</div><div class="hl-title"><div class="dots"><i class="on"></i><i></i><i></i></div>Lanza la carta para ver la siguiente</div>';
 }
@@ -327,7 +352,7 @@ function fila(txt){ var o=''; for(var i=0;i<txt.length;i++) o+=celda(txt.charAt(
 function htmlTablero(){
   var rows='';
   DEP.forEach(function(d){
-    rows+='<a class="row" href="'+d.href+'" style="--c:'+d.c+'"><div class="fls" data-t="'+pad(d.n.toUpperCase(),8)+'">'+fila('        ')+'</div><div class="meta"><span>'+d.d.replace(/ — /,' · ')+'</span><span class="liv" style="--c:#ff5b4d"><i></i>LIVE</span></div></a>';
+    rows+='<a class="row" href="'+d.href+'" style="--c:'+d.c+'"><div class="fls" data-t="'+pad(d.n.toUpperCase(),8)+'">'+fila('        ')+'</div><div class="meta"><span>'+d.d.replace(/ — /,' · ')+'</span>'+livHtml(d.k,'--c:#ff5b4d')+'</div></a>';
   });
   return brand()+'<div class="hdr" data-t="¿QUÉ DEPORTE HOY?">'+fila(pad('',17))+'</div>'+rows+'<div class="clk" data-t="--:--">'+fila('--')+'<span class="sep">:</span>'+fila('--')+'</div>';
 }
@@ -378,6 +403,7 @@ function construir(id){
   var b=BUILD[id]; if(!b) return;
   var lay=doc.createElement('div'); lay.id='hubLay'; lay.className='L-'+id;
   lay.innerHTML=b.html(); doc.body.appendChild(lay);
+  try{ actualizarLiv(lay); }catch(e){}
   if(b.init) ST.stop=b.init(lay);
   [].forEach.call(lay.querySelectorAll('.hl-brand'),pulsacion);
 }

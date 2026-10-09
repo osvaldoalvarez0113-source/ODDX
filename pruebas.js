@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html'];
-const JS=['ovaextra.js','hubestilos.js','interior.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','sw.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ovaextra.js','hubestilos.js','interior.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -242,6 +242,25 @@ sec('Resumen Hoy');
  ok('favoritos de hoy ordenados por probabilidad entre apps',s.tops.length===3&&s.tops[0].app==='fut'&&s.tops[1].app==='mlb',JSON.stringify(s.tops.map(t=>t.app)));
  ok('lo viejo (de otro día) no se mezcla como si fuera de hoy',!s.tops.some(t=>t.app==='nba')&&s.apps.nba.vigente===false);
  const l4=fakeLS();l4.setItem('ventaja_picks_v1','basura');s=H.resumen(l4,ahora);ok('registro corrupto no tumba el resumen',s.pend.length===0);
+}
+
+/* ---------------- Diseño unificado (ronda 3) ---------------- */
+sec('Diseño unificado: misma barra en las 3 apps, lo técnico en Ajustes');
+{
+ const dj=rd('diseno.js');
+ ok('diseno.js existe y lo cargan MLB, fútbol y NBA',['index.html','futbol.html','nba.html'].every(f=>/<script src="diseno\.js"><\/script>/.test(rd(f))));
+ ok('el service worker lo guarda para abrir sin internet',/'diseno\.js'/.test(rd('sw.js')));
+ ok('fútbol y NBA renombran Registro → «Mis picks» y Combina → «Combo»',/Mis picks/.test(dj)&&/'Combo'/.test(dj));
+ ok('la barra queda en el orden Juegos · Al gane · Combo · Mis picks · Ajustes',/\['vJuegos','vAlgane','vComb','vReg','dsAjustes'\]/.test(dj)&&/\['juegos','algane','combo','registro','dsAjustes'\]/.test(dj));
+ ok('los botones originales se ocultan, no se borran (conservan sus eventos)',/style\.display='none'/.test(dj)&&!/removeChild/.test(dj));
+ ok('MLB: abre con los juegos de hoy cargados',/function autoMLB/.test(dj)&&/b\.click\(\)/.test(dj));
+ ok('MLB: cargar() ignora respuestas viejas (no duplica juegos si se toca dos veces)',/CARGA_TK/.test(rd('index.html'))&&/if\(_tk!==CARGA_TK\) return;/.test(rd('index.html')));
+ ok('la versión se ve en Ajustes (también con el tema Cristal)',/tarjetaVersion/.test(dj)&&/dsCard/.test(dj));
+ ok('letra mínima de 12 px en notas y pies',/\.nota[^}]*font-size:12px!important/.test(dj));
+ ok('el hub ya no muestra «LIVE» fijo',!/>LIVE<\/span>/.test(rd('hubestilos.js'))&&/livHtml/.test(rd('hubestilos.js')));
+ ok('la caja del servidor Railway es de una línea y se despliega',/srv-chip/.test(rd('railway.js')));
+ ok('la barra de estado de fútbol y NBA es corta',!/terminados medibles/.test(rd('futbol.html'))&&!/partidos medidos de 3 temporadas/.test(rd('nba.html')));
+ ok('el aviso de worldfootball sigue saliendo en la barra de estado',/avisoWorldfootball\(\)/.test(rd('futbol.html'))&&/avisoWF/.test(rd('futbol.html')));
 }
 
 /* ---------------- 9. service worker ---------------- */

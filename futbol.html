@@ -607,7 +607,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL <span class="ver">v7</span></h1>
+  <h1>⚽ FÚTBOL <span class="ver">v12</span></h1>
   <select id="ligaSel">
    <optgroup label="Ligas">
     <option value="pl">Premier League</option>
@@ -680,7 +680,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 
 
 <script>
-var VERSION = 'v7';
+var VERSION = 'v12';
 var EQUIPOS = null;
 var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
@@ -1802,7 +1802,7 @@ function pintarForma(elId, nombreEquipo){
 function badgeMercado(m){
   var v = leerVeredictos(LIGA_ACTUAL);
   if(!v || v[m]===undefined){
-    return '<div class="nota" style="margin:0 0 8px">Este mercado: <b>sin medir</b>. Ve a Backtest → Medir temporada pasada para saber si el modelo le gana a la frecuencia de la liga.</div>';
+    return '<div class="nota" style="margin:0 0 8px">Este mercado: <b>sin medir</b>. Ve a Ajustes → Avanzado → Backtest → Medir temporada pasada para saber si el modelo le gana a la frecuencia de la liga.</div>';
   }
   var t = veredictoDe(v[m]);
   var expl = t.t==='✓ le gana' ? 'el modelo le gana a la frecuencia de la liga con diferencia clara.' :
@@ -2573,7 +2573,7 @@ function correrCalibracion(){
       var lineas = [];
       ['ou','bt'].forEach(function(k){
         var v = veredictoDe(d[k]);
-        lineas.push(nom[k]+': '+(v.t==='✓ le gana' ? 'le gana a la frecuencia de la liga con una diferencia clara. En totales la ventaja real suele ser chica: confírmala con tu Registro de picks.' : (v.t==='≈ igual' ? 'no se distingue de la frecuencia de la liga: no hay evidencia de que el modelo aporte.' : 'es claramente peor que la frecuencia de la liga: ignora sus porcentajes.')));
+        lineas.push(nom[k]+': '+(v.t==='✓ le gana' ? 'le gana a la frecuencia de la liga con una diferencia clara. En totales la ventaja real suele ser chica: confírmala en Mis picks.' : (v.t==='≈ igual' ? 'no se distingue de la frecuencia de la liga: no hay evidencia de que el modelo aporte.' : 'es claramente peor que la frecuencia de la liga: ignora sus porcentajes.')));
       });
       html += '<div class="veredicto-bt">'+lineas.join('<br>')+'</div>';
       html += '<button id="btnUsarParams" class="btnAncho">Usar los parámetros calibrados</button>'+
@@ -2771,10 +2771,9 @@ function pintarEstado(liga){
   var estado = document.getElementById('estado');
   var ahora = new Date().toLocaleString('es', {hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit'});
   var cuando = DIA_SELECCIONADO==='TODOS' ? 'próximos' : 'del día';
-  var txt = '✓ '+liga.nombre+' — '+(LIGA_ES_COPA ? '' : EQUIPOS.length+' equipos, ')+
-    PARTIDOS.length+' '+plural(PARTIDOS.length,'partido','partidos')+' '+cuando+', '+
-    TERMINADOS.length+' terminados medibles'+(TERMINADOS.length ? ' ('+FUENTE_TERM+')' : '')+
-    ' — en vivo ('+ahora+').'+(LIGA_ES_COPA ? ' Copa: sin modelo.' : (DCFIT&&DCFIT.liga===LIGA_ACTUAL ? ' Modelo v4 (Dixon-Coles) activo.' : ''));
+  var txt = '✓ '+liga.nombre+' · '+PARTIDOS.length+' '+plural(PARTIDOS.length,'partido','partidos')+' '+cuando+
+    (LIGA_ES_COPA ? ' · copa sin modelo' : (TERMINADOS.length ? ' · '+TERMINADOS.length+' resultados leídos' : ''))+
+    ' · actualizado '+ahora+'.';
   var avisoWF = avisoWorldfootball();
   if(!TERMINADOS.length){
     txt += ' ⚠️ No se leyó ningún resultado terminado: Forma, Cara a cara y Backtest quedan vacíos. Toca 🔍 Diagnóstico.';
@@ -3007,7 +3006,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
 /* OVA Fútbol · v10: anillo de probabilidad, doble oportunidad, selector de tema, pulido (atenuar
    porcentajes de goles no medidos, apagar Kalshi tras un 429, verificar picks al abrir Registro). */
 (function(){
- var VER='v11';
+ var VER='v12';
  function $q(s,r){ return (r||document).querySelector(s); }
  function pct(x){ return (x*100).toFixed(1)+'%'; }
  function am(p){
@@ -3531,5 +3530,6 @@ h3{display:flex;align-items:center;gap:6px}
 <script src="selecciones.js"></script>
 
 <script src="ovaextra.js"></script>
+<script src="diseno.js"></script>
 </body>
 </html>
