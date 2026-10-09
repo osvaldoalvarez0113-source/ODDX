@@ -11,7 +11,8 @@ var KEY='ova_interior';
 var UIS=[
  {id:'clasico',n:'Clásico',d:'Como lo tenías',sw:'linear-gradient(135deg,#0b121c,#1b2838)'},
  {id:'cristal',n:'Cristal',d:'Vidrio, dock flotante y versus',sw:'radial-gradient(circle at 25% 30%,#3b82f6aa,transparent 55%),radial-gradient(circle at 80% 70%,#a855f7aa,transparent 55%),#0a0f1d'},
- {id:'broadcast',n:'Broadcast',d:'Gráficos de TV deportiva',sw:'linear-gradient(115deg,#0a0f1d 0 60%,#FBBF24 60% 64%,#0a0f1d 64%)'}
+ {id:'broadcast',n:'Broadcast',d:'Gráficos de TV deportiva',sw:'linear-gradient(115deg,#0a0f1d 0 60%,#FBBF24 60% 64%,#0a0f1d 64%)'},
+ {id:'pro',n:'Pro',d:'Datos primero: barras de probabilidad y números tabulares',sw:'linear-gradient(90deg,#3b82f6 0 46%,#0b121c 46% 48%,#fbbf24 48%)'}
 ];
 var BY={};UIS.forEach(function(u){BY[u.id]=u;});
 
@@ -168,10 +169,59 @@ html[data-ui="broadcast"] .fila .pct,html[data-ui="broadcast"] .fila-rank .pct{f
 html[data-ui="broadcast"] .vacio{border-radius:0;border:0;border-top:5px solid var(--hot)}
 html[data-ui="broadcast"] .ajustes{border-radius:0;border-left:5px solid var(--hot)}
 
+/* =========================================================== PRO (datos primero) =========================================================== */
+html[data-ui="pro"] body{font-variant-numeric:tabular-nums;background-image:none;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 84px)!important}
+html[data-ui="pro"] .topbar,html[data-ui="pro"] header{background:var(--bg)!important;border-bottom:1px solid var(--line2)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:none!important}
+html[data-ui="pro"] .brand,html[data-ui="pro"] header h1{font:800 19px/1 ui-monospace,"SF Mono",Menlo,monospace!important;letter-spacing:.16em;text-transform:uppercase}
+html[data-ui="pro"] .ver{border-radius:4px;border:1px solid var(--line2);background:var(--bg1);color:var(--mut);font:600 11px ui-monospace,Menlo,monospace;padding:2px 6px}
+html[data-ui="pro"] .navbar,html[data-ui="pro"] .tabbar{background:var(--bg)!important;border-top:1px solid var(--line2)!important;border-radius:0!important;box-shadow:none!important}
+html[data-ui="pro"] .navbar button,html[data-ui="pro"] .tabbar .tbar-btn{position:relative;border-radius:0!important;color:var(--mut)!important;background:transparent!important}
+html[data-ui="pro"] .navbar button span,html[data-ui="pro"] .tabbar .lb{font-size:11px!important;font-weight:700;letter-spacing:.02em}
+html[data-ui="pro"] .navbar button.on,html[data-ui="pro"] .tabbar .tbar-btn.on{color:var(--txt)!important}
+html[data-ui="pro"] .navbar button.on::before,html[data-ui="pro"] .tabbar .tbar-btn.on::before{content:"";position:absolute;top:-1px;left:22%;right:22%;height:2px;background:var(--hot);border-radius:0 0 2px 2px}
+html[data-ui="pro"] .navbar button.on svg,html[data-ui="pro"] .tabbar .tbar-btn.on svg{color:var(--hot)}
+html[data-ui="pro"] .diaBtn{border-radius:8px;background:var(--bg1);border:1px solid var(--line2);font-weight:700}
+html[data-ui="pro"] .diaBtn.on{background:var(--hot);color:var(--hotTx);border-color:var(--hot)}
+html[data-ui="pro"] .cargafila input[type=date]{border-radius:8px}
+html[data-ui="pro"] .game{border-radius:12px;border:1px solid var(--line2);background:var(--bg1);margin:10px 0;position:relative;overflow:hidden;box-shadow:none}
+html[data-ui="pro"] .game::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,var(--ta,var(--acc)),var(--th,var(--acc2)));pointer-events:none}
+html[data-ui="pro"] .game.open{border-color:var(--mut2)}
+html[data-ui="pro"] .game .head{padding:13px 14px 13px 19px}
+html[data-ui="pro"] .game .match{font:700 17px/1.25 var(--body,system-ui,sans-serif);letter-spacing:-.005em}
+html[data-ui="pro"] .game .match .vs{font-family:ui-monospace,Menlo,monospace;font-style:normal;font-size:13px;opacity:.6}
+html[data-ui="pro"] .game .match small{font:500 12px/1.35 ui-monospace,Menlo,monospace;color:var(--mut)}
+html[data-ui="pro"] .game .clock,html[data-ui="pro"] .game .head .hora{font:700 12px ui-monospace,Menlo,monospace;border-radius:6px;background:var(--bg2);border:1px solid var(--line2);color:var(--txt);padding:5px 8px}
+html[data-ui="pro"] .game .clock.vivo{background:#e5384a;border-color:#e5384a;color:#fff}
+html[data-ui="pro"] .dsProb{display:block;margin:11px 0 0}
+html[data-ui="pro"] .dsProb .bb{display:flex;gap:2px;height:7px}
+html[data-ui="pro"] .dsProb .bb i{display:block;border-radius:99px;min-width:6px}
+html[data-ui="pro"] .dsProb .bb i{background:var(--line2)}
+html[data-ui="pro"] .dsProb.fa .ba,html[data-ui="pro"] .dsProb.fh .bh{background:var(--hot)}
+html[data-ui="pro"] .dsProb .bl{display:flex;justify-content:space-between;margin-top:5px;font:700 12px ui-monospace,Menlo,monospace;color:var(--mut)}
+html[data-ui="pro"] .dsProb.fa .bl b:first-child,html[data-ui="pro"] .dsProb.fh .bl b:last-child{color:var(--txt)}
+html[data-ui="pro"] .tabs{background:var(--bg1)!important;border-bottom:1px solid var(--line2);border-radius:0;padding:0 8px!important;gap:0!important}
+html[data-ui="pro"] .tb{border-radius:0!important;background:transparent!important;border:0!important;border-bottom:2px solid transparent!important;color:var(--mut)!important;font-weight:700!important}
+html[data-ui="pro"] .tb.on{color:var(--txt)!important;border-bottom-color:var(--hot)!important}
+html[data-ui="pro"] .ovaHero{border-radius:12px;border:1px solid var(--line2);background:var(--bg1)!important}
+html[data-ui="pro"] .ovaHero .pc,html[data-ui="pro"] .kpi b{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-weight:800;letter-spacing:-.03em}
+html[data-ui="pro"] .kpi div,html[data-ui="pro"] .tarj div,html[data-ui="pro"] .cmpg div{border-radius:10px!important;background:var(--bg1)!important;border:1px solid var(--line2)}
+html[data-ui="pro"] .kpi span,html[data-ui="pro"] .kpi small{text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+html[data-ui="pro"] .pick{border-radius:10px;border-left-width:4px;background:var(--bg1)}
+html[data-ui="pro"] .cal,html[data-ui="pro"] .row,html[data-ui="pro"] .cuotasbox,html[data-ui="pro"] .observ,html[data-ui="pro"] .calc,html[data-ui="pro"] .pk,html[data-ui="pro"] .linea{border-radius:10px}
+html[data-ui="pro"] .bar{height:28px;border-radius:6px}
+html[data-ui="pro"] .fila,html[data-ui="pro"] .fila-rank{border-radius:10px;border:1px solid var(--line2)!important;background:var(--bg1)!important;margin:6px 0}
+html[data-ui="pro"] .fila .pct,html[data-ui="pro"] .fila-rank .pct{font:800 18px ui-monospace,"SF Mono",Menlo,monospace}
+html[data-ui="pro"] h3{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--mut);border-bottom:1px solid var(--line2);padding-bottom:6px}
+html[data-ui="pro"] input[type=text],html[data-ui="pro"] input[type=number],html[data-ui="pro"] select{border-radius:8px}
+html[data-ui="pro"] button.ghost{border-radius:8px}
+html[data-ui="pro"] .vacio{border-radius:12px;border:1px dashed var(--line2);background:var(--bg1)}
+html[data-ui="pro"] .ajustes{border-radius:12px;border:1px solid var(--line2);background:var(--bg1)}
+html[data-ui="pro"] .dsCard,html[data-ui="pro"] .dsAv{border-radius:12px}
+
 /* ---------- seccion dentro de Apariencia ---------- */
 .uiSec{margin:12px 0 6px}
 .uiSec .uiTit{font:700 12px system-ui,-apple-system,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:0 2px 8px}
-.uiSec .uiRow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.uiSec .uiRow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .uiSec .ovaSk .pv{height:50px}
 .uiSec .ovaSk .tx{padding:7px 6px 8px;text-align:center}
 .uiSec .ovaSk .tx b{font-size:12.5px}

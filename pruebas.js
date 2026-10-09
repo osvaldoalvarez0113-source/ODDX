@@ -263,6 +263,20 @@ sec('Diseño unificado: misma barra en las 3 apps, lo técnico en Ajustes');
  ok('el aviso de worldfootball sigue saliendo en la barra de estado',/avisoWorldfootball\(\)/.test(rd('futbol.html'))&&/avisoWF/.test(rd('futbol.html')));
 }
 
+/* ---------------- Ronda 4: pantalla Juegos más limpia + diseño Pro ---------------- */
+sec('Ronda 4: pantalla Juegos más limpia + diseño Pro');
+{
+ const dj=rd('diseno.js'), ob=rd('obsidiana.js'), ix=rd('index.html'), ic=rd('interior.js');
+ ok('«Destacados de hoy» solo sale con 5 o más juegos (con pocos repetía la lista)',/kids\.length<5/.test(ob));
+ ok('la fila de fecha de MLB es compacta (el botón ya no es el protagonista)',/\.cargafila #cargar\{padding:8px 12px/.test(dj));
+ ok('el texto de estado de MLB ya no explica dos líneas',!/dale a Ranking al gane para calcularlos todos/.test(ix)&&/toca uno para ver los números/.test(ix));
+ ok('los juegos sin abridores van al final bajo «Por confirmar»',/function ordenarJuegos/.test(dj)&&/Por confirmar \(/.test(dj));
+ ok('Ajustes de MLB abre con banca y modo de pago; la Apariencia va después',/function ajustesMLB/.test(dj)&&/pa\.insertBefore\(ap,ref\)/.test(dj));
+ ok('mismos iconos de la barra en Clásico',/function iconosIguales/.test(dj));
+ ok('diseño Pro: toda regla cuelga de data-ui="pro" y hay barra de probabilidad',/data-ui="pro"\] \.dsProb/.test(ic)&&/function barrasProb/.test(dj));
+ ok('el diseño Pro se elige en Apariencia (4 fichas)',/id:'pro'/.test(ic)&&/repeat\(2,minmax\(0,1fr\)\)/.test(ic));
+}
+
 /* ---------------- 9. service worker ---------------- */
 const t_sw=async()=>{
  sec('Service worker (abre sin internet, siempre prefiere lo nuevo)');
@@ -355,7 +369,7 @@ sec('Presentaciones del hub (6 diseños)');
 sec('Diseño interior de las apps (Clásico · Cristal · Broadcast)');
 {
  const UI=require(path.join(__dirname,'interior.js'));
- ok('3 diseños: clásico, cristal y broadcast',JSON.stringify(UI.UIS.map(u=>u.id))===JSON.stringify(['clasico','cristal','broadcast']));
+ ok('4 diseños: clásico, cristal, broadcast y pro',JSON.stringify(UI.UIS.map(u=>u.id))===JSON.stringify(['clasico','cristal','broadcast','pro']));
  const css=UI.css;let nv=0,okb=true;for(const c of css){if(c==='{')nv++;if(c==='}'){nv--;if(nv<0)okb=false;}}
  ok('el CSS tiene llaves balanceadas',okb&&nv===0);
  const kf=new Set([...css.matchAll(/@keyframes\s+([\w-]+)/g)].map(m=>m[1]));

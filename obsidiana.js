@@ -324,7 +324,7 @@ try{
       var kids = [];
       for(var i=0;i<cont.children.length;i++){ if(cont.children[i].classList.contains("game")) kids.push(cont.children[i]); }
       var old = document.getElementById("ovaDestacados");
-      if(!kids.length){ if(old) old.remove(); return; }
+      if(kids.length<5){ if(old) old.remove(); return; }
       var top3 = kids.slice(0,3);
       var firma = top3.map(function(g){ return equiposDe(g); }).join("|");
       if(old && old.dataset.firma === firma) return;

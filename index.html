@@ -3218,7 +3218,7 @@ function cargar(){
     if(_tk!==CARGA_TK) return;
     var games=(data.dates&&data.dates[0]&&data.dates[0].games)||[];
     if(!games.length){ $('status').textContent='No hay juegos de MLB ese día.'; return; }
-    $('status').innerHTML=games.length+(games.length===1?' juego':' juegos')+'. Toca uno para correr los números, o dale a Ranking al gane para calcularlos todos.'+
+    $('status').innerHTML=games.length+(games.length===1?' juego':' juegos')+' · toca uno para ver los números'+
       (CORTE?'<br><br>📅 <b>Fecha pasada.</b> Las estadísticas van recortadas al '+esc(CORTE)+
         ', o sea sin nada de lo que pasó después — así el número que ves es el que habrías tenido '+
         'ese día. El ERA de bullpen sí queda en el del staff completo: el split de relevistas no '+
