@@ -4,8 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       dias:
-        description: Dias hacia atras (45) o escribe S2025 para la temporada 2025 completa
+        description: Dias hacia atras (45) o escribe S2025 / S2024 para una temporada completa
         default: "45"
+
+permissions:
+  contents: read
 
 jobs:
   medir:
@@ -17,4 +20,6 @@ jobs:
         with:
           node-version: "22"
       - name: Correr el backtest
-        run: node correr_mercado.js "${{ github.event.inputs.dias }}"
+        env:
+          DIAS: ${{ github.event.inputs.dias }}
+        run: node scripts/correr_mercado.js "$DIAS"

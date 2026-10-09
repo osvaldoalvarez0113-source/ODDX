@@ -1,0 +1,25 @@
+name: Pruebas
+
+# Corre las 140+ pruebas de pruebas.js en cada subida. Una X roja = algo se rompió.
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - pinnacle-datos.json
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Pruebas
+        run: node --expose-internals pruebas.js

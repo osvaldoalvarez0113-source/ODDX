@@ -2,6 +2,9 @@ name: Backtest NBA y futbol
 
 on: workflow_dispatch
 
+permissions:
+  contents: read
+
 jobs:
   medir:
     runs-on: ubuntu-latest
@@ -10,7 +13,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: "22"
       - name: Correr el backtest
-        run: node correr_deportes.js ambos
-
+        run: node scripts/correr_deportes.js ambos
