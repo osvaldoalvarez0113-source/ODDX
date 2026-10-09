@@ -35,7 +35,7 @@ self.addEventListener('fetch', function(e){
       var t = setTimeout(function(){
         caches.match(req, {ignoreSearch:true}).then(function(m){ if(m && !listo){ listo = true; resolve(m); } });
       }, 4000);
-      fetch(req).then(function(r){
+      fetch(req, {cache:'no-cache'}).then(function(r){
         clearTimeout(t);
         if(r && r.ok){
           var copia = r.clone();

@@ -22,7 +22,7 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 | `railway.js` | Compara (o aplica) el cálculo del servidor Railway sobre el Veredicto de MLB. **Única copia** de ese parche. |
 | `pinnacle.js` + `pinnacle-datos.json` | Muestra lo que dice el mercado (Pinnacle sin margen). El JSON lo escribe el escáner de GitHub Actions. |
 | `mejoras.js`, `selecciones.js` | Lesionados + clima (fútbol) y selecciones (ESPN). |
-| `pruebas.js` | 178 pruebas automáticas. `node --expose-internals pruebas.js` |
+| `pruebas.js` | 179 pruebas automáticas. `node --expose-internals pruebas.js` |
 | `backtests/` | Páginas de medición (se abren en el navegador). Cada decisión de la fórmula salió de una de ellas. Índice en `backtests/index.html`. |
 | `scripts/` | Lo que corre en GitHub Actions o a mano: `valor.js` (escáner Pinnacle), `correr_mercado.js`, `correr_deportes.js`, `ova_formula.py`. |
 | `worker/ova-ia.js` | Versión **endurecida** del Worker de Cloudflare del botón 🦈 (ver abajo). |

@@ -293,6 +293,7 @@ const t_sw=async()=>{
  red=false;p=pedir('https://x.github.io/index.html?t=123');ok('sin internet entrega la copia guardada (aunque cambie el ?t=)',(await p).body==='nuevo');
  p=pedir('https://x.github.io/futbol.html');await Promise.race([p.catch(()=>{}),new Promise(r=>setTimeout(r,200))]);ok('sin internet y sin copia falla limpio (no se cuelga)',true);
  ok('no toca APIs de otros sitios',pedir('https://statsapi.mlb.com/api/v1/schedule')===null);
+ ok('pide siempre la versión nueva al servidor (la app de la pantalla de inicio no se queda 10 min con la vieja)',/fetch\(req,\s*\{cache:'no-cache'\}\)/.test(rd('sw.js')));
  ok('no toca POST',(()=>{let t=false;L.fetch({request:{method:'POST',url:'https://x.github.io/a'},respondWith:()=>{t=true;}});return !t;})());
 };
 
