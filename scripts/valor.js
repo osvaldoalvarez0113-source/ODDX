@@ -1,0 +1,308 @@
+/* ===================================================================
+   VALOR vs PINNACLE  (corre en GitHub Actions con Node 20+)
+   1) Toma el precio de Pinnacle y le quita el margen: eso es la probabilidad
+      "justa" del mercado (la mejor estimacion publica de quien gana).
+   2) Compara con los precios de Kalshi / Bovada (u otras casas que se configuren)
+      y marca donde pagan MAS de lo justo (EV positivo).
+   3) Te manda al telefono (ntfy) los juegos con valor y los favoritos mas claros.
+   Una llamada a OddsPapi por casa (Pinnacle + las tuyas) trae todos los juegos de MLB.
+   =================================================================== */
+const fs=require('fs');
+const ENV=process.env;
+const KEY=ENV.ODDSPAPI_KEY||'';
+const NTFY=(ENV.NTFY_TOPIC||'').trim();
+const SIEMPRE=(ENV.NOTIFY_ALWAYS||'')==='true';
+const MIN_EV=parseFloat(ENV.MIN_EV||'0.03');          /* 3% */
+const KFEE=parseFloat(ENV.KALSHI_FEE||'0.07');        /* comision estimada de Kalshi: 0.07 * p * (1-p) por contrato */
+const QUIERO=(ENV.BOOKS||'kalshi').split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+const MIN_FAV=parseFloat(ENV.MIN_FAV||'0.60');       /* favorito claro: 60% o mas segun Pinnacle sin margen */
+const HORAS=parseFloat(ENV.HORAS||'20');              /* juegos que empiezan en las proximas N horas */
+const MAX_MES=parseInt(ENV.MAX_MES||'150',10);        /* tope de llamadas por mes de ESTE escaner */
+const TORNEO=ENV.TORNEO_ID||'';                       /* si se conoce el id de MLB en OddsPapi */
+const OP='https://api.oddspapi.io/v4';
+const CDIR='.cache', CF=CDIR+'/valor.json';
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const ESC=parseFloat(ENV.COOL_ESC||'1');              /* solo para pruebas locales */
+const out=[]; const P=(...a)=>{ const s=a.join(' '); out.push(s); console.log(s); };
+
+let cache={data:{},nombres:{},uso:{}};
+try{ const c=JSON.parse(fs.readFileSync(CF,'utf8')); cache=Object.assign(cache,c); }catch(e){}
+function guardar(){ try{ fs.mkdirSync(CDIR,{recursive:true}); fs.writeFileSync(CF,JSON.stringify(cache)); }catch(e){} }
+const mes=new Date().toISOString().slice(0,7);
+let nuevas=0, ultimo=0;
+
+async function op(path,params,opts){
+  opts=opts||{};
+  const q=new URLSearchParams(params||{}); const k=path+'?'+q.toString();
+  if(opts.cache && k in cache.data) return cache.data[k];
+  const gasta=!opts.libre;
+  if(gasta && (cache.uso[mes]||0)>=MAX_MES){ const e=new Error('tope mensual de este escaner ('+MAX_MES+' llamadas)'); e.tope=true; throw e; }
+  const gap=(/odds-by-tournaments/.test(path)?6000:1100)*ESC; const esp=gap-(Date.now()-ultimo); if(esp>0) await sleep(esp);
+  ultimo=Date.now(); if(gasta){ nuevas++; cache.uso[mes]=(cache.uso[mes]||0)+1; }
+  const u=new URLSearchParams(params||{}); u.set('apiKey',KEY);
+  let r=await fetch(OP+path+'?'+u.toString());
+  if(r.status===429 && !opts.reintento){                /* demasiado rapido: espera lo que pide y repite una vez */
+    const t=await r.text().catch(()=>''); const m=/wait ([0-9.]+) seconds/.exec(t); const w=Math.min(15,(m?parseFloat(m[1]):2)+2);
+    P('  (429: espero '+w.toFixed(1)+' s y repito)'); await sleep(w*1000*ESC);
+    return op(path,params,Object.assign({},opts,{reintento:true}));
+  }
+  if(r.status===404){ guardar(); return null; }
+  if(!r.ok){ const t=(await r.text().catch(()=>'')).slice(0,200).replace(KEY,'***');
+    const e=new Error('OddsPapi '+path+' HTTP '+r.status+' '+t); e.status=r.status; throw e; }
+  const j=await r.json(); if(opts.cache) cache.data[k]=j; guardar(); return j;
+}
+
+/* ---------- utilidades de precios ---------- */
+function dec(x){ x=+x; if(!isFinite(x)) return NaN; if(x>=100) return 1+x/100; if(x<=-100) return 1+100/(-x); return x; }
+function amer(d){ if(!(d>1)) return '—'; return d>=2?'+'+Math.round((d-1)*100):String(Math.round(-100/(d-1))); }
+function noVig(d1,d2){ const a=1/d1,b=1/d2,s=a+b; return [a/s,b/s]; }
+function efectivo(slug,d){                 /* Kalshi cobra comision: el precio efectivo es peor */
+  if(!/kalshi/.test(slug)) return d;
+  const p=1/d, fee=KFEE*p*(1-p); return 1/(p+fee);
+}
+function kalshiTope(fair){            /* precio maximo (centavos) en Kalshi para tener EV >= MIN_EV con su comision */
+  let lo=0.01,hi=0.99; for(let i=0;i<40;i++){ const c=(lo+hi)/2; const ev=fair/(c+KFEE*c*(1-c))-1; if(ev>=MIN_EV) lo=c; else hi=c; }
+  return Math.floor(lo*100);
+}
+const pct=x=>(x*100).toFixed(1)+'%';
+function hora(t){ return new Date(t).toLocaleTimeString('es-US',{timeZone:'America/Chicago',hour:'numeric',minute:'2-digit'}); }
+function precio(book,mk,out){
+  const m=book&&book.markets&&book.markets[mk]; if(!m||m.marketActive===false) return null;
+  const o=m.outcomes&&m.outcomes[out]; if(!o) return null;
+  const pl=o.players||{}; let x=pl['0']||pl[Object.keys(pl)[0]]; if(Array.isArray(x)) x=x[0];
+  if(!x||x.active===false) return null;
+  const d=dec(x.price); return d>1?{d:d,t:Date.parse(x.changedAt||x.bookmakerChangedAt||'')}:null;
+}
+function listaFix(j){
+  if(!j) return [];
+  if(Array.isArray(j)) return j;
+  if(j.fixtureId) return [j];
+  for(const k of ['fixtures','data','results','items']) if(Array.isArray(j[k])) return j[k];
+  const v=Object.values(j).filter(x=>x&&typeof x==='object'&&x.fixtureId); return v;
+}
+
+const DIAG={faltan:[],errores:[],muestra:{},parecidas:[],disponibles:[],porCasa:{},razones:{total:0,empezado:0,lejos:0,estado:0,sinPinnacle:0,pinSuspendido:0,sinPrecio:0,ok:0}};
+/* ---------- casas y torneo ---------- */
+async function resolverLibros(){
+  const j=await op('/bookmakers',{}, {cache:true});
+  const lista=Array.isArray(j)?j:[];
+  const slugs=lista.map(b=>({slug:String(b.slug||'').toLowerCase(),nombre:String(b.bookmakerName||'')}));
+  const res=[];
+  DIAG.disponibles=slugs.map(x=>x.slug);
+  DIAG.parecidas=slugs.filter(x=>/kalshi|polymarket|predict|exchange|novig|prophet/.test(x.slug+' '+x.nombre.toLowerCase())).map(x=>x.slug);
+  QUIERO.forEach(q=>{
+    const x=slugs.find(s=>s.slug===q)||slugs.find(s=>s.slug.includes(q)||s.nombre.toLowerCase().includes(q));
+    if(x&&!res.includes(x.slug)) res.push(x.slug); else { DIAG.faltan.push(q); P('  (OddsPapi no tiene una casa llamada "'+q+'")'); }
+  });
+  if(!slugs.find(s=>s.slug==='pinnacle')) throw new Error('OddsPapi no lista a Pinnacle');
+  if(!res.length){
+    const parecidas=slugs.filter(s=>/kalshi|bovada|draft|fanduel|betmgm|caesars|polymarket|bet365/.test(s.slug)).map(s=>s.slug);
+    throw new Error('No encontré ninguna de tus casas ('+QUIERO.join(', ')+'). Casas parecidas disponibles: '+(parecidas.join(', ')||'ninguna'));
+  }
+  return res.slice(0,2);
+}
+async function ubicarTorneo(){
+  if(TORNEO) return TORNEO;
+  if(cache.torneo) return cache.torneo;
+  const j=await op('/tournaments',{sportId:'13'});
+  const a=Array.isArray(j)?j:[];
+  const nom=t=>String(t.tournamentName||t.name||'');
+  const c=a.filter(t=>/^(mlb|major league baseball)$/i.test(nom(t).trim()));
+  const el=c.find(t=>/usa|united states/i.test(String(t.categoryName||t.categorySlug||'')))||c[0];
+  if(!el) throw new Error('No encontré el torneo MLB en OddsPapi (pásalo con TORNEO_ID).');
+  cache.torneo=String(el.tournamentId||el.id); guardar(); return cache.torneo;
+}
+async function completarNombres(fixs,torneo){
+  const faltan=fixs.some(f=>!(f.participant1Name||cache.nombres[f.participant1Id])||!(f.participant2Name||cache.nombres[f.participant2Id]));
+  fixs.forEach(f=>{ if(f.participant1Name) cache.nombres[f.participant1Id]=f.participant1Name; if(f.participant2Name) cache.nombres[f.participant2Id]=f.participant2Name; });
+  if(!faltan) return;
+  const hoy=new Date(); const d0=hoy.toISOString().slice(0,10), d1=new Date(hoy.getTime()+2*86400000).toISOString().slice(0,10);
+  const j=await op('/fixtures',{tournamentId:torneo,from:d0,to:d1});
+  listaFix(j).forEach(f=>{ if(f.participant1Name) cache.nombres[f.participant1Id]=f.participant1Name; if(f.participant2Name) cache.nombres[f.participant2Id]=f.participant2Name; });
+  guardar();
+}
+const nom=(f,i)=>f['participant'+i+'Name']||cache.nombres[f['participant'+i+'Id']]||('Equipo '+f['participant'+i+'Id']);
+
+const bk0=(bo,sl)=>!!bo[sl];
+/* ---------- analisis ---------- */
+function analizar(fixs,libros){
+  const ahora=Date.now(), lim=ahora+HORAS*3600e3, filas=[];
+  fixs.forEach(f=>{
+    const R=DIAG.razones; R.total++;
+    const t=Date.parse(f.startTime); if(!isFinite(t)||t<ahora+5*60e3){R.empezado++;return;} if(t>lim){R.lejos++;return;}   /* solo juegos que no han empezado */
+    if(f.statusId!=null&&+f.statusId!==0){R.estado++;return;}
+    const bo=f.bookmakerOdds||{}; const pin=bo.pinnacle; if(!pin){R.sinPinnacle++;return;} if(pin.suspended){R.pinSuspendido++;return;}
+    const a=precio(pin,'131','131'), b=precio(pin,'131','132'); if(!a||!b){R.sinPrecio++;return;} R.ok++;
+    const fair=noVig(a.d,b.d);
+    const fila={t:t,n:[nom(f,1),nom(f,2)],fair:fair,pinEdad:isFinite(a.t)?Math.round((ahora-a.t)/60000):null,casas:{}};
+    libros.forEach(sl=>{
+      const D=DIAG.porCasa[sl]||(DIAG.porCasa[sl]={salen:0,conPrecio:0,suspendido:0}); if(bk0(bo,sl)) D.salen++;
+      const bk=bo[sl]; if(bk&&!DIAG.muestra[sl]){ try{ DIAG.muestra[sl]=JSON.stringify(bk).replace(KEY,'***').slice(0,500); }catch(x){} } if(!bk){return;} if(bk.suspended){D.suspendido++;return;}
+      const x=precio(bk,'131','131'), y=precio(bk,'131','132'); if(!x||!y) return; D.conPrecio++;
+      const e1=efectivo(sl,x.d), e2=efectivo(sl,y.d);
+      const ev=[fair[0]*e1-1,fair[1]*e2-1];
+      const i=ev[0]>=ev[1]?0:1;
+      fila.casas[sl]={d:[x.d,y.d],ev:ev,mejor:i,evMejor:ev[i],precio:i===0?x.d:y.d};
+    });
+    filas.push(fila);
+  });
+  filas.sort((p,q)=>p.t-q.t);
+  return filas;
+}
+function armar(filas,libros,info){
+  const valor=[];
+  filas.forEach(f=>Object.keys(f.casas).forEach(sl=>{ const c=f.casas[sl];
+    if(c.evMejor>=MIN_EV) valor.push({f:f,sl:sl,c:c,eq:f.n[c.mejor],fair:f.fair[c.mejor]}); }));
+  valor.sort((a,b)=>b.c.evMejor-a.c.evMejor);
+  const favs=filas.map(f=>{ const i=f.fair[0]>=f.fair[1]?0:1; return {eq:f.n[i],p:f.fair[i],f:f}; }).sort((a,b)=>b.p-a.p);
+  const claros=[];
+  filas.forEach(f=>{
+    const i=f.fair[0]>=f.fair[1]?0:1, p=f.fair[i]; if(p<MIN_FAV) return;
+    const k=f.casas.kalshi, tope=kalshiTope(p);
+    const cents=(k&&k.d&&k.d[i]>1)?Math.round(100/k.d[i]):null;
+    const estado=cents==null?'sin precio':(cents<=tope?'entra':'espera');
+    claros.push({f:f,eq:f.n[i],p:p,tope:tope,cents:cents,estado:estado,i:i});
+  });
+  const L=[];
+  L.push('# Valor contra Pinnacle');
+  L.push('');
+  L.push('Juegos revisados (próximas '+HORAS+' h): **'+filas.length+'** · casas comparadas: '+libros.join(', ')+' · llamadas a OddsPapi en esta corrida: '+info.nuevas+' (este mes, de este escáner: '+(cache.uso[mes]||0)+' de '+MAX_MES+').');
+  L.push('');
+  L.push('## Dónde pagan más de lo justo (EV de '+(MIN_EV*100).toFixed(0)+'% o más)');
+  if(!valor.length) L.push('Ninguno ahora mismo. Eso es lo normal: casi siempre las casas pagan igual o peor que Pinnacle.');
+  valor.forEach(v=>L.push('- **'+v.eq+'** en **'+v.sl+'** a '+amer(v.c.precio)+' · justo según Pinnacle '+pct(v.fair)+' · EV '+(v.c.evMejor*100).toFixed(1)+'% · '+v.f.n[0]+' vs '+v.f.n[1]+' ('+hora(v.f.t)+')'));
+  L.push('');
+  L.push('## Favoritos claros ('+(MIN_FAV*100).toFixed(0)+'% o más) y si el precio de Kalshi sirve');
+  if(!claros.length) L.push('Ninguno hoy: no hay favoritos de '+(MIN_FAV*100).toFixed(0)+'% o más en la ventana.');
+  claros.forEach(c=>L.push('- '+(c.estado==='entra'?'✅ **ENTRA** ':(c.estado==='espera'?'⏳ **ESPERA** ':'👀 **REVISA PRECIO** '))+c.eq+' '+pct(c.p)+' · Kalshi: tope '+c.tope+'¢'+(c.cents!=null?' · ahora '+c.cents+'¢':'')+' · '+c.f.n[0]+' vs '+c.f.n[1]+' ('+hora(c.f.t)+')'));
+  L.push('');
+  L.push('## Favoritos más claros del mercado (Pinnacle, sin margen)');
+  if(DIAG.faltan.includes('kalshi')) L.push('_Kalshi no está en OddsPapi: revisa el precio en la app de Kalshi. Si el equipo cuesta menos que el tope de abajo, hay ventaja de '+(MIN_EV*100).toFixed(0)+'% o más después de la comisión._');
+  if(!favs.length) L.push('No hay juegos por empezar en la ventana.');
+  favs.slice(0,6).forEach(v=>L.push('- '+v.eq+' '+pct(v.p)+' · '+v.f.n[0]+' vs '+v.f.n[1]+' ('+hora(v.f.t)+') · **en Kalshi compra solo si cuesta '+kalshiTope(v.p)+'¢ o menos**'));
+  L.push('');
+  L.push('## Todos los juegos');
+  L.push('| Hora | Juego | Pinnacle justo | '+libros.map(l=>l).join(' | ')+' |');
+  L.push('|---|---|---|'+libros.map(()=>'---').join('|')+'|');
+  filas.forEach(f=>{
+    const cs=libros.map(sl=>{ const c=f.casas[sl]; return c?(f.n[c.mejor].split(' ').pop()+' '+amer(c.precio)+' ('+(c.evMejor*100).toFixed(1)+'%)'):'—'; });
+    L.push('| '+hora(f.t)+' | '+f.n[0]+' vs '+f.n[1]+' | '+f.n[0].split(' ').pop()+' '+pct(f.fair[0])+' | '+cs.join(' | ')+' |');
+  });
+  L.push('');
+  L.push('## Diagnóstico (para saber qué está viendo el escáner)');
+  const R=DIAG.razones;
+  L.push('- Juegos que OddsPapi devolvió: '+R.total+' · ya empezados o por empezar en menos de 5 min: '+R.empezado+' · más allá de '+HORAS+' h: '+R.lejos+' · otro estado: '+R.estado+' · sin Pinnacle: '+R.sinPinnacle+' · Pinnacle suspendido: '+R.pinSuspendido+' · sin precio ganador: '+R.sinPrecio+' · **usables: '+R.ok+'**');
+  Object.keys(DIAG.porCasa).forEach(sl=>{ const D=DIAG.porCasa[sl]; L.push('- '+sl+': con precio en '+D.conPrecio+' de '+R.ok+' juegos usables'+(D.suspendido?(' · suspendido en '+D.suspendido):'')); });
+  DIAG.errores.forEach(e=>L.push('- ❌ Error trayendo '+e));
+  Object.keys(DIAG.muestra).forEach(sl=>{ if(!DIAG.porCasa[sl]||!DIAG.porCasa[sl].conPrecio) L.push('- Cómo viene '+sl+' (muestra): `'+DIAG.muestra[sl].replace(/`/g,"'")+'`'); });
+  if(DIAG.faltan.length) L.push('- ⚠️ OddsPapi no tiene (con ese nombre) estas casas: **'+DIAG.faltan.join(', ')+'**. Casas parecidas que sí tiene: '+(DIAG.parecidas.join(', ')||'ninguna')+'.');
+  L.push('- Casas disponibles en OddsPapi que podrías comparar: '+(DIAG.disponibles.filter(x=>/bovada|draftkings|fanduel|betmgm|caesars|betrivers|espn|fanatics|hardrock|bet365|polymarket|kalshi|novig|prophet|betonline|mybookie|bookmaker/.test(x)).join(', ')||'(ninguna conocida)'));
+  L.push('');
+  L.push('_EV = ganancia esperada por cada dólar apostado si la probabilidad de Pinnacle es la correcta. Kalshi incluye una comisión estimada. El precio puede cambiar en minutos: confirma en la app antes de apostar. Un EV de 3-5% es una ventaja pequeña que solo se nota en muchos picks._');
+  return {md:L.join('\n'),valor:valor,favs:favs,claros:claros};
+}
+function mensaje(r,libros,aviso){
+  const L=[];
+  const cl=(aviso&&aviso.claros)||[], va=(aviso&&aviso.valor)||[];
+  if(cl.length){
+    L.push('FAVORITOS CLAROS (Pinnacle '+(MIN_FAV*100).toFixed(0)+'%+):');
+    cl.forEach(c=>L.push('• '+(c.estado==='entra'?'ENTRA ':'REVISA PRECIO ')+c.eq+' '+pct(c.p)+' | Kalshi tope '+c.tope+'c'+(c.cents!=null?' | ahora '+c.cents+'c':'')+' | '+hora(c.f.t)));
+    L.push('Confirma alineaciones y el precio en Kalshi antes de apostar.');
+  }
+  if(va.length){
+    if(L.length) L.push('');
+    L.push('VALOR (pagan mas que el precio justo de Pinnacle):');
+    va.slice(0,5).forEach(v=>L.push('• '+v.eq+' en '+v.sl+' '+amer(v.c.precio)+' | justo '+pct(v.fair)+' | EV '+(v.c.evMejor*100).toFixed(1)+'% | '+hora(v.f.t)));
+  }
+  if(!cl.length&&!va.length){
+    L.push('Sin favoritos claros ni valor ahora mismo en '+libros.join(' / ')+'.');
+    if(r.favs.length){
+      L.push('');
+      L.push('Favoritos del mercado (Pinnacle):');
+      r.favs.slice(0,3).forEach(v=>L.push('• '+v.eq+' '+pct(v.p)+' | '+hora(v.f.t)+' | Kalshi: max '+kalshiTope(v.p)+'c'));
+    }
+  }
+  return L.join('\n');
+}
+function nuevosAvisos(r){
+  /* solo lo que cumple la regla y que no se avisó ya (en las corridas programadas no se repite el mismo aviso) */
+  const av=cache.avisados||(cache.avisados={}); const ahora=Date.now();
+  Object.keys(av).forEach(k=>{ if(ahora-av[k]>3*86400e3) delete av[k]; });
+  const key=(f,eq,t)=>new Date(f.t).toLocaleDateString('en-CA',{timeZone:'America/Chicago'})+'|'+f.n.join('@')+'|'+eq+'|'+t;
+  const claros=r.claros.filter(c=>c.estado!=='espera').filter(c=>SIEMPRE||!av[key(c.f,c.eq,'claro-'+c.estado)]);
+  const valor=r.valor.filter(v=>SIEMPRE||!av[key(v.f,v.eq,'valor-'+v.sl)]);
+  const marcar=()=>{ claros.forEach(c=>{ av[key(c.f,c.eq,'claro-'+c.estado)]=ahora; }); valor.forEach(v=>{ av[key(v.f,v.eq,'valor-'+v.sl)]=ahora; }); guardar(); };
+  return {claros:claros,valor:valor,marcar:marcar};
+}
+async function avisar(texto,hayValor){
+  if(!NTFY){ P('(Sin NTFY_TOPIC: no se envió aviso al teléfono.)'); return; }
+  const r=await fetch('https://ntfy.sh/'+encodeURIComponent(NTFY),{method:'POST',
+    headers:{'Title':hayValor?'Pick con ventaja (Pinnacle)':'Revision de mercado','Priority':hayValor?'high':'default','Tags':hayValor?'white_check_mark':'mag','Content-Type':'text/plain; charset=utf-8'},
+    body:texto});
+  P('Aviso al teléfono:',r.ok?'enviado':('falló ('+r.status+')'));
+}
+function numerosCuenta(j){
+  const o={}; if(j&&typeof j==='object') Object.keys(j).forEach(k=>{ if(typeof j[k]==='number'&&/request|quota|limit|used|remain|count/i.test(k)) o[k]=j[k]; });
+  return o;
+}
+
+async function bajarCasa(torneo,slug){
+  const variantes=[{tournamentIds:torneo,bookmaker:slug},{tournamentId:torneo,bookmaker:slug}];
+  let ult=null;
+  for(const p of variantes){
+    try{ return listaFix(await op('/odds-by-tournaments',p)); }
+    catch(e){ ult=e; if(e.status===400&&/tournament/i.test(e.message)) continue; throw e; }
+  }
+  throw ult;
+}
+
+(async()=>{
+  if(!KEY){ P('Falta el secreto ODDSPAPI_KEY en GitHub.'); process.exit(1); }
+  try{
+    const quiero=await resolverLibros();
+    P('Casas a comparar con Pinnacle:',quiero.join(', '));
+    const torneo=await ubicarTorneo();
+    /* OddsPapi pide UNA casa por llamada: se junta todo por juego */
+    const mapa={}, libros=[];
+    for(const slug of ['pinnacle'].concat(quiero)){
+      let l;
+      try{ l=await bajarCasa(torneo,slug); }
+      catch(e){
+        if(slug==='pinnacle') throw e;
+        DIAG.errores.push(slug+': '+String(e.message).replace(KEY,'***').slice(0,300)); P('  No pude traer '+slug+': '+String(e.message).replace(KEY,'***')); if(e.tope) break; continue;
+      }
+      P('  '+slug+': '+l.length+' juegos');
+      if(slug!=='pinnacle') libros.push(slug);
+      l.forEach(f=>{
+        const id=f.fixtureId; if(!id) return;
+        const b=mapa[id]||(mapa[id]=Object.assign({},f,{bookmakerOdds:{}}));
+        Object.assign(b.bookmakerOdds,f.bookmakerOdds||{});
+        ['participant1Name','participant2Name','startTime','statusId'].forEach(k=>{ if(f[k]!=null) b[k]=f[k]; });
+      });
+    }
+    const fixs=Object.values(mapa);
+    P('Juegos recibidos de OddsPapi:',fixs.length);
+    await completarNombres(fixs,torneo);
+    const filas=analizar(fixs,libros);
+    const r=armar(filas,libros,{nuevas:nuevas});
+    P('\n'+r.md);
+    try{ const c=await op('/account',{}, {libre:true}); const n=numerosCuenta(c); if(Object.keys(n).length) P('\nCuenta OddsPapi (números):',JSON.stringify(n)); }catch(e){}
+    try{
+      const merc={generado:new Date().toISOString(),ventanaH:HORAS,juegos:filas.map(f=>({
+        t:new Date(f.t).toISOString(), n:f.n, fair:f.fair.map(x=>+x.toFixed(4)),
+        tope:f.fair.map(x=>kalshiTope(x)),
+        casas:Object.fromEntries(Object.keys(f.casas).map(sl=>[sl,{d:f.casas[sl].d.map(x=>+(+x).toFixed(3)),ev:f.casas[sl].ev.map(x=>+x.toFixed(4))}]))}))};
+      fs.writeFileSync(ENV.MERCADO_OUT||'pinnacle-datos.json',JSON.stringify(merc));
+    }catch(e){ P('No pude escribir mercado.json:',e.message); }
+    try{ fs.writeFileSync('resultado.md',r.md); if(ENV.GITHUB_STEP_SUMMARY) fs.appendFileSync(ENV.GITHUB_STEP_SUMMARY,r.md+'\n'); }catch(e){}
+    const av=nuevosAvisos(r);
+    if(av.claros.length||av.valor.length||SIEMPRE){ await avisar(mensaje(r,libros,av),av.claros.length+av.valor.length>0); av.marcar(); }
+    else P('Nada nuevo que cumpla la regla: no se envía aviso.');
+  }catch(e){
+    const m=String(e&&e.message||e).replace(KEY,'***');
+    P('ERROR:',m);
+    try{ if(ENV.GITHUB_STEP_SUMMARY) fs.appendFileSync(ENV.GITHUB_STEP_SUMMARY,'# Error\n'+m+'\n'); }catch(x){}
+    if(NTFY&&SIEMPRE) try{ await avisar('Error en el escáner: '+m,false); }catch(x){}
+    process.exitCode=1;
+  }finally{ guardar(); }
+})();

@@ -1,6 +1,16 @@
 /*OVA_SERVIDOR_RAILWAY_PARCHE*/
+/* Servidor Railway: compara (y opcionalmente aplica) el calculo del servidor sobre el Veredicto de cada juego de MLB.
+   Este archivo es la UNICA copia del parche (antes habia otra pegada dentro de index.html y las dos peleaban por la misma caja).
+
+   APLICAR_ARRIBA = true   -> el Veredicto muestra los numeros del servidor (como estaba).
+   APLICAR_ARRIBA = false  -> el Veredicto queda con el calculo propio de OVA y el servidor solo sale en la caja de comparacion.
+
+   OJO: el ranking de valor, «Guardar», «Al gane» y el combo SIEMPRE usan el calculo propio de OVA (index.html), nunca el del servidor.
+   Si los dos numeros difieren, lo que ves arriba y lo que se guarda en Mis picks no son el mismo. Por eso la caja avisa la diferencia. */
 (function(){
 try{
+  var APLICAR_ARRIBA = true;
+  var AVISO_DIF = 1.5;   /* puntos de probabilidad a partir de los cuales se resalta la diferencia */
   var SERVIDOR = 'https://worker-production-be04.up.railway.app';
   var cacheServidor = null, cacheFecha = null;
 
@@ -29,12 +39,12 @@ try{
       return '<div class="pick no"><div class="q">Sin pick al ganador</div><div class="r">Ventaja de solo '+vc.toFixed(2)+' carreras (servidor), por debajo del corte de '+cg.toFixed(2)+'. Muy parejos.</div></div>';
     }
     if(vc >= cf){
-      return '<div class="pick big"><div class="q">'+esco+'Juégale a '+ganaName+'</div><div class="r">Gran oportunidad (servidor) · '+pctGana.toFixed(1)+'% · cuota justa '+cuotaJusta+' · ventaja de '+vc.toFixed(2)+' carreras. Solo si el book paga más de '+cuotaJusta+'.</div></div>';
+      return '<div class="pick big"><div class="q">'+esco+'Juégale a '+ganaName+'</div><div class="r">Gran oportunidad (servidor) · '+pctGana.toFixed(1)+'% · cuota justa '+cuotaJusta+' · ventaja de '+vc.toFixed(2)+' carreras.</div></div>';
     }
     if(vc >= cs){
-      return '<div class="pick"><div class="q">'+esco+'Juégale a '+ganaName+'</div><div class="r">Ventaja sólida (servidor) · '+pctGana.toFixed(1)+'% · cuota justa '+cuotaJusta+' · ventaja de '+vc.toFixed(2)+' carreras. Solo si el book paga más de '+cuotaJusta+'.</div></div>';
+      return '<div class="pick"><div class="q">'+esco+'Juégale a '+ganaName+'</div><div class="r">Ventaja sólida (servidor) · '+pctGana.toFixed(1)+'% · cuota justa '+cuotaJusta+' · ventaja de '+vc.toFixed(2)+' carreras.</div></div>';
     }
-    return '<div class="pick no"><div class="q">Zona gris</div><div class="r">'+ganaName+' sale arriba con '+pctGana.toFixed(1)+'% y '+vc.toFixed(2)+' carreras de ventaja (servidor), que no llega a '+cs.toFixed(2)+'. Déjalo pasar salvo que el book regale la línea.</div></div>';
+    return '<div class="pick no"><div class="q">Zona gris</div><div class="r">'+ganaName+' sale arriba con '+pctGana.toFixed(1)+'% y '+vc.toFixed(2)+' carreras de ventaja (servidor), que no llega a '+cs.toFixed(2)+'. Sin pick.</div></div>';
   }
 
   function actualizarConServidor(el, j){
@@ -99,13 +109,26 @@ try{
     body.querySelectorAll('.pickbox').forEach(function(pb){ pb.innerHTML = pickHtml; });
   }
 
+  /* Linea con el numero propio de OVA y la diferencia contra el servidor. */
+  function notaPropia(c, j){
+    if(!c || c.pH == null || c.pA == null || !j || !j.home || j.home.chance == null) return '';
+    var d = Math.abs(c.pH - j.home.chance);
+    var col = d >= AVISO_DIF ? '#FBBF24' : '#6D8299';
+    return '<br><span style="color:'+col+'">OVA propio: '+c.nomA+' <b>'+c.pA.toFixed(1)+'%</b> · '+c.nomH+' <b>'+c.pH.toFixed(1)+'%</b>'+
+      ' (difiere '+d.toFixed(1)+' pts del servidor). El ranking de valor, «Guardar», «Al gane» y el combo usan SIEMPRE el número propio de OVA.</span>';
+  }
+
   function pintarComparacion(el){
     var body = el.querySelector('.body');
     if(!body) return;
     var tabV = body.querySelector('.tab[data-t="v"]');
     if(!tabV) return;
 
+    /* ya pintada y terminada, o pintandose ahora: no repetir (el observador dispara varias veces al abrir un juego) */
     var existente = tabV.querySelector('.srv-compara');
+    if(existente && existente.dataset.listo === '1') return;
+    if(el.__srvBusy) return;
+    el.__srvBusy = true;
     if(existente) existente.remove();
 
     var fe = document.getElementById('fecha');
@@ -124,22 +147,26 @@ try{
       for(var i=0;i<juegos.length;i++){ if(String(juegos[i].gamePk)===String(pk)){ j=juegos[i]; break; } }
       if(!j){
         caja.innerHTML = '<b style="color:#F1F5FB">☁️ Servidor Railway</b><br>Este juego todavía no está calculado ahí (puede que falte lineup confirmado o que el reloj no haya pasado por él todavía). Se muestran los números propios de OVA.';
+        caja.dataset.listo = '1';
         return;
       }
-      actualizarConServidor(el, j);
+      if(APLICAR_ARRIBA) actualizarConServidor(el, j);
       var h = j.home, a = j.away;
       var t = j.total || {};
       var pon = j.ponches || {};
-      var txt = '<b style="color:#F1F5FB">☁️ Servidor Railway</b> <span style="color:#6D8299">(ya aplicado arriba en el Veredicto)</span><br>';
+      var txt = '<b style="color:#F1F5FB">☁️ Servidor Railway</b> <span style="color:#6D8299">'+
+        (APLICAR_ARRIBA ? '(ya aplicado arriba en el Veredicto)' : '(solo comparación: el Veredicto usa el cálculo propio de OVA)')+'</span><br>';
       txt += (h?h.nombre:'Local')+': <b style="color:#F1F5FB">'+(h?h.chance:'—')+'%</b> ('+americana(h?h.chance:null)+') · ';
       txt += (a?a.nombre:'Visita')+': <b style="color:#F1F5FB">'+(a?a.chance:'—')+'%</b> ('+americana(a?a.chance:null)+')<br>';
       if(t.esperado!=null) txt += 'Total esperado: <b style="color:#F1F5FB">'+t.esperado+'</b> · ';
       if(t.carreras_esperadas) txt += 'carreras: '+t.carreras_esperadas.away+' / '+t.carreras_esperadas.home+'<br>';
       if(pon.away!=null || pon.home!=null) txt += 'Ponches esperados: '+(pon.away!=null?pon.away:'—')+' / '+(pon.home!=null?pon.home:'—');
+      txt += notaPropia(el._calc, j);
       caja.innerHTML = txt;
+      caja.dataset.listo = '1';
     }).catch(function(e){
       caja.innerHTML = '<b style="color:#F1F5FB">☁️ Servidor Railway</b><br><span style="color:#F87171">No se pudo conectar (' + e.message + '). Revisa tu internet o si el servidor está caido. Se muestran los números propios de OVA.</span>';
-    });
+    }).then(function(){ el.__srvBusy = false; });
   }
 
   function esperarYPintar(el){

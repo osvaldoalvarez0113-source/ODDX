@@ -1,7 +1,8 @@
 {
  "name": "OVA",
  "short_name": "OVA",
- "description": "Análisis de apuestas MLB y fútbol",
+ "id": "./hub.html",
+ "description": "Análisis de apuestas: MLB, fútbol y NBA",
  "start_url": "hub.html",
  "scope": "./",
  "display": "standalone",

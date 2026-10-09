@@ -3185,7 +3185,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
    mismoEquipo, esc, pintarJuegos que ya existen en futbol.html. Pollea cada 20s (solo si la
    liga cargada tiene fuente en ESPN) mientras la pestaña esté visible. */
 (function(){
- function esc(s){ return String(s==null?"":s).replace(/[<>&]/g,function(c){ return {"<":"&lt;",">":"&gt;","&":"&amp;"}[c]; }); }
+ function esc(s){ return String(s==null?"":s).replace(/[<>&"']/g,function(c){ return {"<":"&lt;",">":"&gt;","&":"&amp;","\"":"&quot;","'":"&#39;"}[c]; }); }
  function marcarNombres(partidos){
   try{
    document.querySelectorAll("#juegos .game").forEach(function(g){

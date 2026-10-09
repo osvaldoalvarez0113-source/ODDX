@@ -1,4 +1,6 @@
 # ova_formula.py — fórmula de OVA portada a Python, versión corregida
+# FUENTE DE VERDAD: index.html. Si cambia una constante allá (BONO_LOCAL, MULT, PRIOR_ERA...), cámbiala aquí y en el servidor Railway.
+# Diferencias conocidas con la app: no tiene la penalización de bullpen quemado y ultimas_5_salidas usa todo el game log (la app usa solo aperturas, gameType=R).
 # Replica index.html: eraUsado() (regresión en dos capas vía FIP-ancla),
 # rgUsado() + splits de mano, y el cálculo de un solo delta (perspectiva local).
 
@@ -10,7 +12,7 @@ MLB_API = "https://statsapi.mlb.com/api/v1"
 PESO_ABRIDOR = 0.65
 PESO_OFENSIVA = 0.50
 PESO_BULLPEN = 0.25
-BONUS_LOCAL = 0.12
+BONUS_LOCAL = 0.59   # = BONO_LOCAL de index.html (medido contra el mercado, 2025). Era 0.12: daba ~2.8 puntos menos al local
 MULTIPLICADOR = 6
 TECHO_CHANCE = 0.78   # corregido: la app real topa en 78/22, no 68/32
 PISO_CHANCE = 0.22

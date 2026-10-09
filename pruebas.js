@@ -333,8 +333,50 @@ ok('index.html publica favoritos al hub',/OVAHoy\.publicar\('mlb'/.test(rd('inde
 ok('futbol.html publica favoritos al hub',/OVAHoy\.publicar\('fut'/.test(rd('futbol.html')));
 ok('nba.html publica favoritos al hub',/OVAHoy\.publicar\('nba'/.test(rd('nba.html')));
 APPS.forEach(f=>ok(f+' carga ovaextra.js',/<script src="ovaextra\.js"><\/script>/.test(rd(f))));
-ok('el service worker lista todos los archivos que cargan las apps',(()=>{const sw=rd('sw.js');return ['ovaextra.js','hubestilos.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','hub.html','index.html','futbol.html','nba.html'].every(f=>sw.indexOf("'"+f+"'")>=0);})());
+ok('el service worker lista las páginas principales',(()=>{const sw=rd('sw.js');return ['hub.html','index.html','futbol.html','nba.html'].every(f=>sw.indexOf("'"+f+"'")>=0);})());
 ok('manifest.json es JSON válido',(()=>{try{JSON.parse(rd('manifest.json'));return true;}catch(e){return false;}})());
+
+sec('Estructura del repo (lo que encontró la auditoría de oct 2026)');
+{
+ const sw=rd('sw.js');
+ const shell=((/var SHELL = \[([\s\S]*?)\];/.exec(sw)||[0,''])[1].match(/'([^']+)'/g)||[]).map(x=>x.slice(1,-1));
+ const sinArchivo=[], sinSW=[], repetidos=[];
+ APPS.forEach(f=>{
+  const vistos={};
+  (rd(f).match(/<script[^>]+src="[^"]+"/g)||[]).forEach(t=>{
+   const s=/src="([^"]+)"/.exec(t)[1];
+   if(/^(https?:)?\/\//.test(s)) return;
+   const base=s.split('?')[0].split('#')[0];
+   if(vistos[base]) repetidos.push(f+' → '+base); vistos[base]=1;
+   if(!fs.existsSync(D+base)) sinArchivo.push(f+' → '+base);
+   if(shell.indexOf(base)<0) sinSW.push(base);
+  });
+ });
+ ok('todo <script src> local de las páginas existe en el repo',sinArchivo.length===0,sinArchivo.join(', '));
+ ok('el service worker guarda cada script que cargan las páginas',sinSW.length===0,[...new Set(sinSW)].join(', '));
+ ok('ningún <script src> está repetido dentro de una misma página',repetidos.length===0,repetidos.join(', '));
+ const rotos=shell.filter(x=>!fs.existsSync(D+x));
+ ok('todo lo que lista el service worker existe',rotos.length===0,rotos.join(', '));
+ ok('el parche de Railway vive solo en railway.js (no pegado dentro de index.html)',!/OVA_SERVIDOR_RAILWAY_PARCHE/.test(rd('index.html'))&&/OVA_SERVIDOR_RAILWAY_PARCHE/.test(rd('railway.js')));
+ ['index.html','futbol.html'].forEach(f=>{
+  const m=/function esc\(s\)\{[^\n]*\}/.exec(rd(f));
+  let r=null; try{ r=m?new Function(m[0]+';return esc;')():null; }catch(e){}
+  ok(f+': esc() escapa comillas simples y dobles',!!r&&r('a"b\'c<d&e')==='a&quot;b&#39;c&lt;d&amp;e');
+ });
+ const ign=new Set(['.git','node_modules','.cache']), todos=[];
+ (function rec(dir,pre){ fs.readdirSync(dir,{withFileTypes:true}).forEach(e=>{ if(ign.has(e.name)) return; const rel=pre+e.name; if(e.isDirectory()) rec(dir+e.name+path.sep,rel+'/'); else todos.push(rel); }); })(D,'');
+ const conEspacio=todos.filter(n=>/\s/.test(n));
+ ok('ningún archivo del repo tiene espacios en el nombre (el iPhone los rompe al subir)',conEspacio.length===0,conEspacio.join(', '));
+ const wfDir=D+'.github'+path.sep+'workflows'+path.sep;
+ const wfTxt=(fs.existsSync(wfDir)?fs.readdirSync(wfDir):[]).map(n=>[n,fs.readFileSync(wfDir+n,'utf8')]);
+ ok('hay al menos un workflow',wfTxt.length>0);
+ ok('ningún workflow reescribe archivos del repo con «cat > x.js <<» (los scripts son archivos reales)',wfTxt.every(x=>!/cat\s*>\s*\S+\.(js|html)\s*<</.test(x[1])),wfTxt.filter(x=>/cat\s*>\s*\S+\.(js|html)\s*<</.test(x[1])).map(x=>x[0]).join(', '));
+ ok('ningún workflow hace commit de index.html',wfTxt.every(x=>!/git add[^\n]*index\.html/.test(x[1])));
+ const faltaScript=[];
+ wfTxt.forEach(x=>{ (x[1].match(/node\s+(?!--)[\w./-]+\.js/g)||[]).forEach(m=>{ const p=m.replace(/^node\s+/,''); if(!fs.existsSync(D+p)) faltaScript.push(x[0]+' → '+p); }); });
+ ok('todo script que llaman los workflows existe',faltaScript.length===0,faltaScript.join(', '));
+ ok('pinnacle-datos.json es JSON válido con «juegos»',(()=>{ try{ return Array.isArray(JSON.parse(rd('pinnacle-datos.json')).juegos); }catch(e){ return false; } })());
+}
 
 (async()=>{ await t_envivo(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));

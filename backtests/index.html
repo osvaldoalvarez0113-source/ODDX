@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070B12">
+<title>Backtests · OVA</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#070B12;color:#F1F5FB;font:15px/1.5 system-ui,-apple-system,sans-serif;padding:20px 16px 60px}
+.w{max-width:620px;margin:0 auto}
+h1{font-size:22px;margin:4px 0 4px}
+p{color:#9DB2C8;font-size:13px;margin:4px 0 16px}
+h2{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#6D8299;margin:22px 0 8px}
+a.t{display:block;background:#0D1420;border:1px solid #1C2838;border-radius:12px;padding:12px 14px;margin:8px 0;color:#F1F5FB;text-decoration:none}
+a.t b{display:block;font-size:15px}
+a.t span{color:#9DB2C8;font-size:12.5px}
+a.volver{display:inline-block;margin-bottom:10px;color:#60A5FA;text-decoration:none;font-size:14px}
+</style>
+</head>
+<body><div class="w">
+<a class="volver" href="../hub.html">‹ Inicio</a>
+<h1>Backtests</h1>
+<p>Páginas de medición. Cada una baja datos reales de la MLB/ESPN en tu teléfono y mide una idea contra los resultados. Todas son independientes de la app; tardan unos minutos.</p>
+
+<h2>Mercado y calibración</h2>
+<a class="t" href="backtestmercado.html"><b>Contra el mercado</b><span>OVA contra las líneas de cierre (ESPN/DraftKings). Origen de la localía 0.59.</span></a>
+<a class="t" href="backtestforma.html"><b>Forma de la distribución</b><span>Razón varianza/media de las carreras (de ahí sale DISP = 2.3).</span></a>
+<a class="t" href="backtestequipo.html"><b>Carreras por equipo y F5</b><span>Mide los dos mercados que no tenían medición (F5_FRAC = 0.56).</span></a>
+<a class="t" href="backtestumbralv4.html"><b>Qué listón poner al total</b><span>Cuántos puntos de ventaja pedir para jugar el total.</span></a>
+<a class="t" href="backtestplayoffs.html"><b>Playoffs</b><span>La fórmula aplicada a postemporada.</span></a>
+
+<h2>Ideas probadas para mejorar la fórmula</h2>
+<a class="t" href="backtestmarcel.html"><b>Historial del abridor (3 años)</b><span>Única que pasó la prueba; quedó como opción apagada (historial.js).</span></a>
+<a class="t" href="backtesthits.html"><b>Hits y boletos del abridor</b><span>No cumplió la regla de t ≥ 2 en las dos direcciones.</span></a>
+<a class="t" href="backtestcontacto.html"><b>Calidad de contacto (xwOBA, hard-hit)</b><span>Descartada: no se repite entre temporadas.</span></a>
+<a class="t" href="backtestsuerte.html"><b>«Suerte» (xwOBA − wOBA)</b><span>Descartada: t 0.98 / 1.06.</span></a>
+<a class="t" href="backtestdefensa.html"><b>Defensa y errores</b><span>Descartada.</span></a>
+<a class="t" href="backtestbases.html"><b>OBP, robos y carreras por corredor</b><span>Descartadas.</span></a>
+<a class="t" href="backtestlineup.html"><b>Lineup zurdo/derecho contra el abridor</b><span>Descartada: r −0.008 y +0.008.</span></a>
+<a class="t" href="backtestbullpen.html"><b>Bullpen reciente (3 y 5 días)</b><span>Descartado: r 0.02-0.04.</span></a>
+<a class="t" href="backtestpatrones.html"><b>Día/noche y viento</b><span>Descartados: no se repiten.</span></a>
+<a class="t" href="backteststatcast.html"><b>Statcast</b><span>ERA de temporada contra xwOBA-contra y hard-hit% para predecir una apertura; xwOBA ofensivo contra carreras.</span></a>
+<a class="t" href="backtestrebote.html"><b>Rebote</b><span>¿Rinde distinto un equipo según cómo le fue el juego anterior? Cinco temporadas (2022-2026).</span></a>
+<a class="t" href="backtestk.html"><b>Ponches (K del abridor)</b><span>K/9 × innings × ajuste por K% del rival, contra proyectar solo K/9 × innings.</span></a>
+</div></body>
+</html>
