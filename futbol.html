@@ -607,7 +607,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL <span class="ver">v14</span></h1>
+  <h1>⚽ FÚTBOL <span class="ver">v15</span></h1>
   <select id="ligaSel">
    <optgroup label="Ligas">
     <option value="pl">Premier League</option>
@@ -680,7 +680,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 
 
 <script>
-var VERSION = 'v14';
+var VERSION = 'v15';
 var EQUIPOS = null;
 var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
@@ -1221,6 +1221,10 @@ function wfTexto(url){
   return fetch(url+'?v='+Date.now()).then(function(r){
     if(!r.ok){ DIAG.wfHttp = r.status; }
     return r.text();
+  }).catch(function(e){
+    /* sin red hacia worldfootball (Safari dice «Load failed»): se sigue solo con ESPN */
+    DIAG.wfError = String(e && e.message || e);
+    return '';
   });
 }
 // Proximos partidos desde ESPN (respaldo cuando worldfootball no lista ninguno). Un dia por peticion: es el formato documentado para futbol.
@@ -3006,7 +3010,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
 /* OVA Fútbol · v10: anillo de probabilidad, doble oportunidad, selector de tema, pulido (atenuar
    porcentajes de goles no medidos, apagar Kalshi tras un 429, verificar picks al abrir Registro). */
 (function(){
- var VER='v14';
+ var VER='v15';
  function $q(s,r){ return (r||document).querySelector(s); }
  function pct(x){ return (x*100).toFixed(1)+'%'; }
  function am(p){

@@ -1,4 +1,4 @@
-/* OVA · diseño común (MLB v53 / fútbol v14 / NBA v3.6).
+/* OVA · diseño común (MLB v53 / fútbol v15 / NBA v3.6).
    Un solo script que iguala la navegación de las tres apps y limpia lo técnico:
      · Barra de abajo igual en las tres:  Juegos · Al gane · Combo · Mis picks · Ajustes
      · Lo técnico (Backtest, Ratings, Diagnóstico, herramientas pesadas) vive en Ajustes → Avanzado
