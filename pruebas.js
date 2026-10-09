@@ -370,7 +370,13 @@ sec('Presentaciones del hub (6 diseños)');
 sec('Diseño interior de las apps (Clásico · Cristal · Broadcast)');
 {
  const UI=require(path.join(__dirname,'interior.js'));
- ok('4 diseños: clásico, cristal, broadcast y pro',JSON.stringify(UI.UIS.map(u=>u.id))===JSON.stringify(['clasico','cristal','broadcast','pro']));
+ ok('6 diseños: clásico, cristal, broadcast, pro, boleto y boleto noche',JSON.stringify(UI.UIS.map(u=>u.id))===JSON.stringify(['clasico','cristal','broadcast','pro','boleto','boletonoche']));
+ ok('Boleto: los dos diseños definen sus colores y comparten la forma',/html\[data-ui="boleto"\]\{--bzBg1/.test(UI.css)&&/html\[data-ui="boletonoche"\]\{--bzBg1/.test(UI.css)&&/html\[data-ui\^="boleto"\] \.bzSello/.test(UI.css));
+ ok('Boleto: el ticket tiene muescas (máscara) y en la barra de abajo solo la pestaña activa lleva nombre',/\.game\.bzOn \.head\{-webkit-mask:radial-gradient/.test(UI.css)&&/\.tbar-btn:not\(\.on\) \.lb\{position:absolute/.test(UI.css));
+ ok('Boleto: los botones que la app oculta con display:none siguen ocultos',!/\.tabbar \.tbar-btn\{[^}]*display:flex!important/.test(UI.css));
+ ok('Boleto: el ticket solo se arma con ese diseño y no borra nada original',/\.bzT\{display:none\}/.test(rd('diseno.js'))&&/function bzArmar/.test(rd('diseno.js'))&&/indexOf\('boleto'\)===0/.test(rd('diseno.js'))&&!/removeChild/.test(rd('diseno.js')));
+ ok('Boleto: se activa una sola vez al actualizar y se puede volver a Clásico',/ova_ui_r6/.test(rd('interior.js'))&&UI.UIS.some(u=>u.id==='clasico'));
+
  const css=UI.css;let nv=0,okb=true;for(const c of css){if(c==='{')nv++;if(c==='}'){nv--;if(nv<0)okb=false;}}
  ok('el CSS tiene llaves balanceadas',okb&&nv===0);
  const kf=new Set([...css.matchAll(/@keyframes\s+([\w-]+)/g)].map(m=>m[1]));

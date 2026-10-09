@@ -1,4 +1,4 @@
-/* OVA · diseño común (MLB v52 / fútbol v13 / NBA v3.5).
+/* OVA · diseño común (MLB v53 / fútbol v14 / NBA v3.6).
    Un solo script que iguala la navegación de las tres apps y limpia lo técnico:
      · Barra de abajo igual en las tres:  Juegos · Al gane · Combo · Mis picks · Ajustes
      · Lo técnico (Backtest, Ratings, Diagnóstico, herramientas pesadas) vive en Ajustes → Avanzado
@@ -47,6 +47,7 @@ var CSS=[
  '.dsSepConf{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:16px 4px 4px}',
  /* barra de probabilidad en la lista (solo diseño Pro) */
  '.dsProb{display:none}',
+ '.bzT{display:none}',
  /* pantalla de Ajustes (fútbol y NBA) */
  '.dsCard{background:var(--bg1);border:1px solid var(--line2);border-radius:var(--r2,16px);padding:14px 14px 12px;margin:14px 0}',
  '.dsCard b{display:block;font-size:16px;color:var(--txt)}',
@@ -359,6 +360,110 @@ function ajustesMLB(){
  }
 }
 
+/* ---------- Boleto: cada juego como un ticket (solo se ve en el diseño Boleto) ----------
+   Lee lo que la tarjeta ya muestra (equipos, hora, probabilidades, cuota justa, veredicto) y arma el boleto.
+   No calcula nada y no borra nada: lo original se oculta con CSS y vuelve al cambiar de diseño. */
+function bzTxt(e){ return e?String(e.textContent||'').replace(/\s+/g,' ').trim():''; }
+function bzNum(s){ var m=String(s||'').replace(',','.').match(/-?\d+(?:\.\d+)?/); return m?parseFloat(m[0]):null; }
+function bzUi(){ var u=d.documentElement.getAttribute('data-ui')||''; return u.indexOf('boleto')===0; }
+function bzLeer(g){
+ var head=$('.head',g); if(!head) return null;
+ var eqs=$$('.match .eq',head); if(eqs.length<2) eqs=$$('.crestpair .eq',head);
+ if(eqs.length<2) return null;
+ function nombre(e){ var ss=$$('span',e); for(var i=0;i<ss.length;i++){ var c=ss[i].className||''; if(/\b(esc|tag)\b/.test(c)) continue; var t=bzTxt(ss[i]); if(t) return t; } return bzTxt(e); }
+ function escudo(e){ var im=$('img',e); return im?(im.getAttribute('src')||''):''; }
+ var o={na:nombre(eqs[0]),nh:nombre(eqs[1]),ea:escudo(eqs[0]),eh:escudo(eqs[1])};
+ var ck=$('.clock',head)||$('.hora',head);
+ o.hora=bzTxt(ck); o.vivo=!!(ck&&/\bvivo\b/.test(ck.className||''));
+ var vs=$('.match .vs',head); o.vs=(vs&&bzTxt(vs)==='@')?'@':'vs';
+ var sm=$('.match small',head); o.info=sm?bzTxt(sm):'';
+ var body=$('.body',g), c=g._calc;
+ var pa=null, ph=null, aa='', ah='';
+ if(c&&c.pA!=null&&c.pH!=null){ pa=+c.pA; ph=+c.pH; aa=c.nomA||''; ah=c.nomH||''; }
+ if(pa==null&&body){
+  var lados=$$('.hero .side, .ovaHero .side',body);
+  if(lados.length>=2){ pa=bzNum(bzTxt($('.pc',lados[0]))); ph=bzNum(bzTxt($('.pc',lados[1]))); aa=bzTxt($('.ab',lados[0])); ah=bzTxt($('.ab',lados[1])); }
+ }
+ if(pa!=null&&ph!=null){ o.pa=Math.round(pa); o.ph=Math.round(ph); o.aa=aa; o.ah=ah; }
+ if(body){
+  var cu=null, tot=null;
+  $$('.kpi > div',body).forEach(function(k){
+   var et=bzTxt($('span,small',k)), v=bzTxt($('b',k));
+   if(/cuota justa/i.test(et)&&!cu) cu=v;
+   else if(/^total/i.test(et)&&!tot) tot=v;
+  });
+  var tx=bzTxt($('.hero, .ovaHero',body)).replace(/−/g,'-');
+  if(!cu){ var m=tx.match(/cuota justa[^+\-\d]*([+\-]\d{3,4})/i); if(m) cu=m[1]; }
+  if(cu) o.cu=cu.replace(/−/g,'-');
+  if(tot) o.tot=tot;
+  else { var em=tx.match(/Empate\s+(\d+(?:\.\d+)?%)/i); if(em){ o.emp=em[1]; } }
+  var pk=$('.pick',body);
+  if(pk){
+   var q=$('.q',pk)||$('b',pk); var qt=bzTxt(q);
+   if(/^favorito:/i.test(qt)){ var fv=(pa!=null&&ph!=null)?(pa>ph?aa:ah):''; qt='Favorito'+(fv&&fv.length<=4?' '+fv:''); }
+   o.sello=qt.slice(0,26);
+   o.tono=/\bno\b/.test(pk.className||'')?'gris':(/\b(big|ia)\b/.test(pk.className||'')?'si':'');
+  }
+  var cal=$('.cal',body);
+  if(cal){ o.conf=bzTxt($('.n',cal)); o.nivel=/\bbaja\b/.test(cal.className)?'baja':(/\bmedia\b/.test(cal.className)?'media':'alta'); }
+ }
+ return o;
+}
+function bzMk(tag,cls,txt){ var e=el(tag,cls); if(txt!=null) e.textContent=txt; return e; }
+function bzLado(o,lado){
+ var a=lado==='a', pc=a?o.pa:o.ph, gana=o.pa!=null&&(a?o.pa>o.ph:o.ph>=o.pa);
+ var s=bzMk('div','bzSide '+lado+(gana?' w':''));
+ var src=a?o.ea:o.eh;
+ if(src){ var im=el('img','bzEsc'); im.onerror=function(){ im.style.display='none'; }; im.setAttribute('src',src); im.setAttribute('alt',''); s.appendChild(im); }
+ s.appendChild(bzMk('span','bzNom',a?o.na:o.nh));
+ if(pc!=null){ var p=bzMk('span','bzPc',String(pc)); p.appendChild(bzMk('sup','','%')); s.appendChild(p); }
+ return s;
+}
+function bzArmar(g){
+ var o=bzLeer(g), head=$('.head',g); if(!o||!head) return;
+ var sig=JSON.stringify(o);
+ if(g.__bz===sig && $('.bzT',head)) return;
+ g.__bz=sig;
+ var viejo=$('.bzT',head); if(viejo) viejo.remove();
+ var t=el('div','bzT'+(o.pa==null?' bzSin':''));
+ var top=el('div','bzTop');
+ var h=bzMk('span','bzHora'+(o.vivo?' vivo':''),o.hora||'—'); top.appendChild(h);
+ top.appendChild(bzMk('span','bzInfo',o.info||''));
+ if(o.conf) top.appendChild(bzMk('span','bzConf '+(o.nivel||'alta'),'datos '+o.conf));
+ t.appendChild(top);
+ var vs=el('div','bzVs');
+ vs.appendChild(bzLado(o,'a')); vs.appendChild(bzMk('span','bzMid',o.vs)); vs.appendChild(bzLado(o,'h'));
+ t.appendChild(vs);
+ if(o.pa!=null){
+  var br=el('div','bzBar'); var ia=el('i',o.pa>o.ph?'w':''), ih=el('i',o.ph>=o.pa?'w':'');
+  ia.style.flex=String(Math.max(o.pa,1)); ih.style.flex=String(Math.max(o.ph,1)); br.appendChild(ia); br.appendChild(ih); t.appendChild(br);
+ }
+ var st=el('div','bzStub');
+ function celda(et,v){ var c=el('div','bzC'); c.appendChild(bzMk('small','',et)); c.appendChild(bzMk('b','',v)); st.appendChild(c); }
+ if(o.pa!=null){
+  celda('Cuota justa',o.cu||'—');
+  if(o.tot) celda('Total',o.tot); else if(o.emp) celda('Empate',o.emp);
+  if(o.sello) st.appendChild(bzMk('span','bzSello '+(o.tono||''),o.sello));
+ } else {
+  st.appendChild(bzMk('span','bzInfo','Toca para ver los números'));
+ }
+ t.appendChild(st);
+ head.appendChild(t);
+ g.classList.add('bzOn');
+}
+function boletos(){
+ if(!bzUi()) return;
+ $$('#slate .game, #juegos .game').forEach(function(g){ try{ bzArmar(g); }catch(e){ if(root.console) console.error('boleto',e); } });
+}
+function vigilarBoletos(){
+ var c=$('#slate')||$('#juegos'); if(!c||c.__bzObs||!root.MutationObserver) return;
+ c.__bzObs=1; var pend=false;
+ function lanzar(){ if(pend) return; pend=true; setTimeout(function(){ pend=false; boletos(); },140); }
+ new root.MutationObserver(lanzar).observe(c,{childList:true,subtree:true});
+ new root.MutationObserver(lanzar).observe(d.documentElement,{attributes:true,attributeFilter:['data-ui']});
+ boletos();
+}
+
 /* ---------- arranque ---------- */
 function que(){
  if($('#cargar') && ($('.navbar')||$('#pane-ajustes'))) return 'mlb';
@@ -379,7 +484,7 @@ function arrancar(){
   if(!ok && ++intentos<40) setTimeout(paso,150);
  }
  paso();
- [0,300,900,2000,4500].forEach(function(ms){ setTimeout(function(){ try{ iconosIguales(); if(a==='mlb'){ ajustesMLB(); vigilarJuegos(); } }catch(e){} },ms); });
+ [0,300,900,2000,4500].forEach(function(ms){ setTimeout(function(){ try{ iconosIguales(); if(a==='mlb'){ ajustesMLB(); vigilarJuegos(); } vigilarBoletos(); }catch(e){} },ms); });
  if(a==='mlb') setTimeout(function(){ try{ autoMLB(); }catch(e){} },350);
 }
 if(d.readyState==='loading') d.addEventListener('DOMContentLoaded',function(){ setTimeout(arrancar,0); });

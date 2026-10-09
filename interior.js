@@ -12,7 +12,9 @@ var UIS=[
  {id:'clasico',n:'Clásico',d:'Como lo tenías',sw:'linear-gradient(135deg,#0b121c,#1b2838)'},
  {id:'cristal',n:'Cristal',d:'Vidrio, dock flotante y versus',sw:'radial-gradient(circle at 25% 30%,#3b82f6aa,transparent 55%),radial-gradient(circle at 80% 70%,#a855f7aa,transparent 55%),#0a0f1d'},
  {id:'broadcast',n:'Broadcast',d:'Gráficos de TV deportiva',sw:'linear-gradient(115deg,#0a0f1d 0 60%,#FBBF24 60% 64%,#0a0f1d 64%)'},
- {id:'pro',n:'Pro',d:'Datos primero: barras de probabilidad y números tabulares',sw:'linear-gradient(90deg,#3b82f6 0 46%,#0b121c 46% 48%,#fbbf24 48%)'}
+ {id:'pro',n:'Pro',d:'Datos primero: barras de probabilidad y números tabulares',sw:'linear-gradient(90deg,#3b82f6 0 46%,#0b121c 46% 48%,#fbbf24 48%)'},
+ {id:'boleto',n:'Boleto',d:'Cada juego es un ticket: números grandes, sello de veredicto y cuota justa',sw:'linear-gradient(135deg,#0b0d12 0 34%,#F6F7F9 34% 80%,#FFD84A 80%)'},
+ {id:'boletonoche',n:'Boleto noche',d:'El mismo ticket en oscuro, con acento coral',sw:'linear-gradient(135deg,#05070C 0 34%,#161C2A 34% 80%,#FF6B4A 80%)'}
 ];
 var BY={};UIS.forEach(function(u){BY[u.id]=u;});
 
@@ -218,6 +220,150 @@ html[data-ui="pro"] .vacio{border-radius:12px;border:1px dashed var(--line2);bac
 html[data-ui="pro"] .ajustes{border-radius:12px;border:1px solid var(--line2);background:var(--bg1)}
 html[data-ui="pro"] .dsCard,html[data-ui="pro"] .dsAv{border-radius:12px}
 
+/* =========================================================== BOLETO (cada juego es un ticket) =========================================================== */
+html[data-ui="boleto"]{--bzBg1:#F6F7F9;--bzBg2:#E9ECF1;--bzBg3:#DDE2EA;--bzLine:#E2E5EC;--bzLine2:#CBD1DC;--bzTxt:#10131C;--bzMut:#556073;--bzMut2:#79829A;--bzInk:#10131C;--bzOnInk:#FFFFFF;--bzHi:#FFD84A;--bzHiTx:#10131C;--bzHiSoft:#FFF1B3;--bzGood:#0B7F57;--bzBad:#C3302B;--bzStamp:#D9381E;--bzIn:#FFFFFF;--bzOk:#DDF2E6;--bzNo:#F7DEDB;--bzSh:rgba(0,0,0,.45)}
+html[data-ui="boletonoche"]{--bzBg1:#161C2A;--bzBg2:#202838;--bzBg3:#2B3548;--bzLine:#283044;--bzLine2:#394560;--bzTxt:#F2F5FA;--bzMut:#A1ADC2;--bzMut2:#7683A0;--bzInk:#F2F5FA;--bzOnInk:#10131C;--bzHi:#FF6B4A;--bzHiTx:#1B0A05;--bzHiSoft:#3B2019;--bzGood:#3DDC97;--bzBad:#FF7A59;--bzStamp:#FF7A59;--bzIn:#0E1320;--bzOk:#16301F;--bzNo:#3A1D1D;--bzSh:rgba(0,0,0,.6)}
+html[data-ui^="boleto"]{--bzCond:"Avenir Next Condensed","DIN Condensed","Roboto Condensed","Arial Narrow",system-ui,sans-serif;--cond:"Avenir Next Condensed","DIN Condensed","Roboto Condensed","Arial Narrow",system-ui,sans-serif}
+html[data-ui^="boleto"] body{background-image:none;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px)!important}
+html[data-ui^="boleto"] .topbar,html[data-ui^="boleto"] header{background:var(--bg)!important;border-bottom:0!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html[data-ui^="boleto"] .brand,html[data-ui^="boleto"] header h1{font:800 30px/1 var(--bzCond)!important;letter-spacing:.05em;color:var(--txt)}
+html[data-ui^="boleto"] .ver{border-radius:5px;border:1.5px solid var(--mut2);background:transparent;color:var(--mut);font:700 11px var(--body,system-ui);padding:2px 6px}
+html[data-ui^="boleto"] :is(header,.topbar) button:not(.ovaHome){background:transparent!important;border:1.5px solid var(--line2)!important;color:var(--txt)!important;border-radius:10px!important;box-shadow:none!important}
+html[data-ui^="boleto"] header h1{font-size:20px!important;letter-spacing:.04em!important}
+html[data-ui^="boleto"] .ovaHome{background:transparent;border:1.5px solid var(--line2)}
+/* barra de abajo: solo el botón activo enseña su nombre */
+html[data-ui^="boleto"] .navbar,html[data-ui^="boleto"] .tabbar{left:14px!important;right:14px!important;width:auto!important;bottom:calc(env(safe-area-inset-bottom,0px) + 12px)!important;display:flex!important;gap:4px!important;padding:6px!important;border-radius:22px!important;background:#10131C!important;border:1px solid rgba(255,255,255,.16)!important;box-shadow:0 20px 34px -12px rgba(0,0,0,.85)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+html[data-ui^="boleto"] .navbar button,html[data-ui^="boleto"] .tabbar .tbar-btn{position:relative;flex:1 1 0!important;min-width:0;height:46px;display:flex;flex-direction:row!important;align-items:center;justify-content:center;gap:7px;padding:0 6px!important;border-radius:16px!important;background:transparent!important;color:#A3ACBE!important;transition:flex-grow .28s cubic-bezier(.3,.8,.3,1),background .2s}
+html[data-ui^="boleto"] .navbar button.on,html[data-ui^="boleto"] .tabbar .tbar-btn.on{flex:2.5 1 0!important;background:var(--bzHi)!important;color:var(--bzHiTx)!important}
+html[data-ui^="boleto"] .navbar button:not(.on) span,html[data-ui^="boleto"] .tabbar .tbar-btn:not(.on) .lb{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+html[data-ui^="boleto"] .navbar button.on span,html[data-ui^="boleto"] .tabbar .tbar-btn.on .lb{font:800 13px/1 var(--body,system-ui)!important;white-space:nowrap;letter-spacing:0}
+html[data-ui^="boleto"] .navbar button.on svg,html[data-ui^="boleto"] .tabbar .tbar-btn.on svg{color:var(--bzHiTx);filter:none}
+/* fecha y días */
+html[data-ui^="boleto"] .cargafila input[type=date]{border-radius:10px;background:var(--bzBg1);color:var(--bzTxt);border:0}
+html[data-ui="boleto"] .cargafila input[type=date]{color-scheme:light}
+html[data-ui="boletonoche"] .cargafila input[type=date]{color-scheme:dark}
+html[data-ui^="boleto"] .diaBtn{border-radius:9px;background:transparent;border:1.5px solid var(--line2);color:var(--mut);font-weight:700}
+html[data-ui^="boleto"] .diaBtn.on{background:var(--bzHi);border-color:var(--bzHi);color:var(--bzHiTx)}
+/* botones de página: el principal en amarillo, los secundarios con borde */
+html[data-ui^="boleto"] button:not(.tbar-btn):not(.tb):not(.diaBtn):not(.teq):not(.ovaSk):not(.ovaHome):not(.fab):not(.ghost):not(.navbar button):not(.game button):not(.ajustes button):not(.dsAv button):not(.dsSeg button):not(header button):not(.topbar button){background:var(--bzHi)!important;color:var(--bzHiTx)!important;border:0!important;border-radius:12px!important;font-weight:800;box-shadow:none!important}
+html[data-ui^="boleto"] button.ghost:not(.game button):not(.ajustes button){background:transparent!important;color:var(--txt)!important;border:1.5px solid rgba(255,255,255,.3)!important;font-weight:700}
+html[data-ui^="boleto"] .cargafila #cargar{background:transparent!important;color:var(--txt)!important;border:1.5px solid rgba(255,255,255,.3)!important;border-radius:12px!important}
+/* ---- superficies de papel: el ticket y todo lo que vive dentro de él ---- */
+html[data-ui^="boleto"] :is(.game,.fila,.fila-rank,.pk,.vacio,.ajustes,.dsCard,.dsAv,.cuotasbox,.observ,.calc,.ovaCombo .row,.ovaCombo .leg,.ovaCombo .res,.ova-d-card){--bg1:var(--bzBg1);--bg2:var(--bzBg2);--bg3:var(--bzBg3);--line:var(--bzLine);--line2:var(--bzLine2);--txt:var(--bzTxt);--mut:var(--bzMut);--mut2:var(--bzMut2);--acc:var(--bzInk);--acc2:var(--bzMut);--accTx:var(--bzOnInk);--hot:var(--bzHi);--hotTx:var(--bzHiTx);--good:var(--bzGood);--bad:var(--bzBad);--info:var(--bzTxt);--ia:var(--bzMut);color:var(--txt);color-scheme:light}
+html[data-ui="boletonoche"] :is(.game,.fila,.fila-rank,.pk,.vacio,.ajustes,.dsCard,.dsAv,.cuotasbox,.observ,.calc,.ovaCombo .row,.ovaCombo .leg,.ovaCombo .res,.ova-d-card){color-scheme:dark}
+html[data-ui^="boleto"] :is(.fila,.fila-rank,.pk,.vacio,.ajustes,.dsCard,.dsAv,.cuotasbox,.observ,.calc,.ovaCombo .row,.ovaCombo .leg,.ovaCombo .res,.ova-d-card){background:var(--bg1)!important;border:0!important;border-radius:14px;box-shadow:0 10px 18px -12px rgba(0,0,0,.6)}
+html[data-ui^="boleto"] :is(.fila,.fila-rank,.pk){margin:10px 0!important}
+html[data-ui^="boleto"] :is(.fila,.fila-rank) .pct{color:var(--txt)!important;font-weight:800}
+html[data-ui^="boleto"] .ova-d-card{padding:12px 14px}
+html[data-ui^="boleto"] .ova-d-teams{color:var(--txt);font-weight:800;font-size:15px}
+html[data-ui^="boleto"] .ova-d-time{color:var(--mut);font:800 16px var(--bzCond);margin-top:4px}
+/* ---- el ticket ---- */
+html[data-ui^="boleto"] .game{background:transparent!important;border:0!important;border-radius:16px;margin:16px 0;overflow:hidden;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;filter:drop-shadow(0 12px 12px var(--bzSh)) drop-shadow(0 0 .6px rgba(255,255,255,.22));animation-name:none!important;opacity:1}
+html[data-ui^="boleto"] .game.dsPC{opacity:.86}
+html[data-ui^="boleto"] .game::before,html[data-ui^="boleto"] .game::after{display:none!important}
+html[data-ui^="boleto"] .game .head{display:block!important;position:static!important;padding:0!important;background:var(--bg1)!important;color:var(--txt)!important;border:0!important;border-radius:16px 16px 0 0;box-shadow:none!important;cursor:pointer}
+html[data-ui^="boleto"] .game.bzOn .head{-webkit-mask:radial-gradient(circle 10px at 0 calc(100% - 46px),#0000 96%,#000) left/51% 100% no-repeat,radial-gradient(circle 10px at 100% calc(100% - 46px),#0000 96%,#000) right/51% 100% no-repeat;mask:radial-gradient(circle 10px at 0 calc(100% - 46px),#0000 96%,#000) left/51% 100% no-repeat,radial-gradient(circle 10px at 100% calc(100% - 46px),#0000 96%,#000) right/51% 100% no-repeat}
+html[data-ui^="boleto"] .game.open:not(.bzOn) .head{border-radius:16px 16px 0 0}
+html[data-ui^="boleto"] .game.bzOn .head>:not(.bzT):not(.bug){display:none!important}
+html[data-ui^="boleto"] .game.bzOn .head .bug{margin:0;padding:0 16px 10px}
+html[data-ui^="boleto"] .game.bzOn .head .bug:empty{display:none}
+html[data-ui^="boleto"] .game .bzT{display:block}
+html[data-ui^="boleto"] .bzTop{display:flex;align-items:center;gap:10px;padding:13px 16px 0}
+html[data-ui^="boleto"] .bzHora{flex:0 0 auto;background:var(--bzInk);color:var(--bzOnInk);border-radius:6px;padding:4px 8px;font:800 14px/1 var(--bzCond);letter-spacing:.04em}
+html[data-ui^="boleto"] .bzHora.vivo{background:var(--bzStamp);color:#fff}
+html[data-ui^="boleto"] .bzInfo{flex:1 1 auto;min-width:0;font:600 12.5px/1.3 var(--body,system-ui);color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-ui^="boleto"] .bzConf{flex:0 0 auto;font:700 12px/1 var(--body,system-ui);color:var(--mut);display:inline-flex;align-items:center;gap:5px}
+html[data-ui^="boleto"] .bzConf::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--good)}
+html[data-ui^="boleto"] .bzConf.media::before{background:#D69A00}
+html[data-ui^="boleto"] .bzConf.baja::before{background:var(--bad)}
+html[data-ui^="boleto"] .bzTop::after{content:"";flex:0 0 auto;width:8px;height:8px;border-right:2px solid var(--mut);border-bottom:2px solid var(--mut);transform:rotate(45deg) translateY(-2px);transition:transform .2s}
+html[data-ui^="boleto"] .game.open .bzTop::after{transform:rotate(-135deg) translateY(-2px)}
+html[data-ui^="boleto"] .bzVs{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:end;gap:6px;padding:12px 16px 10px}
+html[data-ui^="boleto"] .bzSide{display:flex;flex-direction:column;gap:5px;min-width:0}
+html[data-ui^="boleto"] .bzSide.h{align-items:flex-end;text-align:right}
+html[data-ui^="boleto"] .bzSide.a{align-items:flex-start;text-align:left}
+html[data-ui^="boleto"] .bzEsc{width:34px;height:34px;object-fit:contain;display:block}
+html[data-ui^="boleto"] .bzNom{max-width:100%;font:700 14px/1.15 var(--body,system-ui);color:var(--txt);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+html[data-ui^="boleto"] .bzPc{display:inline-block;font:800 60px/.92 var(--bzCond);letter-spacing:-.02em;color:var(--mut2);font-variant-numeric:tabular-nums;padding:0 2px}
+html[data-ui^="boleto"] .bzPc sup{font-size:20px;vertical-align:top;letter-spacing:0;margin-left:2px}
+html[data-ui^="boleto"] .bzSide.w .bzPc{color:var(--txt);background:linear-gradient(transparent 68%,var(--bzHi) 68% 94%,transparent 94%)}
+html[data-ui^="boleto"] .bzSin .bzVs{align-items:start;padding:14px 16px 16px}
+html[data-ui^="boleto"] .bzSin .bzNom{font-size:17px}
+html[data-ui^="boleto"] .bzSin .bzEsc{width:40px;height:40px}
+html[data-ui^="boleto"] .bzSin .bzMid{align-self:center;padding-top:20px}
+html[data-ui^="boleto"] .bzMid{align-self:center;padding-bottom:6px;font:700 13px var(--body,system-ui);color:var(--mut2)}
+html[data-ui^="boleto"] .bzBar{display:flex;gap:3px;height:8px;margin:0 16px 14px}
+html[data-ui^="boleto"] .bzBar i{display:block;border-radius:99px;background:var(--line2);min-width:8px}
+html[data-ui^="boleto"] .bzBar i.w{background:var(--bzInk)}
+html[data-ui^="boleto"] .bzStub{box-sizing:border-box;height:46px;display:flex;align-items:center;gap:16px;padding:0 16px;border-top:2px dashed var(--line2)}
+html[data-ui^="boleto"] .bzC{display:flex;flex-direction:column;gap:2px;line-height:1}
+html[data-ui^="boleto"] .bzC small{font:600 12px/1 var(--body,system-ui);color:var(--mut)}
+html[data-ui^="boleto"] .bzC b{font:800 20px/1 var(--bzCond);color:var(--txt);letter-spacing:.01em}
+html[data-ui^="boleto"] .bzSello{margin-left:auto;max-width:56%;transform:rotate(-3deg);border:2px solid currentColor;border-radius:6px;padding:4px 9px;font:800 14px/1.05 var(--bzCond);letter-spacing:.06em;text-transform:uppercase;color:var(--bad);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html[data-ui^="boleto"] .bzSello.gris{color:var(--mut)}
+html[data-ui^="boleto"] .bzSello.si{color:var(--good)}
+/* ---- lo de adentro ---- */
+html[data-ui^="boleto"] .game .body{background:var(--bg1)!important;color:var(--txt)!important;padding:4px 16px 18px!important;border:0!important;border-radius:0 0 16px 16px}
+html[data-ui^="boleto"] .game .body::before,html[data-ui^="boleto"] .game .body::after,html[data-ui^="boleto"] .game .body .wm{display:none!important}
+html[data-ui^="boleto"] .game .tabs{display:flex!important;gap:2px!important;padding:3px!important;margin:4px 0 14px!important;background:var(--bg2)!important;border:0!important;border-radius:12px!important;overflow-x:auto;position:static!important;-webkit-overflow-scrolling:touch}
+html[data-ui^="boleto"] .game .tb{flex:1 0 auto;display:flex;align-items:center;justify-content:center;padding:9px 10px!important;border-radius:9px!important;background:transparent!important;border:0!important;color:var(--mut)!important;font:700 13px/1 var(--body,system-ui)!important;white-space:nowrap;box-shadow:none!important}
+html[data-ui^="boleto"] .game .tb svg{display:none}
+html[data-ui^="boleto"] .game .tb.on{background:var(--bzInk)!important;color:var(--bzOnInk)!important}
+html[data-ui^="boleto"] .game :is(.ovaHero,.hero){background:transparent!important;border:0!important;padding:0!important;margin:0 0 10px!important;box-shadow:none!important;border-radius:0}
+html[data-ui^="boleto"] .game .hero{display:block!important}
+html[data-ui^="boleto"] .game :is(.ovaHero,.hero) .cx>*{display:inline!important}
+html[data-ui^="boleto"] .game :is(.ovaHero,.hero) :is(.row3,.side,.gz svg,.gz>svg){display:none!important}
+html[data-ui^="boleto"] .game :is(.ovaHero,.hero) .mid,html[data-ui^="boleto"] .game .ovaHero .gz{display:block;width:auto}
+html[data-ui^="boleto"] .game :is(.ovaHero,.hero) .cx{position:static;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline;transform:none;text-align:left}
+html[data-ui^="boleto"] .game :is(.ovaHero,.hero) .cx small{font-size:12px;color:var(--mut)}
+html[data-ui^="boleto"] .game :is(.ovaHero,.hero) .cx b{font:800 22px/1 var(--bzCond);color:var(--txt)}
+html[data-ui^="boleto"] .game :is(.ovaHero,.hero) .cap{margin:0;padding:10px 12px;background:var(--bg2);border-radius:10px;font-size:14px;color:var(--txt);text-align:left}
+html[data-ui^="boleto"] .game .hero .mid{margin:0}
+html[data-ui^="boleto"] .game :is(.bar,.hero+.bar){display:none!important}
+html[data-ui^="boleto"] .game .pick{background:var(--bzHiSoft)!important;border:2px solid var(--bzInk)!important;border-left-width:2px!important;border-radius:12px;padding:12px 14px;color:var(--txt);transform:rotate(-.5deg);box-shadow:3px 3px 0 var(--bzInk)}
+html[data-ui^="boleto"] .game .pick.no{background:var(--bg2)!important;border-style:dashed!important;box-shadow:none}
+html[data-ui^="boleto"] .game .pick .q,html[data-ui^="boleto"] .game .pick>b:first-child{display:block;font:800 24px/1.05 var(--bzCond);letter-spacing:.01em;color:var(--txt)}
+html[data-ui^="boleto"] .game .pick .r{margin-top:6px;font-size:14px;line-height:1.45;color:var(--txt)}
+html[data-ui^="boleto"] .game .cal{display:flex;align-items:center;gap:12px;padding:10px 0;margin:10px 0 0;background:transparent!important;border:0!important;border-top:1px dotted var(--line2)!important;border-radius:0}
+html[data-ui^="boleto"] .game .cal .n{flex:0 0 auto;min-width:46px;text-align:center;font:800 32px/1 var(--bzCond);color:var(--txt)}
+html[data-ui^="boleto"] .game .cal .t{font-size:13px;color:var(--mut)}
+html[data-ui^="boleto"] .game .cal .t b{display:block;font-size:14px;color:var(--txt)}
+html[data-ui^="boleto"] .game .kpi{display:flex!important;gap:0!important;margin:12px 0;border-top:2px solid var(--bzInk);border-bottom:1px dotted var(--line2)}
+html[data-ui^="boleto"] .game .kpi>div{flex:1 1 0;min-width:0;background:transparent!important;border:0!important;border-left:1px dotted var(--line2)!important;border-radius:0!important;box-shadow:none!important;padding:10px 8px!important;text-align:left}
+html[data-ui^="boleto"] .game .kpi>div:first-child{border-left:0!important;padding-left:0!important}
+html[data-ui^="boleto"] .game .kpi b{display:block;font:800 26px/1 var(--bzCond)!important;color:var(--txt)!important;letter-spacing:0}
+html[data-ui^="boleto"] .game .kpi :is(span,small){display:block;margin-top:5px;font-size:12px;line-height:1.2;color:var(--mut);text-transform:none;letter-spacing:0}
+html[data-ui^="boleto"] .game table{width:100%;border-collapse:collapse;background:transparent}
+html[data-ui^="boleto"] .game :is(th,td){background:transparent!important;border:0!important;border-bottom:1px dotted var(--line2)!important;padding:8px 4px!important;color:var(--txt)}
+html[data-ui^="boleto"] .game th{font:700 12px/1.2 var(--body,system-ui)!important;color:var(--mut)!important;text-align:right;border-bottom:2px solid var(--bzInk)!important}
+html[data-ui^="boleto"] .game th:first-child{text-align:left}
+html[data-ui^="boleto"] .game td.n{font:800 17px/1 var(--bzCond);text-align:right}
+html[data-ui^="boleto"] .game tr.usa td{background:var(--bzHiSoft)!important;color:var(--txt)!important;font-weight:800}
+html[data-ui^="boleto"] .game .par.pv{background:var(--bzOk)!important;border-radius:10px}
+html[data-ui^="boleto"] .game .par.pr{background:var(--bzNo)!important;border-radius:10px}
+html[data-ui^="boleto"] .game .srv-compara [style*="f1f5fb" i]{color:var(--txt)!important}
+html[data-ui^="boleto"] .game .srv-compara [style*="9db2c8" i]{color:var(--mut)!important}
+html[data-ui^="boleto"] .game h3{display:flex;align-items:center;gap:8px;margin:18px 0 8px;padding:0 0 6px;font:800 15px/1.2 var(--body,system-ui);color:var(--txt);text-transform:none;letter-spacing:0;border-bottom:2px solid var(--bzInk)}
+html[data-ui^="boleto"] .game h3 svg{width:18px;height:18px;flex:0 0 auto;color:var(--txt)}
+html[data-ui^="boleto"] .game .medido{margin-left:auto;font:700 12px/1 var(--body,system-ui);padding:3px 7px;border-radius:99px;border:1.5px solid currentColor;background:transparent;color:var(--mut)}
+html[data-ui^="boleto"] .game .medido.ok{color:var(--good)}
+html[data-ui^="boleto"] .game .medido.flojo{color:#9A6B00}
+html[data-ui^="boleto"] .game :is(.flag,.aviso,.nota,.leyenda,.status,.srv-compara){background:transparent!important;border:0!important;border-left:3px solid var(--line2)!important;border-radius:0!important;padding:4px 0 4px 10px!important;margin:8px 0;color:var(--mut)!important;font-size:13px;line-height:1.45}
+html[data-ui^="boleto"] .game :is(.flag,.aviso,.nota,.leyenda,.srv-compara) b{color:var(--txt)}
+html[data-ui^="boleto"] .game .cal .t b{font-family:var(--body,system-ui)}
+html[data-ui^="boleto"] .game input{background:var(--bzIn)!important;color:var(--bzTxt)!important;border:1.5px solid var(--line2)!important;border-radius:9px!important;font:700 17px/1 var(--body,system-ui)!important;font-variant-numeric:tabular-nums;padding:10px 8px}
+html[data-ui^="boleto"] .game input:focus{outline:0;border-color:var(--bzInk)!important;box-shadow:0 0 0 3px var(--bzHi)}
+html[data-ui^="boleto"] .game :is(.row,.cuotasbox,.fila){background:transparent!important;border:0!important;box-shadow:none!important}
+html[data-ui^="boleto"] .game .row.hcrow{background:var(--bg2)!important;border-radius:12px!important;padding:10px!important}
+html[data-ui^="boleto"] .game :is(.btnAncho,.row button,button.ghost,.teq){background:var(--bzInk)!important;color:var(--bzOnInk)!important;border:0!important;border-radius:10px!important;font-weight:800;box-shadow:none!important}
+html[data-ui^="boleto"] .game .teq:not(.on){background:var(--bg3)!important;color:var(--txt)!important}
+html[data-ui^="boleto"] .game .out{color:var(--txt)}
+html[data-ui^="boleto"] .dsItem{background:var(--bg2)!important;color:var(--txt)!important;border:0!important;border-radius:12px!important}
+html[data-ui^="boleto"] .dsSeg{background:transparent;border:1.5px solid var(--line2);border-radius:12px;padding:3px}
+html[data-ui^="boleto"] .dsSeg button{border-radius:9px;background:transparent!important;color:var(--mut)!important;font-weight:700;border:0!important}
+html[data-ui^="boleto"] .dsSeg button.on{background:var(--bzHi)!important;color:var(--bzHiTx)!important}
+html[data-ui^="boleto"] .game :is(.receta,.cabp,.cmpg>div){background:var(--bg2)!important;border-radius:12px!important;border:0!important}
+html[data-ui^="boleto"] .game .cabp .nm b{color:var(--txt)}
 /* ---------- seccion dentro de Apariencia ---------- */
 .uiSec{margin:12px 0 6px}
 .uiSec .uiTit{font:700 12px system-ui,-apple-system,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:0 2px 8px}
@@ -286,7 +432,7 @@ function colorear(){
 
 /* ===================================================================== selector */
 var ST={id:'clasico'};
-function leer(){ try{ var v=root.localStorage.getItem(KEY); return BY[v]?v:'clasico'; }catch(e){ return 'clasico'; } }
+function leer(){ try{ if(!root.localStorage.getItem('ova_ui_r6')){ root.localStorage.setItem('ova_ui_r6','1'); root.localStorage.setItem(KEY,'boleto'); } var v=root.localStorage.getItem(KEY); return BY[v]?v:'clasico'; }catch(e){ return 'clasico'; } }
 function inyectar(){
   if(doc.getElementById('uiInteriorCss')) return;
   var s=doc.createElement('style'); s.id='uiInteriorCss'; s.textContent=CSS; (doc.head||html).appendChild(s);
