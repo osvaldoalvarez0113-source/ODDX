@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070B12">
+<title>Subir arreglo de fútbol</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#070B12;color:#F1F5FB;font:15px/1.5 system-ui,-apple-system,sans-serif;padding:18px 14px 60px}
+.w{max-width:560px;margin:0 auto}
+h1{font-size:22px;margin:4px 0 2px}
+p{color:#9DB2C8;font-size:13px;margin:4px 0 12px}
+label{display:block;font-size:12px;color:#9DB2C8;margin:12px 0 4px}
+input{width:100%;background:#0D1420;border:1px solid #2A3E56;color:#F1F5FB;border-radius:10px;padding:11px;font-size:15px}
+button{width:100%;margin-top:12px;padding:14px;border:0;border-radius:12px;background:#3B82F6;color:#fff;font-size:16px;font-weight:700}
+button.sec{background:#131D2C;color:#9DB2C8;border:1px solid #2A3E56;font-weight:600;font-size:14px;padding:11px}
+button:disabled{opacity:.5}
+#log{margin-top:16px;background:#0D1420;border:1px solid #1C2838;border-radius:12px;padding:12px;font:12.5px/1.6 ui-monospace,Menlo,monospace;white-space:pre-wrap;word-break:break-word;min-height:60px}
+.ok{color:#34D399}.mal{color:#F87171}.av{color:#FBBF24}
+details{margin-top:10px} summary{color:#9DB2C8;font-size:13px}
+ul{color:#9DB2C8;font-size:13px;padding-left:18px;margin:6px 0 12px}
+</style></head><body><div class="w">
+<h1>Subir arreglo de fútbol</h1>
+<p>Aplica el arreglo para que Fútbol cargue aunque worldfootball.net no responda, en <b>un commit</b> de tu repo ODDX:</p>
+<ul>
+<li>arregla index.html, futbol.html, railway.js, sw.js, manifest, historial.js y pruebas.js</li>
+<li>quita ~90 archivos viejos (parches y pruebas ya aplicados) y ordena backtests y scripts en carpetas</li>
+<li>agrega README, pruebas automáticas en GitHub, el Worker de IA endurecido y el informe</li>
+</ul>
+<p>Antes de subir nada baja tus archivos actuales, les aplica los cambios, revisa que todo compile y solo si sale bien lo sube. Tus datos (picks, temas) no se tocan: viven en el teléfono.</p>
+<label for="tok">Token de GitHub</label>
+<input id="tok" type="password" autocomplete="off" placeholder="github_pat_…">
+<p style="margin-top:6px">El token tiene que poder escribir <b>Contents</b> en el repo y, para los 4 archivos de <code>.github/workflows</code>, también <b>Workflows</b>. Si no tiene Workflows, se sube todo lo demás y esos 4 archivos se te dejan para después.</p>
+<details><summary>Repositorio y rama</summary>
+<label for="repo">Repositorio</label><input id="repo" value="osvaldoalvarez0113-source/ODDX">
+<label for="rama">Rama</label><input id="rama" value="main">
+</details>
+<button id="ver" class="sec">1 · Ver qué va a cambiar (no sube nada)</button>
+<button id="go">2 · Aplicar y subir</button>
+<button id="undo" class="sec">Deshacer (volver al estado de antes)</button>
+<div id="log">Listo. Pega el token y toca «Ver qué va a cambiar».</div>
+</div>
+<script>/* Motor de parches de texto. Funciona en el navegador (subir_auditoria.html) y en node (pruebas).
+   Cada operacion tiene que encontrar su ancla EXACTAMENTE UNA VEZ; si no, lanza error y no se sube nada. */
+(function(root){
+ function contar(h,s){ var n=0,i=0; if(!s) return 0; while((i=h.indexOf(s,i))>=0){ n++; i+=s.length; } return n; }
+ function aplicarOps(texto,ops,nombre){
+  var h=texto;
+  (ops||[]).forEach(function(op,k){
+   var et=(nombre||'archivo')+' · operacion '+(k+1)+(op.nombre?' ('+op.nombre+')':'');
+   var tipo=op.t||'reemplazar';
+   if(tipo==='reemplazar'){
+    /* ya estaba aplicado: aparece la marca y el ancla viejo ya no esta (o el resultado lo conserva, como al insertar antes de una linea) */
+    if(op.ya && h.indexOf(op.ya)>=0 && (h.indexOf(op.de)<0 || op.a.indexOf(op.de)>=0)) return;
+    var n=contar(h,op.de);
+    if(n===0 && op.opcional) return;
+    if(n!==1) throw new Error(et+': el texto a reemplazar aparece '+n+' veces (debe ser 1)');
+    var i=h.indexOf(op.de); h=h.slice(0,i)+op.a+h.slice(i+op.de.length);
+   }else if(tipo==='cortar'){
+    var n2=contar(h,op.desde);
+    if(n2===0 && op.opcional) return;
+    if(n2!==1) throw new Error(et+': el inicio del bloque a cortar aparece '+n2+' veces (debe ser 1)');
+    var a=h.indexOf(op.desde), b=h.indexOf(op.hasta,a+op.desde.length);
+    if(b<0) throw new Error(et+': no encontre el final del bloque a cortar');
+    h=h.slice(0,a)+h.slice(b+(op.incluirHasta?op.hasta.length:0));
+   }else throw new Error(et+': operacion desconocida '+tipo);
+  });
+  return h;
+ }
+ var api={aplicarOps:aplicarOps,contar:contar};
+ if(typeof module!=='undefined'&&module.exports) module.exports=api; else root.OVAMotor=api;
+})(typeof window!=='undefined'?window:this);
+</script>
+<script>
+/* Subida atomica con la API de Git de GitHub: blobs -> arbol -> commit -> mover la rama. */
+(function(root){
+ var D=JSON.parse(new TextDecoder().decode(Uint8Array.from(atob('eyJtZW5zYWplUHJpbmNpcGFsIjoiRsO6dGJvbDogc2kgd29ybGRmb290YmFsbC5uZXQgbm8gcmVzcG9uZGUsIGxhIGFwcCBzaWd1ZSBjb24gRVNQTiAodjE1KVxuXG4tIGZ1dGJvbC5odG1sOiB3ZlRleHRvIHlhIG5vIHR1bWJhIGxhIGNhcmdhIGN1YW5kbyBmYWxsYSBsYSByZWQgaGFjaWEgd29ybGRmb290YmFsbCAoU2FmYXJpOiDCq0xvYWQgZmFpbGVkwrspXG5cbkNvLUF1dGhvcmVkLUJ5OiBDbGF1ZGUgU29ubmV0IDUuNSA8bm9yZXBseUBhbnRocm9waWMuY29tPlxuQ2xhdWRlLVNlc3Npb246IGh0dHBzOi8vY2xhdWRlLmFpL2NvZGUvc2Vzc2lvbl8wMUpmaUprNWlUTXVMTWp6RG11U2FudVgiLCJtZW5zYWplV29ya2Zsb3dzIjoiU2luIGNhbWJpb3MgZW4gd29ya2Zsb3dzXG5cbkNvLUF1dGhvcmVkLUJ5OiBDbGF1ZGUgU29ubmV0IDUuNSA8bm9yZXBseUBhbnRocm9waWMuY29tPlxuQ2xhdWRlLVNlc3Npb246IGh0dHBzOi8vY2xhdWRlLmFpL2NvZGUvc2Vzc2lvbl8wMUpmaUprNWlUTXVMTWp6RG11U2FudVgiLCJwcmluY2lwYWwiOnsicGFyY2hhciI6eyJmdXRib2wuaHRtbCI6W3sibm9tYnJlIjoid29ybGRmb290YmFsbCBjYcOtZG8gKGVycm9yIGRlIHJlZCk6IHNlZ3VpciBjb24gRVNQTiIsImRlIjoiZnVuY3Rpb24gd2ZUZXh0byh1cmwpe1xuICByZXR1cm4gZmV0Y2godXJsKyc/dj0nK0RhdGUubm93KCkpLnRoZW4oZnVuY3Rpb24ocil7XG4gICAgaWYoIXIub2speyBESUFHLndmSHR0cCA9IHIuc3RhdHVzOyB9XG4gICAgcmV0dXJuIHIudGV4dCgpO1xuICB9KTtcbn0iLCJhIjoiZnVuY3Rpb24gd2ZUZXh0byh1cmwpe1xuICByZXR1cm4gZmV0Y2godXJsKyc/dj0nK0RhdGUubm93KCkpLnRoZW4oZnVuY3Rpb24ocil7XG4gICAgaWYoIXIub2speyBESUFHLndmSHR0cCA9IHIuc3RhdHVzOyB9XG4gICAgcmV0dXJuIHIudGV4dCgpO1xuICB9KS5jYXRjaChmdW5jdGlvbihlKXtcbiAgICAvKiBzaW4gcmVkIGhhY2lhIHdvcmxkZm9vdGJhbGwgKFNhZmFyaSBkaWNlIMKrTG9hZCBmYWlsZWTCuyk6IHNlIHNpZ3VlIHNvbG8gY29uIEVTUE4gKi9cbiAgICBESUFHLndmRXJyb3IgPSBTdHJpbmcoZSAmJiBlLm1lc3NhZ2UgfHwgZSk7XG4gICAgcmV0dXJuICcnO1xuICB9KTtcbn0iLCJ5YSI6IkRJQUcud2ZFcnJvciA9IFN0cmluZyhlICYmIGUubWVzc2FnZSB8fCBlKTsifSx7Im5vbWJyZSI6InZlcnNpw7NuIHYxNSIsImRlIjoidmFyIFZFUj0ndjE0JzsiLCJhIjoidmFyIFZFUj0ndjE1JzsiLCJ5YSI6InZhciBWRVI9J3YxNSc7In0seyJub21icmUiOiJ2ZXJzacOzbiB2MTUgKFZFUlNJT04pIiwiZGUiOiJ2YXIgVkVSU0lPTiA9ICd2MTQnOyIsImEiOiJ2YXIgVkVSU0lPTiA9ICd2MTUnOyIsInlhIjoidmFyIFZFUlNJT04gPSAndjE1JzsifSx7Im5vbWJyZSI6InZlcnNpw7NuIHYxNSAodMOtdHVsbykiLCJkZSI6IjxzcGFuIGNsYXNzPVwidmVyXCI+djE0PC9zcGFuPiIsImEiOiI8c3BhbiBjbGFzcz1cInZlclwiPnYxNTwvc3Bhbj4iLCJ5YSI6IjxzcGFuIGNsYXNzPVwidmVyXCI+djE1PC9zcGFuPiJ9XSwiZGlzZW5vLmpzIjpbeyJub21icmUiOiJjYWJlY2VyYSIsImRlIjoiZsO6dGJvbCB2MTQgLyBOQkEgdjMuNikiLCJhIjoiZsO6dGJvbCB2MTUgLyBOQkEgdjMuNikiLCJ5YSI6ImbDunRib2wgdjE1IC8gTkJBIHYzLjYpIn1dfSwibW92ZXIiOltdLCJlc2NyaWJpciI6e30sImJvcnJhciI6WyJzdWJpcmZ1dGJvbC5odG1sIl19LCJ3b3JrZmxvd3MiOnsiZXNjcmliaXIiOnt9LCJib3JyYXIiOltdfX0='),function(c){return c.charCodeAt(0);})));
+ var API='https://api.github.com';
+
+ function b64aTexto(b64){ var bin=atob(String(b64).replace(/\s+/g,'')), u=new Uint8Array(bin.length); for(var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return new TextDecoder('utf-8').decode(u); }
+ function textoAb64(t){ var u=new TextEncoder().encode(t), s='', n=8192; for(var i=0;i<u.length;i+=n) s+=String.fromCharCode.apply(null,u.subarray(i,i+n)); return btoa(s); }
+
+ function Cliente(token,repo,fetchImpl){
+  var f=fetchImpl||root.fetch.bind(root);
+  this.llamar=function(metodo,ruta,cuerpo){
+   return f(API+'/repos/'+repo+ruta,{method:metodo,cache:'no-store',headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28','Content-Type':'application/json'},body:cuerpo?JSON.stringify(cuerpo):undefined})
+    .then(function(r){ return r.text().then(function(t){ var j=null; try{ j=t?JSON.parse(t):null; }catch(e){} if(!r.ok){ var e=new Error((j&&j.message)||('HTTP '+r.status)); e.status=r.status; throw e; } return j; }); });
+  };
+ }
+ function explicar(e){
+  if(e.status===401) return 'GitHub no aceptó el token (venció o se copió mal).';
+  if(e.status===403||e.status===404) return 'Sin permiso o repo/rama no encontrados ('+e.message+'). El token debe tener acceso al repo con Contents: Read and write.';
+  if(e.status===422&&/fast.?forward/i.test(e.message)) return 'la rama se movió mientras subía (no es problema del token). Espera 1 minuto y toca «Aplicar» otra vez.';
+  if(e.status===422) return 'GitHub rechazó el cambio ('+e.message+').';
+  return e.message;
+ }
+
+ function scriptsDe(html){ var re=/<script\b([^>]*)>([\s\S]*?)<\/script>/gi, m, out=[]; while((m=re.exec(html))){ if(/\bsrc\s*=/.test(m[1])) continue; out.push(m[2]); } return out; }
+ function verificarArchivo(path,txt){
+  var p=[];
+  if(/\.html$/.test(path)) scriptsDe(txt).forEach(function(c,i){ try{ new Function(c); }catch(e){ p.push(path+': el script #'+(i+1)+' no compila: '+e.message); } });
+  else if(/\.json$/.test(path)){ try{ JSON.parse(txt); }catch(e){ p.push(path+': JSON invalido: '+e.message); } }
+  else if(/\.js$/.test(path)){
+    /* los modulos ES (worker/ova-ia.js usa «export default») no compilan con new Function; se revisan sin la palabra export */
+    var esModulo=/^\s*export\s/m.test(txt);
+    var fuente=esModulo?txt.replace(/^(\s*)export\s+default\s+/m,'$1var __mod=').replace(/^(\s*)export\s+/mg,'$1'):txt;
+    try{ new Function(fuente); }catch(e){ p.push(path+': no compila: '+e.message); }
+  }
+  return p;
+ }
+
+ /* Arma el plan completo contra la rama tal como esta AHORA. No escribe nada. */
+ function planear(cli,rama,grupo,log){
+  var plan={base:null,arbolBase:null,entradas:[],resumen:{escribir:0,parchar:0,mover:0,borrar:0,omitidos:[]},problemas:[]};
+  return cli.llamar('GET','/git/ref/heads/'+encodeURIComponent(rama)).then(function(ref){
+   plan.base=ref.object.sha; return cli.llamar('GET','/git/commits/'+plan.base);
+  }).then(function(c){
+   plan.arbolBase=c.tree.sha; return cli.llamar('GET','/git/trees/'+plan.arbolBase+'?recursive=1');
+  }).then(function(t){
+   if(t.truncated) throw new Error('El arbol del repo es demasiado grande para leerlo completo.');
+   var mapa={}; (t.tree||[]).forEach(function(x){ if(x.type==='blob') mapa[x.path]=x; });
+   plan.mapa=mapa;
+   var G=D[grupo];
+   var tareas=Promise.resolve();
+   var nuevos=[];   /* {path, texto} que hay que subir como blob */
+   var movs=[];     /* {de, a, sha} reutilizan blob */
+   /* parches sobre archivos existentes */
+   Object.keys(G.parchar||{}).forEach(function(path){
+    tareas=tareas.then(function(){
+     if(!mapa[path]){ plan.resumen.omitidos.push(path+' (no existe en el repo)'); return; }
+     return cli.llamar('GET','/git/blobs/'+mapa[path].sha).then(function(b){
+      var antes=b64aTexto(b.content), despues;
+      try{ despues=root.OVAMotor.aplicarOps(antes,G.parchar[path],path); }catch(e){ plan.problemas.push(e.message); return; }
+      verificarArchivo(path,despues).forEach(function(m){ plan.problemas.push(m); });
+      if(despues!==antes) nuevos.push({path:path,texto:despues}); else plan.resumen.omitidos.push(path+' (ya estaba aplicado)');
+      plan.resumen.parchar++;
+     });
+    });
+   });
+   /* movimientos (con o sin parche) */
+   (G.mover||[]).forEach(function(m){
+    tareas=tareas.then(function(){
+     if(!mapa[m.de]){ plan.resumen.omitidos.push(m.de+' → '+m.a+' (el origen ya no existe)'); return; }
+     plan.resumen.mover++;
+     if(!m.ops){ movs.push({de:m.de,a:m.a,sha:mapa[m.de].sha}); return; }
+     return cli.llamar('GET','/git/blobs/'+mapa[m.de].sha).then(function(b){
+      var antes=b64aTexto(b.content), despues;
+      try{ despues=root.OVAMotor.aplicarOps(antes,m.ops,m.de); }catch(e){ plan.problemas.push(e.message); return; }
+      verificarArchivo(m.a,despues).forEach(function(x){ plan.problemas.push(x); });
+      nuevos.push({path:m.a,texto:despues,borrar:m.de});
+     });
+    });
+   });
+   return tareas.then(function(){
+    /* archivos completos */
+    Object.keys(G.escribir||{}).forEach(function(path){
+     var txt=b64aTexto(G.escribir[path]);
+     verificarArchivo(path,txt).forEach(function(m){ plan.problemas.push(m); });
+     nuevos.push({path:path,texto:txt}); plan.resumen.escribir++;
+    });
+    plan.nuevos=nuevos; plan.movs=movs;
+    plan.borrar=(G.borrar||[]).filter(function(p){ if(mapa[p]) return true; plan.resumen.omitidos.push(p+' (ya no existe)'); return false; });
+    plan.resumen.borrar=plan.borrar.length;
+    return plan;
+   });
+  });
+ }
+
+ function resumenTxt(plan,grupo){
+  var r=plan.resumen, t='';
+  t+='  Archivos nuevos o reescritos: '+r.escribir+'\n  Archivos parchados: '+r.parchar+'\n  Archivos movidos: '+r.mover+'\n  Archivos borrados: '+r.borrar+'\n';
+  if(r.omitidos.length) t+='  Omitidos ('+r.omitidos.length+'): '+r.omitidos.slice(0,6).join('; ')+(r.omitidos.length>6?'; …':'')+'\n';
+  return t;
+ }
+
+ /* Sube el plan: blobs -> arbol -> commit -> rama. Si la rama se movio mientras tanto (el escaner hace commits), replanea una vez. */
+ function subir(cli,rama,grupo,mensaje,log,intento){
+  intento=intento||1;
+  return planear(cli,rama,grupo,log).then(function(plan){
+   if(plan.problemas.length){ var e=new Error('Revisión falló, no se subió nada:\n   - '+plan.problemas.join('\n   - ')); e.revision=true; throw e; }
+   var entradas=[], seq=Promise.resolve();
+   plan.nuevos.forEach(function(n){
+    seq=seq.then(function(){ return cli.llamar('POST','/git/blobs',{content:textoAb64(n.texto),encoding:'base64'}).then(function(b){
+     entradas.push({path:n.path,mode:'100644',type:'blob',sha:b.sha});
+     if(n.borrar) entradas.push({path:n.borrar,mode:'100644',type:'blob',sha:null});
+    }); });
+   });
+   return seq.then(function(){
+    plan.movs.forEach(function(m){ entradas.push({path:m.a,mode:'100644',type:'blob',sha:m.sha}); entradas.push({path:m.de,mode:'100644',type:'blob',sha:null}); });
+    plan.borrar.forEach(function(p){ entradas.push({path:p,mode:'100644',type:'blob',sha:null}); });
+    if(!entradas.length){ log('Nada que cambiar en este grupo.','av'); return {sinCambios:true,base:plan.base}; }
+    return cli.llamar('POST','/git/trees',{base_tree:plan.arbolBase,tree:entradas}).then(function(arbol){
+     if(arbol.sha===plan.arbolBase) return null;     /* el arbol quedo identico: ya estaba aplicado, no se hace commit vacio */
+     return cli.llamar('POST','/git/commits',{message:mensaje,tree:arbol.sha,parents:[plan.base]});
+    }).then(function(commit){
+     if(!commit){ log('Ya estaba aplicado (el repo quedaria igual).','av'); return {sinCambios:true,base:plan.base}; }
+     return cli.llamar('PATCH','/git/refs/heads/'+encodeURIComponent(rama),{sha:commit.sha,force:false}).then(function(){
+      return {antes:plan.base,despues:commit.sha,resumen:plan.resumen};
+     });
+    });
+   });
+  }).catch(function(e){
+   if(e.status===422 && /fast.?forward/i.test(e.message) && intento<3){ log('La rama cambió mientras subía (probablemente el escáner). Reintento con lo último…','av'); return subir(cli,rama,grupo,mensaje,log,intento+1); }
+   throw e;
+  });
+ }
+
+ function ejecutar(o){
+  var log=o.log||function(){}, cli=new Cliente(o.token,o.repo,o.fetch), rama=o.rama||'main';
+  var res={};
+  if(o.soloVer){
+   return planear(cli,rama,'principal',log).then(function(plan){
+    log('Revisión de lo principal:','ok'); log(resumenTxt(plan));
+    if(plan.problemas.length) log('PROBLEMAS (no se subiría nada):\n   - '+plan.problemas.join('\n   - '),'mal'); else log('Todo compila y los parches encajan. Puedes aplicar.','ok');
+    return planear(cli,rama,'workflows',log).then(function(pw){ log('Workflows (.github/workflows):','ok'); log(resumenTxt(pw)); if(pw.problemas.length) log('PROBLEMAS en workflows:\n   - '+pw.problemas.join('\n   - '),'mal'); return {principal:plan,workflows:pw}; });
+   });
+  }
+  return subir(cli,rama,'principal',D.mensajePrincipal,log).then(function(r1){
+   res.principal=r1;
+   if(r1.sinCambios) log('Lo principal ya estaba aplicado.','av'); else log('✓ Commit 1 subido (arreglos, limpieza y carpetas): '+r1.despues.slice(0,7),'ok');
+   return subir(cli,rama,'workflows',D.mensajeWorkflows,log).then(function(r2){
+    res.workflows=r2;
+    if(r2.sinCambios) log('Sin cambios en workflows.','av'); else log('✓ Commit 2 subido (workflows): '+r2.despues.slice(0,7),'ok');
+    return res;
+   },function(e2){
+    res.workflowsError=e2;
+    log('⚠ Lo principal SÍ se subió, pero los workflows no: '+explicar(e2)+'\n   Si el motivo de arriba habla de permisos, tu token no tiene «Workflows». Los 4 archivos están en el zip de la auditoría (carpeta .github/workflows); súbelos a mano o crea un token con Workflows: Read and write y vuelve a tocar «Aplicar».','av');
+    return res;
+   });
+  });
+ }
+
+ function deshacer(o){
+  var log=o.log||function(){}, cli=new Cliente(o.token,o.repo,o.fetch), rama=o.rama||'main';
+  var antes=o.antes;
+  if(!antes) return Promise.reject(new Error('No tengo guardado el estado anterior en este teléfono. Si lo anotaste del log, pégalo en la casilla.'));
+  return cli.llamar('GET','/git/commits/'+antes).then(function(c){
+   return cli.llamar('GET','/git/ref/heads/'+encodeURIComponent(rama)).then(function(ref){
+    return cli.llamar('POST','/git/commits',{message:'Deshacer arreglo: vuelve al estado de '+antes.slice(0,7),tree:c.tree.sha,parents:[ref.object.sha]});
+   });
+  }).then(function(n){ return cli.llamar('PATCH','/git/refs/heads/'+encodeURIComponent(rama),{sha:n.sha,force:false}).then(function(){ return n.sha; }); });
+ }
+
+ var api={ejecutar:ejecutar,deshacer:deshacer,explicar:explicar,planear:planear,DATOS:D};
+ if(typeof module!=='undefined'&&module.exports) module.exports=api; else root.OVASubir=api;
+
+ /* ---------- pantalla ---------- */
+ if(typeof document!=='undefined' && document.getElementById && document.getElementById('go')){
+  var $=function(i){ return document.getElementById(i); }, L=$('log');
+  function log(t,c){ var s=document.createElement('span'); if(c) s.className=c; s.textContent=t+'\n'; L.appendChild(s); L.scrollTop=L.scrollHeight; }
+  function limpiar(){ L.textContent=''; }
+  function bloquear(b){ ['ver','go','undo'].forEach(function(i){ $(i).disabled=b; }); }
+  function leer(){ var t=$('tok').value.trim(); if(!t){ log('Falta el token.','mal'); return null; } return {token:t,repo:$('repo').value.trim(),rama:$('rama').value.trim()||'main'}; }
+  $('ver').addEventListener('click',function(){ var o=leer(); if(!o) return; limpiar(); bloquear(true); o.soloVer=true; o.log=log;
+   ejecutar(o).then(function(){ log('\nNo se subió nada. Si todo se ve bien, toca «2 · Aplicar y subir».','ok'); },function(e){ log('✗ '+explicar(e),'mal'); }).then(function(){ bloquear(false); }); });
+  $('go').addEventListener('click',function(){ var o=leer(); if(!o) return; limpiar(); bloquear(true); o.log=log; log('Subiendo…');
+   ejecutar(o).then(function(r){
+    var a=r.principal&&r.principal.antes; if(a){ try{ localStorage.setItem('ova_futbol_antes',a); }catch(e){} log('\nEstado anterior (por si quieres deshacer): '+a,'av'); }
+    log('\nListo. GitHub Pages publica en ~1 minuto. Cierra la app de la pantalla de inicio y ábrela dos veces: en Fútbol arriba debe decir v15.','ok');
+    log('Esta página (subirfutbol.html) se borró sola del repo; puedes cerrarla.');
+   },function(e){ log('✗ '+(e.revision?e.message:explicar(e)),'mal'); log('No se subió nada (o se subió completo): el repo nunca queda a medias.','av'); }).then(function(){ bloquear(false); }); });
+  $('undo').addEventListener('click',function(){ var o=leer(); if(!o) return; limpiar(); bloquear(true); o.log=log;
+   try{ o.antes=localStorage.getItem('ova_futbol_antes'); }catch(e){}
+   deshacer(o).then(function(s){ log('✓ Repo devuelto a como estaba antes (commit nuevo '+s.slice(0,7)+'). Nada se perdió del historial.','ok'); },function(e){ log('✗ '+explicar(e),'mal'); }).then(function(){ bloquear(false); }); });
+ }
+})(typeof window!=='undefined'?window:globalThis);
+</script>
+</body></html>
