@@ -16,7 +16,7 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 | `panel.html` | Panel de respaldo y resumen del día. No está enlazado desde el hub a propósito. |
 | `sw.js`, `manifest.json`, `icon-*.png` | Service worker (red primero, sin internet usa copia), manifest e iconos de la app instalada. |
 | `ovaextra.js` | Respaldo de picks en IndexedDB, exportar/importar y resumen «Hoy». Lo cargan las cinco páginas. |
-| `interior.js`, `obsidiana.js`, `hubestilos.js` | Diseños (Clásico/Cristal/Broadcast), tema «Oro negro» y los 6 estilos del hub. |
+| `interior.js`, `obsidiana.js`, `hubestilos.js` | Ocho diseños de adentro (Clásico, Cristal, Broadcast, Pro, Boleto, Boleto noche, **Prensa** y **Radar**; se eligen con pulsación larga en el logo o en 🎨), tema «Oro negro» y los 6 estilos del hub. Prensa y Radar traen sus propios colores (no cambian con el tema de color) para garantizar que se lean. |
 | `diseno.js` | Barra de abajo igual en MLB, fútbol y NBA (Juegos · Al gane · Combo · Mis picks · Ajustes), lo técnico (Backtest, Ratings, Diagnóstico) en Ajustes → Avanzado, versión visible en Ajustes y carga automática de MLB. No cambia ningún cálculo. |
 | `historial.js` | MLB v47-v50: historial del abridor a 3 años (apagado por defecto), botón 🦈 de IA con análisis completo, y la etiqueta de versión que se ve junto al título. |
 | `railway.js` | Compara (o aplica) el cálculo del servidor Railway sobre el Veredicto de MLB. **Única copia** de ese parche. |

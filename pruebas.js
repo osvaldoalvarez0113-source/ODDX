@@ -367,16 +367,32 @@ sec('Presentaciones del hub (6 diseños)');
  globalThis.localStorage.setItem('ova_hub','<script>');ok('guardado corrupto se lee como clásico',HB.leer()==='oro');
  delete globalThis.addEventListener;delete globalThis.removeEventListener;delete globalThis.document;delete globalThis.localStorage;delete globalThis.sessionStorage;delete globalThis.location;
 }
-sec('Diseño interior de las apps (Clásico · Cristal · Broadcast)');
+sec('Diseño interior de las apps (Clásico · Cristal · Broadcast · Pro · Boleto · Prensa · Radar)');
 {
  const UI=require(path.join(__dirname,'interior.js'));
- ok('6 diseños: clásico, cristal, broadcast, pro, boleto y boleto noche',JSON.stringify(UI.UIS.map(u=>u.id))===JSON.stringify(['clasico','cristal','broadcast','pro','boleto','boletonoche']));
+ ok('8 diseños: clásico, cristal, broadcast, pro, boleto, boleto noche, prensa y radar',JSON.stringify(UI.UIS.map(u=>u.id))===JSON.stringify(['clasico','cristal','broadcast','pro','boleto','boletonoche','prensa','radar']));
  ok('Boleto: los dos diseños definen sus colores y comparten la forma',/html\[data-ui="boleto"\]\{--bzBg1/.test(UI.css)&&/html\[data-ui="boletonoche"\]\{--bzBg1/.test(UI.css)&&/html\[data-ui\^="boleto"\] \.bzSello/.test(UI.css));
  ok('Boleto: el ticket tiene muescas (máscara) y en la barra de abajo solo la pestaña activa lleva nombre',/\.game\.bzOn \.head\{-webkit-mask:radial-gradient/.test(UI.css)&&/\.tbar-btn:not\(\.on\) \.lb\{position:absolute/.test(UI.css));
  ok('Boleto: los botones que la app oculta con display:none siguen ocultos',!/\.tabbar \.tbar-btn\{[^}]*display:flex!important/.test(UI.css));
  ok('Boleto: el ticket solo se arma con ese diseño y no borra nada original',/\.bzT\{display:none\}/.test(rd('diseno.js'))&&/function bzArmar/.test(rd('diseno.js'))&&/indexOf\('boleto'\)===0/.test(rd('diseno.js'))&&!/removeChild/.test(rd('diseno.js')));
  ok('Boleto: se activa una sola vez al actualizar y se puede volver a Clásico',/ova_ui_r6/.test(rd('interior.js'))&&UI.UIS.some(u=>u.id==='clasico'));
 
+ /* contraste (WCAG): texto gris sobre fondo >= 7 (AAA) y el gris tenue >= 4.5, en las paletas nocturnas y claras */
+ {
+  const lin=v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);};
+  const lum=h=>{h=h.replace('#','');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return 0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b);};
+  const cr=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);};
+  const paleta=(sel,pref)=>{const m=UI.css.split('\n').find(l=>l.indexOf(sel)===0&&l.indexOf(pref+'Bg1:')>0||(l.indexOf(sel)===0&&l.indexOf('--bg1:')>0&&pref===''));const g=n=>{const r=m.match(new RegExp('--'+n+':(#[0-9A-Fa-f]{6})'));return r&&r[1];};return {m,g};};
+  const casos=[['html[data-ui="boleto"]{','bz','Boleto'],['html[data-ui="boletonoche"]{','bz','Boleto noche'],['html[data-ui="prensa"][data-ui]{','','Prensa'],['html[data-ui="radar"][data-ui]{','','Radar']];
+  casos.forEach(([sel,pref,nombre])=>{
+   const P=paleta(sel,pref);if(!P.m){ok(nombre+': paleta encontrada',false);return;}
+   const b1=P.g(pref?'bzBg1':'bg1'),b2=P.g(pref?'bzBg2':'bg2'),b3=P.g(pref?'bzBg3':'bg3'),mu=P.g(pref?'bzMut':'mut'),m2=P.g(pref?'bzMut2':'mut2'),tx=P.g(pref?'bzTxt':'txt');
+   ok(nombre+': el gris de las etiquetas se lee (≥7 sobre fondo y tarjeta)',cr(mu,b1)>=7&&cr(mu,b2)>=7,cr(mu,b1).toFixed(1)+' / '+cr(mu,b2).toFixed(1));
+   ok(nombre+': el gris tenue se lee (≥4.5)',cr(m2,b1)>=4.5&&cr(m2,b2)>=4.5,cr(m2,b1).toFixed(1)+' / '+cr(m2,b2).toFixed(1));
+   ok(nombre+': el texto principal se lee (≥12)',cr(tx,b1)>=12&&cr(tx,b3)>=9,cr(tx,b1).toFixed(1));
+  });
+  ok('los números "sin medir" ya no se atenúan por opacidad',/\.kpi div\.sinmed\{opacity:1!important/.test(UI.css));
+ }
  const css=UI.css;let nv=0,okb=true;for(const c of css){if(c==='{')nv++;if(c==='}'){nv--;if(nv<0)okb=false;}}
  ok('el CSS tiene llaves balanceadas',okb&&nv===0);
  const kf=new Set([...css.matchAll(/@keyframes\s+([\w-]+)/g)].map(m=>m[1]));
