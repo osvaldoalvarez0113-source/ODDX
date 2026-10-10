@@ -1,0 +1,4 @@
+GET /participants sportId=10 -> 200 largo 557484
+{"730105":"TJ Lokomotiva Banov","814094":"Aberdeen FC B","369170":"SD Textil Escudo","4775":"Libya","466627":"FK Kabel Novi Sad","133486":"JSM Tiaret","1217811":"Aurrera de Vitoria","369302":"CD Son Cladera","452483":"James Madison Dukes","1048947":"CD El Roble de Ilobasco","1217199":"Loser ESP/NED","556934":"Litchfield FC","1184315":"W82","829156":"Uniao Nogueirense FC","1245134":"Loud SC","1274602":"SC Schiltigheim U19","501194":"Knaresborough Town FC","357042":"ASD Seravezza Pozzi Calcio","1369672":"Rive AC ES","37099":"Dinas Powys FC","1374928":"Tj Divina","1074258":"Bergdalens IK","3128":
+GET /participants participantId=42 -> 429
+{"error":{"message":"You are being rate limited. Please wait before making more requests to this endpoint.","code":"RATE_LIMITED","details":"Please wait 0.22 seconds before making another request to /v4/participants.","retryAfter":"0.22 seconds","retryMs":220}}
