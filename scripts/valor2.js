@@ -40,12 +40,23 @@ function listaFix(j){ if(!j) return []; if(Array.isArray(j)) return j; if(j.fixt
   for(const k of ['fixtures','data','results','items']) if(Array.isArray(j[k])) return j[k];
   return Object.values(j).filter(x=>x&&typeof x==='object'&&x.fixtureId); }
 async function pinnacle(ids){
-  const lista=[]; 
-  try{ return listaFix(await op('/odds-by-tournaments',{tournamentIds:ids.join(','),bookmaker:'pinnacle'},true)); }
-  catch(e){ if(e.status!==400) throw e; P('  (varias ligas juntas dieron 400: '+e.message.slice(0,160)+'; pido de una en una)'); }
-  for(const id of ids){ try{ listaFix(await op('/odds-by-tournaments',{tournamentIds:String(id),bookmaker:'pinnacle'},true)).forEach(f=>lista.push(f)); }catch(e){ P('  liga '+id+': '+e.message.slice(0,160)); } }
+  const lista=[]; const grupos=[]; for(let i=0;i<ids.length;i+=5) grupos.push(ids.slice(i,i+5));
+  for(const g of grupos){
+    try{ listaFix(await op('/odds-by-tournaments',{tournamentIds:g.join(','),bookmaker:'pinnacle'},true)).forEach(f=>lista.push(f)); }
+    catch(e){ P('  ligas '+g.join(',')+': '+e.message.slice(0,160)); if(/tope/.test(e.message)) break; }
+  }
   return lista;
 }
+/* nombres de equipos: OddsPapi manda solo el numero; se pide la lista una vez por deporte y se guarda */
+async function nombres(sportId){
+  cache.nom=cache.nom||{}; if(cache['nomOk'+sportId]) return;
+  try{
+    const j=await op('/participants',{sportId:String(sportId)},false); const a=Array.isArray(j)?j:Object.values(j||{});
+    let n=0; a.forEach(x=>{ const id=x.participantId||x.id, nm=x.participantName||x.name; if(id!=null&&nm){ cache.nom[id]=nm; n++; } });
+    P('Nombres de equipos (deporte '+sportId+'): '+n); if(n>50) cache['nomOk'+sportId]=true; guardar();
+  }catch(e){ P('No pude traer nombres (deporte '+sportId+'): '+String(e.message).replace(KEY,'***').slice(0,200)); }
+}
+const nm=(f,i)=>f['participant'+i+'Name']||(cache.nom&&cache.nom[f['participant'+i+'Id']])||('Equipo '+f['participant'+i+'Id']);
 /* mercado ganador a 2 vias del basquet: se busca en la lista de mercados de OddsPapi */
 async function mercadoNba(){
   if(cache.mk) return cache.mk;
@@ -62,6 +73,7 @@ async function mercadoNba(){
   const ahora=Date.now(); let salio=0;
   try{
     /* ---- futbol ---- */
+    await nombres(10);
     const fx=await pinnacle(Object.keys(LIGAS));
     P('Futbol: OddsPapi devolvio '+fx.length+' partidos');
     const fut=[]; const razon={lejos:0,empezado:0,sinPin:0,sinPrecio:0};
@@ -72,7 +84,7 @@ async function mercadoNba(){
       if(!a||!x||!b){razon.sinPrecio++;return;}
       const fair=noVig([a,x,b]);
       const o=precio(pin,'1010','1010'), u=precio(pin,'1010','1011');
-      const fila={t:new Date(t).toISOString(),liga:LIGAS[f.tournamentId]||String(f.tournamentId||''),n:[f.participant1Name||('Equipo '+f.participant1Id),f.participant2Name||('Equipo '+f.participant2Id)],
+      const fila={t:new Date(t).toISOString(),liga:LIGAS[f.tournamentId]||String(f.tournamentId||''),n:[nm(f,1),nm(f,2)],
         r:fair.map(v=>+v.toFixed(4))};
       if(o&&u){ const nv=noVig([o,u]); fila.ou25=[+nv[0].toFixed(4),+nv[1].toFixed(4)]; }
       fut.push(fila);
@@ -84,6 +96,7 @@ async function mercadoNba(){
     fs.writeFileSync('pinnacle-futbol.json',JSON.stringify({generado:new Date().toISOString(),ventanaH:HORAS_F,juegos:fut})); salio++;
     /* ---- NBA ---- */
     try{
+      await nombres(11);
       const mk=await mercadoNba(); P('Mercado NBA: '+JSON.stringify(mk));
       const nx=await pinnacle([NBA_ID]);
       P('NBA: OddsPapi devolvio '+nx.length+' partidos');
@@ -93,7 +106,7 @@ async function mercadoNba(){
         const pin=f.bookmakerOdds&&f.bookmakerOdds.pinnacle; if(!pin){rz.sinPin++;return;}
         const a=precio(pin,mk.id,mk.a), b=precio(pin,mk.id,mk.b); if(!a||!b){rz.sinPrecio++;return;}
         const fair=noVig([a,b]);
-        nba.push({t:new Date(t).toISOString(),n:[f.participant1Name||('Equipo '+f.participant1Id),f.participant2Name||('Equipo '+f.participant2Id)],ml:fair.map(v=>+v.toFixed(4))});
+        nba.push({t:new Date(t).toISOString(),n:[nm(f,1),nm(f,2)],ml:fair.map(v=>+v.toFixed(4))});
       });
       P('NBA usable: '+nba.length+' · descartados '+JSON.stringify(rz));
       P('Muestra NBA: '+nba.slice(0,8).map(x=>x.n.join(' vs ')+' '+x.ml.join('/')).join(' | '));
