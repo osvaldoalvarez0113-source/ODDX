@@ -680,7 +680,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 
 
 <script>
-var VERSION = 'v15';
+var VERSION = 'v16';
 var EQUIPOS = null;
 var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
@@ -1823,6 +1823,8 @@ function pintarFilasValor(filas, out, p){
   var claveM = {'1X2':'x12','OU2.5':'ou','BTTS':'bt'}[filas[0].mercado];
   var confiable = (vered && vered[claveM]!==undefined) ? veredictoDe(vered[claveM]).t==='✓ le gana' : null;
   var html = '';
+  var panelR = out.closest ? out.closest('.pane') : null;
+  if(panelR){ panelR._rank = panelR._rank || {}; panelR._rank[filas[0].mercado] = []; }
   filas.forEach(function(f){
     if(f.odd===null) return;
     var imp = impProb(f.odd);
@@ -1830,6 +1832,7 @@ function pintarFilasValor(filas, out, p){
     // con TODAS las cuotas del mercado se le quita el margen de la casa antes de comparar
     var ref = completo ? imp/sumaImp : imp;
     var diff = (f.modelo - ref)*100;
+    if(panelR) panelR._rank[f.mercado].push({mercado:f.mercado, sel:f.sel, odd:f.odd, modelo:f.modelo, imp:imp, ref:ref, diff:diff, ev:f.modelo/imp-1, conf:confiable});
     var hayValor = diff >= 3;
     // medido en 5,256 partidos contra Pinnacle: apostar donde el modelo difiere del mercado perdio (ROI -14% con 2+ pts), asi que ya no se pinta como "valor"
     var etiquetaValor = hayValor ? '<span class="no">el modelo ve +'+diff.toFixed(1)+' (no es valor: apostar así perdió en la medición)</span>' :
@@ -1868,8 +1871,44 @@ function pintarFilasValor(filas, out, p){
       btnC.textContent = '✓';
     });
   });
+  if(panelR) pintarRankingFutbol(panelR, p);
 }
 
+/* Ranking del juego: junta lo que calculaste en 1X2, Más/Menos y Ambos anotan y lo ordena por puntos
+   de diferencia contra el mercado (sin margen de la casa si metiste todas las cuotas). A diferencia
+   de MLB aqui NADIE lleva medalla ni se llama «valor»: medido en 5,256 partidos contra Pinnacle,
+   apostar donde el modelo difiere del mercado perdio. Es un orden de lectura, no una senal. */
+function pintarRankingFutbol(panel, p){
+  var box = panel.querySelector('.rankbox'); if(!box) return;
+  var lista = []; Object.keys(panel._rank||{}).forEach(function(k){ lista = lista.concat(panel._rank[k]); });
+  if(!lista.length){ box.innerHTML = ''; return; }
+  lista.sort(function(a,b){ return b.diff-a.diff; });
+  var fa = function(a){ a=Math.round(+a); return (a>0?'+':'')+a; };
+  var tag = function(c){ return c===true ? 'el backtest dice que el modelo le gana a la liga en este mercado' : (c===false ? 'el backtest no le ve ventaja al modelo en este mercado' : 'este mercado no está medido'); };
+  var h = '<h3>Ranking del juego</h3>' +
+    '<div class="pick no"><b>Ninguna es valor comprobado</b>Está ordenado por cuánto se separa el modelo del mercado, de mayor a menor. En 5,256 partidos medidos contra Pinnacle, apostar donde el modelo difería del mercado perdió, así que aquí no hay medallas.</div>';
+  lista.forEach(function(f,i){
+    h += '<div class="pick no"><div class="filaCuota"><div class="txt"><b>'+(i+1)+'. '+f.sel+' '+fa(f.odd)+'</b>' +
+      'modelo '+(f.modelo*100).toFixed(1)+'% contra '+(f.ref*100).toFixed(1)+'% del mercado · '+(f.diff>=0?'+':'')+f.diff.toFixed(1)+' puntos · EV '+(f.ev>=0?'+':'')+(f.ev*100).toFixed(1)+'% por dólar<br><span style="color:var(--mut2);font-size:11.5px">'+tag(f.conf)+'</span></div>' +
+      '<button class="btnChico" data-rg="'+i+'">💾</button><button class="btnChico" data-rc="'+i+'">🔗</button></div></div>';
+  });
+  h += '<div class="nota">El EV por dólar crece con las cuotas largas aunque la diferencia sea la misma; por eso el orden va por puntos y no por EV. Una diferencia grande suele ser error del modelo (lesiones, rotaciones), no una oportunidad.</div>';
+  box.innerHTML = h;
+  box.querySelectorAll('[data-rg]').forEach(function(b){
+    b.addEventListener('click', function(e){
+      e.stopPropagation(); var f = lista[+b.dataset.rg];
+      guardarPick({ liga: LIGA_ACTUAL, local:p.local, visita:p.visita, fecha:p.fecha||'', mercado:f.mercado, seleccion:f.sel, probModelo:f.modelo, cuota:f.odd });
+      b.textContent = '✓'; b.disabled = true;
+    });
+  });
+  box.querySelectorAll('[data-rc]').forEach(function(b){
+    b.addEventListener('click', function(e){
+      e.stopPropagation(); var f = lista[+b.dataset.rc];
+      agregarACombinada({ local:p.local, visita:p.visita, seleccion:f.sel, prob:f.modelo });
+      b.textContent = '✓';
+    });
+  });
+}
 function pintarGameBody(bodyEl, p, eL, eV){
   var base = bloqueBase(eL, eV, p.local, p.visita);
   var id = 'g'+Math.random().toString(36).slice(2);
@@ -1887,6 +1926,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
       (base.r.dc ? '' : '<div class="nota">Modelo Poisson con encogimiento (K='+PARAMS.K+'), localía (h='+PARAMS.h+') y corrección de marcadores bajos (ρ='+PARAMS.rho+')'+(PARAMS.w<1?', confianza reducida (w='+PARAMS.w+')':'')+(PARAMS.S&&Object.keys(SEMILLA).length?', con historial de la temporada pasada (S='+PARAMS.S+')':'')+'. Más/Menos y Ambos anotan usan su propio encogimiento fuerte (K='+PARAMS.Kt+', w='+PARAMS.wt+'). Parámetros: '+estadoParams+'. Sin lesiones ni alineaciones. Datos en vivo de worldfootball.net.</div>') +
     '</div>' +
     '<div class="pane" id="'+id+'cuo">' +
+      '<div class="rankbox"></div>' +
       '<h3>Ganador (1X2)</h3>' + badgeMercado('x12') +
       '<div class="cuotasbox">' +
         '<button id="'+id+'btnKalshi" class="btnAncho sec" style="margin:0 0 10px">🦈 Traer cuota de Kalshi</button>' +
@@ -3010,7 +3050,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
 /* OVA Fútbol · v10: anillo de probabilidad, doble oportunidad, selector de tema, pulido (atenuar
    porcentajes de goles no medidos, apagar Kalshi tras un 429, verificar picks al abrir Registro). */
 (function(){
- var VER='v15';
+ var VER='v16';
  function $q(s,r){ return (r||document).querySelector(s); }
  function pct(x){ return (x*100).toFixed(1)+'%'; }
  function am(p){

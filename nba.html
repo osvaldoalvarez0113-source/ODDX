@@ -165,7 +165,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 <header>
  <div class="top">
   <a class="ovaHome" href="hub.html" aria-label="Volver al inicio">‹</a>
-  <h1>🏀 NBA <span class="ver">v3.6</span></h1>
+  <h1>🏀 NBA <span class="ver">v3.7</span></h1>
   <button class="btnChico" id="btnTema" aria-label="Cambiar tema">🎨</button>
  </div>
 </header>
@@ -347,7 +347,7 @@ if(typeof module!=='undefined') module.exports={PDEF,seasonOf,dayKey,Phi,correr,
 
 <!-- ===================== APP ===================== -->
 <script>
-const VERSION='v3.6';
+const VERSION='v3.7';
 const ESPN='https://site.api.espn.com/apis/site/v2/sports/basketball/nba/';
 const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
@@ -618,7 +618,9 @@ function pintarCuerpo(body,g){
    <div class="nota">Si falta una estrella, resta puntos a su equipo (ejemplo: −4 si es titular clave). El modelo NO sabe de lesiones por sí solo: mira la pestaña Forma.</div>
    <div class="nota">Ratings en puntos con arrastre entre temporadas (parámetros ${PARAMS.calibrado?'calibrados con datos reales':'de arranque, sin calibrar: ve a Ajustes → Avanzado → Backtest'}). Ventaja de local ${PARAMS.H} pts; back-to-back ${PARAMS.R} pts.${(PARAMS.Z!==undefined&&PARAMS.Z<1)?' Confianza en la diferencia de ratings ×'+PARAMS.Z.toFixed(2)+' (medida en el backtest).':''} Desviación típica del margen ${pr.sM.toFixed(1)} pts, del total ${pr.sT.toFixed(1)}. ${pr.conLinea?'Base: línea de ESPN (el modelo pesa '+Math.round(LAM_M*100)+'%'+(pr.conML?', ganador desde el moneyline':'')+'); tus ajustes de lesiones se suman encima.':'Sin línea de ESPN todavía: aquí es el modelo solo (referencia; cuando salga la línea, ella manda).'}</div>`;
 
+  g._rank={};
   const cuo=`
+   <div class="rankbox" data-k="rank"></div>
    <h3>Moneyline</h3>${confTxt('win')}
    <div class="cuotasbox"><div class="fila">
      <div><label>Cuota ${esc(A.ab)}</label><input type="number" data-k="mlA" value="${g.odds&&g.odds.mlA||''}" placeholder="+150"></div>
@@ -710,8 +712,10 @@ function valorHtml(g,mercado,clave,filas,out){
   const completo=con.length===filas.length;
   const suma=con.reduce((a,f)=>a+impProb(f.odd),0), conf=confiable(clave);
   let html='';
+  g._rank=g._rank||{}; g._rank[mercado]=[];
   con.forEach((f,i)=>{
     const imp=impProb(f.odd), ref=completo?imp/suma:imp, diff=(f.prob-ref)*100, val=diff>=3;
+    g._rank[mercado].push({mercado:mercado,sel:f.sel,side:f.side,linea:f.linea,odd:f.odd,prob:f.prob,imp:imp,ref:ref,diff:diff,ev:f.prob/imp-1,conf:conf});
     const etq=val?`<span class="${conf===false?'no':'si'}">valor +${diff.toFixed(1)}${conf===false?' (no confiable)':''}</span>`:`<span class="no">sin valor ${diff.toFixed(1)}</span>`;
     html+=`<div class="filaCuota"><span class="txt">${esc(f.sel)}: modelo ${pct1(f.prob)} vs ${completo?'mercado sin margen ':'cuota '}${pct1(ref)} — ${etq}</span><button class="btnChico" data-g="${i}">💾</button><button class="btnChico" data-c="${i}">🔗</button></div>`;
   });
@@ -719,6 +723,31 @@ function valorHtml(g,mercado,clave,filas,out){
   out.innerHTML=html;
   out.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ const f=con[+b.dataset.g]; guardarPick({hId:g.h,aId:g.a,hN:T(g.h).n,aN:T(g.a).n,ts:g.ts,mercado:mercado,side:f.side,linea:f.linea,seleccion:f.sel,cuota:f.odd,prob:f.prob}); b.textContent='✓'; b.disabled=true; });
   out.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ const f=con[+b.dataset.c]; agregarComb({txt:T(g.a).ab+' @ '+T(g.h).ab+': '+f.sel,prob:f.prob}); b.textContent='✓'; });
+  const cuerpo=out.closest('.body'); if(cuerpo) pintarRankNba(cuerpo,g);
+}
+/* Ranking del juego: junta lo que ya calculaste en Moneyline, Hándicap y Total y lo ordena por
+   puntos de ventaja contra el mercado (ya sin el margen de la casa cuando metiste las dos cuotas).
+   Mismo criterio que la fila suelta: 3 puntos para llamarlo valor, y un mercado que el backtest
+   marcó como no confiable no lleva medalla — cae al final, no se esconde. */
+function pintarRankNba(body,g){
+  const box=body.querySelector('[data-k="rank"]'); if(!box) return;
+  const lista=[].concat(...Object.values(g._rank||{}));
+  if(!lista.length){ box.innerHTML=''; return; }
+  const pasa=f=>f.diff>=3&&f.conf!==false;
+  lista.sort((a,b)=>(pasa(b)-pasa(a))||(b.diff-a.diff));
+  const buenos=lista.filter(pasa), medal=['🥇','🥈','🥉'];
+  const fa=a=>(a>0?'+':'')+a;
+  let h='<h3>Ranking del juego</h3>';
+  if(!buenos.length) h+=`<div class="pick no"><b>Nada que jugar aquí</b>De ${lista.length} proposiciones con cuota, ninguna llega a 3 puntos de ventaja con un mercado confiable. La más cercana es ${esc(lista[0].sel)} con ${(lista[0].diff>=0?'+':'')+lista[0].diff.toFixed(1)} puntos.</div>`;
+  lista.forEach((f,i)=>{
+    const ok=pasa(f), n=ok?buenos.indexOf(f):-1;
+    const etq=ok?'valor':(f.conf===false&&f.diff>=3?'no confiable':'sin valor');
+    h+=`<div class="pick${ok?'':' no'}"><div class="filaCuota"><div class="txt"><b>${ok?(medal[n]||(n+1)+'.'):'·'} ${esc(f.sel)} ${fa(Math.round(+f.odd))}</b>${etq} · modelo ${pct1(f.prob)} contra ${pct1(f.ref)} del mercado · ${(f.diff>=0?'+':'')+f.diff.toFixed(1)} puntos · EV ${(f.ev>=0?'+':'')+(f.ev*100).toFixed(1)}% por dólar</div><button class="btnChico" data-rg="${i}">💾</button><button class="btnChico" data-rc="${i}">🔗</button></div></div>`;
+  });
+  h+='<div class="nota">Ordenado por puntos de ventaja, no por EV: el EV por dólar sale más grande con cuotas largas aunque la ventaja sea la misma. En 2,486 juegos medidos la línea del mercado acertó más que el modelo, así que toma estos puntos como pista y no como garantía.</div>';
+  box.innerHTML=h;
+  box.querySelectorAll('[data-rg]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const f=lista[+b.dataset.rg]; guardarPick({hId:g.h,aId:g.a,hN:T(g.h).n,aN:T(g.a).n,ts:g.ts,mercado:f.mercado,side:f.side,linea:f.linea,seleccion:f.sel,cuota:f.odd,prob:f.prob}); b.textContent='✓'; b.disabled=true; });
+  box.querySelectorAll('[data-rc]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const f=lista[+b.dataset.rc]; agregarComb({txt:T(g.a).ab+' @ '+T(g.h).ab+': '+f.sel,prob:f.prob}); b.textContent='✓'; });
 }
 
 // ---------- ranking ----------
