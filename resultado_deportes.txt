@@ -1,0 +1,241 @@
+Bajando resultados...
+  temporada 2021: 1401 eventos
+  temporada 2022: 1390 eventos
+  temporada 2023: 1395 eventos
+  temporada 2024: 1403 eventos
+  temporada 2025: 1401 eventos
+### Datos
+```
+juegos finales por temporada: {"2021":1324,"2022":1321,"2023":1319,"2024":1324,"2025":1326}
+errores de descarga: 45 (primeros: rango 20211001: HTTP 400 https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20211001-20211031&limit=1000 | rango 20211101: HTTP 400 https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20211101-20211130&limit=1000 | rango 20211201: HTTP 400 https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20211201-20211231&limit=1000)
+```
+Bajando lineas de cierre de 2650 juegos...
+  lineas 400/2650
+  lineas 800/2650
+  lineas 1200/2650
+  lineas 1600/2650
+  lineas 2000/2650
+  lineas 2400/2650
+### Conexion con las lineas
+```
+juegos a medir: 2650 | con spread 2645 | con total 2643 | con moneyline 2645 | pedidos fallidos 0
+proveedores: {"ESPN BET":1576,"ESPN Bet - Live Odds":1,"sin linea":5,"DraftKings - Live Odds":4,"DraftKings":1064}
+ejemplo crudo del primer proveedor (para depurar si algo sale raro):
+{"$ref":"http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events/401704627/competitions/401704627/odds/58?lang=en&region=us","provider":{"$ref":"http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/providers/58?lang=en&region=us","id":"58","name":"ESPN BET","priority":0},"details":"BOS -5.5","overUnder":221.5,"spread":-5.5,"overOdds":-105,"underOdds":-115,"awayTeamOdds":{"favorite":false,"underdog":true,"moneyLine":160,"spreadOdds":100,"open":{"favorite":false,"pointSpread":{"alternateDisplayValue":"+5.5","american":"+5.5"},"spread":{"value":1.87,"displayValue":"20/23","alternateDisplayValue":"-115","decimal":1.87,"fraction":"20/23","american":"-115"},"moneyLine":{"value":2.6,"displayValue":"8/5","alternateDisplayValue":"+160","decimal":2.6,"fraction":"8/5","american":"+160"}},"close":{"pointSpread":{"alternateDisplayValue":"+5.5","american":"+5.5"},"spread":{"value":2,"displayValue":"1/1","alternateDisplayValue":"+100","decimal":2,"fraction":"1/1","american":"+100"},"moneyLine":{"value":2.6,"displayValue":"8/5","alternateDisplayValue":"+160","decimal":2.6,"fraction":"8/5","american":"+160"}},"current":{"pointSpread":{"alternateDisplayValue":"+5.5","american":"+5.5"},"spread":{"value":2,"displayValue":"1/1","alternateDisplayValue":"+100","decimal":2,"fraction":"1/1","american":"+100"},"moneyLine":{"value":2.6,"displayValue":"8/5","alternateDisplayValue":"+160","decimal":2.6,"fraction":"8/5","american":"+160"}},"team":{"$ref":"http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2025/teams/18?lang=en&region=us"}},"homeTeamOdds":{"favorite":true,"underdog":false,"moneyLine":-190,"spreadOdds":-120,"open":{"favorite":true,"pointSpread":{"value":1.952,"displayValue":"20/21","alternateDisplayValue":"-5.5","decimal":1.952,"fracti
+```
+Ajuste (solo con la temporada 2023-24, sin mirar el mercado): error cuadr. de margen app 203.2 -> tuneado 202.1 -> +descanso 202.1 -> +forma 202.1 | totales kT 0.05
+Juegos con linea y con modelo listo (>=5 juegos previos de cada equipo): 2486 (2024: 1243, 2025: 1243)
+### 1) Margen (spread): modelo contra la linea de cierre
+Error medio de cuadrados: "dif" = (error del modelo)² − (error del mercado)². Positivo = el mercado acierta mas.
+
+| Modelo | Juegos | RMSE modelo | RMSE mercado | dif ± 2·se | z | Veredicto |
+|---|---|---|---|---|---|---|
+| V0 app actual (v3.2) | 2486 | 14.44 | 13.90 | 15.2 ± 4.2 | 7.3 | MERCADO MEJOR (z=7.3) |
+| V1 reajustada | 2486 | 14.42 | 13.90 | 14.6 ± 4.1 | 7.2 | MERCADO MEJOR (z=7.2) |
+| V2 + descanso (3 en 4, dias) | 2486 | 14.43 | 13.90 | 14.8 ± 4.1 | 7.2 | MERCADO MEJOR (z=7.2) |
+| V3 + forma reciente | 2486 | 14.43 | 13.90 | 14.8 ± 4.1 | 7.2 | MERCADO MEJOR (z=7.2) |
+
+| Temporada | Juegos | RMSE modelo | RMSE mercado | dif ± 2·se | z | Veredicto |
+|---|---|---|---|---|---|---|
+| 2024-25 (V3) | 1243 | 14.22 | 13.76 | 12.7 ± 5.8 | 4.4 | MERCADO MEJOR (z=4.4) |
+| 2025-26 (V3) | 1243 | 14.63 | 14.04 | 17.0 ± 5.9 | 5.8 | MERCADO MEJOR (z=5.8) |
+
+### 2) ¿Agrega algo el modelo que el mercado no sepa?
+margen real = a + b·(margen del mercado) + c·(modelo − mercado). **c** es cuanto vale la opinion del modelo encima de la linea (0 = nada, 1 = todo, 0.2 = un poco).
+
+| Modelo | b (mercado) | c (modelo extra) | z de c |
+|---|---|---|---|
+| V0 app actual (v3.2) | 1.064 ± 0.073 | 0.031 ± 0.156 | 0.4 |
+| V1 reajustada | 1.066 ± 0.075 | 0.042 ± 0.162 | 0.5 |
+| V2 + descanso (3 en 4, dias) | 1.067 ± 0.074 | 0.050 ± 0.158 | 0.6 |
+| V3 + forma reciente | 1.067 ± 0.074 | 0.050 ± 0.158 | 0.6 |
+
+### 3) Mezcla mercado + modelo (se ajusta en una temporada y se prueba en la otra)
+Predictor = mercado + λ·(modelo − mercado). Cuadrados: negativo = la mezcla le gana a la linea sola.
+
+| Modelo | λ ajustado por temporada | dif vs mercado ± 2·se | z |
+|---|---|---|---|
+| V0 app actual (v3.2) | 2024:0.00 2025:0.03 | 0.045 ± 0.098 | 0.9 |
+| V1 reajustada | 2024:0.00 2025:0.05 | 0.091 ± 0.156 | 1.2 |
+| V2 + descanso (3 en 4, dias) | 2024:0.00 2025:0.06 | 0.096 ± 0.176 | 1.1 |
+| V3 + forma reciente | 2024:0.00 2025:0.06 | 0.096 ± 0.176 | 1.1 |
+
+### 4) Apostar contra el spread cuando el modelo difiere de la linea (a -110; hay que ganar 52.4% para empatar)
+
+| Diferencia | V3 apuestas | G-P-Push | % ganadas | ROI ± 2·se | V0 apuestas | V0 % gan. | V0 ROI |
+|---|---|---|---|---|---|---|---|
+| 1+ pts | 1915 | 952-963-0 | 49.7% | -5.1% ± 4.4% | 1930 | 49.6% | -5.2% ± 4.3% |
+| 2+ pts | 1387 | 701-686-0 | 50.5% | -3.5% ± 5.1% | 1397 | 50.0% | -4.5% ± 5.1% |
+| 3+ pts | 985 | 498-487-0 | 50.6% | -3.5% ± 6.1% | 976 | 49.9% | -4.7% ± 6.1% |
+| 4+ pts | 654 | 321-333-0 | 49.1% | -6.3% ± 7.5% | 650 | 48.9% | -6.6% ± 7.5% |
+| 5+ pts | 417 | 198-219-0 | 47.5% | -9.4% ± 9.3% | 414 | 47.8% | -8.7% ± 9.4% |
+
+### 5) Totales (Más/Menos) contra la linea de cierre
+
+| Modelo | Juegos | RMSE modelo | RMSE mercado | z (positivo = mercado mejor) | Mezcla fuera de muestra |
+|---|---|---|---|---|---|
+| V0 app actual (v3.2) | 2486 | 18.57 | 17.85 | 7.2 | λ 0.08/0.00 → z 1.3 |
+| V1 reajustada | 2486 | 18.57 | 17.85 | 7.2 | λ 0.08/0.00 → z 1.3 |
+| V2 + descanso (3 en 4, dias) | 2486 | 18.57 | 17.85 | 7.2 | λ 0.08/0.00 → z 1.3 |
+| V3 + forma reciente | 2486 | 18.57 | 17.85 | 7.2 | λ 0.08/0.00 → z 1.3 |
+
+| Total: dif. modelo vs linea | Apuestas | G-P-Push | % ganadas | ROI ± 2·se |
+|---|---|---|---|---|
+| 2+ pts | 1714 | 862-852-0 | 50.3% | -4.0% ± 4.6% |
+| 3+ pts | 1358 | 677-681-0 | 49.9% | -4.8% ± 5.2% |
+| 4+ pts | 1068 | 530-538-0 | 49.6% | -5.3% ± 5.8% |
+| 6+ pts | 582 | 274-308-0 | 47.1% | -10.1% ± 7.9% |
+
+### 6) Probabilidad de ganar (moneyline sin vig) — pérdida log
+
+| Modelo | Juegos | Pérdida modelo | Pérdida mercado | dif | z | Veredicto |
+|---|---|---|---|---|---|---|
+| V0 app actual (v3.2) | 2486 | 0.6020 | 0.5766 | 0.0254 | 5.9 | MERCADO MEJOR (z=5.9) |
+| V1 reajustada | 2486 | 0.6019 | 0.5766 | 0.0253 | 6.0 | MERCADO MEJOR (z=6.0) |
+| V2 + descanso (3 en 4, dias) | 2486 | 0.6028 | 0.5766 | 0.0262 | 6.1 | MERCADO MEJOR (z=6.1) |
+| V3 + forma reciente | 2486 | 0.6028 | 0.5766 | 0.0262 | 6.1 | MERCADO MEJOR (z=6.1) |
+
+### Resumen para decidir
+```
+Parametros V1 (reajustados): {"kM":0.05,"kT":0.05,"carry":0.65,"H":2.4,"R":3,"R3":0,"Rd":0,"wF":0,"aF":0.1,"Z":1}
+Parametros V3 (con descanso y forma): {"kM":0.05,"kT":0.05,"carry":0.65,"H":2.4,"R":3,"R3":1,"Rd":0,"wF":0,"aF":0.1,"Z":1}
+kT totales recomendado: 0.05
+λ del margen (peso del modelo sobre la linea) en toda la muestra: V0=-0.02  V1=-0.02  V2=-0.01  V3=-0.01
+Mezcla fuera de muestra, mejor modelo: V0 (z 0.9)
+```
+### Datos
+```
+Premier League 2122: 380 partidos, con cuotas 380, con Más/Menos 380
+Premier League 2223: 380 partidos, con cuotas 380, con Más/Menos 380
+Premier League 2324: 380 partidos, con cuotas 380, con Más/Menos 380
+Premier League 2425: 380 partidos, con cuotas 380, con Más/Menos 380
+Premier League 2526: 380 partidos, con cuotas 380, con Más/Menos 380
+La Liga 2122: 380 partidos, con cuotas 380, con Más/Menos 380
+La Liga 2223: 380 partidos, con cuotas 380, con Más/Menos 380
+La Liga 2324: 380 partidos, con cuotas 380, con Más/Menos 380
+La Liga 2425: 380 partidos, con cuotas 380, con Más/Menos 380
+La Liga 2526: 380 partidos, con cuotas 380, con Más/Menos 380
+Serie A 2122: 380 partidos, con cuotas 380, con Más/Menos 380
+Serie A 2223: 380 partidos, con cuotas 380, con Más/Menos 380
+Serie A 2324: 380 partidos, con cuotas 380, con Más/Menos 380
+Serie A 2425: 380 partidos, con cuotas 380, con Más/Menos 380
+Serie A 2526: 380 partidos, con cuotas 380, con Más/Menos 380
+Bundesliga 2122: 306 partidos, con cuotas 306, con Más/Menos 306
+Bundesliga 2223: 306 partidos, con cuotas 306, con Más/Menos 306
+Bundesliga 2324: 306 partidos, con cuotas 306, con Más/Menos 306
+Bundesliga 2425: 306 partidos, con cuotas 306, con Más/Menos 306
+Bundesliga 2526: 306 partidos, con cuotas 306, con Más/Menos 306
+Ligue 1 2122: 380 partidos, con cuotas 380, con Más/Menos 380
+Ligue 1 2223: 380 partidos, con cuotas 380, con Más/Menos 380
+Ligue 1 2324: 306 partidos, con cuotas 306, con Más/Menos 306
+Ligue 1 2425: 306 partidos, con cuotas 306, con Más/Menos 306
+Ligue 1 2526: 306 partidos, con cuotas 306, con Más/Menos 306
+
+Fuente de la cuota usada como "mercado" (partidos):
+  2122 Pinnacle cierre: 1826
+  2223 Pinnacle cierre: 1826
+  2324 Pinnacle cierre: 1752
+  2425 Pinnacle cierre: 1752
+  2526 Pinnacle cierre: 898
+  2526 Promedio cierre: 854
+```
+Modelo del app, ajustado solo con 2022-23 (sin mirar el mercado): 1X2 1.0111 -> 0.9976 | Más/Menos 2.5 0.6849 -> 0.6838
+Dixon-Coles con peso por antigüedad, ajustado solo con 2022-23: 1X2 0.9964 -> 0.9939 | Más/Menos 2.5 0.6830
+```
+Parametros app reajustados: {"K":10,"h":1.13,"rho":0,"S":20,"Kt":16,"wt":0.8,"ct":1}
+Parametros Dixon-Coles: {"xi":1.6,"Kp":5,"rho":-0.06,"promo":1,"win":1100,"wt":0.5}
+```
+Calibración del Dixon-Coles (solo 2022-23): potencia 1, empates -0.05
+Partidos medidos (con cuota de mercado y modelo listo): 5256 (2324: 1752, 2425: 1752, 2526: 1752)
+### 1) Resultado 1X2 (local/empate/visita): modelo contra la cuota de cierre
+Pérdida log y RPS: menor = mejor. "dif" = modelo − mercado (positivo = el mercado acierta más).
+
+| Modelo | Pérdida log | RPS | dif ± 2·se | z | Veredicto |
+|---|---|---|---|---|---|
+| F0 app actual | 1.0059 | 0.2058 | 0.0422 ± 0.0063 | 13.3 | MERCADO MEJOR (z=13.3) |
+| F1 app reajustado | 0.9957 | 0.2022 | 0.0320 ± 0.0051 | 12.6 | MERCADO MEJOR (z=12.6) |
+| F2 Dixon-Coles (antigüedad) | 0.9888 | 0.2004 | 0.0251 ± 0.0047 | 10.8 | MERCADO MEJOR (z=10.8) |
+| F3 Dixon-Coles calibrado | 0.9893 | 0.2004 | 0.0256 ± 0.0047 | 11.0 | MERCADO MEJOR (z=11.0) |
+| MERCADO (sin vig) | 0.9637 | 0.1928 | — | — | — |
+| Solo frecuencias de la liga | 1.0768 | 0.2306 | — | — | — |
+
+F3 (Dixon-Coles calibrado) contra el mercado, por partes
+
+| Grupo | Partidos | dif pérdida | z | Veredicto |
+|---|---|---|---|---|
+| Temporada 2324 | 1752 | 0.0282 | 7.2 | MERCADO MEJOR (z=7.2) |
+| Temporada 2425 | 1752 | 0.0263 | 6.4 | MERCADO MEJOR (z=6.4) |
+| Temporada 2526 | 1752 | 0.0222 | 5.5 | MERCADO MEJOR (z=5.5) |
+| Premier League | 1140 | 0.0238 | 4.5 | MERCADO MEJOR (z=4.5) |
+| La Liga | 1140 | 0.0228 | 4.8 | MERCADO MEJOR (z=4.8) |
+| Serie A | 1140 | 0.0256 | 5.2 | MERCADO MEJOR (z=5.2) |
+| Bundesliga | 918 | 0.0329 | 5.9 | MERCADO MEJOR (z=5.9) |
+| Ligue 1 | 918 | 0.0239 | 4.3 | MERCADO MEJOR (z=4.3) |
+| Solo donde el mercado es Pinnacle cierre | 4402 | 0.0272 | 10.6 | MERCADO MEJOR (z=10.6) |
+
+### 2) Promedio de lo que dice cada uno vs lo que pasó (sesgo)
+
+|  | Local | Empate | Visita |
+|---|---|---|---|
+| F0 app actual | 44.1% | 25.3% | 30.6% |
+| F1 app reajustado | 45.1% | 23.8% | 31.2% |
+| F2 Dixon-Coles (antigüedad) | 43.2% | 25.1% | 31.7% |
+| F3 Dixon-Coles calibrado | 43.7% | 24.2% | 32.1% |
+| Mercado | 44.0% | 25.0% | 31.0% |
+| REAL | 43.0% | 25.6% | 31.4% |
+
+### 3) Mezcla mercado + modelo (se ajusta en las otras temporadas, se prueba en una)
+Probabilidad = mercado^(1−w) · modelo^w, normalizada. w=0 es el mercado solo. Dif negativa = la mezcla le gana al mercado.
+
+| Modelo | peso w por temporada | dif vs mercado ± 2·se | z |
+|---|---|---|---|
+| F0 app actual | 2324:0.00 2425:0.00 2526:0.00 | -0.00000 ± 0.00000 | -14.2 |
+| F3 Dixon-Coles calibrado | 2324:0.00 2425:0.00 2526:0.00 | -0.00000 ± 0.00000 | -14.2 |
+
+### 4) Dinero: apostar 1 unidad al resultado donde el modelo ve más ventaja (con el vig real incluido)
+
+**F3 Dixon-Coles calibrado**
+
+| Ventaja del modelo vs mercado | a cuota Pinnacle | a cuota promedio | a la mejor cuota (techo optimista) |
+|---|---|---|---|
+| ≥ 2 pts de ventaja | 3819 ap. · -14.3% ± 5.4% | 4520 ap. · -16.3% ± 4.7% | 4520 ap. · -11.4% ± 5.1% |
+| ≥ 4 pts de ventaja | 2748 ap. · -16.4% ± 6.2% | 3234 ap. · -17.3% ± 5.5% | 3234 ap. · -12.4% ± 6.0% |
+| ≥ 6 pts de ventaja | 1818 ap. · -18.2% ± 7.4% | 2114 ap. · -19.5% ± 6.6% | 2114 ap. · -14.8% ± 7.1% |
+| ≥ 8 pts de ventaja | 1089 ap. · -17.3% ± 9.7% | 1266 ap. · -17.8% ± 8.8% | 1266 ap. · -12.9% ± 9.4% |
+| ≥ 10 pts de ventaja | 633 ap. · -9.1% ± 13.2% | 727 ap. · -11.7% ± 11.9% | 727 ap. · -6.5% ± 12.7% |
+
+**F0 app actual**
+
+| Ventaja del modelo vs mercado | a cuota Pinnacle | a cuota promedio | a la mejor cuota (techo optimista) |
+|---|---|---|---|
+| ≥ 2 pts de ventaja | 3904 ap. · -11.7% ± 5.1% | 4617 ap. · -13.7% ± 4.5% | 4617 ap. · -9.0% ± 4.8% |
+| ≥ 4 pts de ventaja | 3053 ap. · -14.1% ± 5.8% | 3566 ap. · -16.2% ± 5.1% | 3566 ap. · -11.5% ± 5.5% |
+| ≥ 6 pts de ventaja | 2275 ap. · -17.4% ± 6.5% | 2611 ap. · -19.1% ± 5.8% | 2611 ap. · -14.6% ± 6.2% |
+| ≥ 8 pts de ventaja | 1639 ap. · -18.9% ± 7.7% | 1864 ap. · -20.5% ± 6.9% | 1864 ap. · -15.9% ± 7.4% |
+| ≥ 10 pts de ventaja | 1148 ap. · -20.5% ± 9.2% | 1274 ap. · -22.1% ± 8.3% | 1274 ap. · -17.6% ± 8.8% |
+
+### 5) Más/Menos 2.5 goles: modelo contra la cuota de cierre (5256 partidos)
+
+| Modelo | Pérdida | dif vs mercado ± 2·se | z | Veredicto |
+|---|---|---|---|---|
+| F0 app actual | 0.6855 | 0.0199 ± 0.0051 | 7.7 | MERCADO MEJOR (z=7.7) |
+| F1 app reajustado | 0.6809 | 0.0153 ± 0.0047 | 6.6 | MERCADO MEJOR (z=6.6) |
+| F2 Dixon-Coles (antigüedad) | 0.6774 | 0.0118 ± 0.0035 | 6.8 | MERCADO MEJOR (z=6.8) |
+| F3 Dixon-Coles calibrado | 0.6774 | 0.0118 ± 0.0035 | 6.8 | MERCADO MEJOR (z=6.8) |
+| MERCADO (sin vig) | 0.6656 | — | — | — |
+| Siempre la frecuencia (53.8% over) | 0.6903 | — | — | — |
+
+Mezcla Más/Menos (F3 + mercado) fuera de muestra: w 2324:0.00 2425:0.00 2526:0.00 | dif -0.00000 ± 0.00000 (z -0.4)
+| Ventaja del modelo (Más/Menos 2.5) | a cuota Pinnacle | a cuota promedio |
+|---|---|---|
+| ≥ 3 pts | 2708 ap. · -7.1% ± 4.4% | 3309 ap. · -10.0% ± 3.9% |
+| ≥ 5 pts | 1809 ap. · -8.7% ± 5.5% | 2216 ap. · -10.7% ± 5.0% |
+| ≥ 7 pts | 1133 ap. · -9.2% ± 7.2% | 1378 ap. · -10.9% ± 6.5% |
+
+### Resumen para decidir
+```
+F0 (app actual) vs mercado: z 13.3 | F3 (Dixon-Coles calibrado) vs mercado: z 11.0 (positivo = el mercado gana)
+Mezcla fuera de muestra F3+mercado: dif -0.00000 (z -14.2)
+Parametros recomendados para el app (Dixon-Coles): {"xi":1.6,"Kp":5,"rho":-0.06,"promo":1,"win":1100,"wt":0.5} + calibración {"tau":1,"dD":-0.05}
+Parametros del modelo actual reajustados: {"K":10,"h":1.13,"rho":0,"S":20,"Kt":16,"wt":0.8,"ct":1}
+```
