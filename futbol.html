@@ -608,7 +608,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL <span class="ver">v15</span></h1>
+  <h1>⚽ FÚTBOL <span class="ver">v17</span></h1>
   <select id="ligaSel">
    <optgroup label="Ligas">
     <option value="pl">Premier League</option>
@@ -681,7 +681,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 
 
 <script>
-var VERSION = 'v16';
+var VERSION = 'v17';
 var EQUIPOS = null;
 var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
@@ -1814,6 +1814,44 @@ function badgeMercado(m){
     (t.t==='≈ igual' ? 'no hay evidencia de que el modelo aporte; úsalo solo de referencia y no te fíes del "valor".' : 'el modelo salió claramente PEOR que la frecuencia de la liga; ignora el "valor".');
   return '<div class="nota" style="margin:0 0 8px">Este mercado en el backtest: <b style="color:'+t.c+'">'+t.t+'</b> — '+expl+'</div>';
 }
+/* ---- Pinnacle (mercado sin margen), lo escribe el escaner "Pinnacle futbol y NBA" en pinnacle-futbol.json ----
+   Solo se MUESTRA: no cambia el modelo ni ningun pick. Si el archivo no existe o falla, no pasa nada. */
+var PIN_F = null;
+function cargarPinnacleF(){
+  try{
+    fetch('pinnacle-futbol.json?v='+Date.now()).then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(j){ if(j && j.juegos) PIN_F = j; }).catch(function(){});
+  }catch(e){}
+}
+cargarPinnacleF();
+function buscarPinF(p){
+  if(!PIN_F) return null;
+  var ts = tsPartido(p), res = null;
+  PIN_F.juegos.forEach(function(g){
+    if(res) return;
+    var t = Date.parse(g.t);
+    if(ts && isFinite(t) && Math.abs(t-ts) > 40*3600e3) return;
+    if(mismoEquipo(g.n[0], p.local) && mismoEquipo(g.n[1], p.visita)) res = {g:g, inv:false};
+    else if(mismoEquipo(g.n[0], p.visita) && mismoEquipo(g.n[1], p.local)) res = {g:g, inv:true};
+  });
+  return res;
+}
+function pinBloqueFutbol(p, r){
+  var m = buscarPinF(p); if(!m) return '';
+  var g = m.g, f = m.inv ? [g.r[2], g.r[1], g.r[0]] : g.r.slice();
+  var fa = function(x){ var v = cuotaJustaAmericana(x); return v===null ? '—' : (v>0?'+':'')+v; };
+  var fila = function(txt, pin, mod){
+    var d = (mod-pin)*100;
+    return '<div class="linea"><span>'+txt+'</span><b>'+(pin*100).toFixed(1)+'% · '+fa(pin)+' <span style="color:var(--mut2);font-weight:500;font-size:11.5px">modelo '+(mod*100).toFixed(1)+' ('+(d>=0?'+':'')+d.toFixed(1)+')</span></b></div>';
+  };
+  var h = '<h3>Lo que dice Pinnacle</h3><div class="lineas">' +
+    fila(p.local+' gana', f[0], r.pL) + fila('Empate', f[1], r.pD) + fila(p.visita+' gana', f[2], r.pV);
+  if(g.ou25){ var ov = g.ou25[0]; h += fila('Más de 2.5 goles', ov, r.overLin[2.5]); }
+  h += '</div>';
+  var min = Math.max(0, Math.round((Date.now()-Date.parse(PIN_F.generado))/60000));
+  h += '<div class="nota">Probabilidad de Pinnacle ya sin su margen y la cuota justa que le corresponde (actualizado hace '+(min<90?min+' min':Math.round(min/60)+' h')+'). Una cuota solo tiene valor si paga <b>más</b> que esa cuota justa. Ojo: el mercado acertó más que este modelo en la medición, así que la columna de Pinnacle es la mejor estimación; el modelo queda de referencia.</div>';
+  return h;
+}
 function pintarFilasValor(filas, out, p){
   var conOdd = filas.filter(function(f){ return f.odd!==null && impProb(f.odd)!==null; });
   if(!conOdd.length){ out.textContent = 'Mete al menos una cuota.'; return; }
@@ -1928,6 +1966,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
     '</div>' +
     '<div class="pane" id="'+id+'cuo">' +
       '<div class="rankbox"></div>' +
+      pinBloqueFutbol(p, base.r) +
       '<h3>Ganador (1X2)</h3>' + badgeMercado('x12') +
       '<div class="cuotasbox">' +
         '<button id="'+id+'btnKalshi" class="btnAncho sec" style="margin:0 0 10px">🦈 Traer cuota de Kalshi</button>' +
@@ -3051,7 +3090,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
 /* OVA Fútbol · v10: anillo de probabilidad, doble oportunidad, selector de tema, pulido (atenuar
    porcentajes de goles no medidos, apagar Kalshi tras un 429, verificar picks al abrir Registro). */
 (function(){
- var VER='v16';
+ var VER='v17';
  function $q(s,r){ return (r||document).querySelector(s); }
  function pct(x){ return (x*100).toFixed(1)+'%'; }
  function am(p){

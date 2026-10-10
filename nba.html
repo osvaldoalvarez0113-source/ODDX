@@ -165,7 +165,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 <header>
  <div class="top">
   <a class="ovaHome" href="hub.html" aria-label="Volver al inicio">‹</a>
-  <h1>🏀 NBA <span class="ver">v3.7</span></h1>
+  <h1>🏀 NBA <span class="ver">v3.8</span></h1>
   <button class="btnChico" id="btnTema" aria-label="Cambiar tema">🎨</button>
  </div>
 </header>
@@ -347,7 +347,7 @@ if(typeof module!=='undefined') module.exports={PDEF,seasonOf,dayKey,Phi,correr,
 
 <!-- ===================== APP ===================== -->
 <script>
-const VERSION='v3.7';
+const VERSION='v3.8';
 const ESPN='https://site.api.espn.com/apis/site/v2/sports/basketball/nba/';
 const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
@@ -597,6 +597,27 @@ function confTxt(k){
 }
 function confiable(k){ const v=LS.get('ova_nba_ver_v1'); return v&&v[k]?verdTxt(v[k],v[k].minD).t==='✓ le gana':null; }
 
+/* ---- Pinnacle (mercado sin margen): lo escribe el escaner "Pinnacle futbol y NBA" en pinnacle-nba.json. Solo se muestra. ---- */
+let PIN_N=null;
+try{ fetch('pinnacle-nba.json?v='+Date.now()).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.juegos) PIN_N=j; }).catch(()=>{}); }catch(e){}
+function nickN(n){ const w=String(n||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean); return w[w.length-1]||''; }
+function pinNba(g,pr){
+  if(!PIN_N) return '';
+  const H=T(g.h), A=T(g.a), kh=nickN(H.n), ka=nickN(A.n);
+  let hit=null;
+  PIN_N.juegos.forEach(x=>{
+    if(hit) return;
+    if(Math.abs(Date.parse(x.t)-g.ts)>20*3600e3) return;
+    const a=nickN(x.n[0]), b=nickN(x.n[1]);
+    if(a===kh&&b===ka) hit={pH:x.ml[0],x:x}; else if(a===ka&&b===kh) hit={pH:x.ml[1],x:x};
+  });
+  if(!hit) return '';
+  const pA=1-hit.pH, mod=pr.pH, d=(mod-hit.pH)*100;
+  const min=Math.max(0,Math.round((Date.now()-Date.parse(PIN_N.generado))/60000));
+  const fila=(t,pin,m)=>`<div class="linea"><span>${esc(t)}</span><b>${pct1(pin)} · ${amTxt(pin)} <span style="color:var(--mut2);font-weight:500;font-size:11.5px">modelo ${pct1(m)} (${(m-pin)*100>=0?'+':''}${((m-pin)*100).toFixed(1)})</span></b></div>`;
+  return `<h3>Lo que dice Pinnacle</h3><div class="lineas">${fila(A.n+' gana',pA,1-mod)}${fila(H.n+' gana',hit.pH,mod)}</div>
+   <div class="nota">Probabilidad de Pinnacle ya sin su margen y la cuota justa que le corresponde (actualizado hace ${min<90?min+' min':Math.round(min/60)+' h'}). Una cuota solo tiene valor si paga <b>más</b> que esa cuota justa. El mercado es la mejor estimación; el modelo queda de referencia.</div>`;
+}
 function pintarCuerpo(body,g){
   const pr=prediccion(g), H=T(g.h), A=T(g.a);
   const favH=pr.pH>=0.5, pmAbs=Math.abs(pr.pm);
@@ -621,6 +642,7 @@ function pintarCuerpo(body,g){
   g._rank={};
   const cuo=`
    <div class="rankbox" data-k="rank"></div>
+   ${pinNba(g,pr)}
    <h3>Moneyline</h3>${confTxt('win')}
    <div class="cuotasbox"><div class="fila">
      <div><label>Cuota ${esc(A.ab)}</label><input type="number" data-k="mlA" value="${g.odds&&g.odds.mlA||''}" placeholder="+150"></div>

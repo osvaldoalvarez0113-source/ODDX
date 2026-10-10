@@ -7,9 +7,9 @@
 const fs=require('fs'); const ENV=process.env; const KEY=ENV.ODDSPAPI_KEY||'';
 const OP='https://api.oddspapi.io/v4';
 const HORAS_F=parseFloat(ENV.HORAS_FUTBOL||'72'), HORAS_N=parseFloat(ENV.HORAS_NBA||'48');
-const MAX_MES=parseInt(ENV.MAX_MES||'100',10);
+const MAX_MES=parseInt(ENV.MAX_MES||'130',10);
 const LIGAS={ /* id de OddsPapi -> nombre que usa la app */
-  17:'Premier League', 8:'La Liga', 23:'Serie A', 35:'Bundesliga', 34:'Ligue 1', 7:'Champions League', 242:'MLS' };
+  17:'Premier League', 8:'La Liga', 23:'Serie A', 35:'Bundesliga', 34:'Ligue 1' };   /* 5 ligas = 1 llamada; con Champions/MLS serian 2 */
 const NBA_ID='132';
 const CDIR='.cache', CF=CDIR+'/valor2.json';
 const out=[]; const P=(...a)=>{ const s=a.join(' '); out.push(s); console.log(s); };
