@@ -1,0 +1,59 @@
+name: Pinnacle futbol y NBA
+
+# Dos corridas al dia (hora UTC). Guarda pinnacle-futbol.json y pinnacle-nba.json (precio justo de Pinnacle sin margen).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "10 14 * * *"
+    - cron: "10 22 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: valor-futbol-nba
+  cancel-in-progress: false
+
+jobs:
+  escaner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/cache/restore@v4
+        with:
+          path: .cache
+          key: valor2-${{ github.run_id }}
+          restore-keys: valor2-
+      - name: Traer precios de Pinnacle
+        env:
+          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
+        run: node scripts/valor2.js
+      - name: Guardar los datos en la app
+        if: always()
+        continue-on-error: true
+        run: |
+          git config user.name "escaner-ova"
+          git config user.email "escaner-ova@users.noreply.github.com"
+          git add -f pinnacle-futbol.json pinnacle-nba.json 2>/dev/null || true
+          if git diff --cached --quiet; then echo "Sin cambios que guardar"; exit 0; fi
+          git commit -q -m "mercado: precios de Pinnacle (futbol y NBA)"
+          git pull --rebase -q || true
+          git push -q origin HEAD
+      - name: Guardar el informe
+        if: always()
+        continue-on-error: true
+        run: |
+          [ -f resultado2.md ] || exit 0
+          mkdir -p /tmp/inf && cp resultado2.md /tmp/inf/escaner2.md && cd /tmp/inf
+          git init -q -b escaner2 && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add escaner2.md && git commit -q -m "informe"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" escaner2
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: .cache
+          key: valor2-${{ github.run_id }}
