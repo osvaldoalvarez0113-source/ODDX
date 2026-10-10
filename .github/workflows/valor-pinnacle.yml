@@ -65,6 +65,19 @@ jobs:
             echo "**No pude guardar pinnacle-datos.json en el repo.** Revisa Settings > Actions > General > Workflow permissions: Read and write." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
+      - name: Guardar el informe del escaner (para poder leer el diagnostico)
+        if: always()
+        continue-on-error: true
+        run: |
+          if [ ! -f resultado.md ]; then echo "Sin resultado.md"; exit 0; fi
+          mkdir -p /tmp/inf && cp resultado.md /tmp/inf/escaner.md
+          cd /tmp/inf
+          git init -q -b escaner
+          git config user.name "escaner-ova"
+          git config user.email "escaner-ova@users.noreply.github.com"
+          git add escaner.md
+          git commit -q -m "informe del escaner"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" escaner
       - uses: actions/cache/save@v4
         if: always()
         with:
