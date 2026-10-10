@@ -3,7 +3,7 @@ name: Backtest NBA y futbol
 on: workflow_dispatch
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   medir:
@@ -15,4 +15,17 @@ jobs:
         with:
           node-version: "22"
       - name: Correr el backtest
-        run: node scripts/correr_deportes.js ambos
+        run: node scripts/correr_deportes.js ambos 2>&1 | tee resultado_deportes.txt
+      - name: Guardar el resultado en la rama resultados
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f resultado_deportes.txt resultado_nba.json resultado_futbol.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado del backtest NBA y futbol" || true
+          git push -f origin resultados
