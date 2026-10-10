@@ -51,8 +51,9 @@ async function pinnacle(ids){
 async function nombres(sportId){
   cache.nom=cache.nom||{}; if(cache['nomOk'+sportId]) return;
   try{
-    const j=await op('/participants',{sportId:String(sportId)},false); const a=Array.isArray(j)?j:Object.values(j||{});
-    let n=0; a.forEach(x=>{ const id=x.participantId||x.id, nm=x.participantName||x.name; if(id!=null&&nm){ cache.nom[id]=nm; n++; } });
+    const j=await op('/participants',{sportId:String(sportId)},false); let n=0;
+    if(Array.isArray(j)) j.forEach(x=>{ const id=x.participantId||x.id, nm=x.participantName||x.name; if(id!=null&&nm){ cache.nom[id]=nm; n++; } });
+    else Object.keys(j||{}).forEach(id=>{ if(typeof j[id]==='string'){ cache.nom[id]=j[id]; n++; } });
     P('Nombres de equipos (deporte '+sportId+'): '+n); if(n>50) cache['nomOk'+sportId]=true; guardar();
   }catch(e){ P('No pude traer nombres (deporte '+sportId+'): '+String(e.message).replace(KEY,'***').slice(0,200)); }
 }
