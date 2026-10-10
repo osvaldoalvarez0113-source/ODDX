@@ -358,6 +358,8 @@ html[data-ui^="boleto"] .game .leyenda:not(.abierta):not(.err){font-size:0!impor
 html[data-ui^="boleto"] .game .leyenda:not(.abierta):not(.err):before{padding-left:10px;left:0}
 html[data-ui^="boleto"] .game .leyenda.abierta,html[data-ui^="boleto"] .game .leyenda.err{padding-right:34px!important}
 /* tabla de salidas del abridor: 7 columnas caben en el iPhone con numeros mas chicos */
+/* tres casillas de cuota en una fila (1X2): el texto de ejemplo en chico para que no se corte */
+html[data-ui^="boleto"] .game .cuotasbox input::placeholder{font-size:12px;font-weight:600}
 html[data-ui^="boleto"] .game table.log td.n{font-size:15px}
 html[data-ui^="boleto"] .game table.log th{font-size:11px!important}
 html[data-ui^="boleto"] .game .cal .t b{font-family:var(--body,system-ui)}

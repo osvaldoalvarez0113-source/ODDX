@@ -128,7 +128,8 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 /* cuotas manuales */
 .cuotasbox{background:var(--bg2);border-radius:var(--r);padding:12px;margin:6px 0}
 .cuotasbox .fila{display:flex;gap:8px;margin-bottom:8px}
-.cuotasbox input{flex:1;background:var(--bg1);border:1px solid var(--line2);color:var(--txt);
+.cuotasbox .fila>div{min-width:0}
+.cuotasbox input{flex:1;width:100%;min-width:0;box-sizing:border-box;background:var(--bg1);border:1px solid var(--line2);color:var(--txt);
  border-radius:8px;padding:9px;font-size:13px;text-align:center}
 .cuotasbox label{font-size:10.5px;color:var(--mut);display:block;margin-bottom:3px}
 .veredictoCuota{margin-top:10px;font-size:12.5px}
