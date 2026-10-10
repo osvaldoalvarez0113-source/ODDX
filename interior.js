@@ -352,6 +352,14 @@ html[data-ui^="boleto"] .game .medido.ok{color:var(--good)}
 html[data-ui^="boleto"] .game .medido.flojo{color:#9A6B00}
 html[data-ui^="boleto"] .game :is(.flag,.aviso,.nota,.leyenda,.status,.srv-compara){background:transparent!important;border:0!important;border-left:3px solid var(--line2)!important;border-radius:0!important;padding:4px 0 4px 10px!important;margin:8px 0;color:var(--mut)!important;font-size:13px;line-height:1.45}
 html[data-ui^="boleto"] .game :is(.flag,.aviso,.nota,.leyenda,.srv-compara) b{color:var(--txt)}
+/* nota cerrada: la regla de arriba (font-size:13px y padding!important) le ganaba al font-size:0 y el texto se encimaba sobre la etiqueta */
+/* cerrada vuelve a quedar solo la barrita; abierta deja espacio a la derecha para la i y la × */
+html[data-ui^="boleto"] .game .leyenda:not(.abierta):not(.err){font-size:0!important;line-height:0!important;padding:0 38px 0 10px!important;height:38px;overflow:hidden}
+html[data-ui^="boleto"] .game .leyenda:not(.abierta):not(.err):before{padding-left:10px;left:0}
+html[data-ui^="boleto"] .game .leyenda.abierta,html[data-ui^="boleto"] .game .leyenda.err{padding-right:34px!important}
+/* tabla de salidas del abridor: 7 columnas caben en el iPhone con numeros mas chicos */
+html[data-ui^="boleto"] .game table.log td.n{font-size:15px}
+html[data-ui^="boleto"] .game table.log th{font-size:11px!important}
 html[data-ui^="boleto"] .game .cal .t b{font-family:var(--body,system-ui)}
 html[data-ui^="boleto"] .game input{background:var(--bzIn)!important;color:var(--bzTxt)!important;border:1.5px solid var(--line2)!important;border-radius:9px!important;font:700 17px/1 var(--body,system-ui)!important;font-variant-numeric:tabular-nums;padding:10px 8px}
 html[data-ui^="boleto"] .game input:focus{outline:0;border-color:var(--bzInk)!important;box-shadow:0 0 0 3px var(--bzHi)}
