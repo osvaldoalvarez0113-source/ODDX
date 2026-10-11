@@ -175,8 +175,67 @@ function banner(info){
   }catch(e){}
 }
 
+/* Recordatorio de respaldo EXPORTADO. La copia automatica de arriba vive en el mismo Safari que los picks: si borras
+   los datos del sitio se van las dos. Un archivo guardado fuera (Notas, Archivos) es el unico respaldo que sobrevive.
+   Avisa como mucho una vez al dia, y solo si ya hay picks y hace 14 dias o mas que no exportas (o nunca). */
+var EXP_KEY='ova_ultimo_export', AVISO_KEY='ova_export_aviso_dia', DIAS_EXPORT=14;
+function marcarExport(ls,ahora){ try{ ls.setItem(EXP_KEY,String(ahora||Date.now())); }catch(e){} }
+function recordatorio(ls,ahora){
+  try{
+    ahora=ahora||Date.now();
+    var picks=contarPicks(tomar(ls)); if(!(picks>0)) return null;
+    var t=parseFloat(ls.getItem(EXP_KEY));
+    var dias=isFinite(t)?Math.floor((ahora-t)/86400000):null;
+    if(dias!==null && dias<DIAS_EXPORT) return null;
+    if(ls.getItem(AVISO_KEY)===hoyLocal(new Date(ahora))) return null;
+    return {dias:dias,picks:picks};
+  }catch(e){ return null; }
+}
+function bannerExport(info){
+  try{
+    var doc=root.document; if(!doc||!doc.body||doc.getElementById('ovaExpBanner')||doc.getElementById('ovaRestBanner')) return;
+    var d=doc.createElement('div'); d.id='ovaExpBanner';
+    d.style.cssText='position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);z-index:2147482000;'+
+      'background:#1B2431;color:#F1F5FB;border:1px solid #F59E0B;border-radius:14px;padding:12px 14px;font:13px/1.45 system-ui,-apple-system,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.6)';
+    /* las apps estilizan todos los <button>; con !important por id mandan estos colores (Luego queda discreto, Respaldar resalta) */
+    d.innerHTML='<style>#ovaExpBanner #ovaExpSi{background:#F59E0B!important;color:#1A1203!important;border:0!important}'+
+      '#ovaExpBanner #ovaExpNo{background:transparent!important;color:#9DB2C8!important;border:1px solid #6D8299!important}</style>'+
+      '<b style="color:#F59E0B">Respalda tus picks.</b> '+(info.dias===null?'Todavía no has exportado un respaldo.':'Hace '+info.dias+' días que no exportas un respaldo.')+
+      ' Tienes '+info.picks+' picks guardados solo en este navegador.'+
+      '<div style="margin-top:9px;display:flex;gap:8px"><button id="ovaExpSi" style="flex:1;padding:10px;border:0;border-radius:10px;background:#F59E0B;color:#1A1203;font-weight:700;font-size:14px">Respaldar ahora</button>'+
+      '<button id="ovaExpNo" style="flex:1;padding:10px;border:1px solid #6D8299;border-radius:10px;background:transparent;color:#9DB2C8;font-size:14px">Luego</button></div>';
+    doc.body.appendChild(d);
+    function quitar(){ if(d.parentNode) d.parentNode.removeChild(d); }
+    doc.getElementById('ovaExpSi').onclick=function(){
+      compartir(root.localStorage).then(function(r){
+        if(r.via==='cancelado') return;
+        marcarExport(root.localStorage);
+        d.innerHTML='<b style="color:#34D399">Respaldo '+(r.via==='compartir'?'enviado':(r.via==='portapapeles'?'copiado: pégalo en Notas':'generado'))+'.</b>';
+        setTimeout(quitar,2500);
+      });
+    };
+    doc.getElementById('ovaExpNo').onclick=function(){
+      try{ root.localStorage.setItem(AVISO_KEY,hoyLocal()); }catch(e){}
+      quitar();
+    };
+  }catch(e){}
+}
+/* cualquier boton de respaldo de las apps cuenta como exportado (index: reg_backup, futbol: btnRespaldar, nba: btnResp) */
+function vigilarExport(){
+  try{
+    var doc=root.document; if(!doc||!doc.addEventListener) return;
+    doc.addEventListener('click',function(e){
+      try{
+        var el=e.target&&e.target.closest?e.target.closest('#reg_backup,#btnRespaldar,#btnResp'):null;
+        if(el) marcarExport(root.localStorage);
+      }catch(x){}
+    },true);
+  }catch(e){}
+}
+
 var RESP={KEYS:KEYS,tomar:tomar,contarPicks:contarPicks,snapshot:snapshot,necesitaRestaurar:necesitaRestaurar,estado:estado,ignorar:ignorar,
   aplicar:aplicar,restaurarSnapshot:restaurarSnapshot,exportar:exportar,importar:importar,compartir:compartir,
+  recordatorio:recordatorio,marcarExport:marcarExport,DIAS_EXPORT:DIAS_EXPORT,
   _setStore:function(s){ STORE=s; }};
 
 /* ===================== 2. HOY ===================== */
@@ -264,6 +323,10 @@ function init(){
       snapshot(root.localStorage);
     }catch(e){}
   },2500);
+  vigilarExport();
+  setTimeout(function(){
+    try{ var r=recordatorio(root.localStorage); if(r) bannerExport(r); }catch(e){}
+  },6000);
   try{
     setInterval(function(){ try{ snapshot(root.localStorage); }catch(e){} },30000);
     root.document.addEventListener('visibilitychange',function(){ if(root.document.hidden){ try{ snapshot(root.localStorage); }catch(e){} } });

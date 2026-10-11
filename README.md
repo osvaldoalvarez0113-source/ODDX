@@ -70,7 +70,7 @@ Las páginas de `backtests/` y `scripts/ova_formula.py` **replican** estas const
 | Secreto | Para qué |
 |---|---|
 | `ODDSPAPI_KEY` | Escáner Valor vs Pinnacle (OddsPapi). |
-| `NTFY_TOPIC` | Tema privado de ntfy para los avisos al teléfono. Si no existe se usa el tema público `my-bets` y el workflow lo avisa; ponle un nombre largo y aleatorio. |
+| `NTFY_TOPIC` | Tema privado de ntfy para los avisos al teléfono. Si no existe, el escáner NO manda avisos (ya no cae a un tema público) y el workflow lo avisa; ponle un nombre largo y aleatorio. |
 
 En Settings → Actions → General → Workflow permissions debe estar **Read and write** (el escáner guarda `pinnacle-datos.json`).
 

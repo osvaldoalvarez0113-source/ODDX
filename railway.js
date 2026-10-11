@@ -12,15 +12,26 @@ try{
   var APLICAR_ARRIBA = true;
   var AVISO_DIF = 1.5;   /* puntos de probabilidad a partir de los cuales se resalta la diferencia */
   var SERVIDOR = 'https://worker-production-be04.up.railway.app';
+  var TIMEOUT_MS = 8000;   /* espera máxima al servidor Railway */
   var cacheServidor = null, cacheFecha = null;
 
   function fetchServidor(fechaISO){
     if(cacheServidor && cacheFecha===fechaISO) return Promise.resolve(cacheServidor);
-    return fetch(SERVIDOR+'/api/analisis-hoy?fecha='+fechaISO, {cache:'no-store'})
+    /* Tope de espera: si el servidor cuelga, la caja no se queda en «Buscando...» para siempre. */
+    var ctl = (typeof AbortController === 'function') ? new AbortController() : null;
+    var corte = ctl ? setTimeout(function(){ ctl.abort(); }, TIMEOUT_MS) : null;
+    var opts = {cache:'no-store'};
+    if(ctl) opts.signal = ctl.signal;
+    return fetch(SERVIDOR+'/api/analisis-hoy?fecha='+fechaISO, opts)
       .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
       .then(function(d){
+        if(corte) clearTimeout(corte);
         cacheServidor = d; cacheFecha = fechaISO;
         return d;
+      }, function(e){
+        if(corte) clearTimeout(corte);
+        if(e && e.name === 'AbortError') throw new Error('tardó más de '+Math.round(TIMEOUT_MS/1000)+' s');
+        throw e;
       });
   }
 

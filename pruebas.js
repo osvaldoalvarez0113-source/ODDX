@@ -462,6 +462,35 @@ sec('Estructura del repo (lo que encontró la auditoría de oct 2026)');
  wfTxt.forEach(x=>{ (x[1].match(/node\s+(?!--)[\w./-]+\.js/g)||[]).forEach(m=>{ const p=m.replace(/^node\s+/,''); if(!fs.existsSync(D+p)) faltaScript.push(x[0]+' → '+p); }); });
  ok('todo script que llaman los workflows existe',faltaScript.length===0,faltaScript.join(', '));
  ok('pinnacle-datos.json es JSON válido con «juegos»',(()=>{ try{ return Array.isArray(JSON.parse(rd('pinnacle-datos.json')).juegos); }catch(e){ return false; } })());
+
+ sec('Revisión Muse (oct 2026): ntfy privado, timeout de Railway, edad del mercado, recordatorio de respaldo');
+ ok('ningún workflow cae a un tema público de ntfy («|| \'my-bets\'»)',wfTxt.every(x=>!/\|\|\s*['"]my-bets['"]/.test(x[1])),wfTxt.filter(x=>/\|\|\s*['"]my-bets['"]/.test(x[1])).map(x=>x[0]).join(', '));
+ ok('valor-pinnacle.yml pasa NTFY_TOPIC tal cual (sin valor por defecto)',/NTFY_TOPIC:\s*\$\{\{\s*secrets\.NTFY_TOPIC\s*\}\}/.test(rd('.github/workflows/valor-pinnacle.yml')));
+ const rw=rd('railway.js');
+ ok('railway.js: el fetch al servidor tiene tope de espera (AbortController + signal + clearTimeout)',/new AbortController\(\)/.test(rw)&&/signal\s*=\s*ctl\.signal/.test(rw)&&/clearTimeout\(corte\)/.test(rw)&&/TIMEOUT_MS\s*=\s*\d+/.test(rw));
+ const tm=/TIMEOUT_MS\s*=\s*(\d+)/.exec(rw);
+ ok('railway.js: el tope está entre 3 y 15 segundos',!!tm&&+tm[1]>=3000&&+tm[1]<=15000,tm&&tm[1]);
+ const pj=rd('pinnacle.js');
+ ok('pinnacle.js: la fila del ranking «Al gane» muestra la antigüedad del mercado',/esc\(linea\)\+edadHtml\(\)\+aviso/.test(pj));
+ {
+  const ahora=Date.UTC(2026,9,11,18,0,0), dia=86400000, hoy=H.hoyLocal(new Date(ahora)), L=fakeLS();
+  ok('recordatorio: sin picks no avisa nunca',R.recordatorio(L,ahora)===null);
+  L.setItem('ventaja_picks_v1',JSON.stringify(picksMlb));
+  let rr=R.recordatorio(L,ahora);
+  ok('recordatorio: con picks y sin respaldo exportado avisa',!!rr&&rr.dias===null&&rr.picks===picksMlb.length,JSON.stringify(rr));
+  L.setItem('ova_ultimo_export',String(ahora-3*dia));
+  ok('recordatorio: exportó hace 3 días → no avisa',R.recordatorio(L,ahora)===null);
+  L.setItem('ova_ultimo_export',String(ahora-20*dia));
+  rr=R.recordatorio(L,ahora);
+  ok('recordatorio: exportó hace 20 días → avisa con los días',!!rr&&rr.dias===20,JSON.stringify(rr));
+  L.setItem('ova_export_aviso_dia',hoy);
+  ok('recordatorio: tras «Luego» no vuelve a avisar el mismo día',R.recordatorio(L,ahora)===null);
+  L.setItem('ova_export_aviso_dia','1999-01-01');
+  ok('recordatorio: al día siguiente vuelve a avisar',!!R.recordatorio(L,ahora));
+  R.marcarExport(L,ahora);
+  ok('recordatorio: exportar de verdad lo apaga',R.recordatorio(L,ahora)===null);
+  ok('recordatorio: la marca de exportación no se mete dentro del respaldo',!('ova_ultimo_export' in R.tomar(L))&&!('ova_export_aviso_dia' in R.tomar(L)));
+ }
 }
 
 (async()=>{ await t_envivo(); await t_respaldo(); await t_sw(); })().then(()=>{

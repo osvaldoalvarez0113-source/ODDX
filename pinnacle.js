@@ -31,6 +31,12 @@
     if(m<90) return 'hace '+m+' min';
     return 'hace '+Math.round(m/60)+' h';
   }
+  /* etiqueta de antigüedad del mercado; en ámbar si las cuotas ya tienen 8 h o más (el escáner corre 3 veces al día) */
+  function edadHtml(){
+    var m=edadMin(); if(m==null) return '';
+    if(m>=480) return ' <span style="color:#F59E0B">('+edadTxt()+' \u00b7 cuotas viejas, verifica en Kalshi)</span>';
+    return ' <span style="opacity:.7">('+edadTxt()+')</span>';
+  }
 
   /* busca el juego del mercado que corresponde al texto (los dos equipos tienen que aparecer) */
   function buscar(texto){
@@ -186,7 +192,7 @@
     }
     var s=document.createElement('span'); s.className='mkt';
     s.style.cssText='display:block;margin-top:2px;font-size:11.5px;color:var(--mut)';
-    s.innerHTML=esc(linea)+aviso;
+    s.innerHTML=esc(linea)+edadHtml()+aviso;
     t.appendChild(s);
   }
 
