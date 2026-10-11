@@ -31,17 +31,17 @@ jobs:
           path: .cache
           key: valor-${{ github.run_id }}
           restore-keys: valor-
-      - name: Avisar si los avisos van a un tema publico
+      - name: Avisar si no hay tema privado para los avisos
         env:
           TEMA: ${{ secrets.NTFY_TOPIC }}
         run: |
           if [ -z "$TEMA" ]; then
-            echo "::warning::No existe el secreto NTFY_TOPIC: los avisos van al tema PUBLICO 'my-bets' en ntfy.sh (cualquiera puede leerlos y escribirles). Crea el secreto con un nombre largo y aleatorio."
+            echo "::warning::No existe el secreto NTFY_TOPIC: NO se enviaran avisos al telefono (antes caian al tema publico 'my-bets', que cualquiera puede leer y escribir). Crea el secreto con un nombre largo y aleatorio y suscribete a ese tema en la app ntfy."
           fi
       - name: Revisar el mercado
         env:
           ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC || 'my-bets' }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           NOTIFY_ALWAYS: ${{ github.event_name == 'workflow_dispatch' }}
         run: node scripts/valor.js
       - name: Guardar los datos en la app
