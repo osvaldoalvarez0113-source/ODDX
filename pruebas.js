@@ -52,7 +52,7 @@ else{
   const tops=new Set(),res=[];
   src.forEach(([l,s])=>{const r=analizar(s);res.push([l,r]);r.top.forEach(t=>tops.add(t));r.sets.forEach(t=>tops.add(t));});
   const ids=new Set();let m;const rid=/\bid="([^"]+)"/g;while((m=rid.exec(h)))ids.add(m[1]);
-  const FALSOS=new Set(['OVASkins','montarCombo','OVAHoy','OVARespaldo']);   /* se crean con window.X y están protegidos con typeof */
+  const FALSOS=new Set(['OVASkins','montarCombo','OVAHoy','OVARespaldo','OVACLV']);   /* se crean con window.X y están protegidos con typeof */
   const mal=new Map();
   res.forEach(([l,r])=>r.refs.forEach(([n,line,sc])=>{if(sc.has(n)||tops.has(n)||BROWSER.has(n)||ids.has(n)||FALSOS.has(n))return;if(!mal.has(n))mal.set(n,l+':'+line);}));
   ok(app+' sin nombres inexistentes',mal.size===0,[...mal].map(([n,w])=>n+' ('+w+')').join(', '));
@@ -490,6 +490,48 @@ sec('Estructura del repo (lo que encontró la auditoría de oct 2026)');
   R.marcarExport(L,ahora);
   ok('recordatorio: exportar de verdad lo apaga',R.recordatorio(L,ahora)===null);
   ok('recordatorio: la marca de exportación no se mete dentro del respaldo',!('ova_ultimo_export' in R.tomar(L))&&!('ova_export_aviso_dia' in R.tomar(L)));
+ }
+ sec('CLV de fútbol y NBA (cuota de cierre escrita por ti, igual que en MLB)');
+ {
+  const C=EX.OVACLV, cerca=(a,b)=>Math.abs(a-b)<0.01;
+  ok('impPct: americana negativa (-175 → 63.64%)',cerca(C.impPct('-175'),63.64));
+  ok('impPct: americana positiva (+120 → 45.45%)',cerca(C.impPct('+120'),45.45));
+  ok('impPct: centavos de Kalshi (64 y 64¢ → 64%)',C.impPct('64')===64&&C.impPct('64¢')===64&&C.impPct('64c')===64);
+  ok('impPct: texto vacío, cero o basura → null',C.impPct('')===null&&C.impPct(null)===null&&C.impPct('0')===null&&C.impPct('abc')===null);
+  ok('impPct: número negativo entre -1 y -99 no existe → null',C.impPct('-50')===null);
+  ok('impPct: acepta el signo menos tipográfico (−175)',cerca(C.impPct('\u2212175'),63.64));
+  ok('clvPts: compraste +110 y cerró -105 → CLV +3.6',cerca(C.clvPts({cuota:'+110',cierre:'-105'}),3.60));
+  ok('clvPts: compraste -150 y cerró -130 → CLV negativo (compraste más caro)',C.clvPts({cuota:'-150',cierre:'-130'})<0);
+  ok('clvPts: sin cierre → null (no se inventa)',C.clvPts({cuota:'-110'})===null&&C.clvPts({cuota:'-110',cierre:''})===null);
+  ok('clvPts: sin cuota → null',C.clvPts({cierre:'-110'})===null);
+  const arr=[{cuota:'+110',cierre:'-105'},{cuota:'-150',cierre:'-130'},{cuota:'-110'},{cuota:'+200',cierre:'+180'}];
+  const R2=C.resumen(arr);
+  ok('resumen: cuenta solo los picks con cierre (3 de 4)',R2.n===3,JSON.stringify(R2));
+  ok('resumen: promedio y % que le ganó al cierre',R2.prom!==null&&cerca(R2.prom,(3.60+C.clvPts(arr[1])+C.clvPts(arr[3]))/3)&&cerca(R2.ganaPct,200/3),JSON.stringify(R2));
+  ok('resumen: lista vacía no truena',C.resumen([]).n===0&&C.resumen([]).prom===null&&C.resumen(null).n===0);
+  ok('fila: escapa HTML en el id y en el cierre',!/<script|"><img/i.test(C.fila({id:'a"><img src=x onerror=1>',cuota:'-110',cierre:'<script>1</script>'})));
+  ok('fila: muestra «sin cierre» y luego el CLV con signo',/sin cierre/.test(C.fila({id:'1',cuota:'-110'}))&&/CLV \+3\.6 pts/.test(C.fila({id:'1',cuota:'+110',cierre:'-105'})));
+  ok('resumenHtml: con menos de 25 picks avisa que todavía no dice nada firme',/todavía no dice nada firme/.test(C.resumenHtml(arr)));
+  ok('resumenHtml: sin ningún cierre pide escribirlo',/Escribe la cuota de cierre/.test(C.resumenHtml([{cuota:'-110'}])));
+  {
+   // la fila escrita en el campo «Cierre» se guarda en el registro y se repinta
+   const store=[{id:'x1',cuota:'+110'},{id:'x2',cuota:'-150'}];let repintado=0,handler=null;
+   const cont={addEventListener(t,f){ if(t==='change') handler=f; }};
+   const mkEl=(id,v)=>({value:v,getAttribute:()=>id,classList:{contains:c=>c==='ova-cie'}});
+   C.ligar(cont,()=>store,a=>{},()=>{repintado++;}); C.ligar(cont,()=>store,a=>{},()=>{repintado++;});
+   handler({target:mkEl('x1','-105')});
+   ok('ligar: escribir el cierre lo guarda en el pick correcto y repinta',store[0].cierre==='-105'&&store[1].cierre===undefined&&repintado===1,JSON.stringify(store)+' '+repintado);
+   handler({target:mkEl('x1','  ')});
+   ok('ligar: borrar el campo deja el cierre en null',store[0].cierre===null);
+   handler({target:{classList:{contains:()=>false}}});
+   ok('ligar: ignora cambios de otros campos',repintado===2);
+  }
+  ['futbol.html','nba.html'].forEach(f=>{
+   const t=rd(f);
+   ok(f+': el registro muestra el campo de cierre y el resumen de CLV',/OVACLV\.fila\(p\)/.test(t)&&/OVACLV\.resumenHtml\(/.test(t)&&/OVACLV\.ligar\(/.test(t));
+   ok(f+': ya no dice «No es CLV real»',!/No es CLV real/.test(t));
+   ok(f+': el registro sigue funcionando si ovaextra.js no carga (todo protegido con typeof)',(t.match(/OVACLV\./g)||[]).length===(t.match(/typeof OVACLV!=='undefined'/g)||[]).length);
+  });
  }
 }
 

@@ -2758,10 +2758,12 @@ function pintarRegistro(){
   var filas = arr.map(function(p){
     var color = p.estado==='ganado'?'var(--good)':(p.estado==='perdido'?'var(--bad)':'var(--mut)');
     return '<div class="linea"><span>'+p.local+' vs '+p.visita+' — '+p.seleccion+' ('+p.cuota+')</span>'+
-      '<b style="color:'+color+'">'+p.estado+'</b></div>';
+      '<b style="color:'+color+'">'+p.estado+'</b></div>'+(typeof OVACLV!=='undefined'?OVACLV.fila(p):'');
   }).join('');
   cont.innerHTML = resumen + '<div class="lineas" style="margin-top:10px">'+filas+'</div>'+
-    '<div class="nota">No es CLV real — no hay fuente de cuota de cierre conectada. Esto es tu récord de aciertos y ganancia neta a stake plano (1 unidad por pick); verifica automáticamente 1X2, Más/Menos 2.5 y Ambos anotan. "Verificar" busca el resultado entre los partidos terminados de la liga que tengas cargada en este momento (cambia de liga para verificar los picks de otra).</div>';
+    (typeof OVACLV!=='undefined'?OVACLV.resumenHtml(cargarRegistro()):'')+
+    '<div class="nota">Récord de aciertos y ganancia neta a stake plano (1 unidad por pick); verifica automáticamente 1X2, Más/Menos 2.5 y Ambos anotan. "Verificar" busca el resultado entre los partidos terminados de la liga que tengas cargada en este momento (cambia de liga para verificar los picks de otra).</div>';
+  if(typeof OVACLV!=='undefined') OVACLV.ligar(cont, cargarRegistro, guardarRegistroArr, pintarRegistro);
 }
 
 // ---------- respaldo del registro ----------

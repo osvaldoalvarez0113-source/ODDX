@@ -883,8 +883,10 @@ function pintarRegistro(){
   let g=0,pe=0,pu=0,pn=0,net=0;
   arr.forEach(p=>{ if(p.estado==='ganado'){ g++; const d=decAm(p.cuota); if(d) net+=d-1; } else if(p.estado==='perdido'){ pe++; net-=1; } else if(p.estado==='push') pu++; else pn++; });
   cont.innerHTML=`<div class="kpi"><div><b>${g}-${pe}${pu?'-'+pu:''}</b><small>Récord (G-P${pu?'-push':''})</small></div><div><b>${pn}</b><small>Pendientes</small></div><div><b>${net>=0?'+':''}${net.toFixed(2)}u</b><small>Neto (1u plano)</small></div></div>
-   <div class="lineas" style="margin-top:10px">${arr.map(p=>{ const c=p.estado==='ganado'?'var(--good)':(p.estado==='perdido'?'var(--bad)':'var(--mut)'); return `<div class="linea"><span>${esc(p.aN)} @ ${esc(p.hN)} — ${esc(p.seleccion)} (${p.cuota})</span><b style="color:${c}">${p.estado}</b></div>`; }).join('')}</div>
-   <div class="nota">No es CLV real: no hay cuota de cierre conectada. Es tu récord y ganancia neta a stake plano de 1 unidad por pick. Con líneas enteras puede haber "push" (se devuelve, cuenta 0).</div>`;
+   <div class="lineas" style="margin-top:10px">${arr.map(p=>{ const c=p.estado==='ganado'?'var(--good)':(p.estado==='perdido'?'var(--bad)':'var(--mut)'); return `<div class="linea"><span>${esc(p.aN)} @ ${esc(p.hN)} — ${esc(p.seleccion)} (${p.cuota})</span><b style="color:${c}">${p.estado}</b></div>${typeof OVACLV!=='undefined'?OVACLV.fila(p):''}`; }).join('')}</div>
+   ${typeof OVACLV!=='undefined'?OVACLV.resumenHtml(regGet()):''}
+   <div class="nota">Récord y ganancia neta a stake plano de 1 unidad por pick. Con líneas enteras puede haber "push" (se devuelve, cuenta 0).</div>`;
+  if(typeof OVACLV!=='undefined') OVACLV.ligar(cont,regGet,regSet,pintarRegistro);
 }
 // ---------- combinada ----------
 const cbGet=()=>LS.get('ova_nba_comb_v1')||[];

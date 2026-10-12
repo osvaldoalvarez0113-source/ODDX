@@ -310,6 +310,61 @@ function resumen(ls, ahora){
 }
 var HOY={publicar:publicar,resumen:resumen,hoyLocal:hoyLocal};
 
+/* ===================== 2b. CLV (futbol y NBA) =====================
+   CLV = cuanto mejor (o peor) fue tu precio que el de cierre. Se mide en puntos de probabilidad implicita:
+   (implicita del cierre) - (implicita de lo que pagaste). Positivo = compraste mas barato que el cierre.
+   Igual que en MLB (index.html, clvPts): la cuota de cierre la escribes tu, del mismo lado y la misma casa.
+   Acepta americana (-175, +120) o centavos de Kalshi (64). No inventa ningun cierre. */
+function escH(x){ return String(x==null?'':x).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function impPct(x){
+  var n=parseFloat(String(x==null?'':x).replace(/[−‒-―]/g,'-').replace(/[\s,]/g,'').replace(/(¢|c)$/i,''));
+  if(!isFinite(n)||n===0) return null;
+  if(Math.abs(n)<100) return (n>0&&n<100)?n:null;               /* centavos de Kalshi = probabilidad directa */
+  return n>0?100/(n+100)*100:(-n)/(-n+100)*100;                  /* americana */
+}
+function clvPts(p){
+  var a=impPct(p&&p.cuota), b=impPct(p&&p.cierre);
+  if(a==null||b==null) return null;
+  return b-a;
+}
+function resumenCLV(arr){
+  var n=0,suma=0,gana=0;
+  (arr||[]).forEach(function(p){ var c=clvPts(p); if(c!=null){ n++; suma+=c; if(c>0) gana++; } });
+  return {n:n, prom:n?suma/n:null, ganaPct:n?gana/n*100:null};
+}
+function filaCLV(p){
+  var c=clvPts(p), t=c==null?'sin cierre':('CLV '+(c>0?'+':'')+c.toFixed(1)+' pts');
+  return '<div class="nota" style="margin:2px 0 9px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span>Cierre</span>'+
+    '<input class="ova-cie" data-id="'+escH(p.id)+'" inputmode="text" autocomplete="off" placeholder="-175 o 64" value="'+escH(p.cierre==null?'':p.cierre)+'" '+
+    'style="width:96px;padding:6px 8px;border-radius:8px;border:1px solid #6D8299;background:transparent;color:inherit;font:inherit">'+
+    '<span style="'+(c==null?'':(c>0?'color:#34D399':'color:#F87171'))+'">'+escH(t)+'</span></div>';
+}
+function resumenCLVHtml(arr){
+  var R=resumenCLV(arr);
+  var h='<div class="kpi" style="margin-top:10px">'+
+    '<div><b>'+(R.prom==null?'—':(R.prom>0?'+':'')+R.prom.toFixed(1))+'</b><small>CLV promedio en puntos ('+R.n+' con cierre)</small></div>'+
+    '<div><b>'+(R.ganaPct==null?'—':R.ganaPct.toFixed(0)+'%')+'</b><small>picks que le ganaron al cierre</small></div></div>';
+  if(R.n===0) h+='<div class="nota">Escribe la cuota de cierre de cada pick (la última antes de que empiece el juego, mismo lado y misma casa). Sin eso no hay CLV.</div>';
+  else if(R.n<25) h+='<div class="nota">Con '+R.n+' picks el CLV todavía no dice nada firme. A partir de 30 o 40 empieza a tener lectura.</div>';
+  else if(R.prom>0) h+='<div class="nota">CLV positivo: tus precios le están ganando al cierre. Vale más que el resultado de la semana.</div>';
+  else h+='<div class="nota">CLV en cero o negativo: el cierre te está ganando. Si se sostiene sobre 40 picks, el método no está dando ventaja, por bien que te haya ido en resultados.</div>';
+  h+='<div class="nota">CLV = tu precio contra el de cierre, en puntos de probabilidad. En spread y total, anota el cierre a la misma línea que tomaste; si la línea se movió, déjalo vacío.</div>';
+  return h;
+}
+/* engancha el campo «Cierre» de cada fila. getArr/setArr leen y guardan el registro de la app; repintar vuelve a dibujarlo. */
+function ligarCLV(cont,getArr,setArr,repintar){
+  try{
+    if(!cont||cont.__ovaClv) return; cont.__ovaClv=true;
+    cont.addEventListener('change',function(e){
+      var el=e.target; if(!el||!el.classList||!el.classList.contains('ova-cie')) return;
+      var id=el.getAttribute('data-id'), a=getArr(), v=String(el.value||'').trim();
+      for(var i=0;i<a.length;i++) if(String(a[i].id)===id){ a[i].cierre=v===''?null:v; }
+      setArr(a); repintar();
+    });
+  }catch(e){}
+}
+var CLV={impPct:impPct,clvPts:clvPts,resumen:resumenCLV,fila:filaCLV,resumenHtml:resumenCLVHtml,ligar:ligarCLV};
+
 /* ===================== 3. arranque ===================== */
 function init(){
   try{ if(root.navigator && root.navigator.storage && root.navigator.storage.persist) root.navigator.storage.persist(); }catch(e){}
@@ -333,8 +388,8 @@ function init(){
   }catch(e){}
 }
 
-root.OVARespaldo=RESP; root.OVAHoy=HOY;
-if(typeof module!=='undefined' && module.exports){ module.exports={OVARespaldo:RESP,OVAHoy:HOY}; }
+root.OVARespaldo=RESP; root.OVAHoy=HOY; root.OVACLV=CLV;
+if(typeof module!=='undefined' && module.exports){ module.exports={OVARespaldo:RESP,OVAHoy:HOY,OVACLV:CLV}; }
 else if(root.document){
   if(root.document.readyState==='loading') root.document.addEventListener('DOMContentLoaded',init); else init();
 }
