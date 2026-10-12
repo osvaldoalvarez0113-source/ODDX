@@ -218,6 +218,7 @@ tr.usa td:first-child{color:var(--hot)}
 table.log{font-size:12.5px}
 table.log td,table.log th{padding:6px 0}
 table.log td.n{font-size:13px}
+table.log td.cp{font-weight:700;color:var(--ink,inherit)}
 
 details{margin:8px 0 2px}
 details summary{font-size:13px;color:var(--mut);cursor:pointer;padding:7px 0;list-style:none}
@@ -2481,11 +2482,12 @@ function salidasBloque(p,abr,teamId,l5,hist,se,fecha){
   var mapa={};
   if(hist&&hist.juegos) hist.juegos.forEach(function(g){ mapa[g.pk]=g.rs; });
   var w=0, l=0, er=0, ip=0, ks=0, ap=0, nap=0, filas='', det='';
-  var gs=0, ngs=0, hayG=false, hs=0, nh=0, bs=0, nb=0;
+  var gs=0, ngs=0, hayG=false, hs=0, nh=0, bs=0, nb=0, rs=0, nr=0;
   var ABR={108:'LAA',109:'AZ',110:'BAL',111:'BOS',112:'CHC',113:'CIN',114:'CLE',115:'COL',116:'DET',117:'HOU',118:'KC',119:'LAD',120:'WSH',121:'NYM',133:'ATH',134:'PIT',135:'SD',136:'SEA',137:'SF',138:'STL',139:'TB',140:'TEX',141:'TOR',142:'MIN',143:'PHI',144:'ATL',145:'CWS',146:'MIA',147:'NYY',158:'MIL'};
   l5.starts.slice().reverse().forEach(function(s){
     if(s.dec==='G') w++; else if(s.dec==='P') l++;
     er+=s.er; ip+=s.ip; ks+=s.k;
+    if(s.r!=null){ rs+=s.r; nr++; }
     if(s.h!=null){ hs+=s.h; nh++; }
     if(s.bb!=null){ bs+=s.bb; nb++; }
     var apo=mapa[s.pk];
@@ -2496,12 +2498,13 @@ function salidasBloque(p,abr,teamId,l5,hist,se,fecha){
     var cual='<span class="eq">'+escudo(s.oppId,16)+'<span>'+
       esc(s.f?s.f.slice(5):'—')+' '+esc(rival)+'</span></span>';
     filas+='<tr><td>'+cual+'</td><td class="n">'+ipMlb(s.ip)+'</td>'+
-      '<td class="n">'+(s.h==null?'—':s.h)+'</td><td class="n">'+(s.bb==null?'—':s.bb)+'</td>'+
+      '<td class="n">'+(s.h==null?'—':s.h)+'</td>'+
+      '<td class="n cp">'+(s.r==null?'—':s.r)+'</td><td class="n">'+s.er+'</td>'+
+      '<td class="n">'+(s.bb==null?'—':s.bb)+'</td>'+
       '<td class="n">'+s.k+'</td>'+
       '<td class="n">'+(g==null?'—':g)+'</td>'+
       '<td class="n">'+(apo!=null?apo:'—')+'</td></tr>';
-    det+='<tr><td>'+cual+'</td><td class="n">'+(s.r==null?'—':s.r)+'</td>'+
-      '<td class="n">'+s.er+'</td><td class="n">'+(s.hr==null?'—':s.hr)+'</td>'+
+    det+='<tr><td>'+cual+'</td><td class="n">'+(s.hr==null?'—':s.hr)+'</td>'+
       '<td class="n">'+s.dec+'</td></tr>';
   });
   var n=l5.starts.length;
@@ -2512,6 +2515,8 @@ function salidasBloque(p,abr,teamId,l5,hist,se,fecha){
   var gx   = ngs ? gs/ngs : null;
   var hx   = nh ? hs/nh : null;
   var bx   = nb ? bs/nb : null;
+  var rx   = nr ? rs/nr : null;
+  var lx   = n ? er/n : null;
   var span=null;
   var fs=l5.starts.map(function(s){ return s.f; }).filter(Boolean).sort();
   if(fs.length>1){
@@ -2523,27 +2528,28 @@ function salidasBloque(p,abr,teamId,l5,hist,se,fecha){
     '<div class="flag">'+w+'-'+l+' en sus últimas '+n+
         (n===1?' salida':' salidas')+', con '+num(eraS)+' de ERA en ese tramo.</div>'+
     '<div class="leyenda"><b>IP</b> innings, formato de ESPN (4.2 = 4 innings y 2 outs) · '+
-    '<b>H</b> hits · <b>BB</b> boletos · <b>K</b> ponches · '+
+    '<b>H</b> hits · <b>R</b> carreras que le anotaron · <b>LP</b> carreras limpias · <b>BB</b> boletos · <b>K</b> ponches · '+
     '<b>GSc</b> Game Score, una nota por salida: <b>50 es promedio</b>, 65+ buena, 80+ dominante, bajo 40 mala. '+
     'Mezcla innings, hits, boletos, ponches y carreras, así que no la mueve tanto la suerte como al ERA · '+
     '<b>Apoyo</b> carreras que le anotó su propio equipo ese día (— = juego de hoy o fuera del historial).</div>'+
-    '<table class="log"><tr><th>Salida</th><th>IP</th><th>H</th><th>BB</th><th>K</th><th>GSc</th><th>Apoyo</th></tr>'+
+    '<table class="log"><tr><th>Salida</th><th>IP</th><th>H</th><th>R</th><th>LP</th><th>BB</th><th>K</th><th>GSc</th><th>Apoyo</th></tr>'+
     filas+
     '<tr class="usa"><td>Promedio</td><td class="n">'+num(ipx,1)+'</td>'+
     '<td class="n">'+(hx!=null?num(hx,1):'—')+'</td>'+
+    '<td class="n cp">'+(rx!=null?num(rx,1):'—')+'</td><td class="n">'+(lx!=null?num(lx,1):'—')+'</td>'+
     '<td class="n">'+(bx!=null?num(bx,1):'—')+'</td>'+
     '<td class="n">'+(kx!=null?num(kx,1):'—')+'</td>'+
     '<td class="n">'+(gx!=null?Math.round(gx):'—')+'</td>'+
     '<td class="n">'+(apx!=null?num(apx,1):'—')+'</td></tr>'+
     '</table>'+
-    '<details><summary>Ver más (carreras, limpias, jonrones, decisión)</summary>'+
-    '<table class="log"><tr><th>Salida</th><th>R</th><th>LP</th><th>HR</th><th>Dec</th></tr>'+
+    '<details><summary>Ver más (jonrones, decisión)</summary>'+
+    '<table class="log"><tr><th>Salida</th><th>HR</th><th>Dec</th></tr>'+
     det+'</table>'+
-    '<div class="leyenda"><b>R</b> carreras que le anotaron · <b>LP</b> carreras limpias · '+
+    '<div class="leyenda">'+
     '<b>HR</b> jonrones permitidos · <b>Dec</b> G ganó, P perdió, ND sin decisión.</div></details>'+
     (ipx!=null?'<div class="flag">En una salida típica <b>'+esc(nombre)+'</b> aguanta <b>'+num(ipx,1)+' innings</b> y poncha a <b>'+
       num(kx,1)+'</b>'+(gx!=null?', con Game Score de <b>'+Math.round(gx)+'</b> ('+gscTxt(Math.round(gx))+')':'')+
-      '. Lo que falte de los 9 innings lo tira el bullpen.'+
+      '. Le anotan <b>'+(rx!=null?num(rx,1):'—')+' carreras</b> por salida ('+num(lx,1)+' limpias). Lo que falte de los 9 innings lo tira el bullpen.'+
       (ipx<5?' Menos de 5 innings por salida es apertura corta — el bullpen decide este juego más que él.':'')+
       '</div>':'')+
     (span!=null&&span>45?'<div class="flag">⚠️ Estas 5 salidas cubren <b>'+span+' días</b>. '+

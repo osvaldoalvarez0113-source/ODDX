@@ -413,6 +413,14 @@ sec('Diseño interior de las apps (Clásico · Cristal · Broadcast · Pro · Bo
  const obs=rd('obsidiana.js');
  ok('ya no sale la animación de OVA (círculo) al abrir MLB, fútbol o NBA',!/^\s*if\(document\.body\) mostrarSplash\(\)/m.test(obs)&&!/addEventListener\(["']DOMContentLoaded["'],\s*mostrarSplash\)/.test(obs));
 }
+sec('Salidas del pícher: carreras permitidas a la vista');
+{
+ const ix=rd('index.html'), b=ix.slice(ix.indexOf('function salidasBloque'),ix.indexOf('/* ---------- registro de picks'));
+ ok('la tabla principal de salidas trae R (carreras) y LP (limpias) junto a H',/<th>H<\/th><th>R<\/th><th>LP<\/th><th>BB<\/th>/.test(b));
+ ok('el renglón de Promedio incluye el promedio de R y de LP',/rx!=null\?num\(rx,1\)/.test(b)&&/lx!=null\?num\(lx,1\)/.test(b));
+ ok('«Ver más» ya no repite R y LP (queda HR y decisión)',/<th>Salida<\/th><th>HR<\/th><th>Dec<\/th>/.test(b));
+ ok('el resumen dice cuántas carreras le anotan por salida',/Le anotan <b>/.test(b));
+}
 sec('Cinco diseños nuevos: Historias, Duelo, Bento, Agenda y Radar de valor (interior2.js)');
 {
  const I2=require(path.join(__dirname,'interior2.js')), UI2=require(path.join(__dirname,'interior.js'));
