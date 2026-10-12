@@ -1,0 +1,79 @@
+## Backtest OVA contra el mercado (S2026)
+
+### Conexion
+```
+Probando…
+MLB OK · juegos el 2026-10-10: 1
+ESPN calendario OK · juegos: 1 · ejemplo CWS@CLE 0-2 (id 401907994)
+ESPN líneas OK · proveedores: DraftKings
+moneyline leído: local -139 / visita 124 (DraftKings)
+```
+
+### Resultado
+```
+JUEGOS 2077 | perdida modelo 0.6811 mercado 0.6770 promedio 0.6916 | dif 0.0041 z 1.52
+REGRESION mercado 0.822±0.370 modelo 0.540±0.482
+ROI>=1pts n=1293 gan=596 roi=-0.0%±6.2
+ROI>=2pts n=1070 gan=489 roi=0.2%±6.9
+ROI>=3pts n=864 gan=402 roi=3.5%±7.8
+ROI>=4pts n=689 gan=316 roi=3.2%±8.8
+ROI>=5pts n=548 gan=245 roi=2.1%±10.0
+ROI>=6pts n=398 gan=171 roi=-0.4%±11.8
+ROI>=8pts n=215 gan=84 roi=-6.3%±16.4
+LOCAL modelo 53.6% mercado 53.0% real 52.8%
+AJUSTE local: perdida 0.6812 dif 0.0042 z 1.56 | extra local -1.50/-0.21 pts
+AJUSTE local+pendiente: perdida 0.6809 dif 0.0038 z 1.34 | b 1.17/1.30
+ROI_CORR>=1pts n=1296 gan=594 roi=0.3%±6.2
+ROI_CORR>=2pts n=1081 gan=494 roi=1.4%±6.9
+ROI_CORR>=3pts n=869 gan=398 roi=3.1%±7.8
+ROI_CORR>=4pts n=683 gan=305 roi=1.9%±8.9
+ROI_CORR>=5pts n=531 gan=232 roi=1.3%±10.3
+ROI_CORR>=6pts n=404 gan=168 roi=-0.7%±12.1
+ROI_CORR>=8pts n=219 gan=85 roi=-5.6%±16.4
+BIN 0%-40% n=28 modelo 37.2% mercado 39.7% real 25.0%
+BIN 40%-50% n=526 modelo 46.7% mercado 46.8% real 43.9%
+BIN 50%-60% n=1242 modelo 54.7% mercado 54.1% real 54.8%
+BIN 60%-70% n=274 modelo 63.0% mercado 61.0% real 62.8%
+BIN 70%-100% n=7 modelo 72.6% mercado 63.1% real 71.4%
+Rango 2026-03-20 a 2026-09-30. Juegos finales MLB: 2430 · cruzados con ESPN: 2429 · con línea: 2429 · medidos: 2077. Descartados: sin cruce 1, sin línea 0, pocos datos del día 352. Fuente de la línea: DraftKings 2429 (se toma la línea final que ESPN guarda del juego, con el vig quitado para comparar probabilidades). El modelo usa solo datos de antes de ese día. Como la MLB no da el bullpen por fecha, se usa carreras permitidas por juego del equipo × 0.92 (proxy del ERA del staff) y no se usan splits de mano; por eso puede diferir un poco de la app. Ejemplos: 2026-04-12 LAA@CIN modelo 46.6% mercado 48.9% (-105/-115) ganó local 0 · 2026-04-12 MIA@DET modelo 48.9% mercado 60.3% (-171/141) ganó local 1
+```
+
+Resultado — 2077 juegos medidosError (pérdida log) | Modelo OVA | Mercado (sin vig) | Solo promedio | 
+Pérdida (menor = mejor) | 0.6811 | 0.6770 | 0.6916 | 
+Brier | 0.2440 | 0.2421 | 0.2492 | 
+Con esta muestra no se distingue entre el modelo y el mercado (diferencia 0.0041, 1.5 errores estándar).¿El modelo agrega algo que el mercado no sabe?Peso en la regresión | Valor | ± (2 err.) | 
+Mercado (1.00 = lo toma entero) | 0.82 | 0.37 | 
+Modelo OVA (0 = no aporta) | 0.54 | 0.48 | 
+El modelo aporta información extra sobre el mercado. Esto es lo que habría que confirmar con más juegos.Si hubieras apostado donde el modelo ve ventajaVentaja mínima | Apuestas | Ganadas | Retorno | ± (2 err.) | 
+≥ 1 pts | 1293 | 46% | -0.0% | 6% | 
+≥ 2 pts | 1070 | 46% | +0.2% | 7% | 
+≥ 3 pts | 864 | 47% | +3.5% | 8% | 
+≥ 4 pts | 689 | 46% | +3.2% | 9% | 
+≥ 5 pts | 548 | 45% | +2.1% | 10% | 
+≥ 6 pts | 398 | 43% | -0.4% | 12% | 
+≥ 8 pts | 215 | 39% | -6.3% | 16% | 
+Una unidad por apuesta, al precio real de cierre de DraftKings (con su vig). Verde/rojo solo si el intervalo no cruza el cero. Pocas apuestas = mucho ruido.Ventaja de local: ¿cuánto le da cada uno?Promedio de probabilidad del local | Valor | 
+Modelo OVA | 53.6% | 
+Mercado | 53.0% | 
+Lo que pasó (local ganó) | 52.8% | 
+El modelo da una ventaja de local parecida a la real.¿Mejora el modelo si se corrige? (ajustado en una mitad, probado en la otra)Versión | Pérdida | vs mercado | z | 
+Modelo actual | 0.6811 | +0.0041 | 1.5 | 
++ ventaja de local corregida | 0.6812 | +0.0042 | 1.6 | 
++ local y pendiente | 0.6809 | +0.0038 | 1.3 | 
+Mercado | 0.6770 | 0 | — | 
+"vs mercado": positivo = el modelo pierde contra el mercado, cerca de 0 o negativo = lo alcanza o le gana. Cada mitad se corrige con parámetros ajustados en la OTRA mitad, así que ningún juego se midió con parámetros que lo hayan visto. Ventaja de local que sale del ajuste: -1.5 y -0.2 puntos extra sobre 50% (en las dos mitades).Apostando con la ventaja de local corregidaVentaja mínima | Apuestas | Ganadas | Retorno | ± (2 err.) | 
+≥ 1 pts | 1296 | 46% | +0.3% | 6% | 
+≥ 2 pts | 1081 | 46% | +1.4% | 7% | 
+≥ 3 pts | 869 | 46% | +3.1% | 8% | 
+≥ 4 pts | 683 | 45% | +1.9% | 9% | 
+≥ 5 pts | 531 | 44% | +1.3% | 10% | 
+≥ 6 pts | 404 | 42% | -0.7% | 12% | 
+≥ 8 pts | 219 | 39% | -5.6% | 16% | 
+¿Cuando el modelo dice X, qué pasa?Modelo dice (local) | Juegos | Modelo | Mercado | Ganó local | 
+0%–40% | 28 | 37.2% | 39.7% | 25.0% | 
+40%–50% | 526 | 46.7% | 46.8% | 43.9% | 
+50%–60% | 1242 | 54.7% | 54.1% | 54.8% | 
+60%–70% | 274 | 63.0% | 61.0% | 62.8% | 
+70%–100% | 7 | 72.6% | 63.1% | 71.4% | 
+Rango 2026-03-20 a 2026-09-30. Juegos finales MLB: 2430 · cruzados con ESPN: 2429 · con línea: 2429 · medidos: 2077. Descartados: sin cruce 1, sin línea 0, pocos datos del día 352. Fuente de la línea: DraftKings 2429 (se toma la línea final que ESPN guarda del juego, con el vig quitado para comparar probabilidades). El modelo usa solo datos de antes de ese día. Como la MLB no da el bullpen por fecha, se usa carreras permitidas por juego del equipo × 0.92 (proxy del ERA del staff) y no se usan splits de mano; por eso puede diferir un poco de la app. Ejemplos: 2026-04-12 LAA@CIN modelo 46.6% mercado 48.9% (-105/-115) ganó local 0 · 2026-04-12 MIA@DET modelo 48.9% mercado 60.3% (-171/141) ganó local 1
+
