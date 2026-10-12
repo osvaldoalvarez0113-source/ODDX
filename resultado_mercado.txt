@@ -1,0 +1,79 @@
+## Backtest OVA contra el mercado (S2024)
+
+### Conexion
+```
+Probando…
+MLB OK · juegos el 2026-10-10: 1
+ESPN calendario OK · juegos: 1 · ejemplo CWS@CLE 0-2 (id 401907994)
+ESPN líneas OK · proveedores: DraftKings
+moneyline leído: local -139 / visita 124 (DraftKings)
+```
+
+### Resultado
+```
+JUEGOS 2027 | perdida modelo 0.6836 mercado 0.6691 promedio 0.6915 | dif 0.0145 z 4.61
+REGRESION mercado 1.118±0.323 modelo -0.034±0.496
+ROI>=1pts n=1310 gan=537 roi=-6.7%±6.3
+ROI>=2pts n=1102 gan=442 roi=-7.7%±7.0
+ROI>=3pts n=923 gan=360 roi=-8.7%±7.7
+ROI>=4pts n=753 gan=290 roi=-8.0%±8.7
+ROI>=5pts n=610 gan=228 roi=-9.1%±9.8
+ROI>=6pts n=478 gan=176 roi=-9.7%±11.1
+ROI>=8pts n=314 gan=110 roi=-12.2%±13.8
+LOCAL modelo 53.3% mercado 53.1% real 52.8%
+AJUSTE local: perdida 0.6869 dif 0.0179 z 5.39 | extra local 1.94/-2.87 pts
+AJUSTE local+pendiente: perdida 0.6871 dif 0.0181 z 5.35 | b 1.00/1.19
+ROI_CORR>=1pts n=1355 gan=552 roi=-8.4%±6.2
+ROI_CORR>=2pts n=1156 gan=464 roi=-8.4%±6.7
+ROI_CORR>=3pts n=977 gan=385 roi=-8.4%±7.5
+ROI_CORR>=4pts n=814 gan=309 roi=-10.6%±8.2
+ROI_CORR>=5pts n=679 gan=250 roi=-13.0%±9.0
+ROI_CORR>=6pts n=548 gan=204 roi=-10.3%±10.2
+ROI_CORR>=8pts n=345 gan=121 roi=-13.6%±13.0
+BIN 0%-40% n=35 modelo 38.0% mercado 41.0% real 34.3%
+BIN 40%-50% n=536 modelo 46.8% mercado 46.3% real 45.0%
+BIN 50%-60% n=1209 modelo 54.6% mercado 54.5% real 54.7%
+BIN 60%-70% n=239 modelo 62.8% mercado 62.7% real 63.2%
+BIN 70%-100% n=8 modelo 71.0% mercado 68.8% real 75.0%
+Rango 2024-03-20 a 2024-09-30. Juegos finales MLB: 2432 · cruzados con ESPN: 2425 · con línea: 2416 · medidos: 2027. Descartados: sin cruce 5, sin línea 9, pocos datos del día 389, marcador distinto entre ESPN y MLB 2 (401569208 vs MLB 745180, 401570472 vs MLB 746755). Fuente de la línea: DraftKings (old) 368, ESPN BET 2029, BetfairSportsbook 2, Caesars Sportsbook (Colorado) 2, Bet365 1, ESPN BET - Live Odds 14 (se toma la línea final que ESPN guarda del juego, con el vig quitado para comparar probabilidades). El modelo usa solo datos de antes de ese día. Como la MLB no da el bullpen por fecha, se usa carreras permitidas por juego del equipo × 0.92 (proxy del ERA del staff) y no se usan splits de mano; por eso puede diferir un poco de la app. Ejemplos: 2024-04-12 SD@LAD modelo 56.3% mercado 65.7% (-218/180) ganó local 0 · 2024-04-13 SD@LAD modelo 50.0% mercado 66.3% (-238/180) ganó local 1
+```
+
+Resultado — 2027 juegos medidosError (pérdida log) | Modelo OVA | Mercado (sin vig) | Solo promedio | 
+Pérdida (menor = mejor) | 0.6836 | 0.6691 | 0.6915 | 
+Brier | 0.2453 | 0.2386 | 0.2492 | 
+El mercado le gana al modelo con diferencia clara (modelo peor por 0.0145, 4.6 errores estándar).¿El modelo agrega algo que el mercado no sabe?Peso en la regresión | Valor | ± (2 err.) | 
+Mercado (1.00 = lo toma entero) | 1.12 | 0.32 | 
+Modelo OVA (0 = no aporta) | -0.03 | 0.50 | 
+El modelo NO aporta información que el mercado no tenga ya. Su señal está dentro del precio.Si hubieras apostado donde el modelo ve ventajaVentaja mínima | Apuestas | Ganadas | Retorno | ± (2 err.) | 
+≥ 1 pts | 1310 | 41% | -6.7% | 6% | 
+≥ 2 pts | 1102 | 40% | -7.7% | 7% | 
+≥ 3 pts | 923 | 39% | -8.7% | 8% | 
+≥ 4 pts | 753 | 39% | -8.0% | 9% | 
+≥ 5 pts | 610 | 37% | -9.1% | 10% | 
+≥ 6 pts | 478 | 37% | -9.7% | 11% | 
+≥ 8 pts | 314 | 35% | -12.2% | 14% | 
+Una unidad por apuesta, al precio real de cierre de DraftKings (con su vig). Verde/rojo solo si el intervalo no cruza el cero. Pocas apuestas = mucho ruido.Ventaja de local: ¿cuánto le da cada uno?Promedio de probabilidad del local | Valor | 
+Modelo OVA | 53.3% | 
+Mercado | 53.1% | 
+Lo que pasó (local ganó) | 52.8% | 
+El modelo da una ventaja de local parecida a la real.¿Mejora el modelo si se corrige? (ajustado en una mitad, probado en la otra)Versión | Pérdida | vs mercado | z | 
+Modelo actual | 0.6836 | +0.0145 | 4.6 | 
++ ventaja de local corregida | 0.6869 | +0.0179 | 5.4 | 
++ local y pendiente | 0.6871 | +0.0181 | 5.4 | 
+Mercado | 0.6691 | 0 | — | 
+"vs mercado": positivo = el modelo pierde contra el mercado, cerca de 0 o negativo = lo alcanza o le gana. Cada mitad se corrige con parámetros ajustados en la OTRA mitad, así que ningún juego se midió con parámetros que lo hayan visto. Ventaja de local que sale del ajuste: 1.9 y -2.9 puntos extra sobre 50% (en las dos mitades).Apostando con la ventaja de local corregidaVentaja mínima | Apuestas | Ganadas | Retorno | ± (2 err.) | 
+≥ 1 pts | 1355 | 41% | -8.4% | 6% | 
+≥ 2 pts | 1156 | 40% | -8.4% | 7% | 
+≥ 3 pts | 977 | 39% | -8.4% | 7% | 
+≥ 4 pts | 814 | 38% | -10.6% | 8% | 
+≥ 5 pts | 679 | 37% | -13.0% | 9% | 
+≥ 6 pts | 548 | 37% | -10.3% | 10% | 
+≥ 8 pts | 345 | 35% | -13.6% | 13% | 
+¿Cuando el modelo dice X, qué pasa?Modelo dice (local) | Juegos | Modelo | Mercado | Ganó local | 
+0%–40% | 35 | 38.0% | 41.0% | 34.3% | 
+40%–50% | 536 | 46.8% | 46.3% | 45.0% | 
+50%–60% | 1209 | 54.6% | 54.5% | 54.7% | 
+60%–70% | 239 | 62.8% | 62.7% | 63.2% | 
+70%–100% | 8 | 71.0% | 68.8% | 75.0% | 
+Rango 2024-03-20 a 2024-09-30. Juegos finales MLB: 2432 · cruzados con ESPN: 2425 · con línea: 2416 · medidos: 2027. Descartados: sin cruce 5, sin línea 9, pocos datos del día 389, marcador distinto entre ESPN y MLB 2 (401569208 vs MLB 745180, 401570472 vs MLB 746755). Fuente de la línea: DraftKings (old) 368, ESPN BET 2029, BetfairSportsbook 2, Caesars Sportsbook (Colorado) 2, Bet365 1, ESPN BET - Live Odds 14 (se toma la línea final que ESPN guarda del juego, con el vig quitado para comparar probabilidades). El modelo usa solo datos de antes de ese día. Como la MLB no da el bullpen por fecha, se usa carreras permitidas por juego del equipo × 0.92 (proxy del ERA del staff) y no se usan splits de mano; por eso puede diferir un poco de la app. Ejemplos: 2024-04-12 SD@LAD modelo 56.3% mercado 65.7% (-218/180) ganó local 0 · 2024-04-13 SD@LAD modelo 50.0% mercado 66.3% (-238/180) ganó local 1
+
