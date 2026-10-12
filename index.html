@@ -3252,6 +3252,7 @@ function fila(g,year){
   var el=document.createElement('div');
   el.className='game';
   el._pk=g.gamePk;
+  el._pit={a:{id:pa?pa.id:null,n:pa?pa.fullName:''},h:{id:pih?pih.id:null,n:pih?pih.fullName:''}};   /* abridor visita / local: lo usan las fotos de interior2.js */
   el.innerHTML='<div class="head"><div class="hrow"><div class="match">'+
     eqNom(a.team.id,esc(a.team.name),26)+' <span class="vs">@</span> '+
     eqNom(h.team.id,esc(h.team.name),26)+

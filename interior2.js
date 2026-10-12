@@ -45,6 +45,11 @@ var BASE=`
 .nxC small{display:block}
 .nxC b{display:block;font-variant-numeric:tabular-nums}
 .nxEmpty{font-size:12.5px;opacity:.8}
+.nxFoto{position:relative;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#2b3070;color:#fff;overflow:visible}
+.nxFoto i{font-style:normal;font-size:55%;line-height:1}
+.nxFoto img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover;background:#cfd6ee}
+.nxPn{display:none}
+.nxSide{position:relative}
 `;
 
 /* ===================================================================== 1 · HISTORIAS */
@@ -86,6 +91,8 @@ var HISTORIAS=dis('historias',`
 & .nxAb{display:none}
 & .nxNom{display:block;margin-top:8px;font-size:12.5px;font-weight:700;color:#D8DCFF;line-height:1.15;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 & .nxPc{display:none}
+& .nxFoto{position:relative;margin:10px auto 22px;width:40px;height:40px;border:3px solid #FFD84A;box-shadow:0 8px 16px -6px rgba(0,0,0,.7)}
+& .nxPn{display:block;position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:4px;white-space:nowrap;font-size:11.5px;font-weight:700;color:#D8DCFF;max-width:96px;overflow:hidden;text-overflow:ellipsis}
 & .nxMid{position:relative;width:126px;height:126px;flex:0 0 126px}
 & .nxR0{stroke:rgba(255,255,255,.16)}
 & .nxR1{stroke:#7CFFB2}
@@ -129,7 +136,7 @@ var DUELO=dis('duelo',`
 & .game .head>:not(.nxT):not(.bug){display:none!important}
 & .game .head .bug{margin:0;padding:8px 14px}
 & .nxT{display:block;position:relative}
-& .nxVs{position:relative;height:132px;background:var(--ta,#005A9C);overflow:hidden}
+& .nxVs{position:relative;height:150px;background:var(--ta,#005A9C);overflow:hidden}
 & .nxVs::before{content:"";position:absolute;inset:0;background:var(--th,#B4501D);clip-path:polygon(60% 0,100% 0,100% 100%,40% 100%)}
 & .nxVs::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.04),rgba(0,0,0,.5));pointer-events:none}
 & .nxTop{position:absolute;top:8px;left:0;right:0;z-index:3;display:flex;justify-content:center;gap:8px;padding:0 12px;font:700 12.5px/1 ${COND};letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.92)}
@@ -141,7 +148,13 @@ var DUELO=dis('duelo',`
 & .nxSide.h{right:14px;text-align:right}
 & .nxAb{display:block;font:900 56px/.9 ${COND};letter-spacing:.02em;text-shadow:0 4px 0 rgba(0,0,0,.35)}
 & .nxPc{display:block;margin-top:3px;font:700 18px/1 ${COND};letter-spacing:.05em}
-& .nxMid{position:absolute;left:50%;top:58%;z-index:3;width:50px;height:50px;border-radius:50%;background:#FFCC29;color:#111;border:3px solid #0C0C11;display:flex;align-items:center;justify-content:center;animation:nxVs 2.2s ease-in-out infinite}
+& .nxFoto{position:absolute;bottom:calc(100% + 4px);width:36px;height:36px;border:2px solid #fff;box-shadow:0 6px 14px -4px rgba(0,0,0,.6)}
+& .nxSide.a .nxFoto{left:0}
+& .nxSide.h .nxFoto{right:0}
+& .nxPn{display:block;position:absolute;top:50%;transform:translateY(-50%);font:700 13px/1 ${COND};letter-spacing:.06em;text-transform:uppercase;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,.6);white-space:nowrap;max-width:96px;overflow:hidden;text-overflow:ellipsis}
+& .nxSide.a .nxPn{left:44px}
+& .nxSide.h .nxPn{right:44px}
+& .nxMid{position:absolute;left:50%;top:62%;z-index:3;width:50px;height:50px;border-radius:50%;background:#FFCC29;color:#111;border:3px solid #0C0C11;display:flex;align-items:center;justify-content:center;animation:nxVs 2.2s ease-in-out infinite}
 & .nxRing,& .nxMT{display:none}
 & .nxVsb{display:block;font:900 20px/1 ${COND}}
 & .nxBar{height:7px;background:#262633;gap:0}
@@ -188,13 +201,15 @@ var BENTO=dis('bento',`
 & .nxTit{order:2;flex-basis:100%;font:800 17px/1.1 ${ROUND}}
 & .nxInfo{order:3;flex-basis:100%;font-size:12px;font-weight:600;color:#4A4570;display:none}
 & .game.open .nxInfo{display:block}
-& .nxVs{display:flex;align-items:center;justify-content:center;gap:4px}
+& .nxVs{display:flex;align-items:center;justify-content:center;gap:2px}
 & .nxSide{display:flex;flex-direction:column;align-items:center;width:42px}
 & .nxLogo{width:42px;height:42px;border:3px solid #fff;font-size:12px}
 & .nxSide.a .nxLogo{background:var(--ta,#6D6890)}
 & .nxSide.h .nxLogo{background:var(--th,#6D6890)}
 & .nxAb,& .nxNom,& .nxPc{display:none}
-& .nxMid{position:relative;width:68px;height:68px;flex:0 0 68px}
+& .nxFoto{position:absolute;right:-3px;bottom:-4px;width:22px;height:22px;border:2px solid #fff;box-shadow:0 4px 8px -3px rgba(22,19,43,.5)}
+& .game.open .nxFoto{width:30px;height:30px}
+& .nxMid{position:relative;width:60px;height:60px;flex:0 0 60px}
 & .nxR0{stroke:rgba(22,19,43,.12)}
 & .nxR1{stroke:#16132B}
 & .nxRn{font:800 20px/1 ${ROUND}}
@@ -247,11 +262,12 @@ var AGENDA=dis('agenda',`
 & .nxT{display:flex;align-items:center;gap:10px;padding:12px 14px;color:#14213D}
 & .nxVs{order:1;display:flex;flex:0 0 auto}
 & .nxSide{display:block;width:auto}
-& .nxSide.h{margin-left:-13px}
+& .nxSide.h{margin-left:6px}
 & .nxLogo{width:40px;height:40px;border:3px solid #fff;font-size:11.5px}
 & .nxSide.a .nxLogo{background:var(--ta,#5B7094)}
 & .nxSide.h .nxLogo{background:var(--th,#5B7094)}
 & .nxAb,& .nxNom,& .nxPc,& .nxMid,& .nxBar,& .nxArt{display:none}
+& .nxFoto{position:absolute;right:-5px;bottom:-5px;width:21px;height:21px;border:2px solid #fff;box-shadow:0 3px 6px -2px rgba(20,33,61,.5)}
 & .nxTop{order:2;flex:1;min-width:0;display:block;line-height:1.15}
 & .nxHora{display:none}
 & .nxTit{display:block;font-weight:800;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -286,8 +302,13 @@ var RADARV=dis('radarvalor',`
 & .game .head .bug{margin:0;padding:0 14px 10px}
 & .nxT{display:flex;align-items:center;gap:12px;padding:11px 14px}
 & .nxVs{order:1;flex:0 0 auto}
-& .nxSide{display:none}
-& .nxMid{position:relative;width:60px;height:60px;display:block}
+& .nxVs{display:flex;align-items:center;gap:8px}
+& .nxSide{display:block;position:static;width:auto;height:auto}
+& .nxSide .nxLogo,& .nxSide .nxAb,& .nxSide .nxNom,& .nxSide .nxPc{display:none}
+& .nxSide.a{order:2}
+& .nxSide.h{order:3;margin-left:-16px}
+& .nxFoto{position:relative;width:30px;height:30px;border:2px solid #22E4FF;box-shadow:0 0 10px -2px #22E4FF}
+& .nxMid{order:1;position:relative;width:60px;height:60px;display:block}
 & .nxR0{stroke:#16233B}
 & .nxR1{stroke:var(--nxC,#22E4FF);filter:drop-shadow(0 0 4px var(--nxC,#22E4FF))}
 & .game[data-nxv="si"]{--nxC:#B8FF3C}
@@ -296,9 +317,9 @@ var RADARV=dis('radarvalor',`
 & .nxRn::after{content:"%";font-size:10px}
 & .nxRl{display:none}
 & .nxTop{order:2;flex:1;min-width:0;display:block;line-height:1.2}
-& .nxHora{display:inline-block;margin-right:6px;font:700 12px/1 ${MONO};color:#22E4FF}
+& .nxHora{display:block;margin:0 0 3px;font:700 12px/1 ${MONO};color:#22E4FF}
 & .nxHora.vivo{color:#FF3D9A}
-& .nxTit{display:inline;font-weight:700;font-size:17px}
+& .nxTit{display:block;font-weight:700;font-size:17px;white-space:nowrap}
 & .nxInfo{display:block;font:500 12px/1.3 ${MONO};color:#8798BB;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 & .nxBar,& .nxArt,& .nxPcF{display:none}
 & .nxFoot{order:3;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
@@ -345,6 +366,16 @@ function anillo(p){
   s.innerHTML='<circle class="nxR0" cx="50" cy="50" r="42"/><circle class="nxR1" cx="50" cy="50" r="42" style="stroke-dasharray:'+(Math.max(0,Math.min(100,p))*2.639).toFixed(1)+' 263.9"/>';
   return s;
 }
+/* foto del abridor (misma fuente que usa la app en la pestaña de abridores) + apellido */
+function foto(p){
+  var f=T('span','nxFoto'), i=T('i','','⚾'); f.appendChild(i);
+  var im=T('img'); im.alt=''; im.loading='lazy';
+  im.onload=function(){ i.style.display='none'; }; im.onerror=function(){ im.style.display='none'; };
+  im.src='https://midfield.mlbstatic.com/v1/people/'+encodeURIComponent(p.id)+'/spots/120'; f.appendChild(im);
+  var nom=String(p.n||'').trim().split(/\s+/), ap=nom.length>1?nom.slice(1).join(' '):nom[0];
+  f.appendChild(T('b','nxPn',ap||''));
+  return f;
+}
 var ESTADIO='<svg viewBox="0 0 362 150" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><path d="M0 150V70Q50 30 112 54T236 40T362 62V150Z" fill="rgba(5,7,25,.55)"/><polygon points="181,24 262,95 181,150 100,95" fill="rgba(52,211,100,.26)" stroke="rgba(255,255,255,.32)" stroke-width="1.5"/><circle cx="181" cy="24" r="3.5" fill="#fff"/><circle cx="262" cy="95" r="3.5" fill="#fff"/><circle cx="100" cy="95" r="3.5" fill="#fff"/><g class="tw"><rect x="38" y="20" width="4" height="52" fill="#9AA3E6"/><circle cx="40" cy="16" r="9" fill="#fff" opacity=".9"/></g><g class="tw" style="animation-delay:1.1s"><rect x="320" y="16" width="4" height="56" fill="#9AA3E6"/><circle cx="322" cy="12" r="9" fill="#fff" opacity=".9"/></g></svg>';
 
 function armar(g,u){
@@ -365,11 +396,13 @@ function armar(g,u){
   top.appendChild(T('span','nxInfo',o.info||''));
   t.appendChild(top);
   var vs=T('div','nxVs');
-  function lado(cls,ab,src,nom,pc){
+  function lado(cls,ab,src,nom,pc,pit){
     var s=T('div','nxSide '+cls); s.appendChild(logo(src,ab)); s.appendChild(T('span','nxAb',ab)); s.appendChild(T('span','nxNom',nom||ab));
-    s.appendChild(T('span','nxPc',pc!=null?pc+'%':'')); return s;
+    s.appendChild(T('span','nxPc',pc!=null?pc+'%':''));
+    if(pit&&pit.id){ s.appendChild(foto(pit)); }
+    return s;
   }
-  vs.appendChild(lado('a',aA,o.ea,o.na,tiene?o.pa:null));
+  vs.appendChild(lado('a',aA,o.ea,o.na,tiene?o.pa:null,g._pit&&g._pit.a));
   var mid=T('div','nxMid');
   if(tiene){
     mid.appendChild(anillo(pf));
@@ -377,7 +410,7 @@ function armar(g,u){
   }
   mid.appendChild(T('span','nxVsb','VS'));
   vs.appendChild(mid);
-  vs.appendChild(lado('h',aH,o.eh,o.nh,tiene?o.ph:null));
+  vs.appendChild(lado('h',aH,o.eh,o.nh,tiene?o.ph:null,g._pit&&g._pit.h));
   t.appendChild(vs);
   if(tiene){
     var br=T('div','nxBar'), ia=T('i',o.pa>o.ph?'w':''), ih=T('i',o.ph>=o.pa?'w':'');
