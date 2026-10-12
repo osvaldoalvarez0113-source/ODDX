@@ -16,7 +16,12 @@ var UIS=[
  {id:'boleto',n:'Boleto',d:'Cada juego es un ticket: números grandes, sello de veredicto y cuota justa',sw:'linear-gradient(135deg,#0b0d12 0 34%,#F6F7F9 34% 80%,#FFD84A 80%)'},
  {id:'boletonoche',n:'Boleto noche',d:'El mismo ticket en oscuro, con acento coral',sw:'linear-gradient(135deg,#05070C 0 34%,#161C2A 34% 80%,#FF6B4A 80%)'},
  {id:'prensa',n:'Prensa',d:'Página de deportes de periódico: papel crema, tinta y letra serif. Se lee con sol',sw:'linear-gradient(135deg,#F3EEE1 0 52%,#17140E 52% 60%,#A61E16 60%)'},
- {id:'radar',n:'Radar',d:'Negro puro con cian y lima, marcos con esquinas y números en mono',sw:'radial-gradient(circle at 50% 130%,#22E4FFAA,transparent 62%),linear-gradient(#000,#000)'}
+ {id:'radar',n:'Radar',d:'Negro puro con cian y lima, marcos con esquinas y números en mono',sw:'radial-gradient(circle at 50% 130%,#22E4FFAA,transparent 62%),linear-gradient(#000,#000)'},
+ {id:'historias',n:'Historias',d:'Un juego por pantalla, estilo Instagram: desliza de lado, anillo de probabilidad y estadio',sw:'radial-gradient(circle at 30% 20%,#5b4bd6aa,transparent 55%),radial-gradient(circle at 80% 80%,#e0709aaa,transparent 55%),#0c1030'},
+ {id:'duelo',n:'Duelo',d:'Cartelera de pelea: cada juego es un cara a cara en diagonal con barra de tira y afloja',sw:'linear-gradient(115deg,#005A9C 0 48%,#FFCC29 48% 52%,#D8541D 52%)'},
+ {id:'bento',n:'Bento',d:'Tablero de recuadros de colores, resumen arriba y el juego abierto ocupa todo el ancho',sw:'linear-gradient(135deg,#D8F98E 0 34%,#E3D7FF 34% 67%,#FFD6BD 67%)'},
+ {id:'agenda',n:'Agenda',d:'Línea de tiempo del día con la hora a un lado y marcador de AHORA',sw:'linear-gradient(90deg,#E9F3FF 0 30%,#14213D 30% 33%,#FFFFFF 33% 80%,#FF6B57 80%)'},
+ {id:'radarvalor',n:'Radar de valor',d:'Mapa del día: cada juego es una burbuja (hora contra probabilidad). Neón sobre negro',sw:'radial-gradient(circle at 35% 60%,#B8FF3C 0 9%,transparent 10%),radial-gradient(circle at 70% 35%,#22E4FF 0 12%,transparent 13%),#05060A'}
 ];
 var BY={};UIS.forEach(function(u){BY[u.id]=u;});
 
@@ -392,12 +397,12 @@ html[data-ui^="boleto"] .game .cabp .nm b{color:var(--txt)}
 #uiSheet h2{margin:2px 0 3px;font-size:18px;font-weight:700}
 #uiSheet p{margin:0 0 12px;font-size:12px;color:#9DB2C8}
 #uiSheet .tiles{display:grid;grid-template-columns:1fr;gap:10px}
-#uiSheet .tile{display:flex;align-items:center;gap:12px;padding:0;text-align:left;background:rgba(255,255,255,.04);color:inherit;border:2px solid rgba(255,255,255,.12);border-radius:16px;overflow:hidden;cursor:pointer;font-family:inherit}
+#uiSheet .tile{display:flex;align-items:center;gap:12px;padding:0;text-align:left;background:#141C2B!important;color:#F2F5FA!important;border:2px solid rgba(255,255,255,.12);border-radius:16px;overflow:hidden;cursor:pointer;font-family:inherit}
 #uiSheet .tile.on{border-color:#FBBF24;box-shadow:0 0 0 3px rgba(251,191,36,.16)}
 #uiSheet .tile .sw{flex:0 0 96px;align-self:stretch;min-height:64px}
 #uiSheet .tile .tx{padding:10px 8px}
 #uiSheet .tile b{display:block;font-size:15px}
-#uiSheet .tile .tx>span{display:block;font-size:12px;color:#9DB2C8;margin-top:2px}
+#uiSheet .tile .tx>span{display:block;font-size:12px;color:#B4C2D6!important;margin-top:2px}
 @media (prefers-reduced-motion:reduce){html[data-ui] *,html[data-ui] *::before,html[data-ui] *::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important}}
 `;
 

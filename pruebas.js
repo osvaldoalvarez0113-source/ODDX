@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html'];
-const JS=['ovaextra.js','hubestilos.js','interior.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -57,9 +57,9 @@ else{
   res.forEach(([l,r])=>r.refs.forEach(([n,line,sc])=>{if(sc.has(n)||tops.has(n)||BROWSER.has(n)||ids.has(n)||FALSOS.has(n))return;if(!mal.has(n))mal.set(n,l+':'+line);}));
   ok(app+' sin nombres inexistentes',mal.size===0,[...mal].map(([n,w])=>n+' ('+w+')').join(', '));
  }
- revisar('futbol.html',['ovaextra.js','interior.js','obsidiana.js','mejoras.js','selecciones.js']);
- revisar('index.html',['ovaextra.js','interior.js','obsidiana.js','railway.js','historial.js']);
- revisar('nba.html',['ovaextra.js','interior.js']);
+ revisar('futbol.html',['ovaextra.js','interior.js','interior2.js','obsidiana.js','mejoras.js','selecciones.js']);
+ revisar('index.html',['ovaextra.js','interior.js','interior2.js','obsidiana.js','railway.js','historial.js']);
+ revisar('nba.html',['ovaextra.js','interior.js','interior2.js']);
  revisar('hub.html',['ovaextra.js','hubestilos.js']);
  revisar('panel.html',['ovaextra.js']);
  const sw=analizar(rd('sw.js'));const mal=sw.refs.filter(([n,l,sc])=>!(sc.has(n)||sw.top.has(n)||BROWSER.has(n))).map(r=>r[0]);ok('sw.js sin nombres inexistentes',mal.length===0,mal.join(','));
@@ -370,7 +370,7 @@ sec('Presentaciones del hub (6 diseños)');
 sec('Diseño interior de las apps (Clásico · Cristal · Broadcast · Pro · Boleto · Prensa · Radar)');
 {
  const UI=require(path.join(__dirname,'interior.js'));
- ok('8 diseños: clásico, cristal, broadcast, pro, boleto, boleto noche, prensa y radar',JSON.stringify(UI.UIS.map(u=>u.id))===JSON.stringify(['clasico','cristal','broadcast','pro','boleto','boletonoche','prensa','radar']));
+ ok('13 diseños: los 8 de siempre y los 5 nuevos (historias, duelo, bento, agenda, radar de valor)',JSON.stringify(UI.UIS.map(u=>u.id))===JSON.stringify(['clasico','cristal','broadcast','pro','boleto','boletonoche','prensa','radar','historias','duelo','bento','agenda','radarvalor']));
  ok('Boleto: los dos diseños definen sus colores y comparten la forma',/html\[data-ui="boleto"\]\{--bzBg1/.test(UI.css)&&/html\[data-ui="boletonoche"\]\{--bzBg1/.test(UI.css)&&/html\[data-ui\^="boleto"\] \.bzSello/.test(UI.css));
  ok('Boleto: el ticket tiene muescas (máscara) y en la barra de abajo solo la pestaña activa lleva nombre',/\.game\.bzOn \.head\{-webkit-mask:radial-gradient/.test(UI.css)&&/\.tbar-btn:not\(\.on\) \.lb\{position:absolute/.test(UI.css));
  ok('Boleto: los botones que la app oculta con display:none siguen ocultos',!/\.tabbar \.tbar-btn\{[^}]*display:flex!important/.test(UI.css));
@@ -413,6 +413,26 @@ sec('Diseño interior de las apps (Clásico · Cristal · Broadcast · Pro · Bo
  const obs=rd('obsidiana.js');
  ok('ya no sale la animación de OVA (círculo) al abrir MLB, fútbol o NBA',!/^\s*if\(document\.body\) mostrarSplash\(\)/m.test(obs)&&!/addEventListener\(["']DOMContentLoaded["'],\s*mostrarSplash\)/.test(obs));
 }
+sec('Cinco diseños nuevos: Historias, Duelo, Bento, Agenda y Radar de valor (interior2.js)');
+{
+ const I2=require(path.join(__dirname,'interior2.js')), UI2=require(path.join(__dirname,'interior.js'));
+ const ids=['historias','duelo','bento','agenda','radarvalor'];
+ ok('interior2.js conoce los 5 diseños nuevos',JSON.stringify(I2.NEW)===JSON.stringify(ids));
+ ids.forEach(id=>{
+  const u=UI2.UIS.find(x=>x.id===id);
+  ok(id+': aparece en el selector con nombre, descripción y muestra',!!(u&&u.n&&u.d&&u.sw));
+  ok(id+': tiene sus reglas CSS (fondo, tarjeta, cabecera nueva y barra de abajo)',new RegExp('html\\[data-ui="'+id+'"\\]\\[data-ui\\] \\.game\\{').test(I2.css)&&new RegExp('html\\[data-ui="'+id+'"\\]\\[data-ui\\] \\.nxT\\{').test(I2.css)&&new RegExp('html\\[data-ui="'+id+'"\\]\\[data-ui\\] :is\\(\\.navbar,\\.tabbar\\)').test(I2.css));
+  ok(id+': oculta la cabecera original solo dentro de su diseño (vuelve al cambiar)',new RegExp('html\\[data-ui="'+id+'"\\]\\[data-ui\\] \\.game \\.head>:not\\(\\.nxT\\):not\\(\\.bug\\)\\{display:none!important\\}').test(I2.css));
+ });
+ ok('la cabecera nueva está oculta por defecto (Clásico y demás no la ven)',/\.nxT,\.nxProg,\.nxSum,\.nxPlot,\.nxAhora\{display:none\}/.test(I2.css));
+ ok('diseno.js entrega el lector de tarjetas (OVALeerJuego) que usa interior2.js',/root\.OVALeerJuego=bzLeer/.test(rd('diseno.js')));
+ ['index.html','futbol.html','nba.html'].forEach(f=>{const h=rd(f),i1=h.indexOf('interior2.js'),i2=h.indexOf('<style>');ok(f+' carga interior2.js en la cabecera, después de interior.js',i1>h.indexOf('interior.js')&&i1<i2);});
+ ok('el service worker guarda interior2.js para abrir sin internet',/'interior2\.js'/.test(rd('sw.js')));
+ ok('los cinco respetan "reducir movimiento" (lo cubre interior.js para todo data-ui)',/prefers-reduced-motion:reduce\)\{html\[data-ui\] \*/.test(rd('interior.js')));
+ ok('ningún texto de la app entra a la cabecera nueva con innerHTML (solo textContent; el único innerHTML es el dibujo fijo del estadio y el anillo numérico)',(rd('interior2.js').match(/innerHTML/g)||[]).length===2);
+ ok('minutos() entiende «7:08 PM», «12:05 AM» y 24 horas',I2.minutos('7:08 PM')===1148&&I2.minutos('12:05 AM')===5&&I2.minutos('21:30')===1290&&I2.minutos('EN VIVO')===null);
+}
+
 sec('Ganchos y archivos conectados');
 ok('el panel carga ovaextra.js',/ovaextra\.js/.test(rd('panel.html')));
 ok('index.html publica favoritos al hub',/OVAHoy\.publicar\('mlb'/.test(rd('index.html')));

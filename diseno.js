@@ -409,6 +409,7 @@ function bzLeer(g){
  }
  return o;
 }
+root.OVALeerJuego=bzLeer;   /* interior2.js (Historias, Duelo, Bento, Agenda, Radar de valor) lee las tarjetas con esto */
 function bzMk(tag,cls,txt){ var e=el(tag,cls); if(txt!=null) e.textContent=txt; return e; }
 function bzLado(o,lado){
  var a=lado==='a', pc=a?o.pa:o.ph, gana=o.pa!=null&&(a?o.pa>o.ph:o.ph>=o.pa);
