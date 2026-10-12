@@ -22,7 +22,7 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 | `railway.js` | Compara (o aplica) el cálculo del servidor Railway sobre el Veredicto de MLB. **Única copia** de ese parche. |
 | `pinnacle.js` + `pinnacle-datos.json` | Muestra lo que dice el mercado (Pinnacle sin margen). El JSON lo escribe el escáner de GitHub Actions. |
 | `mejoras.js`, `selecciones.js` | Lesionados + clima (fútbol) y selecciones (ESPN). |
-| `pruebas.js` | 184 pruebas automáticas. `node --expose-internals pruebas.js` |
+| `pruebas.js` | 236 pruebas automáticas. `node --expose-internals pruebas.js` |
 | `backtests/` | Páginas de medición (se abren en el navegador). Cada decisión de la fórmula salió de una de ellas. Índice en `backtests/index.html`. |
 | `scripts/` | Lo que corre en GitHub Actions o a mano: `valor.js` (escáner Pinnacle), `correr_mercado.js`, `correr_deportes.js`, `ova_formula.py`. |
 | `worker/ova-ia.js` | Versión **endurecida** del Worker de Cloudflare del botón 🦈 (ver abajo). |
@@ -51,7 +51,7 @@ Revisa sintaxis de todas las páginas, nombres usados sin existir, el service wo
 |---|---|---|
 | `MULT` | 6 | backtests de 2025 y 2026 (ganó al 13 y al 17) |
 | `BONO_LOCAL` | 0.59 | backtest contra el mercado, temporada 2025 completa (`backtests/backtestmercado.html`) |
-| `PRIOR_ERA` | 40 innings | supuesto, nunca medido (se puede mover en Ajustes) |
+| `PRIOR_ERA` | 40 innings | medido contra el mercado en 2024-2026: 20 a 120 no cambia nada (`docs/MEDICION-MERCADO-MLB-2026-10.md`) |
 | `DISP` | 2.3 | `backtests/backtestforma.html` (razón varianza/media de 2.32 y 2.37) |
 | `ENCOGE` | 0.45 | backtest del total (pendiente medida 0.45 en 2026 y 0.44 en 2025) |
 | `F5_FRAC` | 0.56 | `backtests/backtestequipo.html` (0.558 y 0.562) |
