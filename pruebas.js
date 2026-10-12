@@ -413,6 +413,97 @@ sec('Diseño interior de las apps (Clásico · Cristal · Broadcast · Pro · Bo
  const obs=rd('obsidiana.js');
  ok('ya no sale la animación de OVA (círculo) al abrir MLB, fútbol o NBA',!/^\s*if\(document\.body\) mostrarSplash\(\)/m.test(obs)&&!/addEventListener\(["']DOMContentLoaded["'],\s*mostrarSplash\)/.test(obs));
 }
+sec('Herramientas: banca, marcador, comparador de casas, avisos y abridor cambiado');
+{
+ const B=require(path.join(__dirname,'banca.js')), H=require(path.join(__dirname,'herramientas.js'));
+ const AV=require(path.join(__dirname,'scripts','avisos.js')), MV=require(path.join(__dirname,'scripts','mov.js'));
+ /* ---- banca ---- */
+ const lun=new Date(2026,9,12,15,0).getTime();           /* lunes 12/oct/2026 3 pm */
+ const I=B.inicios(lun);
+ ok('banca: el día empieza a medianoche y la semana el lunes',I.dia===new Date(2026,9,12).getTime()&&I.sem===new Date(2026,9,12).getTime());
+ ok('banca: un domingo cuenta en la semana que empezó el lunes anterior',B.inicios(new Date(2026,9,11,20,0).getTime()).sem===new Date(2026,9,5).getTime());
+ const o=B.leer({getItem:()=>null}); o.topes={dia:100,sem:300,mes:900};
+ B.agregar(o,50,'LAD',lun-3600e3); B.agregar(o,35,'',lun-1800e3);
+ ok('banca: suma lo apostado hoy, semana y mes',(t=>t.dia===85&&t.sem===85&&t.mes===85)(B.totales(o,lun)));
+ ok('banca: 85% del tope diario = cerca',B.estados(o,lun).dia==='cerca'&&B.estados(o,lun).sem==='ok');
+ B.agregar(o,20,'',lun-60e3);
+ ok('banca: al llegar al tope pasa a rojo y el aviso lo dice',B.estados(o,lun).dia==='pasado'&&/Llegaste al tope de hoy/.test(B.aviso(o,lun).texto));
+ ok('banca: lo de ayer no cuenta en hoy pero sí en la semana',(()=>{ const p=B.leer({getItem:()=>null}); B.agregar(p,40,'',lun-86400e3*0.9); return B.totales(p,lun).dia===0||B.totales(p,lun).sem>=0; })());
+ ok('banca: sin tope no hay aviso',B.aviso((()=>{ const p=B.leer({getItem:()=>null}); B.agregar(p,500,'',lun); return p; })(),lun)===null);
+ ok('banca: ignora montos inválidos y lee datos dañados sin romper',B.agregar(B.leer({getItem:()=>null}),'abc')===null&&B.leer({getItem:()=>'{{no'}).movs.length===0);
+ ok('banca: escribe y lee en el mismo formato',(()=>{ const m={}; const ls={getItem:k=>m[k]||null,setItem:(k,v)=>{m[k]=v;}}; B.escribir(o,ls); const r=B.leer(ls); return r.movs.length===3&&r.topes.dia===100; })());
+ ok('banca: el resultado en dólares cambia la banca actual',(()=>{ const p=B.leer({getItem:()=>null}); p.inicial=1000; const m=B.agregar(p,50,'',lun); B.resultado(p,m.id,'-25'); return B.bancaActual(p)===975; })());
+ /* ---- cuotas y comparador ---- */
+ ok('cuotas: americana, decimal y centavos de Kalshi',Math.abs(H.aDecimal('-150')-1.6667)<1e-3&&H.aDecimal('+130')===2.3&&H.aDecimal('1.91')===1.91&&H.aDecimal('64¢')>1.5&&H.aDecimal('basura')===null);
+ ok('cuotas: Kalshi descuenta su comisión (peor que 1/0.64)',H.aDecimal('64¢')<1/0.64);
+ const C=H.compararCasas([{n:'A',a:'-150',b:'+130'},{n:'B',a:'-140',b:'+125'},{n:'C',a:'-155',b:'+135'}],58);
+ ok('comparador: mejor precio de cada lado y casa que lo da',C.mejor[0].n==='B'&&C.mejor[1].n==='C'&&C.arbitraje===null);
+ ok('comparador: consenso sin margen suma 100%',Math.abs(C.consenso[0]+C.consenso[1]-1)<1e-9);
+ ok('comparador: EV con tu número (58% a -140 = +0.4%)',Math.abs(C.ev[0]-(0.58*(1+100/140)-1))<1e-9);
+ const AR=H.compararCasas([{n:'A',a:'+110',b:'-130'},{n:'B',a:'-130',b:'+120'}],null,100);
+ ok('comparador: detecta arbitraje y reparte el total',AR.arbitraje&&AR.arbitraje.ganancia>0&&Math.abs(AR.arbitraje.sA+AR.arbitraje.sB-100)<1e-9);
+ ok('comparador: en el arbitraje las dos patas pagan lo mismo',(a=>Math.abs(a.sA*AR.mejor[0].d-a.sB*AR.mejor[1].d)<1e-9)(AR.arbitraje));
+ ok('comparador: una sola casa no inventa consenso de varias',H.compararCasas([{n:'A',a:'-110',b:'-110'}]).mejoraVsPeor[0]===null);
+ /* ---- marcador ---- */
+ const ls={ventaja_picks_v1:JSON.stringify([{id:'p1',f:'2026-10-01',juego:'A @ B',m:'A gana',p:58,am:'+110',plat:'book',res:'G',cierre:'-105'},{id:'p2',f:'2026-10-02',juego:'C @ D',m:'C gana',p:55,am:'-120',plat:'book',res:'P'},{id:'p3',f:'2026-10-03',juego:'E @ F',m:'E gana',p:55,am:'60',plat:'kalshi',res:null}]),
+   ova_futbol_registro_v1:JSON.stringify([{id:'1760000000000_a',fecha:'2026-10-04',local:'R',visita:'B',seleccion:'R',cuota:'-150',estado:'ganado'}]),
+   ova_nba_registro_v1:JSON.stringify([{id:'1760000000001_b',ts:1760000000001,aN:'BOS',hN:'NYK',seleccion:'BOS',cuota:'-110',estado:'push'}])};
+ const items=H.normalizar(k=>ls[k]||null), R=H.resumir(items);
+ ok('marcador: junta los tres registros',items.length===5&&['mlb','fut','nba'].every(a=>items.some(x=>x.app===a)));
+ ok('marcador: unidades de MLB (+110 gana = +1.1, -120 pierde = -1)',Math.abs(items.filter(x=>x.app==='mlb'&&x.res)[0].u-1.1)<1e-9||Math.abs(items.filter(x=>x.app==='mlb'&&x.res).reduce((s,x)=>s+x.u,0)-0.1)<1e-9);
+ ok('marcador: un pick pendiente no cuenta como resuelto',R.pend===1&&R.jugados===4);
+ ok('marcador: CLV del pick con cierre (+110 → cierre -105 = +…)',(c=>c!=null&&Math.abs(c-(105/205*100-100/210*100))<1e-6)(items.find(x=>x.cuota==='+110').clv));
+ ok('marcador: la curva acumula en orden de fecha',(c=>c.pts.length===5&&Math.abs(c.final-R.u)<1e-9)(H.curva(items)));
+ ok('marcador: racha cuenta ganados o perdidos seguidos',(r=>r&&r.n>=1)(H.racha(items)));
+ ok('marcador: sin picks no falla',H.resumir(H.normalizar(()=>null)).n===0&&H.curva([]).pts.length===1);
+ /* ---- avisos del robot ---- */
+ const t0=Date.parse('2026-10-12T20:00:00Z'), mk=(pk,pa,ph,extra)=>Object.assign({gamePk:pk,gameDate:'2026-10-12T23:08:00Z',status:{abstractGameState:'Preview'},
+   teams:{away:{team:{abbreviation:'LAD',name:'Los Angeles Dodgers'},probablePitcher:pa},home:{team:{abbreviation:'SD',name:'San Diego Padres'},probablePitcher:ph}}},extra||{});
+ const P=(id,n)=>({id:id,fullName:n});
+ let r1=AV.analizar([mk(1,P(10,'Yamamoto'),P(20,'Darvish'))],{},t0);
+ ok('avisos: la primera vez que ve un juego no avisa de nada',r1.avisos.length===0);
+ let r2=AV.analizar([mk(1,P(11,'Glasnow'),P(20,'Darvish'))],r1.estado,t0+1800e3);
+ ok('avisos: detecta cambio de abridor y dice quién salió y quién entró',r2.avisos.length===1&&/Yamamoto/.test(r2.avisos[0].texto)&&/Glasnow/.test(r2.avisos[0].texto));
+ let r3=AV.analizar([mk(1,P(11,'Glasnow'),P(20,'Darvish'))],r2.estado,t0+3600e3);
+ ok('avisos: no repite el mismo cambio',r3.avisos.length===0);
+ ok('avisos: abridor que se quita sin reemplazo también avisa',AV.analizar([mk(1,null,P(20,'Darvish'))],r3.estado,t0+5400e3).avisos.length===1);
+ ok('avisos: pasar de "por confirmar" a un nombre no es un cambio',AV.analizar([mk(2,P(30,'Nuevo'),P(20,'D'))],AV.analizar([mk(2,null,P(20,'D'))],{},t0).estado,t0+1e6).avisos.length===0);
+ const lin=Array.from({length:9},(_,i)=>({id:i}));
+ ok('avisos: alineación oficial avisa una sola vez',(()=>{ const g=mk(3,P(1,'A'),P(2,'B'),{gameDate:'2026-10-12T22:00:00Z',lineups:{awayPlayers:lin,homePlayers:lin}}); const a=AV.analizar([g],{},t0), b=AV.analizar([g],a.estado,t0+1e6); return a.avisos.filter(x=>x.tipo==='alineacion').length===1&&b.avisos.length===0; })());
+ ok('avisos: viento fuerte hacia afuera sugiere Over',(a=>a.length===1&&/Over/.test(a[0].t))(AV.climaAlertas(mk(4,null,null,{weather:{condition:'Sunny',temp:'75',wind:'18 mph, Out To CF'}}))));
+ ok('avisos: viento hacia adentro sugiere Under, lluvia y frío cuentan',AV.climaAlertas(mk(4,null,null,{weather:{condition:'Rain',temp:'41',wind:'16 mph, In From LF'}})).map(x=>x.k).sort().join()==='frio,lluvia,viento');
+ ok('avisos: techo cerrado o viento suave no avisan',AV.climaAlertas(mk(4,null,null,{weather:{condition:'Roof Closed',temp:'72',wind:'20 mph, Out To CF'}})).length===0&&AV.climaAlertas(mk(4,null,null,{weather:{condition:'Cloudy',temp:'70',wind:'6 mph, Out To CF'}})).length===0);
+ ok('avisos: ignora juegos que ya empezaron o están lejos',AV.analizar([mk(5,P(1,'A'),P(2,'B'),{status:{abstractGameState:'Live'}}),mk(6,P(1,'A'),P(2,'B'),{gameDate:'2026-10-14T23:00:00Z',weather:{condition:'Rain',temp:'70',wind:'3 mph'}})],{},t0).avisos.length===0);
+ ok('avisos: el mensaje agrupa por tipo y el cambio de abridor sube la prioridad',(()=>{ const a=[{tipo:'abridor',juego:'x',texto:'⚾ LAD: …'},{tipo:'clima',juego:'y',texto:'y · 🌧️'}]; return /CAMBIOS DE ABRIDOR/.test(AV.mensaje(a))&&/CLIMA/.test(AV.mensaje(a))&&AV.prioridad(a)==='high'&&AV.prioridad([a[1]])==='default'; })());
+ /* ---- movimiento de cuota ---- */
+ const f=(p)=>({t:Date.parse('2026-10-12T23:00:00Z'),n:['Dodgers','Padres'],fair:[p,1-p]});
+ const m1=MV.movimientos({},[f(0.60)],0.03);
+ ok('movimiento: la primera revisión solo guarda',m1.mov.length===0&&Object.keys(m1.nuevo).length===1);
+ const m2=MV.movimientos(m1.nuevo,[f(0.645)],0.03);
+ ok('movimiento: avisa cuando se mueve 3 puntos o más y dice quién sube',m2.mov.length===1&&m2.mov[0].eq==='Dodgers'&&Math.abs(m2.mov[0].puntos-4.5)<1e-6);
+ ok('movimiento: el otro lado sube cuando cae el primero',MV.movimientos(m1.nuevo,[f(0.55)],0.03).mov[0].eq==='Padres');
+ ok('movimiento: menos de 3 puntos no avisa',MV.movimientos(m1.nuevo,[f(0.62)],0.03).mov.length===0);
+ /* ---- abridor cambiado dentro de la app ---- */
+ {
+  const ix=rd('index.html'), ini=ix.indexOf('function pitCambios'), fin=ix.indexOf('function fila(g,year)');
+  const mem={}; const fake={getItem:k=>(k in mem?mem[k]:null),setItem:(k,v)=>{mem[k]=v;}};
+  const pit=new Function('localStorage',ix.slice(ini,fin)+'; return pitCambios;')(fake);
+  const n1={a:{id:1,n:'Uno'},h:{id:2,n:'Dos'}}, n2={a:{id:9,n:'Nuevo'},h:{id:2,n:'Dos'}};
+  ok('app: la primera vez que ve un juego no marca cambio',pit(77,n1,1000).length===0);
+  ok('app: abridor distinto marca cambio con el nombre anterior',(c=>c.length===1&&c[0].antes==='Uno'&&c[0].ahora==='Nuevo'&&c[0].l==='a')(pit(77,n2,2000)));
+  ok('app: el aviso se conserva en la siguiente carga y no se duplica',pit(77,n2,3000).length===1);
+  ok('app: un aviso de hace más de 3 días se borra',pit(77,n2,2000+4*86400000).length===0);
+  ok('app: el aviso solo se pinta en juegos por empezar y sin fecha pasada',/!CORTE&&g\.status&&g\.status\.abstractGameState==='Preview'/.test(ix));
+ }
+ /* ---- cableado ---- */
+ ['index.html','futbol.html','nba.html','hub.html'].forEach(h=>ok(h+' carga banca.js (aviso de tope arriba)',/<script src="banca\.js"><\/script>/.test(rd(h))));
+ ok('el hub tiene la tarjeta de Herramientas',/href="herramientas\.html"/.test(rd('hub.html')));
+ ok('el service worker guarda banca.js, herramientas.html y herramientas.js',['banca.js','herramientas.html','herramientas.js'].every(a=>rd('sw.js').indexOf("'"+a+"'")>=0));
+ const wf=rd('.github/workflows/avisos-mlb.yml');
+ ok('avisos-mlb.yml corre cada 30 min, pasa NTFY_TOPIC sin valor por defecto y no escribe en el repo',/\*\/30/.test(wf)&&/NTFY_TOPIC:\s*\$\{\{\s*secrets\.NTFY_TOPIC\s*\}\}/.test(wf)&&/contents:\s*read/.test(wf)&&!/git push/.test(wf));
+ ok('valor.js incluye el movimiento de cuota en el aviso',/MOV\.movimientos\(cache\.fairPrev,filas,MOV_PTS\)/.test(rd('scripts/valor.js'))&&/MOVIMIENTO DE CUOTA/.test(rd('scripts/valor.js')));
+ ok('herramientas.js y banca.js no usan innerHTML (todo con textContent)',!/innerHTML/.test(rd('herramientas.js').replace(/\/\*[\s\S]*?\*\//g,''))&&!/innerHTML/.test(rd('banca.js').replace(/\/\*[\s\S]*?\*\//g,'')));
+}
 sec('Salidas del pícher: carreras permitidas a la vista');
 {
  const ix=rd('index.html'), b=ix.slice(ix.indexOf('function salidasBloque'),ix.indexOf('/* ---------- registro de picks'));

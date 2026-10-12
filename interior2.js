@@ -28,6 +28,7 @@ var BASE=`
 @keyframes nxPing{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.8);opacity:0}}
 @keyframes nxSweep{to{transform:rotate(360deg)}}
 .nxT,.nxProg,.nxSum,.nxPlot,.nxAhora{display:none}
+html[data-ui] .game>.cambioP{margin:0;border-radius:0;font-size:11.5px;padding:6px 12px}
 .nxT *{box-sizing:border-box}
 .nxLogo{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:50%;font-weight:800;color:#fff}
 .nxLogo img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:14%;box-sizing:border-box}

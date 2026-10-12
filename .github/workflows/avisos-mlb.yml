@@ -1,0 +1,46 @@
+name: Avisos MLB
+
+# Cada 30 minutos en horas de juego (hora UTC). Mira abridores, alineaciones y clima con la API publica de la MLB (sin llave)
+# y manda UN aviso por ntfy por cada cosa nueva. El estado se guarda en la cache de Actions, no en el repo (no ensucia el historial).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/30 15-23,0-2 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avisos-mlb
+  cancel-in-progress: false
+
+jobs:
+  avisos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/cache/restore@v4
+        with:
+          path: .cache
+          key: avisos-${{ github.run_id }}
+          restore-keys: avisos-
+      - name: Avisar si no hay tema privado para los avisos
+        env:
+          TEMA: ${{ secrets.NTFY_TOPIC }}
+        run: |
+          if [ -z "$TEMA" ]; then
+            echo "::warning::No existe el secreto NTFY_TOPIC: NO se enviaran avisos al telefono."
+          fi
+      - name: Revisar abridores, alineaciones y clima
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: node scripts/avisos.js
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: .cache
+          key: avisos-${{ github.run_id }}

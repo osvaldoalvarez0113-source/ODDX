@@ -537,6 +537,7 @@ svg.ic[data-ova='1']{filter:saturate(1.3) brightness(1.08)}
    o ya termino. */
 .head{display:block}
 .hrow{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.cambioP{margin:0 0 8px;padding:8px 12px;border-radius:12px;background:#4A3405;border:1px solid #C99422;color:#FFEFC2;font-size:12.5px;font-weight:600;line-height:1.35}
 .bug{display:none;color:#fff}
 .bug.on{display:block;margin-top:13px}
 .bug .caja{display:flex;align-items:center;gap:11px;background:rgba(0,0,0,.42);
@@ -3251,6 +3252,24 @@ function cargar(){
   });
 }
 
+/* Abridor cambiado: compara los abridores de hoy con los que vio la app la última vez que abrió este juego.
+   Guarda lo visto en 'ova_pit_v1' y conserva el aviso hasta que pasan 3 días (aunque vuelvas a abrir la app). */
+function pitCambios(pk,nuevo,ahora){
+  var M={}, out=[];
+  try{ M=JSON.parse(localStorage.getItem('ova_pit_v1')||'{}')||{}; }catch(e){ M={}; }
+  ahora=ahora||Date.now();
+  Object.keys(M).forEach(function(k){ if(!M[k]||!M[k].t||ahora-M[k].t>3*86400000) delete M[k]; });
+  var ant=M[pk], previos=(ant&&ant.c)||[];
+  if(ant) ['a','h'].forEach(function(l){
+    if(ant[l]&&ant[l].id!=null&&ant[l].id!==nuevo[l].id){
+      var ya=previos.some(function(c){ return c.l===l&&c.antes===ant[l].n&&c.ahora===(nuevo[l].n||''); });
+      if(!ya) previos.push({l:l,antes:ant[l].n||'el anterior',ahora:nuevo[l].n||''});
+    }
+  });
+  M[pk]={a:{id:nuevo.a.id,n:nuevo.a.n},h:{id:nuevo.h.id,n:nuevo.h.n},t:ahora,c:previos};
+  try{ localStorage.setItem('ova_pit_v1',JSON.stringify(M)); }catch(e){}
+  return previos;
+}
 function fila(g,year){
   var a=g.teams.away, h=g.teams.home;
   var pa=a.probablePitcher, pih=h.probablePitcher;
@@ -3268,6 +3287,14 @@ function fila(g,year){
     '<div class="chev">&#9660;</div></div></div><div class="bug"></div></div>'+
     '<div class="body"><div class="status">Cargando números…</div></div>';
   var head=el.querySelector('.head'), body=el.querySelector('.body');
+  if(!CORTE&&g.status&&g.status.abstractGameState==='Preview'){
+    var cam=pitCambios(g.gamePk,el._pit);
+    if(cam.length){
+      var av=document.createElement('div'); av.className='cambioP'; av.setAttribute('role','status');
+      av.textContent='⚠️ Cambió el abridor · '+cam.map(function(c){ return (c.l==='a'?'visita':'local')+': '+c.antes+(c.ahora?' → '+c.ahora:' → por confirmar'); }).join(' · ');
+      el.insertBefore(av,head);
+    }
+  }
   el._hora=hora;
   el._eq={a:{id:a.team.id, ab:(a.team.abbreviation||a.team.name)}, h:{id:h.team.id, ab:(h.team.abbreviation||h.team.name)}};
   if(typeof pintarBug==='function') pintarBug(el,g);
@@ -5296,6 +5323,7 @@ document.addEventListener('visibilitychange',function(){
 
 
 <script src="historial.js"></script>
+<script src="banca.js"></script>
 <script src="ovaextra.js"></script>
 <script src="diseno.js"></script>
 </body>

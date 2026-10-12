@@ -17,18 +17,19 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 | `sw.js`, `manifest.json`, `icon-*.png` | Service worker (red primero, sin internet usa copia), manifest e iconos de la app instalada. |
 | `ovaextra.js` | Respaldo de picks en IndexedDB, exportar/importar y resumen «Hoy». Lo cargan las cinco páginas. |
 | `interior2.js` | Cinco diseños nuevos con estructura propia: **Historias** (un juego por pantalla, se desliza de lado), **Duelo** (cartelera de pelea en diagonal), **Bento** (recuadros de colores y resumen), **Agenda** (línea de tiempo con AHORA) y **Radar de valor** (mapa del día de burbujas). Leen las tarjetas con `OVALeerJuego` (`diseno.js`), no calculan nada. |
+| `herramientas.html` + `herramientas.js` + `banca.js` | Pantalla **Herramientas** (enlace en el pie del hub): **Marcador** (resultados reales de MLB, fútbol y NBA con curva de unidades, ROI y CLV), **Banca** (lo que apuestas, con topes diario/semanal/mensual; `banca.js` pone un aviso ámbar al 80% y rojo al llegar al tope en las demás páginas), **Casas** (misma cuota en varias casas: mejor precio, EV contra tu número, arbitraje) y **Avisos**. Todo sale de tu teléfono (localStorage), sin servidor. |
 | `interior.js`, `obsidiana.js`, `hubestilos.js` | Ocho diseños de adentro (Clásico, Cristal, Broadcast, Pro, Boleto, Boleto noche, **Prensa** y **Radar**; se eligen con pulsación larga en el logo o en 🎨), tema «Oro negro» y los 6 estilos del hub. Prensa y Radar traen sus propios colores (no cambian con el tema de color) para garantizar que se lean. |
 | `diseno.js` | Barra de abajo igual en MLB, fútbol y NBA (Juegos · Al gane · Combo · Mis picks · Ajustes), lo técnico (Backtest, Ratings, Diagnóstico) en Ajustes → Avanzado, versión visible en Ajustes y carga automática de MLB. No cambia ningún cálculo. |
 | `historial.js` | MLB v47-v50: historial del abridor a 3 años (apagado por defecto), botón 🦈 de IA con análisis completo, y la etiqueta de versión que se ve junto al título. |
 | `railway.js` | Compara (o aplica) el cálculo del servidor Railway sobre el Veredicto de MLB. **Única copia** de ese parche. |
 | `pinnacle.js` + `pinnacle-datos.json` | Muestra lo que dice el mercado (Pinnacle sin margen). El JSON lo escribe el escáner de GitHub Actions. |
 | `mejoras.js`, `selecciones.js` | Lesionados + clima (fútbol) y selecciones (ESPN). |
-| `pruebas.js` | 266 pruebas automáticas. `node --expose-internals pruebas.js` |
+| `pruebas.js` | 320 pruebas automáticas. `node --expose-internals pruebas.js` |
 | `backtests/` | Páginas de medición (se abren en el navegador). Cada decisión de la fórmula salió de una de ellas. Índice en `backtests/index.html`. |
-| `scripts/` | Lo que corre en GitHub Actions o a mano: `valor.js` (escáner Pinnacle), `correr_mercado.js`, `correr_deportes.js`, `ova_formula.py`. |
+| `scripts/` | Lo que corre en GitHub Actions o a mano: `valor.js` (escáner Pinnacle, ahora también avisa movimientos de cuota con `mov.js`), `avisos.js` (abridor cambiado, alineación oficial y clima por ntfy), `correr_mercado.js`, `correr_deportes.js`, `ova_formula.py`. |
 | `worker/ova-ia.js` | Versión **endurecida** del Worker de Cloudflare del botón 🦈 (ver abajo). |
 | `docs/AUDITORIA-2026-10.md` | Informe de la auditoría de octubre 2026. |
-| `.github/workflows/` | `pruebas.yml` (corre las pruebas en cada subida), `valor-pinnacle.yml` (escáner 3 veces al día), `mercado.yml` y `deportes.yml` (backtests manuales). |
+| `.github/workflows/` | `pruebas.yml` (corre las pruebas en cada subida), `valor-pinnacle.yml` (escáner 3 veces al día), `avisos-mlb.yml` (abridor, alineación y clima cada 30 min en horas de juego), `mercado.yml` y `deportes.yml` (backtests manuales). |
 
 ## Cómo se actualiza
 
