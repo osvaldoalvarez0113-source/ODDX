@@ -1,0 +1,39 @@
+name: Backtest MLB contra el mercado (guarda el resultado)
+
+# Se dispara solo al subir la rama correr-mercado. Corre las tres temporadas en paralelo y guarda cada resultado en su propia
+# rama (mlb-S2024, mlb-S2025, mlb-S2026) para poder leerlo sin entrar a Actions. No toca main ni la rama resultados.
+on:
+  push:
+    branches: [correr-mercado]
+
+permissions:
+  contents: write
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        dias: [S2024, S2025, S2026]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr el backtest
+        run: node scripts/correr_mercado.js "${{ matrix.dias }}" 2>&1 | tee resultado_mercado.txt
+      - name: Guardar el resultado en su rama
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f resultado_mercado.txt /tmp/res/ 2>/dev/null || echo "sin resultado" > /tmp/res/resultado_mercado.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan salida
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* .
+          git add -A
+          git commit -m "Backtest MLB contra el mercado ${{ matrix.dias }}" || true
+          git push -f origin HEAD:refs/heads/mlb-${{ matrix.dias }}
