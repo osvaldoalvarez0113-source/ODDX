@@ -11,7 +11,22 @@ var NS='http://www.w3.org/2000/svg';
 var MONO='ui-monospace,"SF Mono",Menlo,Consolas,monospace';
 var COND='"Avenir Next Condensed","Arial Narrow",Impact,"Helvetica Neue",sans-serif';
 var ROUND='ui-rounded,"SF Pro Rounded","Avenir Next",system-ui,sans-serif';
-function dis(id,css){ return css.split('&').join('html[data-ui="'+id+'"][data-ui]'); }
+/* Los temas de color de la app (Platino, Esmeralda, Zafiro…) pintan las pestañas, la tarjeta del pícher, avisos y barras con variables --x-*
+   pensadas para su propio fondo. Cada diseño de aquí trae sus colores, así que también fija esas variables con SUS colores:
+   así nunca queda texto oscuro sobre fondo oscuro ni al revés, sin importar qué tema de color esté puesto. */
+function xv(blk){
+  function g(n){ var m=blk.match(new RegExp('--'+n+':([^;]+)')); return m?m[1].trim():null; }
+  var luz=/color-scheme:light/.test(blk), bg1=g('bg1')||'#fff', bg2=g('bg2')||bg1, bg3=g('bg3')||bg2, l2=g('line2')||'#888', acc=g('acc')||'#55f', aTx=g('accTx')||'#fff', hot=g('hot')||acc, good=g('good')||'#0a7', bad=g('bad')||'#c33';
+  var okbg=luz?'#E6F7EE':'rgba(124,255,178,.12)', flbg=luz?'#FDECEA':'rgba(255,138,112,.14)', errbg=luz?'#FDECEA':'rgba(255,107,107,.14)', errbd=luz?'#F2B8B3':'rgba(255,107,107,.4)', warn=luz?'#FFF4D6':'rgba(255,200,80,.12)';
+  return '--x-stbg:'+bg1+';--x-cabbg:'+bg2+';--x-herobg:'+bg2+';--x-teqon:'+bg3+';--x-tabtx:'+aTx+';--x-atx:'+aTx+';--x-onhead:'+hot+';--x-lead:'+acc+';--x-leadglow:transparent;--x-glow:transparent;--x-headglow:transparent;'+
+    '--x-okbg:'+okbg+';--x-oktx:'+good+';--x-flbg:'+flbg+';--x-fltx:'+bad+';--x-errbg:'+errbg+';--x-errbd:'+errbd+';--x-errb:'+bad+';--x-warnbg:'+warn+';'+
+    '--x-pvbg:'+bg2+';--x-pvbd:'+l2+';--x-iabg:'+bg2+';--x-iabd:'+l2+';--x-goodbg:'+okbg+';--x-goodbd:'+l2+';';
+}
+function dis(id,css){
+  var sel='html[data-ui="'+id+'"][data-ui]', m=css.match(/&\{(--bg:[^}]*)\}/);
+  var skin=m?sel+'[data-skin] :is(.ajustes,.pk,.cuotasbox,.row.hcrow,.fila-rank,.fila,.ovaHero){background:'+((m[1].match(/--bg2:([^;]+)/)||[0,'transparent'])[1])+'!important;border-color:'+((m[1].match(/--line2:([^;]+)/)||[0,'transparent'])[1])+'!important}\n':'';
+  return (m?sel+'{'+xv(m[1])+'}\n'+skin:'')+css.split('&').join(sel);
+}
 
 /* ---------- lo que comparten los cinco ---------- */
 var BASE=`
@@ -183,7 +198,7 @@ var DUELO=dis('duelo',`
 
 /* ===================================================================== 3 · BENTO */
 var BENTO=dis('bento',`
-&{--bg:#F3F0FB;--bg1:#FFFFFF;--bg2:#F6F3FF;--bg3:#E9E3FB;--line:#E4DEF5;--line2:#CFC6EE;--txt:#16132B;--mut:#4A4570;--mut2:#6D6890;--acc:#5B2BD6;--acc2:#7C55E8;--accTx:#FFFFFF;--hot:#B6FF6A;--hotTx:#14201A;--good:#0B7F57;--bad:#C3302B;--info:#3A1F78;--ia:#4A4570;--r:20px;--r2:28px;--body:${ROUND};color-scheme:light}
+&{--bg:#F3F0FB;--bg1:#FFFFFF;--bg2:#F6F3FF;--bg3:#E9E3FB;--line:#E4DEF5;--line2:#CFC6EE;--txt:#16132B;--mut:#4A4570;--mut2:#6D6890;--acc:#5B2BD6;--acc2:#7C55E8;--accTx:#FFFFFF;--hot:#0B7F57;--hotTx:#FFFFFF;--good:#0B7F57;--bad:#C3302B;--info:#3A1F78;--ia:#4A4570;--r:20px;--r2:28px;--body:${ROUND};color-scheme:light;--x-onhead:#B6FF6A}
 &,& body{background:#F3F0FB!important;color:var(--txt)!important}
 & body{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 104px)!important}
 & :is(.topbar,header){background:#F3F0FB!important;border-bottom:0!important}
@@ -235,6 +250,15 @@ var BENTO=dis('bento',`
 & .nxC b{display:inline;font-size:13px}
 & .nxArt{display:none}
 & .game .body{background:#FFFFFF!important}
+& .bug{--hot:#B6FF6A;--good:#7CFFB2;--bad:#FF9A9A}
+& .bug .caja{background:#16132B!important;max-width:100%;box-sizing:border-box;overflow:hidden}
+& .game:not(.open) .bug .caja{padding:8px 6px;gap:4px 8px;flex-wrap:wrap;justify-content:center}
+& .game:not(.open) .bug .caja.fin{padding:8px 6px}
+& .game:not(.open) .bug .fq{font-size:12px;gap:4px}
+& .game:not(.open) .bug .fq i{font-size:17px}
+& .game:not(.open) .bug .ft{margin-left:0;font-size:10px}
+& .game:not(.open) .bug .dia,& .game:not(.open) .bug .cnt{display:none}
+& .game .body{--hot:#0B7F57}
 & .nxSum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 12px}
 & .nxSum div{border-radius:22px;padding:11px 10px;line-height:1.1;animation:nxRise .5s both}
 & .nxSum div:nth-child(1){background:#CFE9FF}

@@ -210,7 +210,8 @@ table{width:100%;border-collapse:collapse;font-size:13.5px;margin:8px 0 4px}
 td,th{padding:7px 0;text-align:right;border-bottom:1px solid var(--line)}
 th:first-child,td:first-child{text-align:left;color:var(--mut);font-weight:400;padding-right:10px}
 th{font-size:12.5px;font-weight:600;color:var(--txt);border-bottom:1px solid var(--line2)}
-td.n{font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums}
+td.n{font-family:var(--mono);font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.n+td.n{padding-left:14px}
 td small{font-family:var(--mono);font-size:11px;color:var(--mut2);margin-left:5px}
 tr:last-child td{border-bottom:0}
 tr.usa td{color:var(--hot);font-weight:600}
