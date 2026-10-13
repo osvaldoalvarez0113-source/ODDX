@@ -30,6 +30,7 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 | `scripts/` | Lo que corre en GitHub Actions o a mano: `valor.js` (escáner Pinnacle, ahora también avisa movimientos de cuota con `mov.js`), `avisos.js` (abridor cambiado, alineación oficial y clima por ntfy), `correr_mercado.js`, `correr_deportes.js`, `ova_formula.py`. |
 | `worker/ova-ia.js` | Versión **endurecida** del Worker de Cloudflare del botón 🦈 (ver abajo). |
 | `docs/AUDITORIA-2026-10.md` | Informe de la auditoría de octubre 2026. |
+| `docs/MEDICION-FUTBOL-LOCAL-ELO-2026-10.md` | Medición de ratings local/visita, Elo, mezcla con el mercado y descanso en fútbol (ninguno aporta lo suficiente). Se repite con el workflow «Experimento de futbol». |
 | `.github/workflows/` | `pruebas.yml` (corre las pruebas en cada subida), `valor-pinnacle.yml` (escáner 3 veces al día), `avisos-mlb.yml` (abridor, alineación y clima cada 30 min en horas de juego), `mercado.yml` y `deportes.yml` (backtests manuales). |
 
 ## Cómo se actualiza
