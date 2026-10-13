@@ -27,7 +27,6 @@ function aAmericana(d){
   if(!(d>1)) return '—';
   return d>=2?'+'+Math.round((d-1)*100):String(Math.round(-100/(d-1)));
 }
-function impDe(d){ return 1/d; }
 function quitarMargen(d1,d2){ var a=1/d1,b=1/d2,s=a+b; return [a/s,b/s]; }
 
 /* casas: [{n:'DraftKings', a:'-150', b:'+130'}, ...]  ·  p: tu probabilidad del lado A en % (opcional)

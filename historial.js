@@ -149,7 +149,7 @@ try{
       }
     }catch(e){}
     try{
-      [].slice.call(document.querySelectorAll('.ver')).forEach(function(e){ e.textContent='v62'; });
+      [].slice.call(document.querySelectorAll('.ver')).forEach(function(e){ e.textContent='v63'; });
       var f=document.querySelector('footer details');
       if(f&&!f.querySelector('.ovaNota47')){
         var n=document.createElement('div');
@@ -165,7 +165,6 @@ try{
      Antes: 150 palabras, 5 busquedas. Ahora: 10 busquedas, mas espacio, secciones
      fijas, y una SENAL final que se puede anotar junto al pick y medir despues.
      El Worker puede tener sus propios topes: si los tiene, mandan ellos. */
-  function iaSinAcentos(t){ return t; }
   llamarIA=function(prompt){
     return fetch(WORKER_URL,{
       method:'POST',

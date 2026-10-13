@@ -609,7 +609,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL <span class="ver">v19</span></h1>
+  <h1>⚽ FÚTBOL <span class="ver">v20</span></h1>
   <select id="ligaSel">
    <optgroup label="Ligas">
     <option value="pl">Premier League</option>
@@ -682,7 +682,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 
 
 <script>
-var VERSION = 'v19';
+var VERSION = 'v20';
 var EQUIPOS = null;
 var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
@@ -1075,7 +1075,7 @@ function extraerPartidos(html){
     var horaDt = (!esFinal && fecha && hora) ? horaLocalDispositivo(fecha, hora) : null;
     var horaLocalTxt = horaDt ? horaDt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
     partidos.push({
-      clave: clave, local: nombreLocal, visita: nombreVisita,
+      clave: clave, local: nomSeguro(nombreLocal), visita: nomSeguro(nombreVisita),
       escudoLocal: escudos[0].src, escudoVisita: escudos[1].src,
       hrefLocal: escudos[0].closest('a') ? escudos[0].closest('a').getAttribute('href') : null,
       hrefVisita: escudos[1].closest('a') ? escudos[1].closest('a').getAttribute('href') : null,
@@ -1109,6 +1109,10 @@ function trozosMensuales(desde, hasta){
   }
   return out;
 }
+/* Nombres y escudos vienen de ESPN y se pintan con innerHTML en muchos sitios: aquí se limpian UNA vez, en el origen.
+   Un nombre de equipo nunca lleva < > " ni comillas invertidas, así que quitarlos no cambia ningún nombre real. */
+function nomSeguro(s){ return String(s==null?'':s).replace(/[<>"`]/g,'').trim(); }
+function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u)?u:''; }
 function numESPN(v){
   if(v && typeof v==='object') v = (v.value!==undefined ? v.value : v.displayValue);
   var n = parseInt(v, 10);
@@ -1132,7 +1136,7 @@ function parseESPN(json){
     var ts = Date.parse(e.date);
     var terminado = st.completed===true && gl!==null && gv!==null;
     out.push({
-      id: e.id, local: nomL, visita: nomV,
+      id: e.id, local: nomSeguro(nomL), visita: nomSeguro(nomV),
       golesLocal: terminado?gl:null, golesVisita: terminado?gv:null, terminado: terminado,
       ts: isFinite(ts) ? ts : null, fecha: isFinite(ts) ? fechaPunto(new Date(ts)) : '', hora:'', horaLocal:''
     });
@@ -1244,8 +1248,8 @@ function pendientesDesdeESPN(slug){
         vistos[p.id] = true;
         var comp = e.competitions[0], logoL = '', logoV = '';
         comp.competitors.forEach(function(c){
-          if(c.homeAway==='home') logoL = (c.team && c.team.logo) || '';
-          else if(c.homeAway==='away') logoV = (c.team && c.team.logo) || '';
+          if(c.homeAway==='home') logoL = urlSegura(c.team && c.team.logo);
+          else if(c.homeAway==='away') logoV = urlSegura(c.team && c.team.logo);
         });
         var dt = new Date(p.ts), hl = dt.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
         out.push({clave:p.local+'|'+p.visita+'|'+p.fecha+'|ESPN', local:p.local, visita:p.visita, escudoLocal:logoL, escudoVisita:logoV,
@@ -3123,7 +3127,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
 /* OVA Fútbol · v10: anillo de probabilidad, doble oportunidad, selector de tema, pulido (atenuar
    porcentajes de goles no medidos, apagar Kalshi tras un 429, verificar picks al abrir Registro). */
 (function(){
- var VER='v19';
+ var VER='v20';
  function $q(s,r){ return (r||document).querySelector(s); }
  function pct(x){ return (x*100).toFixed(1)+'%'; }
  function am(p){
@@ -3286,7 +3290,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
     if(st.completed!==true) return null;
     var gl=parseInt(h.score,10), gv=parseInt(a.score,10);
     if(!isFinite(gl)||!isFinite(gv)) return null;
-    return {local:(h.team&&(h.team.displayName||h.team.name))||"", visita:(a.team&&(a.team.displayName||a.team.name))||"", golesLocal:gl, golesVisita:gv};
+    return {local:nomSeguro(h.team&&(h.team.displayName||h.team.name)), visita:nomSeguro(a.team&&(a.team.displayName||a.team.name)), golesLocal:gl, golesVisita:gv};
    }).filter(Boolean); }).catch(function(){ return []; });
  }
  function resolverPick(pick,partidos){

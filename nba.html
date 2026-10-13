@@ -166,7 +166,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 <header>
  <div class="top">
   <a class="ovaHome" href="hub.html" aria-label="Volver al inicio">‹</a>
-  <h1>🏀 NBA <span class="ver">v3.9</span></h1>
+  <h1>🏀 NBA <span class="ver">v4.0</span></h1>
   <button class="btnChico" id="btnTema" aria-label="Cambiar tema">🎨</button>
  </div>
 </header>
@@ -348,12 +348,12 @@ if(typeof module!=='undefined') module.exports={PDEF,seasonOf,dayKey,Phi,correr,
 
 <!-- ===================== APP ===================== -->
 <script>
-const VERSION='v3.9';
+const VERSION='v4.0';
 const ESPN='https://site.api.espn.com/apis/site/v2/sports/basketball/nba/';
 const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 const $=id=>document.getElementById(id);
-const esc=s=>String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+const esc=s=>String(s==null?'':s).replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 const pad2=n=>(n<10?'0':'')+n;
 const ymd=d=>d.getFullYear()+pad2(d.getMonth()+1)+pad2(d.getDate());
 const LS={get(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};

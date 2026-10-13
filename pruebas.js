@@ -730,6 +730,22 @@ sec('Mesa (asistente.js): lee todas las pestañas, ordena sin internet, valor co
  ok('el service worker guarda asistente.js',/'asistente\.js'/.test(rd('sw.js')));
 }
 
+sec('Auditoría 2: nombres de ESPN limpios en el origen, peticiones compartidas, botones tocables');
+{
+ const fh=rd('futbol.html'), sj=rd('selecciones.js'), nb=rd('nba.html'), ix=rd('index.html'), dj=rd('diseno.js');
+ const nomSeguro=s=>String(s==null?'':s).replace(/[<>"`]/g,'').trim();
+ ok('nomSeguro quita < > " y ` pero deja nombres reales intactos (Brighton & Hove, Côte d\'Ivoire)',nomSeguro('<img src=x onerror=alert(1)>Real "Madrid"')==='img src=x onerror=alert(1)Real Madrid'&&nomSeguro("Brighton & Hove Albion")==="Brighton & Hove Albion"&&nomSeguro("Côte d'Ivoire")==="Côte d'Ivoire"&&nomSeguro(null)==='');
+ ok('fútbol limpia nombre y escudo en las 4 puertas de entrada (parseESPN, scraping, resultados, escaner de partidos)',(fh.match(/nomSeguro\(/g)||[]).length>=7&&/urlSegura\(c\.team && c\.team\.logo\)/.test(fh)&&/id: e\.id, local: nomSeguro\(nomL\)/.test(fh));
+ ok('selecciones.js limpia nombres y escudos de ESPN antes de pintarlos',/local: nomSeguro\(h\.team\.displayName/.test(sj)&&/escudoLocal: urlSegura\(h\.team\.logo\)/.test(sj));
+ const urlSegura=u=>{ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u)?u:''; };
+ ok('urlSegura acepta https normal y rechaza javascript:, comillas y espacios',urlSegura('https://a.espncdn.com/i/teamlogos/x.png')!==''&&urlSegura('javascript:alert(1)')===''&&urlSegura('https://x.com/a" onerror="y')===''&&urlSegura('')==='');
+ ok('NBA: esc() también escapa la comilla simple (igual que MLB y fútbol)',/replace\(\/\[<>&"'\]\/g,c=>/.test(nb)&&/"'":'&#39;'/.test(nb));
+ ok('MLB: j() comparte las peticiones iguales que salen a la vez y entrega un JSON propio a cada quien',/var EN_VUELO=\{\}/.test(ix)&&/return r\.text\(\)/.test(ix)&&/JSON\.parse\(t\)/.test(ix)&&/delete EN_VUELO\[url\]/.test(ix));
+ ok('los botones del encabezado (🎨 y 🔍) y el selector de liga miden al menos 38 px de alto',/#ovaSkBtn\{min-width:38px;min-height:38px/.test(dj)&&/select#ligaSel\{min-height:38px/.test(dj)&&/#btnDiag\.dsDiag\{[^}]*padding:8px 10px/.test(dj));
+ ok('sin funciones muertas conocidas (impDe, iaSinAcentos)',!/function impDe\(/.test(rd('herramientas.js'))&&!/iaSinAcentos/.test(rd('historial.js')));
+ ok('pruebas.yml no se dispara cuando solo cambian los datos del mercado',['pinnacle-datos.json','pinnacle-futbol.json','pinnacle-nba.json'].every(f=>rd('.github/workflows/pruebas.yml').includes('- '+f)));
+}
+
 (async()=>{ await t_envivo(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);

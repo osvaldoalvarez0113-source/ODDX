@@ -9,6 +9,9 @@
         los amistosos pesan menos en el Elo (K 20 contra 40-60).
    El historial se baja una sola vez y queda guardado en el teléfono (después solo baja lo nuevo). */
 (function(){
+/* nombres y escudos de ESPN: se limpian en el origen porque luego se pintan con innerHTML */
+function nomSeguro(s){ return String(s==null?'':s).replace(/[<>"`]/g,'').trim(); }
+function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u)?u:''; }
  try{
   var SEL = {
    uefanl:     {nombre:'UEFA Nations League',      slugs:['uefa.nations']},
@@ -84,8 +87,8 @@
     var d = new Date(ts);
     out.push({
      id: e.id,
-     local: h.team.displayName || h.team.name, visita: a.team.displayName || a.team.name,
-     escudoLocal: h.team.logo || '', escudoVisita: a.team.logo || '',
+     local: nomSeguro(h.team.displayName || h.team.name), visita: nomSeguro(a.team.displayName || a.team.name),
+     escudoLocal: urlSegura(h.team.logo), escudoVisita: urlSegura(a.team.logo),
      hrefLocal: null, hrefVisita: null,
      ts: ts, fecha: fechaPunto(d), hora: '',
      horaLocal: d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),

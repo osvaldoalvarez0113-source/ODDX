@@ -1824,7 +1824,19 @@ function revisarTT(root){
    centavos. Los precios se copian a mano, que es como se venian metiendo. */
 
 /* ---------- datos ---------- */
-function j(url){ return fetch(url).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }
+/* Peticiones iguales que salen a la vez (ligaEra, kLiga y standings las pide cada juego al cargar) comparten UNA sola llamada de red.
+   Se comparte el texto, no el objeto: cada quien recibe su propio JSON y nadie le cambia los datos a otro. */
+var EN_VUELO={};
+function j(url){
+  var p=EN_VUELO[url];
+  if(!p){
+    p=fetch(url).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); });
+    EN_VUELO[url]=p;
+    var libera=function(){ delete EN_VUELO[url]; };
+    p.then(libera,libera);
+  }
+  return p.then(function(t){ return JSON.parse(t); });
+}
 /* ---------- corte historico ----------
    Las estadisticas de temporada se pedian siempre hasta HOY. Cargando una fecha
    pasada eso metia en el calculo juegos que pasaron DESPUES del que estabas

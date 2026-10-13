@@ -683,9 +683,8 @@ function armar(){
  var bar=mk('div','msBar'); var h=mk('h2','','Mesa de hoy'); h.appendChild(mk('small','',({mlb:'MLB',fut:'Fútbol',nba:'NBA'})[APP]+' · lee todos los juegos y todas las pestañas'));
  bar.appendChild(h); bar.appendChild(boton('msX','✕ Cerrar',cerrar)); sheet.appendChild(bar);
  var av=mk('div','msAviso');
- av.appendChild(mk('b','','Qué es y qué no es. '));
- av.appendChild(doc.createTextNode('Junta en un lugar lo que la app ya calculó y, si quieres, le suma noticias de internet. Ahorra tiempo y detecta cuando algo contradice al modelo. '+
-  'En MLB verifica solo, con la API oficial: lineups, abridor probable, estado del juego, clima y lesionados. También lee el mercado del servidor (Pinnacle sin margen): cuando modelo y mercado coinciden la señal es más fuerte; cuando chocan, por defecto manda el mercado. No crea ventaja por sí sola: medido con tus datos, el modelo no le gana al mercado. Úsala para descartar y confirmar, no como garantía.'));
+ av.appendChild(mk('b','','Cómo leerla. '));
+ av.appendChild(doc.createTextNode('Junta lo que la app calculó con el mercado'+(APP==='mlb'?' y los datos oficiales de MLB':'')+'. Si coinciden, la señal es más fuerte; si chocan, manda el mercado. No crea ventaja por sí sola: úsala para descartar y confirmar, no como garantía.'));
  sheet.appendChild(av);
  estado=mk('div','msEst',''); sheet.appendChild(estado);
  sheet.appendChild(boton('msMini','↻ Volver a leer',function(){ leer(); }));

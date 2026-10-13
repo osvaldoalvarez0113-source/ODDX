@@ -30,7 +30,10 @@ var CSS=[
  /* etiquetas de la barra de abajo */
  '.tabbar .lb,.navbar button span{font-size:11px!important}',
  /* botones del encabezado */
- '#btnDiag.dsDiag{margin:0!important;padding:6px 10px!important;font-size:15px!important;line-height:1;opacity:.85;flex:0 0 auto}',
+ '#btnDiag.dsDiag{margin:0!important;padding:8px 10px!important;font-size:15px!important;line-height:1;opacity:.85;flex:0 0 auto}',
+ /* área de toque del dedo: los botones del encabezado de fútbol y NBA medían 29-30 px de alto (el mínimo cómodo en iPhone es ~38-44) */
+ 'html[data-app=fut] header .top select#ligaSel{min-height:38px;box-sizing:border-box}',
+ 'header .top #btnDiag,header .top #btnTema,header .top #ovaSkBtn{min-width:38px;min-height:38px;box-sizing:border-box}',
  '.estado.warn,.estado.bad{cursor:pointer}',
   /* fila de fecha compacta (MLB): el botón ya no es el protagonista porque carga solo */
  '.cargafila{margin:10px 0 2px!important}',
