@@ -456,6 +456,7 @@ function nuevaFila(j,pos){
  if(j.pf!=null&&!j.vivo){
   if(j.cmp){
    var mc=j.cmp.k, mt=mc==='coinc'?'✔ Mercado de acuerdo · '+j.cmp.mer.toFixed(0)+'%':(mc==='cerca'?'≈ Mercado '+j.cmp.mer.toFixed(0)+'%':'⚠ Mercado '+j.cmp.mer.toFixed(0)+'% · chocan');
+   if(j.cmp.favMod!==j.cmp.favMer&&j.mer) mt='⚠ Mercado prefiere a '+(j.cmp.favMer==='a'?j.na:j.nh)+' · '+Math.max(j.mer.a,j.mer.h).toFixed(0)+'%';
    tx.appendChild(mk('span','msChip m'+mc,mt));
   }else tx.appendChild(mk('span','msChip msin','sin dato del mercado'));
  }

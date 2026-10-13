@@ -25,6 +25,10 @@ Se midieron con datos reales los parámetros que decide la Mesa: el corte de **C
 - Se quitó el «baja un nivel si chocan por puntos» y el bonus/castigo de ordenamiento por coincidir o chocar: el orden usa el porcentaje de la mezcla.
 - Se mantienen los cortes 62/55 (MLB y NBA) y 52/45 (fútbol), la tolerancia de 3 y 6 puntos para los chips, y «datos flojos baja un nivel».
 
+## Si el objetivo es solo acertar el ganador (sin buscar ventaja)
+
+Cuando el modelo y el mercado eligen favoritos distintos, el favorito del **mercado** gana más: MLB 53,4 % (n = 1 368) contra 46,6 % del modelo; fútbol 44,1 % contra 26,2 % del modelo (n = 583). Como pick de «quién gana» es lo correcto, pero son juegos casi parejos (53 % en MLB) y jugarle al mercado a su precio rinde −6,1 % ± 2,4 en MLB y +5,3 % ± 5,0 en fútbol (no distinguible de cero). La Mesa ahora muestra «Mercado prefiere a X» en esos juegos.
+
 ## Qué NO dice la medición
 
 - No encontró una regla que gane dinero. Eso ya lo sabíamos del backtest del modelo; la Mesa ayuda a **descartar** y a **confirmar**, no a crear ventaja.
