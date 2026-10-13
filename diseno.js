@@ -62,6 +62,10 @@ var CSS=[
  '.dsItem{width:100%;text-align:left;background:var(--bg2);color:var(--txt);border:1px solid var(--line2);border-radius:var(--r,10px);padding:12px 12px;font-size:13.5px;line-height:1.35;cursor:pointer;font-family:inherit}',
  '.dsItem small{display:block;font-size:12px;color:var(--mut);margin-top:2px;font-weight:400}',
  '.dsItem.dsDiagItem{display:block}',
+ '.dsElo{margin:12px 0 4px;padding:12px;border:1px solid var(--line2);border-radius:var(--r,10px);background:var(--bg1)}',
+ '.dsElo label{display:block;font-weight:700;font-size:14px;margin-bottom:8px;color:var(--txt)}',
+ '.dsElo select{width:100%;background:var(--bg2);color:var(--txt);border:1px solid var(--line2);border-radius:10px;padding:12px;font-size:15px}',
+ '.dsElo small{display:block;margin-top:8px;font-size:12px;line-height:1.4;color:var(--mut)}',
  '.dsApar{margin:10px 0 4px;font-weight:700;font-size:15px;-webkit-tap-highlight-color:transparent}',
  '.dsBack{display:inline-block;background:transparent;border:0;color:var(--hot);font-size:14px;font-weight:700;padding:12px 2px 2px;cursor:pointer;font-family:inherit}',
  '.dsPesado{border:1px dashed var(--line2);border-radius:var(--r,10px);margin:12px 0;padding:0 10px}',
@@ -254,6 +258,20 @@ function fusionarComboFut(barra){
  return true;
 }
 
+
+/* fútbol: Ajustes → Mezcla con Elo (apagada por defecto). futbol.html la lee al calcular; aquí solo se guarda la elección. */
+function mezclaElo(vista){
+ if(!vista||$('.dsElo',vista)) return;
+ var v='0'; try{ v=localStorage.getItem('ova_futbol_elo_mix')||'0'; }catch(e){}
+ var b=el('div','dsElo','<label>🧮 Mezcla con Elo</label><select><option value="0">Apagada — como estaba</option><option value="0.1">10% Elo</option><option value="0.15">15% Elo</option><option value="0.2">20% Elo</option></select><small></small>');
+ var sel=$('select',b), sm=$('small',b);
+ sm.textContent='Medido en 5,256 partidos: baja la pérdida del 1X2 de 0.9888 a 0.9881 (el mercado está en 0.9637). Mejora real pero chica. Solo cambia victoria/empate/derrota; vuelve a abrir la liga para verlo.';
+ if(!$('option[value="'+v+'"]',sel)) v='0';
+ sel.value=v;
+ sel.addEventListener('change',function(){ try{ localStorage.setItem('ova_futbol_elo_mix',sel.value); }catch(e){} });
+ var ref=$('.dsAv',vista); vista.insertBefore(b,ref||null);
+}
+
 function unificarFut(sinCombo){
  var barra=$('.tabbar'); if(!barra||$('#dsAjustes')) return true;
  if(!fusionarComboFut(barra) && !sinCombo) return false;       /* el Combo se inyecta un poco más tarde */
@@ -274,6 +292,7 @@ function unificarFut(sinCombo){
  });
  if(!aj) return false;
  var t=$('#btnTiros'), c=$('#btnCalibrar'); if(t&&c) pesadas([t,c],'Herramientas pesadas (descargas y calibración)');
+ mezclaElo(aj.vista);
  ordenar(barra,['juegos','algane','combo','registro','dsAjustes'],function(b){ return b.getAttribute('data-vista'); });
  return true;
 }

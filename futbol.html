@@ -609,7 +609,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL <span class="ver">v17</span></h1>
+  <h1>⚽ FÚTBOL <span class="ver">v18</span></h1>
   <select id="ligaSel">
    <optgroup label="Ligas">
     <option value="pl">Premier League</option>
@@ -682,7 +682,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 
 
 <script>
-var VERSION = 'v17';
+var VERSION = 'v18';
 var EQUIPOS = null;
 var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
@@ -1690,7 +1690,29 @@ function dcAjustar(lista, hoyDia, cfg){
   }
   var sw=0, sh=0, sa=0; for(j=0;j<L;j++){ sw += W[j]; sh += W[j]*tr[j].gh; sa += W[j]*tr[j].ga; }
   var eq = {}; for(i=0;i<n;i++) eq[nombres[i]] = {att:att[i], def:def[i]};
-  return {eq:eq, c:c, gam:gam, hAvg:sh/sw, aAvg:sa/sw, n:L};
+  return {eq:eq, c:c, gam:gam, hAvg:sh/sw, aAvg:sa/sw, n:L, elo:eloAjustar(tr)};
+}
+// ---------- Elo opcional (Ajustes → Mezcla con Elo; apagada por defecto) ----------
+// Medido (docs/MEDICION-FUTBOL-LOCAL-ELO-2026-10.md): mezclar 10-20% de un Elo con el Dixon-Coles baja la pérdida 1X2 de 0.9888 a 0.9881-0.9884
+// (z de -2.0 a -2.5, mejora en las tres temporadas). Es un cambio chico: el mercado sigue en 0.9637. Por eso viene apagado y solo toca el 1X2.
+var ELO_TH = {ha:60, s:200, c:0.6};
+function eloAjustar(tr){
+  var R = {}, ord = tr.slice().sort(function(a,b){ return a.day-b.day; }), ult = null, i, m;
+  for(i=0;i<ord.length;i++){
+    m = ord[i];
+    if(ult!==null && m.day-ult>60) Object.keys(R).forEach(function(k){ R[k] = 1500 + 0.75*(R[k]-1500); });
+    ult = m.day;
+    var rh = R[m.h]===undefined?1450:R[m.h], ra = R[m.a]===undefined?1450:R[m.a];
+    var e = 1/(1+Math.pow(10, -(rh-ra+ELO_TH.ha)/400)), sc = m.gh>m.ga?1:(m.gh===m.ga?0.5:0);
+    var gd = Math.abs(m.gh-m.ga), mult = gd<=1?1:(gd===2?1.5:(11+gd)/8), dl = 20*mult*(sc-e);
+    R[m.h] = rh+dl; R[m.a] = ra-dl;
+  }
+  return R;
+}
+function eloMix(){ try{ var v = parseFloat(localStorage.getItem('ova_futbol_elo_mix')||'0'); return (v>0 && v<=0.3)?v:0; }catch(e){ return 0; } }
+function eloProbs(dif){
+  var sg = function(z){ return 1/(1+Math.exp(-z)); }, z = (dif+ELO_TH.ha)/ELO_TH.s, pH = sg(z-ELO_TH.c), pA = sg(-z-ELO_TH.c);
+  return [pH, Math.max(1-pH-pA, 1e-4), pA];
 }
 function calcularDC(eL, eV){
   var f = DCFIT, pr = DC_CFG.promo ? {att:0.85, def:1.15} : {att:1, def:1};
@@ -1699,7 +1721,15 @@ function calcularDC(eL, eV){
   var d = distribucion(lamL, lamV, DC_CFG.rho, true);
   var g0 = distribucion(f.hAvg, f.aAvg, DC_CFG.rho, false);
   var g = mezclar(d, g0, DC_CFG.wt, CLAVES_GOLES);
-  return {lamL:lamL, lamV:lamV, pL:d.pL, pD:d.pD, pV:d.pV,
+  var pL = d.pL, pD = d.pD, pV = d.pV, wE = eloMix(), conElo = false;
+  if(wE>0 && f.elo){
+    var rl = buscarEnMapa(f.elo, eL.nombre), rv = buscarEnMapa(f.elo, eV.nombre);
+    if(rl!==null && rv!==null){
+      var pe = eloProbs(rl-rv), q0 = Math.pow(pL,1-wE)*Math.pow(pe[0],wE), q1 = Math.pow(pD,1-wE)*Math.pow(pe[1],wE), q2 = Math.pow(pV,1-wE)*Math.pow(pe[2],wE), sq = q0+q1+q2;
+      pL = q0/sq; pD = q1/sq; pV = q2/sq; conElo = true;
+    }
+  }
+  return {lamL:lamL, lamV:lamV, pL:pL, pD:pD, pV:pV, elo:conElo,
     overLin:{1.5:g.o15, 2.5:g.o25, 3.5:g.o35}, pBtts:g.btts, marcadores:d.marcadores, dc:true};
 }
 function calcular(eL, eV, P){
@@ -3093,7 +3123,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
 /* OVA Fútbol · v10: anillo de probabilidad, doble oportunidad, selector de tema, pulido (atenuar
    porcentajes de goles no medidos, apagar Kalshi tras un 429, verificar picks al abrir Registro). */
 (function(){
- var VER='v17';
+ var VER='v18';
  function $q(s,r){ return (r||document).querySelector(s); }
  function pct(x){ return (x*100).toFixed(1)+'%'; }
  function am(p){
