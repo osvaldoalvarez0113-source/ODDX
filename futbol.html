@@ -609,7 +609,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL <span class="ver">v18</span></h1>
+  <h1>⚽ FÚTBOL <span class="ver">v19</span></h1>
   <select id="ligaSel">
    <optgroup label="Ligas">
     <option value="pl">Premier League</option>
@@ -682,7 +682,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 
 
 <script>
-var VERSION = 'v18';
+var VERSION = 'v19';
 var EQUIPOS = null;
 var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
@@ -3123,7 +3123,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
 /* OVA Fútbol · v10: anillo de probabilidad, doble oportunidad, selector de tema, pulido (atenuar
    porcentajes de goles no medidos, apagar Kalshi tras un 429, verificar picks al abrir Registro). */
 (function(){
- var VER='v18';
+ var VER='v19';
  function $q(s,r){ return (r||document).querySelector(s); }
  function pct(x){ return (x*100).toFixed(1)+'%'; }
  function am(p){
@@ -3649,5 +3649,6 @@ h3{display:flex;align-items:center;gap:6px}
 <script src="banca.js"></script>
 <script src="ovaextra.js"></script>
 <script src="diseno.js"></script>
+<script src="asistente.js"></script>
 </body>
 </html>

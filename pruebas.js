@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html'];
-const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -58,7 +58,7 @@ else{
   ok(app+' sin nombres inexistentes',mal.size===0,[...mal].map(([n,w])=>n+' ('+w+')').join(', '));
  }
  revisar('futbol.html',['ovaextra.js','interior.js','interior2.js','obsidiana.js','mejoras.js','selecciones.js']);
- revisar('index.html',['ovaextra.js','interior.js','interior2.js','ajustes.js','obsidiana.js','railway.js','historial.js']);
+ revisar('index.html',['ovaextra.js','interior.js','interior2.js','ajustes.js','asistente.js','obsidiana.js','railway.js','historial.js']);
  revisar('nba.html',['ovaextra.js','interior.js','interior2.js']);
  revisar('hub.html',['ovaextra.js','hubestilos.js']);
  revisar('panel.html',['ovaextra.js']);
@@ -664,6 +664,39 @@ sec('Estructura del repo (lo que encontró la auditoría de oct 2026)');
    ok(f+': el registro sigue funcionando si ovaextra.js no carga (todo protegido con typeof)',(t.match(/OVACLV\./g)||[]).length===(t.match(/typeof OVACLV!=='undefined'/g)||[]).length);
   });
  }
+}
+
+sec('Mesa (asistente.js): lee todas las pestañas, ordena sin internet, valor con tu cuota y IA con internet');
+{
+ const M=require(path.join(__dirname,'asistente.js')), sa=rd('asistente.js');
+ ok('aDecimal entiende -140, +120, 1.85, 55¢ y rechaza basura',Math.abs(M.aDecimal('-140')-1.7143)<1e-3&&M.aDecimal('+120')===2.2&&M.aDecimal('1.85')===1.85&&Math.abs(M.aDecimal('55¢')-1.8182)<1e-3&&M.aDecimal('abc')===null&&M.aDecimal('')===null);
+ ok('americana(0.62) es -163 y americana(0.40) es +150',M.americana(0.62)==='-163'&&M.americana(0.4)==='+150');
+ const v1=M.valorDe(64.2,'-140'), v2=M.valorDe(58.5,'-140'), v3=M.valorDe(56,'-140');
+ ok('valorDe: +10% es "valor", +0.3% es "justo" y negativo es "sin"',v1.k==='valor'&&v2.k==='justo'&&v3.k==='sin');
+ ok('valorDe pide +5% para decir valor (un +EV chico se trata como ruido del modelo)',M.valorDe(60.5,'-140').k==='justo'&&M.valorDe(62,'-140').k==='valor');
+ ok('etiqueta MLB/NBA: 62+ candidato, 55-62 cuidado, abajo parejo; datos flojos bajan un nivel',M.etiqueta(65,'alta','mlb').k==='cand'&&M.etiqueta(58,'alta','mlb').k==='cuid'&&M.etiqueta(51,'alta','mlb').k==='evit'&&M.etiqueta(65,'baja','mlb').k==='cuid'&&M.etiqueta(58,'baja','mlb').k==='evit');
+ ok('etiqueta fútbol usa cortes más bajos (hay empate): 52+ candidato',M.etiqueta(53,'alta','fut').k==='cand'&&M.etiqueta(53,'alta','mlb').k==='evit');
+ ok('etiqueta: en vivo y sin números no cuentan como candidatos',M.etiqueta(70,'alta','mlb',true).k==='vivo'&&M.etiqueta(null,'','mlb').k==='sin');
+ const mkJ=(i,tx)=>({titulo:'Equipo'+i+' @ Otro'+i,hora:'7:10 PM',na:'Equipo'+i,nh:'Otro'+i,pa:60,ph:40,fav:'Equipo'+i,pf:60,cu:'-150',sello:'Sólido',conf:'80%',cuotaMia:'-140',
+  tabs:[{id:'ver',nombre:'Veredicto',txt:tx},{id:'cuo',nombre:'Cuotas',txt:tx},{id:'num',nombre:'Números',txt:tx},{id:'for',nombre:'Forma',txt:tx},{id:'x',nombre:'Parque',txt:tx}]});
+ const gran='dato '.repeat(900);
+ [1,4,8,12,20].forEach(n=>{
+  const p=M.construirPrompt({app:'mlb',fecha:'2026-10-12',juegos:Array.from({length:n},(_,i)=>mkJ(i+1,gran)),registro:'12-9 (57%)',pregunta:'',previa:''});
+  ok('construirPrompt con '+n+' juegos de texto enorme nunca pasa de 11,500 (el Worker rechaza 12,000)',p.length<=M.MAX_PROMPT&&M.MAX_PROMPT<12000,String(p.length));
+  ok('  …y con '+n+' juegos conserva la tarea y el formato de SENAL al final',/SENAL: JUEGA \| CUIDADO \| EVITAR/.test(p)&&/Nunca digas que algo es seguro/.test(p));
+ });
+ const pq=M.construirPrompt({app:'mlb',fecha:'2026-10-12',juegos:[mkJ(1,gran),mkJ(2,gran)],registro:'',pregunta:'por que evitas el 2?',previa:'x '.repeat(5000)});
+ ok('una pregunta de seguimiento lleva la pregunta, la respuesta anterior recortada y cabe',/PREGUNTA MIA: por que evitas el 2\?/.test(pq)&&/RESPUESTA ANTERIOR/.test(pq)&&pq.length<=M.MAX_PROMPT);
+ const pj=M.construirPrompt({app:'fut',fecha:'2026-10-12',juegos:[mkJ(1,'x')],registro:'',pregunta:'',previa:''});
+ ok('el prompt incluye la cuota que escribió el usuario y el EV que da el modelo',/Cuota que pago yo por Equipo1: -140 \(con el modelo da EV \+/.test(pj));
+ ok('el prompt pide VALOR: NO SE cuando no hay cuota y prohíbe datos de otros años',/sin cuota es NO SE/.test(pj)&&/descarta articulos de otros anos/.test(pj));
+ ok('resumenRegistro cuenta ganados y perdidos por app y avisa de muestra chica',M.resumenRegistro('mlb',()=>JSON.stringify([{res:'G'},{res:'G'},{res:'P'},{res:null}]))==='2-1 (67% de 3 resueltos, muestra chica: no concluye nada)'&&M.resumenRegistro('fut',()=>JSON.stringify([{estado:'ganado'},{estado:'perdido'}])).startsWith('1-1')&&M.resumenRegistro('nba',()=>'basura')==='');
+ ok('la Mesa solo LEE: no escribe en ningún registro de picks',!/setItem\([^)]*(ventaja_picks|registro_v1)/.test(sa)&&!/ls\('(ventaja_picks|ova_futbol_registro|ova_nba_registro)/.test(sa));
+ ok('ningún innerHTML en asistente.js (todo el texto de la app y de la IA entra como textContent)',!/innerHTML/.test(sa));
+ ok('los botones de la Mesa no son <button> (los diseños con !important los pintarían de amarillo)',/mk\('div',cls,txt\)/.test(sa)&&!/createElement\('button'\)/.test(sa));
+ ok('usa el mismo Worker de la IA (no hay nada que re-publicar en Cloudflare) y no lleva ninguna clave',/ova-ia\.osvaldoalvarez0113\.workers\.dev/.test(sa)&&!/sk-ant|x-api-key/.test(sa));
+ ['index.html','futbol.html','nba.html'].forEach(f=>ok(f+' carga asistente.js después de diseno.js',rd(f).indexOf('asistente.js')>rd(f).indexOf('diseno.js')&&rd(f).indexOf('diseno.js')>0));
+ ok('el service worker guarda asistente.js',/'asistente\.js'/.test(rd('sw.js')));
 }
 
 (async()=>{ await t_envivo(); await t_respaldo(); await t_sw(); })().then(()=>{
