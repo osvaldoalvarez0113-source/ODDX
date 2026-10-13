@@ -1,0 +1,40 @@
+Premier League: 1900 partidos
+La Liga: 1900 partidos
+Serie A: 1900 partidos
+Bundesliga: 1530 partidos
+Ligue 1: 1678 partidos
+Partidos con predicción: 8597
+Para ajustar (sin mirar las temporadas de prueba): 3341 · Para medir: 5256 (con cuota de mercado)
+Elo→1X2 ajustado: ventaja local 60, escala 200, ancho de empate 0.6
+Descanso: beta ajustado = -0.025
+
+=== 1X2 · 5256 partidos (temporadas 2324, 2425, 2526) · pérdida = log loss, menos es mejor ===
+Mercado (Pinnacle cierre): 0.9637
+Columna "vs actual" = diferencia con el modelo actual (negativo = mejora) en milésimas, z = diferencia / error. Mejora real si z ≤ -2 y mejora en las 3 temporadas.
+A. Modelo actual (Dixon-Coles con peso por antigüedad)     pérdida 0.9888 · RPS 0.2004 · vs actual 0.00 (z 0.0) · por temporada 2324:0.0 2425:0.0 2526:0.0 · O/U vs actual 0.00 (z 0.0) · vs mercado +25.1
+B. Local/visita separados (K=8)                            pérdida 0.9917 · RPS 0.2011 · vs actual 2.97 (z 2.0) · por temporada 2324:2.4 2425:1.5 2526:5.0 · O/U vs actual 0.49 (z 0.7) · vs mercado +28.1
+B. Local/visita separados (K=16)                           pérdida 0.9896 · RPS 0.2006 · vs actual 0.87 (z 0.8) · por temporada 2324:0.6 2425:-0.2 2526:2.2 · O/U vs actual 0.03 (z 0.1) · vs mercado +26.0
+B. Local/visita separados (K=32)                           pérdida 0.9887 · RPS 0.2003 · vs actual -0.12 (z -0.2) · por temporada 2324:-0.2 2425:-0.8 2526:0.7 · O/U vs actual -0.16 (z -0.5) · vs mercado +25.0
+B. Local/visita separados (K=64)                           pérdida 0.9884 · RPS 0.2003 · vs actual -0.35 (z -0.9) · por temporada 2324:-0.4 2425:-0.8 2526:0.1 · O/U vs actual -0.17 (z -0.9) · vs mercado +24.8
+C. Mezcla con Elo (10% Elo)                                pérdida 0.9884 · RPS 0.2003 · vs actual -0.39 (z -2.5) · por temporada 2324:-0.2 2425:-0.3 2526:-0.7 · O/U vs actual 0.00 (z 0.0) · vs mercado +24.7
+C. Mezcla con Elo (20% Elo)                                pérdida 0.9881 · RPS 0.2002 · vs actual -0.65 (z -2.0) · por temporada 2324:-0.2 2425:-0.4 2526:-1.3 · O/U vs actual 0.00 (z 0.0) · vs mercado +24.5
+C. Mezcla con Elo (30% Elo)                                pérdida 0.9880 · RPS 0.2002 · vs actual -0.77 (z -1.6) · por temporada 2324:-0.1 2425:-0.3 2526:-1.8 · O/U vs actual 0.00 (z 0.0) · vs mercado +24.3
+C. Mezcla con Elo (50% Elo)                                pérdida 0.9882 · RPS 0.2003 · vs actual -0.59 (z -0.7) · por temporada 2324:0.5 2425:0.2 2526:-2.4 · O/U vs actual 0.00 (z 0.0) · vs mercado +24.5
+C2. Solo Elo                                               pérdida 0.9911 · RPS 0.2011 · vs actual 2.31 (z 1.4) · por temporada 2324:4.6 2425:4.0 2526:-1.6 · vs mercado +27.4
+F. Días de descanso (beta -0.025)                          pérdida 0.9886 · RPS 0.2004 · vs actual -0.15 (z -1.7) · por temporada 2324:-0.1 2425:-0.4 2526:0.1 · O/U vs actual -0.03 (z -2.7) · vs mercado +24.9
+
+=== D. Mezcla modelo + cuota del mercado: ¿le gana la mezcla al mercado solo? ===
+peso del modelo 100%: diferencia con el mercado 25.10 milésimas (z 10.8)  [negativo = la mezcla le gana al mercado]
+peso del modelo 70%: diferencia con el mercado 14.23 milésimas (z 8.8)  [negativo = la mezcla le gana al mercado]
+peso del modelo 50%: diferencia con el mercado 8.60 milésimas (z 7.5)  [negativo = la mezcla le gana al mercado]
+peso del modelo 30%: diferencia con el mercado 4.24 milésimas (z 6.2)  [negativo = la mezcla le gana al mercado]
+peso del modelo 20%: diferencia con el mercado 2.52 milésimas (z 5.5)  [negativo = la mezcla le gana al mercado]
+peso del modelo 10%: diferencia con el mercado 1.11 milésimas (z 4.9)  [negativo = la mezcla le gana al mercado]
+peso del modelo 5%: diferencia con el mercado 0.52 milésimas (z 4.5)  [negativo = la mezcla le gana al mercado]
+
+=== D2. Mezcla con el mercado usando Elo + DC (lo que pedía la sugerencia: DC + Elo + cuota) ===
+DC+Elo con peso 30% + mercado: vs mercado 4.24 (z 6.4)
+DC+Elo con peso 20% + mercado: vs mercado 2.54 (z 5.8)
+DC+Elo con peso 10% + mercado: vs mercado 1.13 (z 5.1)
+
+Hecho. Nada de esto cambia la app: solo mide.
