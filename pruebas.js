@@ -743,6 +743,9 @@ ok('regla medida: modelo 58 % con mercado 70 % (mismo favorito) sube a Candidato
  ok('la edad del mercado solo sale si sí se usó, y avisa si es vieja',/Mercado del servidor \(hace 30 min\)/.test(e2)&&/\(hace 10 h · cuotas viejas, verifica\)/.test(e3));
  ok('fuera de MLB no habla de la API oficial',!/MLB oficial|API oficial/.test(M.resumenEstado({app:'fut',n:2,c:0,ev:0,cr:0,co:0,ch:0,tieneOf:false,tieneMer:true})));
  ok('subPct: sin mercado el número se rotula «solo modelo» (y deja la cuota justa); con mezcla dice «modelo+mercado»',JSON.stringify(M.subPct({cu:'-104'}))==='["solo modelo","justa -104"]'&&JSON.stringify(M.subPct({}))==='["solo modelo"]'&&JSON.stringify(M.subPct({mix:{pf:60},cu:'-104'}))==='["modelo+mercado"]');
+ ok('subPct: si la mezcla escoge otro favorito que el modelo, el % lleva el nombre de ese equipo; si coinciden no agrega nada',
+  JSON.stringify(M.subPct({fav:'Cleveland Guardians',na:'Cleveland Guardians',nh:'Tampa Bay Rays',mix:{pf:52.2,fav:'h'}}))==='["modelo+mercado","de Tampa Bay Rays"]'&&
+  JSON.stringify(M.subPct({fav:'Cleveland Guardians',na:'Cleveland Guardians',nh:'Tampa Bay Rays',mix:{pf:52.2,fav:'a'}}))==='["modelo+mercado"]');
  const GJ=(k,fav,pf,et,extra)=>Object.assign({key:k,fav:fav,pf:pf,et:{k:et}},extra||{});
  ok('placeholder: usa un equipo real (con un solo juego no sale «el 3»); con un «evitar» pregunta por ese; sin juegos es genérico',
   M.placeholderPregunta([GJ('a','Cleveland Guardians',51,'evit')])==='Ej: ¿por qué evitas a Cleveland Guardians?'&&

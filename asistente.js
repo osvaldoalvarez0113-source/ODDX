@@ -266,7 +266,11 @@ function resumenEstado(o){
 }
 /* letra chica bajo el porcentaje: si no hay mercado el número es solo del modelo y la tarjeta lo dice */
 function subPct(j){
- if(j.mix) return ['modelo+mercado'];
+ if(j.mix){
+  /* si la mezcla escoge otro favorito que el modelo (el título lleva al del modelo), el % es de ese otro equipo: se rotula con su nombre */
+  var fm=j.mix.fav==='a'?j.na:(j.mix.fav==='h'?j.nh:'');
+  return (fm&&fm!==j.fav)?['modelo+mercado','de '+fm]:['modelo+mercado'];
+ }
  var o=['solo modelo']; if(j.cu) o.push('justa '+j.cu);
  return o;
 }
