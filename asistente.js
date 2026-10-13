@@ -104,6 +104,55 @@ function ajustarPorMercado(et,cmp){
  if(cmp.k==='choca'){ o.k=(et.k==='cand')?'cuid':'evit'; o.t=o.k==='cuid'?'Cuidado':'Parejo · evitar'; }
  return o;
 }
+/* ---------- verificación OFICIAL (MLB StatsAPI): datos de formato fijo, sin IA, sin gasto ---------- */
+function apellido(n){ var w=String(n||'').trim().split(/\s+/); return w.length>1?w.slice(1).join(' '):(w[0]||''); }
+function oficialDe(sj,pit,tx,eq,ahora){
+ if(!sj) return null;
+ var st=(sj.status&&sj.status.detailedState)||'', ab=(sj.status&&sj.status.abstractGameState)||'';
+ var L=sj.lineups||{}, la=L.awayPlayers||[], lh=L.homePlayers||[];
+ var na=la.length||(sj._ord&&sj._ord.a)||0, nh=lh.length||(sj._ord&&sj._ord.h)||0;
+ var o={estado:st,empezo:ab&&ab!=='Preview',malo:/postponed|cancel|suspended|delayed/i.test(st),
+  lin:{a:na,h:nh,ok:na>=9&&nh>=9,nomA:la.map(function(x){ return apellido(x.fullName); }).filter(Boolean),nomH:lh.map(function(x){ return apellido(x.fullName); }).filter(Boolean)},
+  camb:[],mov:[],clima:''};
+ var t=Date.parse(sj.gameDate); o.min=isFinite(t)?Math.round((t-(ahora||Date.now()))/60000):null;
+ var T=sj.teams||{};
+ [['a','visita'],['h','local']].forEach(function(c){
+  var of=T[c[0]=='a'?'away':'home'], pr=of&&of.probablePitcher, usado=pit&&pit[c[0]];
+  if(!usado||!usado.id) return;
+  if(!pr) o.camb.push({l:c[1],antes:usado.n,ahora:''});
+  else if(+pr.id!==+usado.id) o.camb.push({l:c[1],antes:usado.n,ahora:pr.fullName});
+ });
+ if(Array.isArray(tx)&&eq){
+  tx.forEach(function(x){
+   if(!x||o.mov.length>=6) return;
+   var ids=[x.toTeam&&x.toTeam.id,x.fromTeam&&x.fromTeam.id];
+   if(ids.indexOf(+eq.a)<0&&ids.indexOf(+eq.h)<0&&ids.indexOf(eq.a)<0&&ids.indexOf(eq.h)<0) return;
+   var d=compactar(x.description||'');
+   if(/injur|\bIL\b|disabled|day-to-day|suspend|paternity|bereavement|restricted/i.test(d)) o.mov.push(recortar((x.date||'')+' '+d,150));
+  });
+ }
+ var w=sj.weather||{};
+ if(w.condition||w.temp||w.wind) o.clima=compactar([w.condition,w.temp?w.temp+'°F':'',w.wind?'viento '+w.wind:''].filter(Boolean).join(', '));
+ return o;
+}
+function ajustarPorOficial(et,of){
+ if(!of||!et) return et;
+ if(of.malo&&!of.empezo) return {k:'sin',t:'Juego '+(/postponed/i.test(of.estado)?'pospuesto':(/delayed/i.test(of.estado)?'demorado':'suspendido')),of:true};
+ if(et.k==='vivo'||et.k==='sin') return et;
+ if(of.camb&&of.camb.length) return {k:'evit',t:'Cambió el abridor · evitar',flojo:et.flojo,mk:et.mk,of:true};
+ return et;
+}
+function textoOficial(of,na,nh,edad){
+ if(!of) return '';
+ var l=[];
+ l.push('estado '+(of.estado||'?')+(of.min!=null&&!of.empezo?' (empieza en '+(of.min>=60?Math.round(of.min/6)/10+' h':Math.max(0,of.min)+' min')+')':''));
+ l.push(of.lin.ok?'lineups CONFIRMADOS ('+na+': '+of.lin.nomA.join(', ')+' | '+nh+': '+of.lin.nomH.join(', ')+')':'lineups pendientes (visita '+of.lin.a+'/9, local '+of.lin.h+'/9)');
+ if(of.camb.length) l.push('CAMBIO DE ABRIDOR vs lo que uso mi modelo: '+of.camb.map(function(c){ return c.l+' '+c.antes+' -> '+(c.ahora||'por confirmar'); }).join('; '));
+ else l.push('abridores iguales a los del modelo');
+ if(of.clima) l.push('clima oficial: '+of.clima);
+ if(of.mov.length) l.push('movimientos de lesionados/suspensiones (ult. 2 dias): '+of.mov.join(' ; '));
+ return 'OFICIAL (MLB StatsAPI, '+(edad||'ahora')+'): '+l.join(' · ');
+}
 var ORDEN_TAB={ver:0,v:0,cuo:1,c:1,num:2,n:2,for:3,f:3,x:4};
 var PESO_TAB=[0.30,0.25,0.25,0.12,0.08];
 function bloqueJuego(i,j,B){
@@ -117,6 +166,7 @@ function bloqueJuego(i,j,B){
  if(j.sello) m.push('sello de la app: '+j.sello);
  if(j.conf) m.push('datos '+j.conf);
  if(m.length) o.push(m.join(' · '));
+ if(j.of) o.push(recortar(textoOficial(j.of,j.na,j.nh,'verificado ahora'),900));
  if(j.mer&&j.cmp){
   var mm=j.cmp.mer;
   o.push('MERCADO (Pinnacle sin margen, '+(j.merEdad||'reciente')+'): '+j.na+' '+j.mer.a.toFixed(1)+'% / '+j.nh+' '+j.mer.h.toFixed(1)+'%'+(j.mer.d!=null?' / empate '+j.mer.d.toFixed(1)+'%':'')+
@@ -164,6 +214,7 @@ function construirPrompt(o){
    'Al final: RESUMEN con JUEGA: (lista), EVITAR: (lista) y una linea de lo que no se puede saber. '+
    'JUEGA solo si el modelo da ventaja clara, el mercado no lo contradice, nada de lo que encontraste lo contradice y la informacion clave esta confirmada; en duda, CUIDADO.\n'+reglas;
  }
+ if((o.juegos||[]).some(function(j){ return j.of; })) head+='Las lineas OFICIAL ya vienen de la API oficial de MLB y ya fueron verificadas: NO las repitas ni las busques otra vez; usa tu busqueda para lo que NO esta ahi (noticias, descanso de titulares, uso del bullpen, motivacion, rumores confirmados por fuente).\n';
  var fijo=head.length+reg.length+tarea.length+60;
  var js=o.juegos||[], n=Math.max(1,js.length);
  var B=Math.max(300,Math.floor((MAX_PROMPT-fijo)/n)-8);
@@ -190,7 +241,7 @@ function resumenRegistro(app,leer){
   return g+'-'+p+' ('+Math.round(g/t*100)+'% de '+t+' resueltos'+(t<30?', muestra chica: no concluye nada':'')+')';
  }catch(e){ return ''; }
 }
-var API={compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,tokens:tokens,mismoEq:mismoEq,cruzarMercado:cruzarMercado,compararMercado:compararMercado,ajustarPorMercado:ajustarPorMercado,
+var API={compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,oficialDe:oficialDe,ajustarPorOficial:ajustarPorOficial,textoOficial:textoOficial,tokens:tokens,mismoEq:mismoEq,cruzarMercado:cruzarMercado,compararMercado:compararMercado,ajustarPorMercado:ajustarPorMercado,
  construirPrompt:construirPrompt,bloqueJuego:bloqueJuego,resumenRegistro:resumenRegistro,MAX_PROMPT:MAX_PROMPT};
 root.OVAMesa=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
@@ -272,7 +323,7 @@ var CSS=[
  '.msErr{color:#ffb4b4}'
 ].join('\n');
 
-var ST={mer:null,juegos:[],sel:{},cuotas:{},cargando:false,previa:'',leyo:0};
+var ST={of:null,mer:null,juegos:[],sel:{},cuotas:{},cargando:false,previa:'',leyo:0};
 var sheet,lista,estado,btnIA,iaCaja,inpQ,fab,infoCtx;
 
 function diaDe(g){
@@ -327,8 +378,10 @@ function leerJuego(g,i){
  }
  j.emp=o.emp||''; j.tot=o.tot||''; j.cu=o.cu||''; j.sello=o.sello||''; j.conf=o.conf||''; j.nivel=o.nivel||'';
  j.titulo=o.na+' '+j.vs+' '+o.nh; j.dia=diaDe(g);
+ j.pk=g._pk; j.pit=g._pit; j.eq=g._eq?{a:g._eq.a&&g._eq.a.id,h:g._eq.h&&g._eq.h.id}:null;
  j.tabs=tabsDe(g);
  j.key=[APP,j.titulo,j.dia||fechaApp()].join('|');
+ if(ST.of&&j.pk!=null&&ST.of.games[j.pk]){ j.of=oficialDe(ST.of.games[j.pk],j.pit,ST.of.tx,j.eq); }
  j.cuotaMia=ST.cuotas[j.key]||'';
  j.et=etiqueta(j.pf==null?null:j.pf,j.nivel,APP,j.vivo);
  if(j.pf!=null){
@@ -338,6 +391,7 @@ function leerJuego(g,i){
    else j.sinMer=true;
   }else j.sinMer=true;
  }
+ if(j.of) j.et=ajustarPorOficial(j.et,j.of);
  return j;
 }
 
@@ -394,6 +448,12 @@ function nuevaFila(j,pos){
    tx.appendChild(mk('span','msChip m'+mc,mt));
   }else tx.appendChild(mk('span','msChip msin','sin dato del mercado'));
  }
+ if(j.of&&!j.vivo){
+  var of=j.of;
+  if(of.camb.length) tx.appendChild(mk('span','msChip mchoca','⚠ Abridor cambió: '+of.camb.map(function(c){ return c.antes+' → '+(c.ahora||'por confirmar'); }).join(', ')));
+  if(!of.empezo&&!of.malo) tx.appendChild(mk('span','msChip '+(of.lin.ok?'mcoinc':'mcerca'),of.lin.ok?'✔ Lineups confirmados':'⏳ Lineup pendiente'+(of.min!=null&&of.min<=90&&of.min>0?' · empieza en '+of.min+' min':'')));
+  if(of.mov.length) tx.appendChild(mk('span','msChip mcerca','📋 '+of.mov.length+' mov. de lesionados'));
+ }
  top.appendChild(tx);
  if(j.pf!=null){
   var pc=mk('div','msPc',j.pf.toFixed(0)+'%'); pc.appendChild(mk('small','',j.cu?'justa '+j.cu:'modelo'));
@@ -442,6 +502,7 @@ function nuevaFila(j,pos){
   inp.addEventListener('input',calc); inp.addEventListener('click',function(e){ e.stopPropagation(); });
   cu.appendChild(inp); det.appendChild(cu); det.appendChild(res); calc();
  }
+ if(j.of){ var ot=mk('div','msLeido'); ot.appendChild(mk('b','','Lo oficial (MLB):\n')); ot.appendChild(doc.createTextNode(textoOficial(j.of,j.na,j.nh,'ahora').replace(/^OFICIAL \(MLB StatsAPI, ahora\): /,'').split(' · ').join('\n'))); det.appendChild(ot); }
  var lt=mk('div','msLeido');
  var resumen=j.tabs.map(function(t){ return t.nombre+': '+recortar(t.txt,400); }).join('\n\n');
  lt.appendChild(mk('b','','Esto leí de este juego:\n'));
@@ -461,7 +522,9 @@ function pintarLista(){
  js.forEach(function(j,i){ lista.appendChild(nuevaFila(j,i+1)); });
  var c=js.filter(function(j){ return j.et.k==='cand'; }).length, ev=js.filter(function(j){ return j.et.k==='evit'; }).length;
  var cr=js.filter(function(j){ return j.mer; }).length, co=js.filter(function(j){ return j.cmp&&j.cmp.k==='coinc'; }).length, ch=js.filter(function(j){ return j.cmp&&j.cmp.k==='choca'; }).length;
+ var ofn=js.filter(function(j){ return j.of; }).length, lp=js.filter(function(j){ return j.of&&!j.of.lin.ok&&!j.of.empezo; }).length, cb=js.filter(function(j){ return j.of&&j.of.camb.length; }).length;
  estado.textContent=js.length+' juegos leídos · '+c+' candidatos · '+ev+' parejos. '+
+  (APP==='mlb'?(ST.of?('Verificado con MLB oficial: '+ofn+' juegos · '+lp+' con lineup pendiente · '+cb+' con abridor cambiado. '):'No pude leer la API oficial de MLB. '):'')+
   (ST.mer?('Mercado del servidor ('+ST.mer.edad+(ST.mer.viejo?' · cuotas viejas, verifica':'')+'): cruzó '+cr+' de '+js.length+' · '+co+' coinciden con el modelo · '+ch+' chocan.'):'No pude leer el mercado del servidor: el orden usa solo el modelo.');
  actualizarBtn();
 }
@@ -484,6 +547,32 @@ function haceTxt(t){
  return m<2?'hace un momento':(m<90?'hace '+m+' min':'hace '+Math.round(m/60)+' h');
 }
 
+function diaMas(f,n){ try{ var t=new Date(f+'T12:00:00Z'); t.setUTCDate(t.getUTCDate()+n); return t.toISOString().slice(0,10); }catch(e){ return f; } }
+function cargarOficial(){
+ ST.of=null; if(APP!=='mlb') return Promise.resolve();
+ var f=fechaApp(), base='https://statsapi.mlb.com/api/v1/';
+ function J(u){ return root.fetch(u).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }); }
+ return Promise.all([
+  J(base+'schedule?sportId=1&date='+f+'&hydrate=lineups,probablePitcher,team,weather'),
+  J(base+'transactions?startDate='+diaMas(f,-1)+'&endDate='+f)
+ ]).then(function(r){
+  var sch=r[0], games={}, lista=[];
+  if(!sch||!sch.dates) return;
+  sch.dates.forEach(function(d){ (d.games||[]).forEach(function(g){ games[g.gamePk]=g; lista.push(g); }); });
+  /* si el calendario no trae lineups, el boxscore los trae como orden al bate (solo juegos por empezar en las próximas 5 h) */
+  var falta=lista.filter(function(g){
+   var m=(Date.parse(g.gameDate)-Date.now())/60000;
+   return !g.lineups&&g.status&&g.status.abstractGameState==='Preview'&&m<300;
+  });
+  return Promise.all(falta.map(function(g){
+   return J(base+'game/'+g.gamePk+'/boxscore').then(function(b){
+    var T=b&&b.teams; if(T&&T.away&&T.home) g._ord={a:(T.away.battingOrder||[]).length,h:(T.home.battingOrder||[]).length};
+   });
+  })).then(function(){
+   ST.of={games:games,tx:(r[1]&&r[1].transactions)||[]};
+  });
+ }).catch(function(){});
+}
 var ARCH={mlb:'pinnacle-datos.json',fut:'pinnacle-futbol.json',nba:'pinnacle-nba.json'};
 function cargarMercado(){
  ST.mer=null;
@@ -503,7 +592,7 @@ function leer(){
  if(!gs.length){ estado.textContent='Primero carga los juegos (fecha / liga) y vuelve a abrir la Mesa.'; ST.cargando=false; return; }
  estado.textContent='Leyendo '+gs.length+' juegos…';
  try{ ST.cuotas=JSON.parse(ls('ova_mesa_cu_'+APP+'_'+fechaApp())||'{}')||{}; }catch(e){ ST.cuotas={}; }
- Promise.all([cargarMercado(),cargarTodo(function(h,t){ estado.textContent='Leyendo juego '+h+' de '+t+'…'; }).catch(function(){})]).then(function(){
+ Promise.all([cargarMercado(),cargarOficial(),cargarTodo(function(h,t){ estado.textContent='Leyendo juego '+h+' de '+t+'…'; }).catch(function(){})]).then(function(){
   ST.juegos=$$('.game').map(leerJuego);
   /* por defecto: los 8 mejores con números y sin empezar */
   var viejos=ST.sel, nuevo={}; var top=ST.juegos.filter(function(j){ return j.pf!=null&&!j.vivo; })
@@ -596,7 +685,7 @@ function armar(){
  var av=mk('div','msAviso');
  av.appendChild(mk('b','','Qué es y qué no es. '));
  av.appendChild(doc.createTextNode('Junta en un lugar lo que la app ya calculó y, si quieres, le suma noticias de internet. Ahorra tiempo y detecta cuando algo contradice al modelo. '+
-  'También lee el mercado del servidor (Pinnacle sin margen): cuando modelo y mercado coinciden la señal es más fuerte; cuando chocan, por defecto manda el mercado. No crea ventaja por sí sola: medido con tus datos, el modelo no le gana al mercado. Úsala para descartar y confirmar, no como garantía.'));
+  'En MLB verifica solo, con la API oficial: lineups, abridor probable, estado del juego, clima y lesionados. También lee el mercado del servidor (Pinnacle sin margen): cuando modelo y mercado coinciden la señal es más fuerte; cuando chocan, por defecto manda el mercado. No crea ventaja por sí sola: medido con tus datos, el modelo no le gana al mercado. Úsala para descartar y confirmar, no como garantía.'));
  sheet.appendChild(av);
  estado=mk('div','msEst',''); sheet.appendChild(estado);
  sheet.appendChild(boton('msMini','↻ Volver a leer',function(){ leer(); }));

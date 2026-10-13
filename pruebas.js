@@ -710,6 +710,22 @@ sec('Mesa (asistente.js): lee todas las pestañas, ordena sin internet, valor co
  ok('con mercado, valor = pagar más que el precio justo de Pinnacle; si solo el modelo lo ve, se marca sospechoso',vm.k==='valor'&&vm.evM>0.05&&vs.k==='sin'&&vs.soloModelo===true);
  ok('el prompt dice que el mercado manda cuando chocan y explica coincide/choca por juego',/CHOCAN, asume que el mercado tiene la razon/.test(pj)&&/COINCIDE con el modelo|CHOCA con el modelo/.test(M.bloqueJuego(1,Object.assign(mkJ(1,'x'),{mer:{a:60,h:40,d:null},cmp:{k:'coinc',dif:1,mer:59,favMod:'a',favMer:'a'},na:'A',nh:'B'}),600)));
  ok('la Mesa lee los tres archivos del servidor y no toca su contenido',/pinnacle-datos\.json/.test(sa)&&/pinnacle-futbol\.json/.test(sa)&&/pinnacle-nba\.json/.test(sa)&&!/pinnacle[^']*'\s*,\s*\{\s*method/.test(sa));
+
+ /* ---- verificación oficial (MLB StatsAPI) ---- */
+ const SJ=(over)=>Object.assign({gameDate:new Date(Date.now()+60*60000).toISOString(),status:{abstractGameState:'Preview',detailedState:'Scheduled'},
+  teams:{away:{probablePitcher:{id:11,fullName:'Cole'}},home:{probablePitcher:{id:21,fullName:'Bello'}}},weather:{condition:'Clear',temp:'61',wind:'12 mph'}},over||{});
+ const PIT={a:{id:11,n:'Cole'},h:{id:21,n:'Bello'}};
+ const o1=M.oficialDe(SJ(),PIT,[],{a:1,h:2});
+ ok('oficialDe: mismo abridor → sin cambio; sin lineups → pendiente; clima oficial leído',o1.camb.length===0&&o1.lin.ok===false&&o1.clima==='Clear, 61°F, viento 12 mph');
+ const o2=M.oficialDe(SJ({teams:{away:{probablePitcher:{id:99,fullName:'Otro'}},home:{}}}),PIT,[],{a:1,h:2});
+ ok('oficialDe detecta abridor distinto y abridor retirado (por confirmar)',o2.camb.length===2&&o2.camb[0].ahora==='Otro'&&o2.camb[1].ahora==='');
+ const pl=n=>Array.from({length:n},(_,i)=>({id:i,fullName:'Nombre Apellido'+i}));
+ ok('lineup confirmado = 9 y 9 (desde el calendario o desde el boxscore); con 9 y 0 sigue pendiente',M.oficialDe(SJ({lineups:{awayPlayers:pl(9),homePlayers:pl(9)}}),PIT,[],{a:1,h:2}).lin.ok===true&&M.oficialDe(SJ({_ord:{a:9,h:9}}),PIT,[],{a:1,h:2}).lin.ok===true&&M.oficialDe(SJ({lineups:{awayPlayers:pl(9),homePlayers:[]}}),PIT,[],{a:1,h:2}).lin.ok===false);
+ const o3=M.oficialDe(SJ(),PIT,[{date:'2026-10-12',toTeam:{id:2},description:'Boston placed 1B Casas on the 10-day injured list.'},{date:'2026-10-12',toTeam:{id:2},description:'Boston activated RHP Y.'},{date:'2026-10-12',toTeam:{id:77},description:'Otro placed Z on the 15-day injured list.'}],{a:1,h:2});
+ ok('movimientos: solo lesionados/suspensiones de los dos equipos del juego (no activaciones ni de otros equipos)',o3.mov.length===1&&/Casas/.test(o3.mov[0]));
+ ok('cambio de abridor baja el juego a «evitar» (el modelo calculó con otro abridor); juego pospuesto sale de la lista',M.ajustarPorOficial({k:'cand',t:'Candidato'},o2).k==='evit'&&M.ajustarPorOficial({k:'cand',t:'Candidato'},M.oficialDe(SJ({status:{abstractGameState:'Preview',detailedState:'Postponed'}}),PIT,[],{a:1,h:2})).k==='sin'&&M.ajustarPorOficial({k:'cand',t:'x'},o1).k==='cand'&&M.ajustarPorOficial({k:'cand',t:'x'},null).k==='cand');
+ ok('el texto OFICIAL que va a la IA nombra el cambio de abridor y los lineups',/CAMBIO DE ABRIDOR/.test(M.textoOficial(o2,'A','B','ahora'))&&/lineups pendientes/.test(M.textoOficial(o1,'A','B','ahora')));
+ ok('la verificación oficial solo LEE statsapi.mlb.com (GET, sin POST) y solo en MLB',/statsapi\.mlb\.com\/api\/v1\//.test(sa)&&/APP!=='mlb'\) return Promise\.resolve\(\)/.test(sa));
  ['index.html','futbol.html','nba.html'].forEach(f=>ok(f+' carga asistente.js después de diseno.js',rd(f).indexOf('asistente.js')>rd(f).indexOf('diseno.js')&&rd(f).indexOf('diseno.js')>0));
  ok('el service worker guarda asistente.js',/'asistente\.js'/.test(rd('sw.js')));
 }
