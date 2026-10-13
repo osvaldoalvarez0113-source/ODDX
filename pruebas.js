@@ -730,6 +730,33 @@ ok('regla medida: modelo 58 % con mercado 70 % (mismo favorito) sube a Candidato
  ok('la verificación oficial solo LEE statsapi.mlb.com (GET, sin POST) y solo en MLB',/statsapi\.mlb\.com\/api\/v1\//.test(sa)&&/APP!=='mlb'\) return Promise\.resolve\(\)/.test(sa));
  ['index.html','futbol.html','nba.html'].forEach(f=>ok(f+' carga asistente.js después de diseno.js',rd(f).indexOf('asistente.js')>rd(f).indexOf('diseno.js')&&rd(f).indexOf('diseno.js')>0));
  ok('el service worker guarda asistente.js',/'asistente\.js'/.test(rd('sw.js')));
+
+ /* ---- pulido de la pantalla (13 oct): plurales, «solo modelo», sin cuotas viejas, placeholder real, marcas por defecto ---- */
+ ok('pl: 1 va en singular, 0 y 2 en plural',M.pl(1,'juego','juegos')==='1 juego'&&M.pl(0,'juego','juegos')==='0 juegos'&&M.pl(2,'juego','juegos')==='2 juegos');
+ const E=(x)=>M.resumenEstado(Object.assign({app:'mlb',n:1,c:0,ev:1,cr:0,co:0,ch:0,ofn:1,lp:1,cb:0,tieneOf:true,tieneMer:true,edad:'hace 11 h',viejo:true},x||{}));
+ const e1=E();
+ ok('resumen con 1 juego: «1 juego leído · 0 candidatos · 1 parejo» y «1 juego» en lo oficial (no «1 juegos»)',/^1 juego leído · 0 candidatos · 1 parejo\. /.test(e1)&&/MLB oficial: 1 juego · /.test(e1)&&!/1 juegos|1 parejos/.test(e1));
+ ok('si el mercado no cruzó ningún juego dice «sin mercado» y NO enseña la edad de unas cuotas que no se usaron',/Sin mercado para este juego/.test(e1)&&!/hace 11 h|cuotas viejas/.test(e1));
+ ok('con varios juegos y sin cruce dice «estos juegos»; sin archivo del servidor dice que no pudo leerlo',/Sin mercado para estos juegos/.test(E({n:5,ev:2}))&&/No pude leer el mercado/.test(E({tieneMer:false})));
+ const e2=E({n:3,c:1,ev:1,cr:2,co:1,ch:1,edad:'hace 30 min',viejo:false}), e3=E({n:3,cr:2,co:2,ch:0,edad:'hace 10 h',viejo:true});
+ ok('con mercado: «cruzó 2 de 3 · 1 coincide … · 1 choca» (singular) y «2 coinciden · 0 chocan» (plural)',/cruzó 2 de 3 · 1 coincide con el modelo · 1 choca\./.test(e2)&&/2 coinciden con el modelo · 0 chocan\./.test(e3));
+ ok('la edad del mercado solo sale si sí se usó, y avisa si es vieja',/Mercado del servidor \(hace 30 min\)/.test(e2)&&/\(hace 10 h · cuotas viejas, verifica\)/.test(e3));
+ ok('fuera de MLB no habla de la API oficial',!/MLB oficial|API oficial/.test(M.resumenEstado({app:'fut',n:2,c:0,ev:0,cr:0,co:0,ch:0,tieneOf:false,tieneMer:true})));
+ ok('subPct: sin mercado el número se rotula «solo modelo» (y deja la cuota justa); con mezcla dice «modelo+mercado»',JSON.stringify(M.subPct({cu:'-104'}))==='["solo modelo","justa -104"]'&&JSON.stringify(M.subPct({}))==='["solo modelo"]'&&JSON.stringify(M.subPct({mix:{pf:60},cu:'-104'}))==='["modelo+mercado"]');
+ const GJ=(k,fav,pf,et,extra)=>Object.assign({key:k,fav:fav,pf:pf,et:{k:et}},extra||{});
+ ok('placeholder: usa un equipo real (con un solo juego no sale «el 3»); con un «evitar» pregunta por ese; sin juegos es genérico',
+  M.placeholderPregunta([GJ('a','Cleveland Guardians',51,'evit')])==='Ej: ¿por qué evitas a Cleveland Guardians?'&&
+  M.placeholderPregunta([GJ('a','Yankees',66,'cand'),GJ('b','Cubs',50,'evit')])==='Ej: ¿por qué evitas a Cubs?'&&
+  M.placeholderPregunta([GJ('a','Yankees',66,'cand')])==='Ej: ¿qué riesgo ves en Yankees?'&&
+  M.placeholderPregunta([])==='Pregúntale algo sobre los juegos de hoy'&&!/evitas el 3\?/.test(sa));
+ const SJX=[GJ('a','A',70,'cand'),GJ('b','B',58,'cuid'),GJ('c','C',51,'evit'),GJ('d','D',80,'cand',{vivo:true}),GJ('e','E',null,'sin')];
+ const s0=M.seleccionInicial(SJX,{});
+ ok('marcas por defecto: Candidato y Cuidado sí; «evitar», en vivo y sin números no (el de «evitar» ya no se manda marcado a la IA)',s0.a===true&&s0.b===true&&!s0.c&&!s0.d&&!s0.e);
+ const s1=M.seleccionInicial(SJX,{a:false,c:true});
+ ok('lo que marcaste o desmarcaste tú se respeta al volver a leer (marcar un «evitar» a mano se queda)',s1.a===false&&s1.b===true&&s1.c===true);
+ ok('nunca marca más de 8 por defecto',Object.keys(M.seleccionInicial(Array.from({length:12},(_,i)=>GJ('k'+i,'E'+i,60+i,'cand')),{})).length===8);
+ ok('la Mesa usa esos textos y «Cómo leerla» sale cerrado después de la primera vez (se abre con un toque)',/resumenEstado\(\{app:APP/.test(sa)&&/placeholderPregunta\(js\)/.test(sa)&&/seleccionInicial\(ST\.juegos,ST\.manual\)/.test(sa)&&/avPrimera=ls\(AV_KEY\)!=='1'/.test(sa)&&/aria-expanded/.test(sa)&&/\.msAviso\.on \.msAvB\{display:block\}/.test(sa));
+ ok('las píldoras ya no van pegadas (margen derecho) y «sin dato del mercado» no arrastra margen suelto',/\.msChip\{display:inline-block;margin:5px 6px 0 0/.test(sa)&&!/margin-left:6px;font-weight:600/.test(sa));
 }
 
 sec('Auditoría 2: nombres de ESPN limpios en el origen, peticiones compartidas, botones tocables');

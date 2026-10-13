@@ -250,7 +250,45 @@ function resumenRegistro(app,leer){
   return g+'-'+p+' ('+Math.round(g/t*100)+'% de '+t+' resueltos'+(t<30?', muestra chica: no concluye nada':'')+')';
  }catch(e){ return ''; }
 }
-var API={compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,oficialDe:oficialDe,ajustarPorOficial:ajustarPorOficial,textoOficial:textoOficial,tokens:tokens,mismoEq:mismoEq,cruzarMercado:cruzarMercado,compararMercado:compararMercado,mezclar:mezclar,ajustarPorMercado:ajustarPorMercado,
+/* ---------- textos de la pantalla (puros, se prueban en node) ---------- */
+function pl(n,s,p){ return n+' '+(n===1?s:p); }     /* 1 juego · 0 juegos · 2 juegos */
+/* resumen de arriba: singular cuando es 1 y, si el mercado no cruzó ningún juego, «sin mercado» a secas (sin la edad de unas cuotas que no se usaron) */
+function resumenEstado(o){
+ var n=o.n, s=pl(n,'juego leído','juegos leídos')+' · '+pl(o.c,'candidato','candidatos')+' · '+pl(o.ev,'parejo','parejos')+'. ';
+ if(o.app==='mlb') s+=o.tieneOf?('Verificado con MLB oficial: '+pl(o.ofn,'juego','juegos')+' · '+o.lp+' con lineup pendiente · '+o.cb+' con abridor cambiado. '):'No pude leer la API oficial de MLB. ';
+ if(!o.tieneMer) s+='No pude leer el mercado del servidor: el orden usa solo el modelo.';
+ else if(!o.cr) s+='Sin mercado para '+(n===1?'este juego':'estos juegos')+': el orden usa solo el modelo.';
+ else{
+  var meta=[]; if(o.edad) meta.push(o.edad); if(o.viejo) meta.push('cuotas viejas, verifica');
+  s+='Mercado del servidor'+(meta.length?' ('+meta.join(' · ')+')':'')+': cruzó '+o.cr+' de '+n+' · '+o.co+(o.co===1?' coincide':' coinciden')+' con el modelo · '+o.ch+(o.ch===1?' choca':' chocan')+'.';
+ }
+ return s;
+}
+/* letra chica bajo el porcentaje: si no hay mercado el número es solo del modelo y la tarjeta lo dice */
+function subPct(j){
+ if(j.mix) return ['modelo+mercado'];
+ var o=['solo modelo']; if(j.cu) o.push('justa '+j.cu);
+ return o;
+}
+/* ejemplo del cuadro de preguntas con un equipo real de la lista (un número «el 3» no sirve con un solo juego) */
+function placeholderPregunta(js){
+ var c=(js||[]).filter(function(j){ return j&&j.pf!=null&&j.fav; });
+ if(!c.length) return 'Pregúntale algo sobre los juegos de hoy';
+ var e=c.filter(function(j){ return j.et&&j.et.k==='evit'; })[0];
+ return e?'Ej: ¿por qué evitas a '+e.fav+'?':'Ej: ¿qué riesgo ves en '+c[0].fav+'?';
+}
+/* marcas ✓ por defecto: los 8 mejores que sean Candidato o Cuidado (un «evitar» no se manda a la IA solo); lo que marcaste o desmarcaste tú se respeta */
+function seleccionInicial(juegos,manual){
+ var nuevo={}; manual=manual||{}; juegos=juegos||[];
+ juegos.filter(function(j){ return j.pf!=null&&!j.vivo&&j.et&&(j.et.k==='cand'||j.et.k==='cuid'); })
+  .sort(function(a,b){ return b.pf-a.pf; }).slice(0,8).forEach(function(j){ nuevo[j.key]=true; });
+ juegos.forEach(function(j){
+  if(manual[j.key]===false) nuevo[j.key]=false;
+  else if(manual[j.key]===true&&j.pf!=null&&!j.vivo) nuevo[j.key]=true;
+ });
+ return nuevo;
+}
+var API={pl:pl,resumenEstado:resumenEstado,subPct:subPct,placeholderPregunta:placeholderPregunta,seleccionInicial:seleccionInicial,compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,oficialDe:oficialDe,ajustarPorOficial:ajustarPorOficial,textoOficial:textoOficial,tokens:tokens,mismoEq:mismoEq,cruzarMercado:cruzarMercado,compararMercado:compararMercado,mezclar:mezclar,ajustarPorMercado:ajustarPorMercado,
  construirPrompt:construirPrompt,bloqueJuego:bloqueJuego,resumenRegistro:resumenRegistro,MAX_PROMPT:MAX_PROMPT};
 root.OVAMesa=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
@@ -295,8 +333,10 @@ var CSS=[
  '.msBtn.off{opacity:.5;pointer-events:none}',
  '.msBtn.sec{background:var(--bg2,#131c2a);color:var(--txt,#fff);border:1px solid var(--line2,#2a3340)}',
  '.msMini{background:var(--bg2,#131c2a);color:var(--txt,#fff);padding:8px 13px;min-height:36px;font-size:13px;border:1px solid var(--line2,#2a3340)}',
- '.msAviso{margin:10px 0;padding:11px 13px;border-radius:12px;background:var(--bg1,#0d1420);border:1px solid var(--line2,#2a3340);font-size:12.5px;line-height:1.45;color:var(--mut,#9aa)}',
- '.msAviso b{color:var(--txt,#fff)}',
+ '.msAviso{margin:10px 0;border-radius:12px;background:var(--bg1,#0d1420);border:1px solid var(--line2,#2a3340);font-size:12.5px;line-height:1.45;color:var(--mut,#9aa);overflow:hidden}',
+ '.msAvH{display:block;padding:12px 13px;font-weight:800;font-size:13px;color:var(--txt,#fff);cursor:pointer;-webkit-tap-highlight-color:transparent}',
+ '.msAvB{display:none;padding:0 13px 12px}',
+ '.msAviso.on .msAvB{display:block}',
  '.msEst{margin:8px 0;font-size:13px;color:var(--mut,#9aa)}',
  '.msRow{margin:8px 0;border-radius:14px;background:var(--bg1,#0d1420);border:1px solid var(--line2,#2a3340);overflow:hidden}',
  '.msTop{display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer}',
@@ -306,9 +346,9 @@ var CSS=[
  '.msTx span:not(.msChip){display:block;font-size:12px;color:var(--mut,#9aa);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
  '.msPc{flex:0 0 auto;text-align:right;font-weight:800;font-size:17px}',
  '.msPc small{display:block;font-size:11px;font-weight:600;color:var(--mut,#9aa)}',
- '.msChip{display:inline-block;margin-top:5px;padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:800;letter-spacing:.2px}',
+ '.msChip{display:inline-block;margin:5px 6px 0 0;padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:800;letter-spacing:.2px}',
  '.msChip.cand{background:#0f5132;color:#d1f5e0}.msChip.cuid{background:#6b4a00;color:#ffe9b0}.msChip.evit{background:#5a1a1a;color:#ffd5d5}',
- '.msChip.mcoinc{background:#0f5132;color:#d1f5e0;margin-left:0}.msChip.mcerca{background:#2a3340;color:#cfd8e3;margin-left:0}.msChip.mchoca{background:#5a1a1a;color:#ffd5d5;margin-left:0}.msChip.msin{background:transparent;color:var(--mut,#9aa);margin-left:6px;font-weight:600;padding-left:0;margin-left:0}',
+ '.msChip.mcoinc{background:#0f5132;color:#d1f5e0;margin-left:0}.msChip.mcerca{background:#2a3340;color:#cfd8e3;margin-left:0}.msChip.mchoca{background:#5a1a1a;color:#ffd5d5;margin-left:0}.msChip.msin{background:transparent;color:var(--mut,#9aa);font-weight:600;padding-left:0;padding-right:0}',
  '.msChip.sin,.msChip.vivo{background:#2a3340;color:#cfd8e3}',
  '.msChip.valor{background:#0f5132;color:#d1f5e0}.msChip.justo{background:#2a3340;color:#cfd8e3}.msChip.sinv{background:#5a1a1a;color:#ffd5d5}',
  '.msSel{flex:0 0 26px;height:26px;border-radius:8px;border:2px solid var(--line2,#2a3340);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#101418;cursor:pointer}',
@@ -332,7 +372,8 @@ var CSS=[
  '.msErr{color:#ffb4b4}'
 ].join('\n');
 
-var ST={of:null,mer:null,juegos:[],sel:{},cuotas:{},cargando:false,previa:'',leyo:0};
+var ST={of:null,mer:null,juegos:[],sel:{},manual:{},cuotas:{},cargando:false,previa:'',leyo:0};
+var AV_KEY='ova_mesa_av_v1', avPrimera=false;     /* «Cómo leerla» sale abierto solo la primera vez */
 var sheet,lista,estado,btnIA,iaCaja,inpQ,fab,infoCtx;
 
 function diaDe(g){
@@ -468,7 +509,8 @@ function nuevaFila(j,pos){
  }
  top.appendChild(tx);
  if(j.pf!=null){
-  var pc=mk('div','msPc',(j.mix?j.mix.pf:j.pf).toFixed(0)+'%'); pc.appendChild(mk('small','',j.mix?'modelo+mercado':(j.cu?'justa '+j.cu:'modelo')));
+  var pc=mk('div','msPc',(j.mix?j.mix.pf:j.pf).toFixed(0)+'%');
+  subPct(j).forEach(function(t){ pc.appendChild(mk('small','',t)); });
   top.appendChild(pc);
  }
  var puede=j.pf!=null&&!j.vivo;
@@ -476,7 +518,7 @@ function nuevaFila(j,pos){
  sel.setAttribute('role','checkbox'); sel.setAttribute('aria-checked',String(!!ST.sel[j.key]));
  if(puede){
   sel.addEventListener('click',function(e){
-   e.stopPropagation(); ST.sel[j.key]=!ST.sel[j.key];
+   e.stopPropagation(); ST.sel[j.key]=!ST.sel[j.key]; ST.manual[j.key]=ST.sel[j.key];
    sel.classList.toggle('on',!!ST.sel[j.key]); sel.textContent=ST.sel[j.key]?'✓':''; sel.setAttribute('aria-checked',String(!!ST.sel[j.key])); actualizarBtn();
   });
  }else sel.style.opacity='.3';
@@ -535,9 +577,8 @@ function pintarLista(){
  var c=js.filter(function(j){ return j.et.k==='cand'; }).length, ev=js.filter(function(j){ return j.et.k==='evit'; }).length;
  var cr=js.filter(function(j){ return j.mer; }).length, co=js.filter(function(j){ return j.cmp&&j.cmp.k==='coinc'; }).length, ch=js.filter(function(j){ return j.cmp&&j.cmp.k==='choca'; }).length;
  var ofn=js.filter(function(j){ return j.of; }).length, lp=js.filter(function(j){ return j.of&&!j.of.lin.ok&&!j.of.empezo; }).length, cb=js.filter(function(j){ return j.of&&j.of.camb.length; }).length;
- estado.textContent=js.length+' juegos leídos · '+c+' candidatos · '+ev+' parejos. '+
-  (APP==='mlb'?(ST.of?('Verificado con MLB oficial: '+ofn+' juegos · '+lp+' con lineup pendiente · '+cb+' con abridor cambiado. '):'No pude leer la API oficial de MLB. '):'')+
-  (ST.mer?('Mercado del servidor ('+ST.mer.edad+(ST.mer.viejo?' · cuotas viejas, verifica':'')+'): cruzó '+cr+' de '+js.length+' · '+co+' coinciden con el modelo · '+ch+' chocan.'):'No pude leer el mercado del servidor: el orden usa solo el modelo.');
+ estado.textContent=resumenEstado({app:APP,n:js.length,c:c,ev:ev,cr:cr,co:co,ch:ch,ofn:ofn,lp:lp,cb:cb,tieneOf:!!ST.of,tieneMer:!!ST.mer,edad:ST.mer?ST.mer.edad:'',viejo:!!(ST.mer&&ST.mer.viejo)});
+ inpQ.placeholder=placeholderPregunta(js);
  actualizarBtn();
 }
 function elegidos(){
@@ -606,12 +647,8 @@ function leer(){
  try{ ST.cuotas=JSON.parse(ls('ova_mesa_cu_'+APP+'_'+fechaApp())||'{}')||{}; }catch(e){ ST.cuotas={}; }
  Promise.all([cargarMercado(),cargarOficial(),cargarTodo(function(h,t){ estado.textContent='Leyendo juego '+h+' de '+t+'…'; }).catch(function(){})]).then(function(){
   ST.juegos=$$('.game').map(leerJuego);
-  /* por defecto: los 8 mejores con números y sin empezar */
-  var viejos=ST.sel, nuevo={}; var top=ST.juegos.filter(function(j){ return j.pf!=null&&!j.vivo; })
-   .sort(function(a,b){ return b.pf-a.pf; }).slice(0,8);
-  top.forEach(function(j){ nuevo[j.key]=true; });
-  ST.juegos.forEach(function(j){ if(viejos[j.key]===false) nuevo[j.key]=false; });
-  ST.sel=nuevo; ST.cargando=false; pintarLista();
+  /* por defecto: los 8 mejores Candidato/Cuidado sin empezar; los «evitar» quedan sin marcar */
+  ST.sel=seleccionInicial(ST.juegos,ST.manual); ST.cargando=false; pintarLista();
  });
 }
 
@@ -680,6 +717,7 @@ function preguntar(pregunta){
 
 function abrir(){
  sheet.classList.add('on'); sheet.scrollTop=0; fab.style.display='none';
+ if(avPrimera){ ls(AV_KEY,'1'); avPrimera=false; }     /* ya la vio: la próxima vez sale cerrada */
  leer();
 }
 function cerrar(){ sheet.classList.remove('on'); fab.style.display=''; }
@@ -694,9 +732,15 @@ function armar(){
  sheet=mk('div','msSheet'); sheet.setAttribute('role','dialog'); sheet.setAttribute('aria-label','Mesa de hoy');
  var bar=mk('div','msBar'); var h=mk('h2','','Mesa de hoy'); h.appendChild(mk('small','',({mlb:'MLB',fut:'Fútbol',nba:'NBA'})[APP]+' · lee todos los juegos y todas las pestañas'));
  bar.appendChild(h); bar.appendChild(boton('msX','✕ Cerrar',cerrar)); sheet.appendChild(bar);
- var av=mk('div','msAviso');
- av.appendChild(mk('b','','Cómo leerla. '));
- av.appendChild(doc.createTextNode('Junta lo que la app calculó con el mercado'+(APP==='mlb'?' y los datos oficiales de MLB':'')+'. El porcentaje que ve es una mezcla mitad modelo, mitad mercado (en más de 11 000 juegos acertó más que el modelo solo). Si el modelo y el mercado eligen favoritos distintos, no se juega. No crea ventaja por sí sola: úsala para descartar y confirmar, no como garantía.'));
+ /* «Cómo leerla»: abierto la primera vez, después queda cerrado y se abre con un toque (en el iPhone ocupaba media pantalla) */
+ avPrimera=ls(AV_KEY)!=='1';
+ var av=mk('div','msAviso'+(avPrimera?' on':''));
+ var avH=boton('msAvH','',function(){
+  var on=av.classList.toggle('on'); avH.textContent=(on?'▾':'▸')+' Cómo leerla'; avH.setAttribute('aria-expanded',String(on));
+ });
+ avH.textContent=(avPrimera?'▾':'▸')+' Cómo leerla'; avH.setAttribute('aria-expanded',String(avPrimera));
+ av.appendChild(avH);
+ av.appendChild(mk('div','msAvB','Junta lo que la app calculó con el mercado'+(APP==='mlb'?' y los datos oficiales de MLB':'')+'. El porcentaje que ve es una mezcla mitad modelo, mitad mercado (en más de 11 000 juegos acertó más que el modelo solo). Si un juego no tiene mercado, el número es solo del modelo y lo dice debajo del porcentaje. Si el modelo y el mercado eligen favoritos distintos, no se juega. No crea ventaja por sí sola: úsala para descartar y confirmar, no como garantía.'));
  sheet.appendChild(av);
  estado=mk('div','msEst',''); sheet.appendChild(estado);
  sheet.appendChild(boton('msMini','↻ Volver a leer',function(){ leer(); }));
@@ -707,7 +751,7 @@ function armar(){
  btnIA=boton('msBtn','Marca al menos un juego con ✓',function(){ if(!btnIA.classList.contains('off')) preguntar(''); });
  sheet.appendChild(btnIA);
  infoCtx=mk('div','msEst',''); sheet.appendChild(infoCtx);
- inpQ=mk('input','msQ'); inpQ.type='text'; inpQ.placeholder='Pregúntale algo, ej: ¿por qué evitas el 3?';
+ inpQ=mk('input','msQ'); inpQ.type='text'; inpQ.placeholder='Pregúntale algo sobre los juegos de hoy';
  inpQ.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); var q=compactar(inpQ.value); if(q&&!ST.cargando){ inpQ.value=''; preguntar(q); } } });
  sheet.appendChild(inpQ);
  sheet.appendChild(boton('msBtn sec','Preguntar',function(){ var q=compactar(inpQ.value); if(q&&!ST.cargando){ inpQ.value=''; preguntar(q); } }));
