@@ -1,0 +1,8 @@
+Premier League: 1900 partidos
+La Liga: 1900 partidos
+Serie A: 1900 partidos
+Bundesliga: 1530 partidos
+Ligue 1: 1678 partidos
+Partidos con predicción: 8597
+Para ajustar (sin mirar las temporadas de prueba): 3341 · Para medir: 5256 (con cuota de mercado)
+Filas guardadas: 5256
