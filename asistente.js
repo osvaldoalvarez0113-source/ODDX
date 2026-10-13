@@ -98,10 +98,19 @@ function compararMercado(pa,ph,ma,mh){
  var k=(favMod!==favMer||Math.abs(dif)>=6)?'choca':(Math.abs(dif)<=3?'coinc':'cerca');
  return {k:k,dif:dif,mer:mm,favMer:favMer,favMod:favMod};
 }
+/* mezcla 50/50 modelo + mercado (medido en 6 171 juegos de MLB y 5 256 de fútbol: acierta más que el modelo solo y no pierde nada).
+   Devuelve {pf, fav:'a'|'h'} con la probabilidad del favorito de la mezcla. */
+function mezclar(pa,ph,ma,mh){
+ if(pa==null||ph==null||ma==null||mh==null) return null;
+ var xa=(pa+ma)/2, xh=(ph+mh)/2;
+ return xa>xh?{pf:xa,fav:'a'}:{pf:xh,fav:'h'};
+}
+/* si modelo y mercado eligen favoritos distintos, no se juega (medido: el mercado tuvo la razón, el modelo ganó 26 % en fútbol y 47 % en MLB
+   donde decía 40 % y 53 %). Si eligen el mismo y solo difieren en puntos, la mezcla ya lo absorbe: no se baja otra vez. */
 function ajustarPorMercado(et,cmp){
  if(!cmp||!et||et.k==='vivo'||et.k==='sin') return et;
  var o={k:et.k,t:et.t,flojo:et.flojo,mk:cmp.k};
- if(cmp.k==='choca'){ o.k=(et.k==='cand')?'cuid':'evit'; o.t=o.k==='cuid'?'Cuidado':'Parejo · evitar'; }
+ if(cmp.favMod&&cmp.favMer&&cmp.favMod!==cmp.favMer){ o.k='evit'; o.t='Parejo · evitar'; }
  return o;
 }
 /* ---------- verificación OFICIAL (MLB StatsAPI): datos de formato fijo, sin IA, sin gasto ---------- */
@@ -241,7 +250,7 @@ function resumenRegistro(app,leer){
   return g+'-'+p+' ('+Math.round(g/t*100)+'% de '+t+' resueltos'+(t<30?', muestra chica: no concluye nada':'')+')';
  }catch(e){ return ''; }
 }
-var API={compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,oficialDe:oficialDe,ajustarPorOficial:ajustarPorOficial,textoOficial:textoOficial,tokens:tokens,mismoEq:mismoEq,cruzarMercado:cruzarMercado,compararMercado:compararMercado,ajustarPorMercado:ajustarPorMercado,
+var API={compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,oficialDe:oficialDe,ajustarPorOficial:ajustarPorOficial,textoOficial:textoOficial,tokens:tokens,mismoEq:mismoEq,cruzarMercado:cruzarMercado,compararMercado:compararMercado,mezclar:mezclar,ajustarPorMercado:ajustarPorMercado,
  construirPrompt:construirPrompt,bloqueJuego:bloqueJuego,resumenRegistro:resumenRegistro,MAX_PROMPT:MAX_PROMPT};
 root.OVAMesa=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
@@ -387,7 +396,9 @@ function leerJuego(g,i){
  if(j.pf!=null){
   if(ST.mer){
    j.mer=cruzarMercado(ST.mer.juegos,APP,o.na,o.nh);
-   if(j.mer){ j.cmp=compararMercado(j.pa,j.ph,j.mer.a,j.mer.h); j.merEdad=ST.mer.edad; j.et=ajustarPorMercado(j.et,j.cmp); }
+   if(j.mer){ j.cmp=compararMercado(j.pa,j.ph,j.mer.a,j.mer.h); j.merEdad=ST.mer.edad; j.mix=mezclar(j.pa,j.ph,j.mer.a,j.mer.h);
+    if(j.mix) j.et=etiqueta(j.mix.pf,j.nivel,APP,j.vivo);
+    j.et=ajustarPorMercado(j.et,j.cmp); }
    else j.sinMer=true;
   }else j.sinMer=true;
  }
@@ -456,7 +467,7 @@ function nuevaFila(j,pos){
  }
  top.appendChild(tx);
  if(j.pf!=null){
-  var pc=mk('div','msPc',j.pf.toFixed(0)+'%'); pc.appendChild(mk('small','',j.cu?'justa '+j.cu:'modelo'));
+  var pc=mk('div','msPc',(j.mix?j.mix.pf:j.pf).toFixed(0)+'%'); pc.appendChild(mk('small','',j.mix?'modelo+mercado':(j.cu?'justa '+j.cu:'modelo')));
   top.appendChild(pc);
  }
  var puede=j.pf!=null&&!j.vivo;
@@ -515,7 +526,7 @@ function nuevaFila(j,pos){
 function pintarLista(){
  while(lista.firstChild) lista.removeChild(lista.firstChild);
  var RK={cand:3,cuid:2,evit:1,sin:0,vivo:-1};
- function pun(j){ return j.pf==null?0:j.pf+(j.cmp?(j.cmp.k==='coinc'?4:(j.cmp.k==='choca'?-6:0)):0); }
+ function pun(j){ return j.pf==null?0:(j.mix?j.mix.pf:j.pf); }
  var js=ST.juegos.slice().sort(function(a,b){
   var d=(RK[b.et.k]||0)-(RK[a.et.k]||0); return d||(pun(b)-pun(a));
  });
@@ -684,7 +695,7 @@ function armar(){
  bar.appendChild(h); bar.appendChild(boton('msX','✕ Cerrar',cerrar)); sheet.appendChild(bar);
  var av=mk('div','msAviso');
  av.appendChild(mk('b','','Cómo leerla. '));
- av.appendChild(doc.createTextNode('Junta lo que la app calculó con el mercado'+(APP==='mlb'?' y los datos oficiales de MLB':'')+'. Si coinciden, la señal es más fuerte; si chocan, manda el mercado. No crea ventaja por sí sola: úsala para descartar y confirmar, no como garantía.'));
+ av.appendChild(doc.createTextNode('Junta lo que la app calculó con el mercado'+(APP==='mlb'?' y los datos oficiales de MLB':'')+'. El porcentaje que ve es una mezcla mitad modelo, mitad mercado (en más de 11 000 juegos acertó más que el modelo solo). Si el modelo y el mercado eligen favoritos distintos, no se juega. No crea ventaja por sí sola: úsala para descartar y confirmar, no como garantía.'));
  sheet.appendChild(av);
  estado=mk('div','msEst',''); sheet.appendChild(estado);
  sheet.appendChild(boton('msMini','↻ Volver a leer',function(){ leer(); }));
