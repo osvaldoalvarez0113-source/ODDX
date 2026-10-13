@@ -39,10 +39,16 @@ function americana(p){      /* probabilidad (0-1) → cuota justa en formato ame
  var a=p>=0.5?-(p/(1-p))*100:((1-p)/p)*100;
  a=Math.round(a); return (a>0?'+':'')+a;
 }
-function valorDe(pPct,cuota){   /* ev = p·decimal − 1 */
+function valorDe(pPct,cuota,pmPct){   /* ev = p·decimal − 1; si hay mercado, manda el mercado (acierta más que el modelo) */
  var d=aDecimal(cuota); if(d==null||!(pPct>0)) return null;
  var ev=pPct/100*d-1;
- /* un +EV chico casi siempre es ruido del modelo: se pide margen para decir «valor» */
+ if(pmPct>0){
+  var evM=pmPct/100*d-1;
+  /* paga más que el precio justo de Pinnacle = valor de verdad; si solo el modelo lo ve, es sospechoso */
+  var km=evM>=0.02?'valor':(evM>=-0.005?'justo':'sin');
+  return {ev:ev,evM:evM,k:km,dec:d,soloModelo:(ev>=0.05&&evM<0)};
+ }
+ /* sin mercado, un +EV chico casi siempre es ruido del modelo: se pide margen para decir «valor» */
  var k=ev>=0.05?'valor':(ev>=0?'justo':'sin');
  return {ev:ev,k:k,dec:d};
 }
@@ -53,6 +59,50 @@ function etiqueta(p,nivel,app,vivo){
  var k=p>=fuerte?'cand':(p>=ligero?'cuid':'evit');
  if(nivel==='baja') k=(k==='cand')?'cuid':'evit';     /* datos flojos: baja un nivel */
  return {k:k,t:k==='cand'?'Candidato':(k==='cuid'?'Cuidado':'Parejo · evitar'),flojo:nivel==='baja'};
+}
+/* ---------- mercado (el «servidor»: pinnacle-*.json que escriben los escáneres de GitHub) ---------- */
+var PARAR={fc:1,cf:1,afc:1,sc:1,de:1,del:1,la:1,el:1,the:1,club:1,ac:1,as:1,ud:1,cd:1};
+function tokens(n){
+ var t=String(n==null?'':n).toLowerCase();
+ try{ t=t.normalize('NFD').replace(/[\u0300-\u036f]/g,''); }catch(e){}
+ return t.replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(function(w){ return w&&!PARAR[w]; });
+}
+function mismoEq(a,b){       /* todos los nombres de uno dentro del otro: «Red Sox» ≈ «Boston Red Sox», pero «White Sox» ≠ «Red Sox» */
+ var ta=tokens(a), tb=tokens(b); if(!ta.length||!tb.length) return false;
+ var corto=ta.length<=tb.length?ta:tb, largo=ta.length<=tb.length?tb:ta;
+ return corto.every(function(w){ return largo.indexOf(w)>=0; });
+}
+/* busca el juego en el archivo del servidor y devuelve las probabilidades SIN margen orientadas a (na, nh):
+   {a,h,d} en 0-100. d solo en fútbol. Formatos: MLB fair:[a,b] · NBA ml:[a,b] · fútbol r:[a,empate,b]. */
+function cruzarMercado(juegos,app,na,nh){
+ if(!Array.isArray(juegos)) return null;
+ for(var i=0;i<juegos.length;i++){
+  var g=juegos[i]; if(!g||!g.n||g.n.length<2) continue;
+  var dir=mismoEq(g.n[0],na)&&mismoEq(g.n[1],nh), inv=!dir&&mismoEq(g.n[0],nh)&&mismoEq(g.n[1],na);
+  if(!dir&&!inv) continue;
+  var v=app==='fut'?g.r:(app==='nba'?g.ml:g.fair);
+  if(!Array.isArray(v)) continue;
+  var p0,p1,d=null;
+  if(app==='fut'){ if(v.length<3) continue; p0=+v[0]; d=+v[1]; p1=+v[2]; } else { if(v.length<2) continue; p0=+v[0]; p1=+v[1]; }
+  if(!(p0>0&&p1>0)) continue;
+  var o={a:(dir?p0:p1)*100,h:(dir?p1:p0)*100,d:d==null?null:d*100};
+  return o;
+ }
+ return null;
+}
+/* compara el favorito del modelo con el del mercado. coinc: mismo favorito y ≤3 pts · cerca: ≤6 pts · choca: otro favorito o ≥6 pts */
+function compararMercado(pa,ph,ma,mh){
+ if(pa==null||ph==null||ma==null||mh==null) return null;
+ var favMod=pa>ph?'a':'h', favMer=ma>mh?'a':'h';
+ var pm=favMod==='a'?pa:ph, mm=favMod==='a'?ma:mh, dif=pm-mm;
+ var k=(favMod!==favMer||Math.abs(dif)>=6)?'choca':(Math.abs(dif)<=3?'coinc':'cerca');
+ return {k:k,dif:dif,mer:mm,favMer:favMer,favMod:favMod};
+}
+function ajustarPorMercado(et,cmp){
+ if(!cmp||!et||et.k==='vivo'||et.k==='sin') return et;
+ var o={k:et.k,t:et.t,flojo:et.flojo,mk:cmp.k};
+ if(cmp.k==='choca'){ o.k=(et.k==='cand')?'cuid':'evit'; o.t=o.k==='cuid'?'Cuidado':'Parejo · evitar'; }
+ return o;
 }
 var ORDEN_TAB={ver:0,v:0,cuo:1,c:1,num:2,n:2,for:3,f:3,x:4};
 var PESO_TAB=[0.30,0.25,0.25,0.12,0.08];
@@ -67,9 +117,14 @@ function bloqueJuego(i,j,B){
  if(j.sello) m.push('sello de la app: '+j.sello);
  if(j.conf) m.push('datos '+j.conf);
  if(m.length) o.push(m.join(' · '));
+ if(j.mer&&j.cmp){
+  var mm=j.cmp.mer;
+  o.push('MERCADO (Pinnacle sin margen, '+(j.merEdad||'reciente')+'): '+j.na+' '+j.mer.a.toFixed(1)+'% / '+j.nh+' '+j.mer.h.toFixed(1)+'%'+(j.mer.d!=null?' / empate '+j.mer.d.toFixed(1)+'%':'')+
+   ' -> '+(j.cmp.k==='coinc'?'COINCIDE con el modelo (diferencia '+Math.abs(j.cmp.dif).toFixed(1)+' pts)':(j.cmp.k==='cerca'?'parecido (diferencia '+Math.abs(j.cmp.dif).toFixed(1)+' pts)':'CHOCA con el modelo ('+(j.cmp.favMod!==j.cmp.favMer?'distinto favorito':'diferencia '+Math.abs(j.cmp.dif).toFixed(1)+' pts')+')')));
+ }else if(j.sinMer){ o.push('MERCADO: sin datos del servidor para este juego'); }
  if(j.cuotaMia&&j.fav){
-  var v=valorDe(j.pf,j.cuotaMia);
-  o.push('Cuota que pago yo por '+j.fav+': '+j.cuotaMia+(v?' (con el modelo da EV '+(v.ev*100>=0?'+':'')+(v.ev*100).toFixed(1)+'%)':''));
+  var v=valorDe(j.pf,j.cuotaMia,j.cmp?j.cmp.mer:null);
+  o.push('Cuota que pago yo por '+j.fav+': '+j.cuotaMia+(v?' (con el modelo da EV '+(v.ev*100>=0?'+':'')+(v.ev*100).toFixed(1)+'%'+(v.evM!=null?'; contra el precio justo del mercado '+(v.evM*100>=0?'+':'')+(v.evM*100).toFixed(1)+'%':'')+')':''));
  }
  var usado=o.join('\n').length, libre=Math.max(120,B-usado-20);
  var tabs=(j.tabs||[]).slice().sort(function(a,b){ return (ORDEN_TAB[a.id]==null?9:ORDEN_TAB[a.id])-(ORDEN_TAB[b.id]==null?9:ORDEN_TAB[b.id]); });
@@ -93,7 +148,8 @@ function construirPrompt(o){
  var reglas='Reglas: no inventes nada; si no encuentras un dato escribe "no encontre". Pon fuente y hora aproximada de cada dato importante. '+
   'Usa SOLO informacion de esa fecha y de esa temporada; descarta articulos de otros anos aunque el enfrentamiento sea igual. '+
   'Ignora rumores sin fuente. Separa lo que ENCONTRASTE de lo que SUPONES. Nunca digas que algo es seguro. '+
-  'Mi modelo pierde contra el mercado cuando se aleja mucho de el: si tu hallazgo y mi modelo chocan, dilo y pesa cuanto.\n';
+  'El mercado (Pinnacle sin margen) acierta mas que mi modelo. Cuando modelo y mercado COINCIDEN es lo mas confiable; cuando CHOCAN, asume que el mercado tiene la razon, '+
+  'salvo que encuentres una noticia concreta y reciente que el mercado no pudo ver (y en ese caso explicala). Si tu hallazgo y el modelo chocan, dilo y pesa cuanto.\n';
  var tarea, reg=o.registro?('\nMi registro con esta app: '+o.registro+'\n'):'\n';
  if(o.pregunta){
   tarea='\nPREGUNTA MIA: '+recortar(o.pregunta,400)+'\n'+
@@ -106,7 +162,7 @@ function construirPrompt(o){
    'JUEGO n: Equipo A vs Equipo B\nSENAL: JUEGA | CUIDADO | EVITAR\nPROBABLE: lo mas probable segun modelo + lo que encontraste (una linea)\n'+
    'VALOR: SI | NO | NO SE  (solo SI o NO si arriba te di la cuota que pago; sin cuota es NO SE)\nPOR QUE: maximo 2 lineas, con fuente\n'+
    'Al final: RESUMEN con JUEGA: (lista), EVITAR: (lista) y una linea de lo que no se puede saber. '+
-   'JUEGA solo si el modelo da ventaja clara, nada de lo que encontraste la contradice y la informacion clave esta confirmada; en duda, CUIDADO.\n'+reglas;
+   'JUEGA solo si el modelo da ventaja clara, el mercado no lo contradice, nada de lo que encontraste lo contradice y la informacion clave esta confirmada; en duda, CUIDADO.\n'+reglas;
  }
  var fijo=head.length+reg.length+tarea.length+60;
  var js=o.juegos||[], n=Math.max(1,js.length);
@@ -134,7 +190,7 @@ function resumenRegistro(app,leer){
   return g+'-'+p+' ('+Math.round(g/t*100)+'% de '+t+' resueltos'+(t<30?', muestra chica: no concluye nada':'')+')';
  }catch(e){ return ''; }
 }
-var API={compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,
+var API={compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,tokens:tokens,mismoEq:mismoEq,cruzarMercado:cruzarMercado,compararMercado:compararMercado,ajustarPorMercado:ajustarPorMercado,
  construirPrompt:construirPrompt,bloqueJuego:bloqueJuego,resumenRegistro:resumenRegistro,MAX_PROMPT:MAX_PROMPT};
 root.OVAMesa=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
@@ -192,6 +248,7 @@ var CSS=[
  '.msPc small{display:block;font-size:11px;font-weight:600;color:var(--mut,#9aa)}',
  '.msChip{display:inline-block;margin-top:5px;padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:800;letter-spacing:.2px}',
  '.msChip.cand{background:#0f5132;color:#d1f5e0}.msChip.cuid{background:#6b4a00;color:#ffe9b0}.msChip.evit{background:#5a1a1a;color:#ffd5d5}',
+ '.msChip.mcoinc{background:#0f5132;color:#d1f5e0;margin-left:0}.msChip.mcerca{background:#2a3340;color:#cfd8e3;margin-left:0}.msChip.mchoca{background:#5a1a1a;color:#ffd5d5;margin-left:0}.msChip.msin{background:transparent;color:var(--mut,#9aa);margin-left:6px;font-weight:600;padding-left:0;margin-left:0}',
  '.msChip.sin,.msChip.vivo{background:#2a3340;color:#cfd8e3}',
  '.msChip.valor{background:#0f5132;color:#d1f5e0}.msChip.justo{background:#2a3340;color:#cfd8e3}.msChip.sinv{background:#5a1a1a;color:#ffd5d5}',
  '.msSel{flex:0 0 26px;height:26px;border-radius:8px;border:2px solid var(--line2,#2a3340);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#101418;cursor:pointer}',
@@ -215,7 +272,7 @@ var CSS=[
  '.msErr{color:#ffb4b4}'
 ].join('\n');
 
-var ST={juegos:[],sel:{},cuotas:{},cargando:false,previa:'',leyo:0};
+var ST={mer:null,juegos:[],sel:{},cuotas:{},cargando:false,previa:'',leyo:0};
 var sheet,lista,estado,btnIA,iaCaja,inpQ,fab,infoCtx;
 
 function diaDe(g){
@@ -274,6 +331,13 @@ function leerJuego(g,i){
  j.key=[APP,j.titulo,j.dia||fechaApp()].join('|');
  j.cuotaMia=ST.cuotas[j.key]||'';
  j.et=etiqueta(j.pf==null?null:j.pf,j.nivel,APP,j.vivo);
+ if(j.pf!=null){
+  if(ST.mer){
+   j.mer=cruzarMercado(ST.mer.juegos,APP,o.na,o.nh);
+   if(j.mer){ j.cmp=compararMercado(j.pa,j.ph,j.mer.a,j.mer.h); j.merEdad=ST.mer.edad; j.et=ajustarPorMercado(j.et,j.cmp); }
+   else j.sinMer=true;
+  }else j.sinMer=true;
+ }
  return j;
 }
 
@@ -324,6 +388,12 @@ function nuevaFila(j,pos){
  }
  var chip=mk('span','msChip '+j.et.k,j.et.t+(j.et.flojo?' · datos flojos':''));
  tx.appendChild(chip);
+ if(j.pf!=null&&!j.vivo){
+  if(j.cmp){
+   var mc=j.cmp.k, mt=mc==='coinc'?'✔ Mercado de acuerdo · '+j.cmp.mer.toFixed(0)+'%':(mc==='cerca'?'≈ Mercado '+j.cmp.mer.toFixed(0)+'%':'⚠ Mercado '+j.cmp.mer.toFixed(0)+'% · chocan');
+   tx.appendChild(mk('span','msChip m'+mc,mt));
+  }else tx.appendChild(mk('span','msChip msin','sin dato del mercado'));
+ }
  top.appendChild(tx);
  if(j.pf!=null){
   var pc=mk('div','msPc',j.pf.toFixed(0)+'%'); pc.appendChild(mk('small','',j.cu?'justa '+j.cu:'modelo'));
@@ -350,14 +420,23 @@ function nuevaFila(j,pos){
    var v=inp.value; ST.cuotas[j.key]=v; j.cuotaMia=v;
    ls('ova_mesa_cu_'+APP+'_'+fechaApp(),JSON.stringify(ST.cuotas));
    while(res.firstChild) res.removeChild(res.firstChild);
-   var r=valorDe(j.pf,v);
+   var r=valorDe(j.pf,v,j.cmp?j.cmp.mer:null);
    if(!compactar(v)) return;
    if(!r){ res.appendChild(mk('div','msEst','No entendí esa cuota.')); return; }
-   var pe=(r.ev*100>=0?'+':'')+(r.ev*100).toFixed(1)+'%';
-   var ch=mk('span','msChip '+(r.k==='valor'?'valor':(r.k==='justo'?'justo':'sinv')),
+   var ps=function(x){ return (x*100>=0?'+':'')+(x*100).toFixed(1)+'%'; };
+   if(r.evM!=null){
+    var ch=mk('span','msChip '+(r.k==='valor'?'valor':(r.k==='justo'?'justo':'sinv')),
+     r.k==='valor'?'Valor real · paga más que el mercado ('+ps(r.evM)+')':(r.k==='justo'?'Casi justa vs mercado ('+ps(r.evM)+')':'Sin valor vs mercado ('+ps(r.evM)+')'));
+    res.appendChild(ch);
+    res.appendChild(mk('div','msEst','Contra el precio justo de Pinnacle ('+j.cmp.mer.toFixed(1)+'% → '+americana(j.cmp.mer/100)+'): '+ps(r.evM)+'. Con el modelo ('+j.pf.toFixed(1)+'%): '+ps(r.ev)+'.'+
+     (r.soloModelo?' ⚠ Solo el modelo ve valor y el mercado no: casi siempre es error del modelo.':'')+(j.cmp.k==='choca'?' ⚠ Modelo y mercado chocan en este juego.':'')));
+    return;
+   }
+   var pe=ps(r.ev);
+   var ch2=mk('span','msChip '+(r.k==='valor'?'valor':(r.k==='justo'?'justo':'sinv')),
     r.k==='valor'?'Posible valor · EV '+pe:(r.k==='justo'?'Casi justa · EV '+pe:'Sin valor · EV '+pe));
-   res.appendChild(ch);
-   res.appendChild(mk('div','msEst','Con '+j.pf.toFixed(1)+'% del modelo la cuota justa es '+americana(j.pf/100)+'. '+
+   res.appendChild(ch2);
+   res.appendChild(mk('div','msEst','Sin dato del mercado para este juego. Con '+j.pf.toFixed(1)+'% del modelo la cuota justa es '+americana(j.pf/100)+'. '+
     (r.k==='valor'?'Pide al menos +5%: por debajo casi siempre es ruido del modelo, y el mercado suele tener razón.':'Paga igual o menos que lo justo.')));
   }
   inp.addEventListener('input',calc); inp.addEventListener('click',function(e){ e.stopPropagation(); });
@@ -374,12 +453,16 @@ function nuevaFila(j,pos){
 
 function pintarLista(){
  while(lista.firstChild) lista.removeChild(lista.firstChild);
+ var RK={cand:3,cuid:2,evit:1,sin:0,vivo:-1};
+ function pun(j){ return j.pf==null?0:j.pf+(j.cmp?(j.cmp.k==='coinc'?4:(j.cmp.k==='choca'?-6:0)):0); }
  var js=ST.juegos.slice().sort(function(a,b){
-  var ra=a.vivo?-2:(a.pf==null?-1:a.pf), rb=b.vivo?-2:(b.pf==null?-1:b.pf); return rb-ra;
+  var d=(RK[b.et.k]||0)-(RK[a.et.k]||0); return d||(pun(b)-pun(a));
  });
  js.forEach(function(j,i){ lista.appendChild(nuevaFila(j,i+1)); });
  var c=js.filter(function(j){ return j.et.k==='cand'; }).length, ev=js.filter(function(j){ return j.et.k==='evit'; }).length;
- estado.textContent=js.length+' juegos leídos · '+c+' candidatos · '+ev+' parejos. Ordenados por probabilidad del modelo, sin mirar cuotas.';
+ var cr=js.filter(function(j){ return j.mer; }).length, co=js.filter(function(j){ return j.cmp&&j.cmp.k==='coinc'; }).length, ch=js.filter(function(j){ return j.cmp&&j.cmp.k==='choca'; }).length;
+ estado.textContent=js.length+' juegos leídos · '+c+' candidatos · '+ev+' parejos. '+
+  (ST.mer?('Mercado del servidor ('+ST.mer.edad+(ST.mer.viejo?' · cuotas viejas, verifica':'')+'): cruzó '+cr+' de '+js.length+' · '+co+' coinciden con el modelo · '+ch+' chocan.'):'No pude leer el mercado del servidor: el orden usa solo el modelo.');
  actualizarBtn();
 }
 function elegidos(){
@@ -401,6 +484,18 @@ function haceTxt(t){
  return m<2?'hace un momento':(m<90?'hace '+m+' min':'hace '+Math.round(m/60)+' h');
 }
 
+var ARCH={mlb:'pinnacle-datos.json',fut:'pinnacle-futbol.json',nba:'pinnacle-nba.json'};
+function cargarMercado(){
+ ST.mer=null;
+ try{
+  return root.fetch(ARCH[APP]+'?v='+Date.now()).then(function(r){ return r.ok?r.json():null; }).then(function(j){
+   if(j&&Array.isArray(j.juegos)){
+    var m=j.generado?Math.max(0,Math.round((Date.now()-Date.parse(j.generado))/60000)):null;
+    ST.mer={juegos:j.juegos,edad:m==null?'':(m<90?'hace '+m+' min':'hace '+Math.round(m/60)+' h'),viejo:m!=null&&m>=480};
+   }
+  }).catch(function(){});
+ }catch(e){ return Promise.resolve(); }
+}
 function leer(){
  if(ST.cargando) return;
  ST.cargando=true; actualizarBtn();
@@ -408,7 +503,7 @@ function leer(){
  if(!gs.length){ estado.textContent='Primero carga los juegos (fecha / liga) y vuelve a abrir la Mesa.'; ST.cargando=false; return; }
  estado.textContent='Leyendo '+gs.length+' juegos…';
  try{ ST.cuotas=JSON.parse(ls('ova_mesa_cu_'+APP+'_'+fechaApp())||'{}')||{}; }catch(e){ ST.cuotas={}; }
- cargarTodo(function(h,t){ estado.textContent='Leyendo juego '+h+' de '+t+'…'; }).catch(function(){}).then(function(){
+ Promise.all([cargarMercado(),cargarTodo(function(h,t){ estado.textContent='Leyendo juego '+h+' de '+t+'…'; }).catch(function(){})]).then(function(){
   ST.juegos=$$('.game').map(leerJuego);
   /* por defecto: los 8 mejores con números y sin empezar */
   var viejos=ST.sel, nuevo={}; var top=ST.juegos.filter(function(j){ return j.pf!=null&&!j.vivo; })
@@ -501,7 +596,7 @@ function armar(){
  var av=mk('div','msAviso');
  av.appendChild(mk('b','','Qué es y qué no es. '));
  av.appendChild(doc.createTextNode('Junta en un lugar lo que la app ya calculó y, si quieres, le suma noticias de internet. Ahorra tiempo y detecta cuando algo contradice al modelo. '+
-  'No crea ventaja por sí sola: el mercado suele estar bien y, medido con tus datos, el modelo no le gana. Úsala para descartar y para confirmar, no como garantía.'));
+  'También lee el mercado del servidor (Pinnacle sin margen): cuando modelo y mercado coinciden la señal es más fuerte; cuando chocan, por defecto manda el mercado. No crea ventaja por sí sola: medido con tus datos, el modelo no le gana al mercado. Úsala para descartar y confirmar, no como garantía.'));
  sheet.appendChild(av);
  estado=mk('div','msEst',''); sheet.appendChild(estado);
  sheet.appendChild(boton('msMini','↻ Volver a leer',function(){ leer(); }));

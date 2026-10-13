@@ -695,6 +695,21 @@ sec('Mesa (asistente.js): lee todas las pestañas, ordena sin internet, valor co
  ok('ningún innerHTML en asistente.js (todo el texto de la app y de la IA entra como textContent)',!/innerHTML/.test(sa));
  ok('los botones de la Mesa no son <button> (los diseños con !important los pintarían de amarillo)',/mk\('div',cls,txt\)/.test(sa)&&!/createElement\('button'\)/.test(sa));
  ok('usa el mismo Worker de la IA (no hay nada que re-publicar en Cloudflare) y no lleva ninguna clave',/ova-ia\.osvaldoalvarez0113\.workers\.dev/.test(sa)&&!/sk-ant|x-api-key/.test(sa));
+
+ /* ---- mercado del servidor (pinnacle-*.json) ---- */
+ ok('mismoEq: «Red Sox» ≈ «Boston Red Sox», «FC Barcelona» ≈ «Barcelona», pero «White Sox» ≠ «Red Sox» y «Man City» ≠ «Man United»',M.mismoEq('Red Sox','Boston Red Sox')&&M.mismoEq('FC Barcelona','Barcelona')&&M.mismoEq('Atlético de Madrid','Atletico Madrid')&&!M.mismoEq('White Sox','Red Sox')&&!M.mismoEq('Manchester City','Manchester United'));
+ const MJ=[{n:['Boston Red Sox','New York Yankees'],fair:[0.38,0.62]}];
+ const c1=M.cruzarMercado(MJ,'mlb','Yankees','Red Sox');
+ ok('cruzarMercado orienta las probabilidades aunque el servidor traiga los equipos al revés',Math.abs(c1.a-62)<1e-9&&Math.abs(c1.h-38)<1e-9);
+ const cf=M.cruzarMercado([{n:['Barcelona','Getafe'],r:[0.6,0.24,0.16]}],'fut','Getafe','FC Barcelona');
+ ok('fútbol: lee r:[local,empate,visita] y lo orienta; NBA: lee ml',Math.abs(cf.a-16)<1e-9&&Math.abs(cf.h-60)<1e-9&&Math.abs(cf.d-24)<1e-9&&Math.abs(M.cruzarMercado([{n:['Lakers','Celtics'],ml:[0.4,0.6]}],'nba','Celtics','Lakers').a-60)<1e-9);
+ ok('cruzarMercado devuelve null si no hay el juego o el archivo está vacío/corrupto',M.cruzarMercado(MJ,'mlb','Cubs','Padres')===null&&M.cruzarMercado([],'mlb','A','B')===null&&M.cruzarMercado(null,'mlb','A','B')===null&&M.cruzarMercado([{n:['A','B'],fair:'x'}],'mlb','A','B')===null);
+ ok('compararMercado: coinc ≤3 pts, cerca ≤6, choca si ≥6 pts o si el favorito es otro',M.compararMercado(64,36,62,38).k==='coinc'&&M.compararMercado(64,36,59,41).k==='cerca'&&M.compararMercado(70,30,60,40).k==='choca'&&M.compararMercado(57,43,45,55).k==='choca'&&M.compararMercado(null,1,1,1)===null);
+ ok('si modelo y mercado chocan se baja un nivel (candidato→cuidado, cuidado→evitar); si coinciden no se sube',M.ajustarPorMercado(M.etiqueta(65,'alta','mlb'),{k:'choca'}).k==='cuid'&&M.ajustarPorMercado(M.etiqueta(58,'alta','mlb'),{k:'choca'}).k==='evit'&&M.ajustarPorMercado(M.etiqueta(58,'alta','mlb'),{k:'coinc'}).k==='cuid');
+ const vm=M.valorDe(64,'-140',62), vs=M.valorDe(64,'-140',55);
+ ok('con mercado, valor = pagar más que el precio justo de Pinnacle; si solo el modelo lo ve, se marca sospechoso',vm.k==='valor'&&vm.evM>0.05&&vs.k==='sin'&&vs.soloModelo===true);
+ ok('el prompt dice que el mercado manda cuando chocan y explica coincide/choca por juego',/CHOCAN, asume que el mercado tiene la razon/.test(pj)&&/COINCIDE con el modelo|CHOCA con el modelo/.test(M.bloqueJuego(1,Object.assign(mkJ(1,'x'),{mer:{a:60,h:40,d:null},cmp:{k:'coinc',dif:1,mer:59,favMod:'a',favMer:'a'},na:'A',nh:'B'}),600)));
+ ok('la Mesa lee los tres archivos del servidor y no toca su contenido',/pinnacle-datos\.json/.test(sa)&&/pinnacle-futbol\.json/.test(sa)&&/pinnacle-nba\.json/.test(sa)&&!/pinnacle[^']*'\s*,\s*\{\s*method/.test(sa));
  ['index.html','futbol.html','nba.html'].forEach(f=>ok(f+' carga asistente.js después de diseno.js',rd(f).indexOf('asistente.js')>rd(f).indexOf('diseno.js')&&rd(f).indexOf('diseno.js')>0));
  ok('el service worker guarda asistente.js',/'asistente\.js'/.test(rd('sw.js')));
 }
