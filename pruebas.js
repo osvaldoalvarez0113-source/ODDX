@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html'];
-const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -58,7 +58,7 @@ else{
   ok(app+' sin nombres inexistentes',mal.size===0,[...mal].map(([n,w])=>n+' ('+w+')').join(', '));
  }
  revisar('futbol.html',['ovaextra.js','interior.js','interior2.js','obsidiana.js','mejoras.js','selecciones.js']);
- revisar('index.html',['ovaextra.js','interior.js','interior2.js','obsidiana.js','railway.js','historial.js']);
+ revisar('index.html',['ovaextra.js','interior.js','interior2.js','ajustes.js','obsidiana.js','railway.js','historial.js']);
  revisar('nba.html',['ovaextra.js','interior.js','interior2.js']);
  revisar('hub.html',['ovaextra.js','hubestilos.js']);
  revisar('panel.html',['ovaextra.js']);
@@ -370,7 +370,7 @@ sec('Presentaciones del hub (6 diseños)');
 sec('Diseño interior de las apps (Clásico · Cristal · Broadcast · Pro · Boleto · Prensa · Radar)');
 {
  const UI=require(path.join(__dirname,'interior.js'));
- ok('13 diseños: los 8 de siempre y los 5 nuevos (historias, duelo, bento, agenda, radar de valor)',JSON.stringify(UI.UIS.map(u=>u.id))===JSON.stringify(['clasico','cristal','broadcast','pro','boleto','boletonoche','prensa','radar','historias','duelo','bento','agenda','radarvalor']));
+ok('18 diseños: los 8 de siempre, los 5 de la segunda tanda (historias, duelo, bento, agenda, radar de valor) y los 5 nuevos (cromos, campo, telemetría, marcador, recibo)',JSON.stringify(UI.UIS.map(u=>u.id))===JSON.stringify(['clasico', 'cristal', 'broadcast', 'pro', 'boleto', 'boletonoche', 'prensa', 'radar', 'historias', 'duelo', 'bento', 'agenda', 'radarvalor', 'cromos', 'campo', 'telemetria', 'marcador', 'recibo']));
  ok('Boleto: los dos diseños definen sus colores y comparten la forma',/html\[data-ui="boleto"\]\{--bzBg1/.test(UI.css)&&/html\[data-ui="boletonoche"\]\{--bzBg1/.test(UI.css)&&/html\[data-ui\^="boleto"\] \.bzSello/.test(UI.css));
  ok('Boleto: el ticket tiene muescas (máscara) y en la barra de abajo solo la pestaña activa lleva nombre',/\.game\.bzOn \.head\{-webkit-mask:radial-gradient/.test(UI.css)&&/\.tbar-btn:not\(\.on\) \.lb\{position:absolute/.test(UI.css));
  ok('Boleto: los botones que la app oculta con display:none siguen ocultos',!/\.tabbar \.tbar-btn\{[^}]*display:flex!important/.test(UI.css));
@@ -399,7 +399,7 @@ sec('Diseño interior de las apps (Clásico · Cristal · Broadcast · Pro · Bo
  const falta=new Set(),KW=new Set(['infinite','alternate','alternate-reverse','forwards','both','none','linear','ease','ease-in','ease-out','ease-in-out','paused','running','backwards','reverse','normal']);
  [...css.matchAll(/animation:\s*([^;}]+)/g)].forEach(m=>{m[1].replace(/[\w-]+\([^)]*\)/g,'').split(/[\s,]+/).forEach(tk=>{if(!tk||KW.has(tk)||/^-?[\d.]+m?s$/.test(tk)||/^\d+$/.test(tk))return;if(!kf.has(tk)) falta.add(tk);});});
  ok('todas las animaciones usadas están definidas',falta.size===0,[...falta].join(','));
- const sueltos=css.split('\n').filter(l=>l&&!/^(@|html|#uiSheet|\.topbar|\.uiSec|\}|\/\*)/.test(l));
+ const sueltos=css.split('\n').filter(l=>l&&!/^(@|html|#uiSheet|\.topbar|\.uiSec|\.uiSeg|\}|\/\*)/.test(l));
  ok('ninguna regla suelta puede afectar al Clásico',sueltos.length===0,sueltos.slice(0,2).join(' | '));
  ok('toda regla de diseño cuelga de html[data-ui]',css.split('\n').filter(l=>/^html/.test(l)).every(l=>l.indexOf('data-ui')>=0));
  ok('el diseño Clásico no recibe reglas (solo existen cristal y broadcast)',!/data-ui="clasico"/.test(css));
@@ -512,11 +512,11 @@ sec('Salidas del pícher: carreras permitidas a la vista');
  ok('«Ver más» ya no repite R y LP (queda HR y decisión)',/<th>Salida<\/th><th>HR<\/th><th>Dec<\/th>/.test(b));
  ok('el resumen dice cuántas carreras le anotan por salida',/Le anotan <b>/.test(b));
 }
-sec('Cinco diseños nuevos: Historias, Duelo, Bento, Agenda y Radar de valor (interior2.js)');
+sec('Diez diseños con cabecera propia: Historias, Duelo, Bento, Agenda, Radar de valor, Cromos, Campo, Telemetría, Marcador y Recibo (interior2.js)');
 {
  const I2=require(path.join(__dirname,'interior2.js')), UI2=require(path.join(__dirname,'interior.js'));
- const ids=['historias','duelo','bento','agenda','radarvalor'];
- ok('interior2.js conoce los 5 diseños nuevos',JSON.stringify(I2.NEW)===JSON.stringify(ids));
+ const ids=['historias','duelo','bento','agenda','radarvalor','cromos','campo','telemetria','marcador','recibo'];
+ ok('interior2.js conoce los 10 diseños con cabecera propia',JSON.stringify(I2.NEW)===JSON.stringify(ids));
  ids.forEach(id=>{
   const u=UI2.UIS.find(x=>x.id===id);
   ok(id+': aparece en el selector con nombre, descripción y muestra',!!(u&&u.n&&u.d&&u.sw));
@@ -528,8 +528,20 @@ sec('Cinco diseños nuevos: Historias, Duelo, Bento, Agenda y Radar de valor (in
  ['index.html','futbol.html','nba.html'].forEach(f=>{const h=rd(f),i1=h.indexOf('interior2.js'),i2=h.indexOf('<style>');ok(f+' carga interior2.js en la cabecera, después de interior.js',i1>h.indexOf('interior.js')&&i1<i2);});
  ok('el service worker guarda interior2.js para abrir sin internet',/'interior2\.js'/.test(rd('sw.js')));
  ok('los cinco respetan "reducir movimiento" (lo cubre interior.js para todo data-ui)',/prefers-reduced-motion:reduce\)\{html\[data-ui\] \*/.test(rd('interior.js')));
- ok('ningún texto de la app entra a la cabecera nueva con innerHTML (solo textContent; el único innerHTML es el dibujo fijo del estadio y el anillo numérico)',(rd('interior2.js').match(/innerHTML/g)||[]).length===2);
+ ok('ningún texto de la app entra a la cabecera nueva con innerHTML (solo textContent; los únicos innerHTML son dibujos fijos: estadio, campo, anillo y aguja numéricos)',(rd('interior2.js').match(/innerHTML/g)||[]).length===4);
  ok('minutos() entiende «7:08 PM», «12:05 AM» y 24 horas',I2.minutos('7:08 PM')===1148&&I2.minutos('12:05 AM')===5&&I2.minutos('21:30')===1290&&I2.minutos('EN VIVO')===null);
+}
+
+sec('Ajustes organizado (ajustes.js + pestañas de Apariencia)');
+{
+ const AJ=require(path.join(__dirname,'ajustes.js')), ic=rd('interior.js'), dj=rd('diseno.js');
+ ok('MLB: Ajustes es un menú con 4 ventanas (Apariencia, Modelo y apuestas, Cálculo a mano, Cómo funciona)',['Apariencia','Modelo y apuestas','Cálculo a mano','Cómo funciona'].every(t=>rd('ajustes.js').includes("'"+t+"'")));
+ ok('ajustes.js mueve los bloques que ya existen, no los recrea (ningún innerHTML con texto de la app)',/appendChild\(b\)/.test(rd('ajustes.js'))&&!/\.manual.*innerHTML/.test(rd('ajustes.js')));
+ ok('index.html carga ajustes.js después de diseno.js y el service worker lo guarda',rd('index.html').indexOf('ajustes.js')>rd('index.html').indexOf('diseno.js')&&/'ajustes\.js'/.test(rd('sw.js')));
+ ok('los botones del menú no son <button> (los diseños con !important no los pueden pintar de amarillo)',/mk\('div','ajRow'\)/.test(rd('ajustes.js')));
+ ok('Apariencia tiene dos pestañas (Diseño de adentro / Tema de color) y los diseños van en categorías',/uiTab/.test(ic)&&/Deportivos y espectaculares/.test(ic)&&/uiSkinHost/.test(ic));
+ ok('todos los diseños quedan en alguna categoría (si no, caen en la última)',/!usados\[u\.id\]/.test(ic));
+ ok('fútbol y NBA: Ajustes tiene la entrada Apariencia que abre la hoja 🎨',/dsApar/.test(dj)&&/#ovaSheet/.test(dj));
 }
 
 sec('Ganchos y archivos conectados');

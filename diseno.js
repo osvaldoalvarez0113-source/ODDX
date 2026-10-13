@@ -62,6 +62,7 @@ var CSS=[
  '.dsItem{width:100%;text-align:left;background:var(--bg2);color:var(--txt);border:1px solid var(--line2);border-radius:var(--r,10px);padding:12px 12px;font-size:13.5px;line-height:1.35;cursor:pointer;font-family:inherit}',
  '.dsItem small{display:block;font-size:12px;color:var(--mut);margin-top:2px;font-weight:400}',
  '.dsItem.dsDiagItem{display:block}',
+ '.dsApar{margin:10px 0 4px;font-weight:700;font-size:15px;-webkit-tap-highlight-color:transparent}',
  '.dsBack{display:inline-block;background:transparent;border:0;color:var(--hot);font-size:14px;font-weight:700;padding:12px 2px 2px;cursor:pointer;font-family:inherit}',
  '.dsPesado{border:1px dashed var(--line2);border-radius:var(--r,10px);margin:12px 0;padding:0 10px}',
  '.dsPesado>summary{cursor:pointer;padding:10px 2px;font-size:13px;color:var(--mut);font-weight:700}',
@@ -137,6 +138,15 @@ function armarAjustes(a,cfg){
  var tarj=tarjetaVersion(a); v.appendChild(tarj);
  var rb=cfg.respaldoRango();
  if(rb) moverRango(rb[0],rb[1],v);
+ /* Apariencia: abre la misma hoja del botón 🎨 (pestañas Diseño de adentro / Tema de color) */
+ var apar=el('div','dsItem dsApar','<span>🎨 Apariencia</span><small>Diseño de adentro y tema de color</small>'); apar.setAttribute('role','button'); apar.tabIndex=0;
+ function abrirApar(){
+  var sh=$('#ovaSheet'); if(!sh) return;
+  sh.classList.add('on'); if(root.OVASkins&&root.OVASkins.marcar) try{ root.OVASkins.marcar(); }catch(e){}
+ }
+ apar.addEventListener('click',abrirApar);
+ apar.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); abrirApar(); } });
+ v.insertBefore(apar,v.firstChild.nextSibling);
  var det=el('details','dsAv','<summary>Avanzado</summary>');
  var lista=el('div','dsLista');
  lista.appendChild(el('p','dsAviso','Herramientas para medir el modelo y revisar los datos. No hacen falta para el día a día.'));

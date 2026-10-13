@@ -21,7 +21,12 @@ var UIS=[
  {id:'duelo',n:'Duelo',d:'Cartelera de pelea: cada juego es un cara a cara en diagonal con barra de tira y afloja',sw:'linear-gradient(115deg,#005A9C 0 48%,#FFCC29 48% 52%,#D8541D 52%)'},
  {id:'bento',n:'Bento',d:'Tablero de recuadros de colores, resumen arriba y el juego abierto ocupa todo el ancho',sw:'linear-gradient(135deg,#D8F98E 0 34%,#E3D7FF 34% 67%,#FFD6BD 67%)'},
  {id:'agenda',n:'Agenda',d:'Línea de tiempo del día con la hora a un lado y marcador de AHORA',sw:'linear-gradient(90deg,#E9F3FF 0 30%,#14213D 30% 33%,#FFFFFF 33% 80%,#FF6B57 80%)'},
- {id:'radarvalor',n:'Radar de valor',d:'Mapa del día: cada juego es una burbuja (hora contra probabilidad). Neón sobre negro',sw:'radial-gradient(circle at 35% 60%,#B8FF3C 0 9%,transparent 10%),radial-gradient(circle at 70% 35%,#22E4FF 0 12%,transparent 13%),#05060A'}
+ {id:'radarvalor',n:'Radar de valor',d:'Mapa del día: cada juego es una burbuja (hora contra probabilidad). Neón sobre negro',sw:'radial-gradient(circle at 35% 60%,#B8FF3C 0 9%,transparent 10%),radial-gradient(circle at 70% 35%,#22E4FF 0 12%,transparent 13%),#05060A'},
+ {id:'cromos',n:'Cromos',d:'Cada juego es una carta coleccionable con borde holográfico, fotos de los abridores y estrellas',sw:'linear-gradient(135deg,#ff7ad9,#ffd84a 35%,#7cffb2 65%,#7fd8ff)'},
+ {id:'campo',n:'Campo',d:'El juego sobre el diamante de béisbol: cada equipo es un banderín sobre el césped',sw:'repeating-linear-gradient(90deg,#1b6b3a 0 9px,#1f7a42 9px 18px)'},
+ {id:'telemetria',n:'Telemetría',d:'Tablero de instrumentos: aguja de probabilidad y lecturas en letra de máquina',sw:'radial-gradient(circle at 50% 110%,#22E4FF 0 30%,transparent 31%),linear-gradient(#04080F,#04080F)'},
+ {id:'marcador',n:'Marcador',d:'Tablero de estadio con fichas que giran, números en ámbar sobre negro',sw:'linear-gradient(90deg,#1d1d1d 0 46%,#FFB000 46% 50%,#1d1d1d 50% 54%,#FFB000 54% 58%,#1d1d1d 58%)'},
+ {id:'recibo',n:'Recibo',d:'Cada juego se imprime como un recibo de caja: líneas con puntos, sello y código de barras',sw:'linear-gradient(135deg,#F6F2E6 0 70%,#C0261A 70%)'}
 ];
 var BY={};UIS.forEach(function(u){BY[u.id]=u;});
 
@@ -389,6 +394,19 @@ html[data-ui^="boleto"] .game .cabp .nm b{color:var(--txt)}
 .uiSec .ovaSk .tx{padding:7px 6px 8px;text-align:center}
 .uiSec .ovaSk .tx b{font-size:12.5px}
 .uiSec .uiTit.col{margin-top:16px}
+.uiSeg{display:flex;gap:4px;margin:4px 0 12px;padding:4px;border-radius:99px;background:var(--bg1,#0d1420);border:1px solid var(--line2,#2a3340)}
+.uiSeg .uiTab{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:99px;padding:10px 6px;font:700 13px system-ui,-apple-system,sans-serif;background:transparent;color:var(--mut,#9aa);cursor:pointer;min-height:40px;-webkit-tap-highlight-color:transparent}
+.uiSeg .uiTab.on{background:var(--acc,#3b82f6);color:var(--accTx,#fff)}
+.uiSec .uiPanel{display:none}
+.uiSec .uiPanel.on{display:block}
+.uiSec .uiCat{display:flex;align-items:center;gap:8px;margin:16px 2px 8px;font:700 12.5px system-ui,-apple-system,sans-serif;color:var(--txt)}
+.uiSec .uiCat:first-of-type{margin-top:4px}
+.uiSec .uiCat::after{content:"";flex:1;height:1px;background:var(--line2,#2a3340)}
+.uiSec .uiCat i{font-style:normal;font-weight:600;font-size:11px;color:var(--mut);letter-spacing:.04em}
+.uiSec .uiCur{color:var(--hot,#FBBF24);text-transform:none;letter-spacing:0}
+.uiSec .uiRow{grid-template-columns:repeat(3,minmax(0,1fr))}
+.uiSec .ovaSk .pv{height:44px}
+.uiSec .ovaSk .tx b{font-size:11.5px}
 .uiSec .uiTile.on{border-color:var(--hot,#FBBF24)!important;box-shadow:0 0 0 3px rgba(255,255,255,.1)}
 /* ---------- hoja para elegir ---------- */
 #uiSheet{position:fixed;inset:0;z-index:100001;display:none;align-items:flex-end;background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
@@ -590,22 +608,52 @@ function aplicar(id,opts){
   if(!opts.inicial){ iconos(); colorear(); marcar(); }
   return id;
 }
-function marcar(){ [].forEach.call(doc.querySelectorAll('.uiSec .uiTile'),function(b){ var on=b.getAttribute('data-ui-id')===ST.id; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false'); }); }
+var CATS=[
+ {t:'Base y papel',ids:['clasico','cristal','boleto','boletonoche','prensa','recibo']},
+ {t:'Datos y tableros',ids:['pro','radar','telemetria','radarvalor','bento','agenda']},
+ {t:'Deportivos y espectaculares',ids:['broadcast','campo','marcador','duelo','historias','cromos']}
+];
+var TKEY='ova_ui_tab';
+function pestana(){ try{ return root.localStorage.getItem(TKEY)==='t'?'t':'d'; }catch(e){ return 'd'; } }
+function ponerPestana(s,t){
+  [].forEach.call(s.querySelectorAll('.uiSeg .uiTab'),function(b){ var on=b.getAttribute('data-tab')===t; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false'); });
+  [].forEach.call(s.querySelectorAll('.uiPanel'),function(p){ p.classList.toggle('on',p.getAttribute('data-tab')===t); });
+}
+function marcar(){
+  [].forEach.call(doc.querySelectorAll('.uiSec .uiTile'),function(b){ var on=b.getAttribute('data-ui-id')===ST.id; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false'); });
+  [].forEach.call(doc.querySelectorAll('.uiSec .uiCur'),function(e){ e.textContent=(BY[ST.id]||UIS[0]).n; });
+}
+function tile(u){ return '<button type="button" class="ovaSk uiTile" data-ui-id="'+u.id+'" aria-pressed="false"><span class="pv" style="background:'+u.sw+'"></span><span class="tx"><b>'+u.n+'</b></span></button>'; }
 function seccion(){
-  var s=doc.createElement('div'); s.className='uiSec'; var t='';
-  UIS.forEach(function(u){ t+='<button type="button" class="ovaSk uiTile" data-ui-id="'+u.id+'" aria-pressed="false"><span class="pv" style="background:'+u.sw+'"></span><span class="tx"><b>'+u.n+'</b></span></button>'; });
-  s.innerHTML='<div class="uiTit">Diseño de adentro</div><div class="uiRow">'+t+'</div><div class="uiTit col">Tema de color</div>';
-  s.addEventListener('click',function(ev){
-    var el=ev.target; while(el&&el!==s){ if(el.getAttribute&&el.getAttribute('data-ui-id')){ aplicar(el.getAttribute('data-ui-id'),{}); marcar(); return; } el=el.parentNode; }
+  var s=doc.createElement('div'); s.className='uiSec'; var usados={}, t='';
+  CATS.forEach(function(c,i){
+    var fila='';
+    c.ids.forEach(function(id){ if(BY[id]){ usados[id]=1; fila+=tile(BY[id]); } });
+    if(i===CATS.length-1) UIS.forEach(function(u){ if(!usados[u.id]){ usados[u.id]=1; fila+=tile(u); } });   /* un diseño nuevo sin categoría cae en la última */
+    if(fila) t+='<div class="uiCat">'+c.t+'</div><div class="uiRow">'+fila+'</div>';
   });
+  s.innerHTML='<div class="uiSeg" role="tablist"><div class="uiTab" role="tab" tabindex="0" data-tab="d">🧩 Diseño de adentro</div><div class="uiTab" role="tab" tabindex="0" data-tab="t">🎨 Tema de color</div></div>'+
+    '<div class="uiPanel" data-tab="d"><div class="uiTit">Diseño de adentro · <span class="uiCur"></span></div>'+t+'</div>'+
+    '<div class="uiPanel" data-tab="t"><div class="uiTit">Tema de color</div><div class="uiSkinHost"></div></div>';
+  s.addEventListener('click',function(ev){
+    var el=ev.target;
+    while(el&&el!==s){
+      if(el.classList&&el.classList.contains('uiTab')){ var tb=el.getAttribute('data-tab'); try{ root.localStorage.setItem(TKEY,tb); }catch(e){} ponerPestana(s,tb); return; }
+      if(el.getAttribute&&el.getAttribute('data-ui-id')){ aplicar(el.getAttribute('data-ui-id'),{}); marcar(); return; }
+      el=el.parentNode;
+    }
+  });
+  s.addEventListener('keydown',function(ev){ if((ev.key==='Enter'||ev.key===' ')&&ev.target.classList&&ev.target.classList.contains('uiTab')){ ev.preventDefault(); ev.target.click(); } });
+  ponerPestana(s,pestana());
   return s;
 }
 function montar(){
-  /* MLB: Ajustes → Apariencia.  Fútbol y NBA: la hoja del botón 🎨.  Se mete debajo del texto de arriba, antes de los temas de color. */
+  /* MLB: Ajustes → Apariencia.  Fútbol y NBA: la hoja del botón 🎨.  Dos pestañas: Diseño de adentro (por categorías) y Tema de color. */
   var hosts=[].slice.call(doc.querySelectorAll('#pane-ajustes .ovaApar, .ovaSheet .card'));
   hosts.forEach(function(h){
-    if(h.querySelector('.uiSec')) return;
-    var p=h.querySelector('p'); h.insertBefore(seccion(),p?p.nextSibling:h.firstChild);
+    if(!h.__uiDone){ h.__uiDone=1; var p=h.querySelector('p'); h.insertBefore(seccion(),p?p.nextSibling:h.firstChild); }
+    var sec=h.querySelector('.uiSec'), sk=h.querySelector('.ovaSkins'), dest=sec&&sec.querySelector('.uiSkinHost');
+    if(sk&&dest&&sk.parentNode!==dest) dest.appendChild(sk);       /* los temas de color (los pinta cada app) van en su pestaña */
   });
   marcar();
 }
