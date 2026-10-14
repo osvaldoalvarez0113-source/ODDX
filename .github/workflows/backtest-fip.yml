@@ -1,0 +1,32 @@
+name: Backtest FIP del abridor
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr el backtest de FIP y xFIP (2024, 2025 y 2026)
+        run: node scripts/medicion/backtest_fip.js 2>&1 | tee salida_fip.txt
+      - name: Guardar el resultado en la rama resultados-fip
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_fip.txt resultado_fip.txt filas_fip.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-fip
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado del backtest de FIP" || true
+          git push -f origin resultados-fip
