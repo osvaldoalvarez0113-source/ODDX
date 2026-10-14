@@ -1,0 +1,146 @@
+Calendario 2024: tramo 1
+Calendario 2024: tramo 2
+Calendario 2024: tramo 3
+Calendario 2024: tramo 4
+Calendario 2024: tramo 5
+Calendario 2024: tramo 6
+Calendario 2024: tramo 7
+Calendario 2024: tramo 8
+Calendario 2024: tramo 9
+Calendario 2024: tramo 10
+Calendario 2024: tramo 11
+Calendario 2024: tramo 12
+Calendario 2024: tramo 13
+Calendario 2024: tramo 14
+Calendario 2024: tramo 15
+Abridores 2024: 371, bajando salidas...
+Abridores 2024: 50/371
+Abridores 2024: 100/371
+Abridores 2024: 150/371
+Abridores 2024: 200/371
+Abridores 2024: 250/371
+Abridores 2024: 300/371
+Abridores 2024: 350/371
+Listo 2024: 3862 salidas
+Calendario 2025: tramo 1
+Calendario 2025: tramo 2
+Calendario 2025: tramo 3
+Calendario 2025: tramo 4
+Calendario 2025: tramo 5
+Calendario 2025: tramo 6
+Calendario 2025: tramo 7
+Calendario 2025: tramo 8
+Calendario 2025: tramo 9
+Calendario 2025: tramo 10
+Calendario 2025: tramo 11
+Calendario 2025: tramo 12
+Calendario 2025: tramo 13
+Calendario 2025: tramo 14
+Calendario 2025: tramo 15
+Abridores 2025: 367, bajando salidas...
+Abridores 2025: 50/367
+Abridores 2025: 100/367
+Abridores 2025: 150/367
+Abridores 2025: 200/367
+Abridores 2025: 250/367
+Abridores 2025: 300/367
+Abridores 2025: 350/367
+Listo 2025: 3997 salidas
+Calendario 2026: tramo 1
+Calendario 2026: tramo 2
+Calendario 2026: tramo 3
+Calendario 2026: tramo 4
+Calendario 2026: tramo 5
+Calendario 2026: tramo 6
+Calendario 2026: tramo 7
+Calendario 2026: tramo 8
+Calendario 2026: tramo 9
+Calendario 2026: tramo 10
+Calendario 2026: tramo 11
+Calendario 2026: tramo 12
+Calendario 2026: tramo 13
+Calendario 2026: tramo 14
+Calendario 2026: tramo 15
+Abridores 2026: 376, bajando salidas...
+Abridores 2026: 50/376
+Abridores 2026: 100/376
+Abridores 2026: 150/376
+Abridores 2026: 200/376
+Abridores 2026: 250/376
+Abridores 2026: 300/376
+Abridores 2026: 350/376
+Listo 2026: 3968 salidas
+BACKTEST FIP / xFIP DEL ABRIDOR
+2024: 3862 salidas | ERA liga año previo 4.23 | HR/FB liga 0.122
+2025: 3997 salidas | ERA liga año previo 4.00 | HR/FB liga 0.110
+2026: 3968 salidas | ERA liga año previo 4.06 | HR/FB liga 0.111
+
+=== B vs A: FIP suma al ERA de la temporada  [PRINCIPAL] ===
+Base: y ~ e   |   Candidato: y ~ e + f
+  ajustar con las otras dos -> medir 2024 (3862 salidas): mejora 0.32%  t 2.10  peso de f 0.629
+  ajustar con las otras dos -> medir 2025 (3997 salidas): mejora 0.18%  t 1.12  peso de f 0.689
+  ajustar con las otras dos -> medir 2026 (3968 salidas): mejora 0.40%  t 2.68  peso de f 0.583
+  Las tres juntas: mejora 0.30%  t 3.35  | pruebas con t>=2: 2 de 3  | mejoran las tres con peso positivo: sí
+  Tamaño: cambia el pronóstico de un abridor ~0.11 carreras por salida = ~0.6 puntos de probabilidad en la escala de OVA.
+  VEREDICTO: PASA -> opción APAGADA por defecto (efecto < 1 punto)
+  Coeficientes finales (tres temporadas juntas): a=2.7198 b_e=0.2035 b_f=0.6361
+
+=== E1 vs E0: FIP suma al historial de 3 años (lo que ya tiene la app apagado)  [PRINCIPAL] ===
+Base: y ~ e + ph   |   Candidato: y ~ e + ph + f
+  ajustar con las otras dos -> medir 2024 (3862 salidas): mejora 0.22%  t 1.72  peso de f 0.538
+  ajustar con las otras dos -> medir 2025 (3997 salidas): mejora 0.10%  t 0.74  peso de f 0.596
+  ajustar con las otras dos -> medir 2026 (3968 salidas): mejora 0.31%  t 2.64  peso de f 0.466
+  Las tres juntas: mejora 0.21%  t 2.84  | pruebas con t>=2: 1 de 3  | mejoran las tres con peso positivo: sí
+  Tamaño: cambia el pronóstico de un abridor ~0.09 carreras por salida = ~0.5 puntos de probabilidad en la escala de OVA.
+  VEREDICTO: PASA -> opción APAGADA por defecto (efecto < 1 punto)
+  Coeficientes finales (tres temporadas juntas): a=1.5913 b_e=0.1739 b_ph=0.3329 b_f=0.5375
+
+=== C vs A: FIP reemplaza al ERA  [informativa] ===
+Base: y ~ e   |   Candidato: y ~ f
+  ajustar con las otras dos -> medir 2024 (3862 salidas): mejora 0.37%  t 1.62  peso de f 0.883
+  ajustar con las otras dos -> medir 2025 (3997 salidas): mejora 0.08%  t 0.44  peso de f 0.797
+  ajustar con las otras dos -> medir 2026 (3968 salidas): mejora 0.37%  t 1.81  peso de f 0.788
+  Las tres juntas: mejora 0.27%  t 2.27  | pruebas con t>=2: 0 de 3  | mejoran las tres con peso positivo: sí
+  Tamaño: cambia el pronóstico de un abridor ~0.14 carreras por salida = ~0.9 puntos de probabilidad en la escala de OVA.
+  VEREDICTO: PASA -> opción APAGADA por defecto (efecto < 1 punto)
+  Coeficientes finales (tres temporadas juntas): a=3.3604 b_f=0.8244
+
+=== BX vs A: xFIP suma al ERA de la temporada  [informativa] ===
+Base: y ~ e   |   Candidato: y ~ e + x
+  ajustar con las otras dos -> medir 2024 (3862 salidas): mejora 0.42%  t 1.98  peso de x 0.873
+  ajustar con las otras dos -> medir 2025 (3997 salidas): mejora 0.41%  t 2.09  peso de x 0.881
+  ajustar con las otras dos -> medir 2026 (3968 salidas): mejora 0.51%  t 2.77  peso de x 0.825
+  Las tres juntas: mejora 0.45%  t 3.91  | pruebas con t>=2: 2 de 3  | mejoran las tres con peso positivo: sí
+  Tamaño: cambia el pronóstico de un abridor ~0.14 carreras por salida = ~0.8 puntos de probabilidad en la escala de OVA.
+  VEREDICTO: PASA -> opción APAGADA por defecto (efecto < 1 punto)
+  Coeficientes finales (tres temporadas juntas): a=2.1216 b_e=0.2931 b_x=0.8528
+
+=== EX1 vs E0: xFIP suma al historial de 3 años  [informativa] ===
+Base: y ~ e + ph   |   Candidato: y ~ e + ph + x
+  ajustar con las otras dos -> medir 2024 (3862 salidas): mejora 0.24%  t 1.41  peso de x 0.724
+  ajustar con las otras dos -> medir 2025 (3997 salidas): mejora 0.24%  t 1.48  peso de x 0.735
+  ajustar con las otras dos -> medir 2026 (3968 salidas): mejora 0.35%  t 2.42  peso de x 0.661
+  Las tres juntas: mejora 0.28%  t 3.01  | pruebas con t>=2: 1 de 3  | mejoran las tres con peso positivo: sí
+  Tamaño: cambia el pronóstico de un abridor ~0.11 carreras por salida = ~0.6 puntos de probabilidad en la escala de OVA.
+  VEREDICTO: PASA -> opción APAGADA por defecto (efecto < 1 punto)
+  Coeficientes finales (tres temporadas juntas): a=1.2119 b_e=0.2657 b_ph=0.2905 b_x=0.6998
+
+=== CX vs A: xFIP reemplaza al ERA  [informativa] ===
+Base: y ~ e   |   Candidato: y ~ x
+  ajustar con las otras dos -> medir 2024 (3862 salidas): mejora 0.40%  t 1.27  peso de x 1.182
+  ajustar con las otras dos -> medir 2025 (3997 salidas): mejora 0.15%  t 0.61  peso de x 1.069
+  ajustar con las otras dos -> medir 2026 (3968 salidas): mejora 0.32%  t 1.25  peso de x 1.053
+  Las tres juntas: mejora 0.29%  t 1.82  | pruebas con t>=2: 0 de 3  | mejoran las tres con peso positivo: sí
+  Tamaño: cambia el pronóstico de un abridor ~0.19 carreras por salida = ~1.1 puntos de probabilidad en la escala de OVA.
+  VEREDICTO: DUDOSO (se archiva)
+  Coeficientes finales (tres temporadas juntas): a=3.0572 b_x=1.0943
+
+RESUMEN
+  [P] B vs A: FIP suma al ERA de la temporada -> PASA (mejora 0.30%, t 3.35, ~0.6 pts)
+  [P] E1 vs E0: FIP suma al historial de 3 años (lo que ya tiene la app apagado) -> PASA (mejora 0.21%, t 2.84, ~0.5 pts)
+      C vs A: FIP reemplaza al ERA -> PASA (mejora 0.27%, t 2.27, ~0.9 pts)
+      BX vs A: xFIP suma al ERA de la temporada -> PASA (mejora 0.45%, t 3.91, ~0.8 pts)
+      EX1 vs E0: xFIP suma al historial de 3 años -> PASA (mejora 0.28%, t 3.01, ~0.6 pts)
+      CX vs A: xFIP reemplaza al ERA -> DUDOSO (se archiva) (mejora 0.29%, t 1.82, ~1.1 pts)
+
+CONCLUSION: pasa una comparación principal -> FIP entra como opción apagada.
