@@ -778,6 +778,65 @@ sec('Auditoría 2: nombres de ESPN limpios en el origen, peticiones compartidas,
  ok('pruebas.yml no se dispara cuando solo cambian los datos del mercado',['pinnacle-datos.json','pinnacle-futbol.json','pinnacle-nba.json'].every(f=>rd('.github/workflows/pruebas.yml').includes('- '+f)));
 }
 
+sec('FIP del abridor (v64): apagado no cambia nada, encendido calcula lo que midió el backtest');
+{
+ const src=rd('historial.js');
+ function montarHist(){
+  const ins=[], vers=[{textContent:''},{textContent:''}], notas=[];
+  const els={}, padre={insertBefore(n){ins.push(n);}};
+  const mk=()=>{const o={className:'',_h:'',handlers:{},addEventListener(e,f){o.handlers[e]=f;},parentNode:padre,closest(){return o;},querySelector(){return null;}};
+   Object.defineProperty(o,'innerHTML',{get(){return o._h;},set(v){o._h=v;}});return o;};
+  const modoBox=mk(), modo=mk(); modo.closest=()=>modoBox;
+  const doc={readyState:'complete',addEventListener(){},
+   getElementById(id){ if(id==='modo') return modo; if(id==='fecha') return {value:'2026-10-13'}; const n=ins.find(x=>x._h.indexOf('id="'+id+'"')>=0); return n?Object.assign(n,{value:'off'}):null; },
+   createElement(){return mk();},
+   querySelectorAll(q){return q==='.ver'?vers:[];},
+   querySelector(q){return q==='footer details'?{querySelector(){return null;},appendChild(n){notas.push(n);}}:null;}};
+  const reg=(era,ip,prior,ancla)=>{ if(era==null||!isFinite(era)) return null; const L=(ancla!=null&&isFinite(ancla))?ancla:4.0; return (era*ip+L*prior)/(ip+prior); };
+  const ctx={console,Promise,Math,JSON,isFinite,parseFloat,parseInt,document:doc,window:{},
+   LIGA_ERA:4.0,MODO:'mix',PRIOR_ERA:40,API:'',WORKER_URL:'',reg,
+   ipToNum:x=>+x,j:()=>Promise.resolve({}),num:x=>x==null?'–':(+x).toFixed(2),esc:x=>String(x),ymd:x=>x,repintarTodo(){},
+   temporada:(id,y)=>Promise.resolve({era:3.2,ip:120}),
+   eraUsado:()=>99,
+   detalle:()=>'<table><tr class="usa"><td>ERA usado (mezcla)</td><td class="n">3.50</td><td class="n">3.60</td></tr></table>',
+   llamarIA(){},promptJuego(){return '';},promptDia(){return '';}};
+  vm.createContext(ctx);
+  vm.runInContext(src,ctx,{filename:'historial.js'});
+  return {ctx,ins,vers,notas,H:ctx.window.OVAHist};
+ }
+ const T=montarHist(), H=T.H;
+ const hist={2025:{ip:150,er:60},2024:{ip:170,er:75},2023:{ip:100,er:50}};
+ const se={era:3.20,ip:120,fip:3.60,hist,hy:2026}, l5={era:2.5,ip:30};
+ /* cuentas hechas aparte, a mano, con las constantes del backtest (a=1.5913, b_e=0.1739, b_ph=0.3329, b_f=0.5375) */
+ const e=(3.20*120+40*4.0)/(120+40);
+ const pH=(5*9*60+4*9*75+3*9*50+60*4.0)/(5*150+4*170+3*100+60);
+ const f=((3.60-3.15)*120+40*(4.0-3.15))/(120+40);
+ const sFip=1.5913+0.1739*e+0.3329*pH+0.5375*f;
+ const sMarcel=0.8505+0.4410*e+0.3724*pH;
+ const anc=(3.60*120+4.0*30)/(120+30), l=(2.5*30+anc*40*0.625)/(30+40*0.625);
+ const cerca=(a,b)=>Math.abs(a-b)<1e-9;
+ ok('apagado (valor por defecto): el ERA usado sale igual que antes de v64',T.ctx.eraUsado(se,l5)===99&&H.getFip()==='off'&&H.get()==='off');
+ H.set('on');
+ ok('solo historial encendido: sigue dando el modelo de Marcel de v47 (sin FIP)',cerca(T.ctx.eraUsado(se,l5),sMarcel*0.70+l*0.30));
+ H.set('off'); H.setFip('on');
+ ok('FIP encendido: ERA usado = (1.5913 + 0.1739·ERA año + 0.3329·historial + 0.5375·FIP jalado) al 70% + últimas 5 al 30%',cerca(T.ctx.eraUsado(se,l5),sFip*0.70+l*0.30));
+ ok('el FIP jalado es el del backtest: (13HR+3BB-2K + 40·liga crudo)/(IP+40), con liga crudo = ERA liga - 3.15',cerca(H.fipJalado(se),f));
+ ok('sin 10 innings (se.fip nulo) el FIP jalado cae a la liga y no truena',cerca(H.fipJalado({era:null,ip:0,fip:null}),4.0-3.15)&&cerca(H.fipJalado({era:4,ip:5,fip:null}),(40*(4.0-3.15))/45));
+ ok('abridor sin historial suficiente (menos de 40 IP en 3 años): se queda como estaba',T.ctx.eraUsado({era:3.2,ip:120,fip:3.6,hist:{2025:{ip:30,er:12}},hy:2026},l5)===99&&T.ctx.eraUsado({era:3.2,ip:120,fip:3.6},l5)===99);
+ T.ctx.MODO='last5';
+ ok('modo «últimas 5» o «FIP» de la app: no se toca aunque esté encendido',T.ctx.eraUsado(se,l5)===99);
+ T.ctx.MODO='mix';
+ const x={sea:se,seh:{era:3.9,ip:90,fip:4.2,hist,hy:2026},year:2026,pa:{fullName:'Abridor A'},ph:{fullName:'Abridor B'}};
+ H.setFip('on');
+ const dOn=T.ctx.detalle(x);
+ H.setFip('off');
+ const dOff=T.ctx.detalle(x);
+ ok('pestaña Números: la fila «ERA con historial + FIP» sale siempre, «(solo informativo)» si está apagado y «(en uso)» si está encendido',/ERA con historial \+ FIP \(solo informativo\)/.test(dOff)&&/ERA con historial \+ FIP \(en uso\)/.test(dOn)&&/ERA con historial \(solo informativo\)/.test(dOn));
+ ok('el selector «FIP del abridor» se monta en Ajustes, apagado por defecto, junto al del historial',T.ins.length===2&&/id="hist"/.test(T.ins[0].innerHTML)&&/id="fipx"/.test(T.ins[1].innerHTML)&&/<option value="off" selected>/.test(T.ins[1].innerHTML));
+ ok('la versión visible pasó a v64 y la nota explica que viene apagado',T.vers.every(v=>v.textContent==='v64')&&T.notas.some(n=>/ovaNota64/.test(n.className)&&/apagado/.test(n.innerHTML)));
+ ok('los coeficientes del código son los que salieron del backtest (a, b_e, b_ph, b_f) y están anotados en el encabezado',/FA=1\.5913, FB1=0\.1739, FBH=0\.3329, FBF=0\.5375/.test(src)&&/1\.5913\+0\.1739\*ERA_del_año_jalado/.test(src.replace(/ /g,'')));
+}
+
 (async()=>{ await t_envivo(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);

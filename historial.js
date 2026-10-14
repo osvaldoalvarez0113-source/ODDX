@@ -13,12 +13,24 @@
      Historial          = (sum peso*9*ER + 60*liga) / (sum peso*IP + 60), pesos 5-4-3
                           sobre los 3 años previos; solo con 40+ innings en esos años.
    Reemplaza SOLO el componente de temporada del ERA del abridor (el 70% de la
-   mezcla); el 30% de las ultimas 5 salidas queda igual. */
+   mezcla); el 30% de las ultimas 5 salidas queda igual.
+
+   v64 · FIP del abridor (opcion aparte, APAGADA por defecto). Se midio con
+   scripts/medicion/backtest_fip.js (mismas tres temporadas, mismo metodo, regla
+   fijada antes de correr): sumar el FIP al ERA del año mejora el error 0.30% (t 3.35)
+   y sumarlo al historial de 3 años mejora 0.21% (t 2.84); efecto de ~0.5 puntos de
+   probabilidad de ese lado. Pasa la regla pero es chico, y el historial (que se midio
+   igual) no sostuvo ventaja contra el cierre de DraftKings (docs/MEDICION-MERCADO-MLB-2026-10.md).
+   Modelo:  ERA_pronosticado = 1.5913 + 0.1739*ERA_del_año_jalado + 0.3329*Historial + 0.5375*FIP_jalado
+     FIP_jalado = (13HR+3(BB+HBP)-2K + 40*(liga-3.15)) / (IP + 40)   [FIP sin la constante]
+   Solo cambia el calculo de los abridores que tienen historial (los mismos con los que se midio). */
 (function(){
 try{
   var HA=0.8505, HB1=0.4410, HB2=0.3724;
   var H_PRIOR=40, H_PAD=60, H_PESOS=[5,4,3], H_MIN_IP=40;
   var HIST='off';
+  var FIPX='off';
+  var FA=1.5913, FB1=0.1739, FBH=0.3329, FBF=0.5375, FIP_C=3.15;   /* v64: modelo con FIP (backtest_fip.js) */
   var HC={};
 
   function ligaAct(){ return (typeof LIGA_ERA!=='undefined'&&LIGA_ERA!=null)?LIGA_ERA:4.10; }
@@ -61,10 +73,23 @@ try{
     else return null;
     return (er9+H_PRIOR*L)/(se.ip+H_PRIOR);
   }
-  function eraHistSeason(se,pH){
+  /* FIP crudo jalado a la liga: la app guarda se.fip = crudo + 3.15 (solo con 10+ IP);
+     el crudo de la liga se aproxima con ERA de liga - 3.15 (la constante del FIP se calibra para eso) */
+  function fipJalado(se){
+    if(!se||!(se.ip>=0)) return null;
+    var Lraw=ligaAct()-FIP_C;
+    var suma=(se.fip!=null&&isFinite(se.fip)&&se.ip>0)?(se.fip-FIP_C)*se.ip:0;
+    return (suma+H_PRIOR*Lraw)/(se.ip+H_PRIOR);
+  }
+  function eraHistSeason(se,pH,conFip){
     if(pH==null) return null;
     var e=eAppDe(se);
     if(e==null) return null;
+    if(conFip){
+      var f=fipJalado(se);
+      if(f==null) return null;
+      return FA+FB1*e+FBH*pH+FBF*f;
+    }
     return HA+HB1*e+HB2*pH;
   }
 
@@ -81,9 +106,10 @@ try{
   var _eraUsado=eraUsado;
   eraUsado=function(se,l5){
     var base=_eraUsado(se,l5);
-    if(HIST!=='on'||!se||!se.hist) return base;
+    var uso=(FIPX==='on');
+    if((HIST!=='on'&&!uso)||!se||!se.hist) return base;
     if(MODO!=='mix'&&MODO!=='season') return base;
-    var sH=eraHistSeason(se,pHistDe(se.hist,se.hy));
+    var sH=eraHistSeason(se,pHistDe(se.hist,se.hy),uso);
     if(sH==null) return base;
     if(MODO==='season') return sH;
     var Lg=ligaAct(), anc=null;
@@ -99,24 +125,30 @@ try{
     if(!sea||!seh||!x.year) return out;
     var pA=pHistDe(sea.hist,x.year), pH=pHistDe(seh.hist,x.year);
     var sA=eraHistSeason(sea,pA), sH=eraHistSeason(seh,pH);
+    var sFA=eraHistSeason(sea,pA,true), sFH=eraHistSeason(seh,pH,true);
+    var uso=(FIPX==='on');
+    var sUA=uso?sFA:sA, sUH=uso?sFH:sH;
     var m=out.match(RE_FILA);
     if(!m) return out;
     var idx=out.indexOf(m[0])+m[0].length;
     var filas='<tr><td>Historial de 3 años (ERA)</td><td class="n">'+num(pA)+'</td><td class="n">'+num(pH)+'</td></tr>'+
-      '<tr><td>ERA con historial'+(HIST==='on'?' (en uso)':' (solo informativo)')+'</td><td class="n">'+num(sA)+'</td><td class="n">'+num(sH)+'</td></tr>';
+      '<tr><td>ERA con historial'+((HIST==='on'&&!uso)?' (en uso)':' (solo informativo)')+'</td><td class="n">'+num(sA)+'</td><td class="n">'+num(sH)+'</td></tr>'+
+      '<tr><td>ERA con historial + FIP'+(uso?' (en uso)':' (solo informativo)')+'</td><td class="n">'+num(sFA)+'</td><td class="n">'+num(sFH)+'</td></tr>';
     out=out.slice(0,idx)+filas+out.slice(idx);
     var fin=out.indexOf('</table>',idx);
     if(fin<0) return out;
     fin+=8;
     var av='';
-    [[x.pa,sea,sA],[x.ph,seh,sH]].forEach(function(t){
+    [[x.pa,sea,sUA],[x.ph,seh,sUH]].forEach(function(t){
       var nombre=t[0]?t[0].fullName:'Abridor', e=eAppDe(t[1]), s=t[2];
       if(s==null||e==null||Math.abs(s-e)<0.5) return;
-      av+='<div class="flag"><b>'+esc(nombre)+'</b>: con su historial de 3 años el ERA pronosticado es '+num(s)+
+      av+='<div class="flag"><b>'+esc(nombre)+'</b>: con su historial de 3 años'+(uso?' y su FIP':'')+' el ERA pronosticado es '+num(s)+
         ', contra '+num(e)+' si se mira solo este año. '+
-        (HIST==='on'?'El cálculo ya usa el primero.':'El cálculo sigue usando el segundo; el historial está apagado en Ajustes.')+'</div>';
+        ((HIST==='on'||uso)?'El cálculo ya usa el primero.':'El cálculo sigue usando el segundo; el historial está apagado en Ajustes.')+'</div>';
     });
-    if(HIST==='on'&&(sA!=null||sH!=null))
+    if(uso&&(sUA!=null||sUH!=null))
+      av+='<div class="leyenda">Con el FIP encendido, el ERA de temporada de los abridores que tienen historial se jaló hacia su historial de 3 años y también hacia su FIP (los ponches, boletos y jonrones que permite, que se repiten más que las carreras). Efecto medido: unos 0.5 puntos de probabilidad. El 30% de las últimas 5 salidas no cambia.</div>';
+    else if(HIST==='on'&&(sA!=null||sH!=null))
       av+='<div class="leyenda">Con el historial encendido, el ERA de temporada de los abridores que tienen historial se jaló hacia su propio historial de 3 años y no solo hacia el promedio de la liga. Cualquier aviso de arriba que hable de «jalado hacia la liga» debe leerse con eso en mente. El 30% de las últimas 5 salidas no cambia.</div>';
     return out.slice(0,fin)+av+out.slice(fin);
   }
@@ -149,12 +181,39 @@ try{
       }
     }catch(e){}
     try{
-      [].slice.call(document.querySelectorAll('.ver')).forEach(function(e){ e.textContent='v63'; });
+      var hb=document.getElementById('hist');
+      var hbox=hb&&hb.closest?hb.closest('.modo'):null;
+      if(hbox&&!document.getElementById('fipx')){
+        var d2=document.createElement('div');
+        d2.className='modo';
+        d2.innerHTML='<label for="fipx">FIP del abridor</label>'+
+          '<select id="fipx">'+
+          '<option value="off" selected>Apagado &mdash; como estaba</option>'+
+          '<option value="on">Encendido &mdash; suma el FIP al historial</option>'+
+          '</select>';
+        hbox.parentNode.insertBefore(d2,hbox.nextSibling);
+        document.getElementById('fipx').addEventListener('change',function(){
+          FIPX=this.value;
+          if(typeof repintarTodo==='function') repintarTodo();
+        });
+      }
+    }catch(e){}
+    try{
+      [].slice.call(document.querySelectorAll('.ver')).forEach(function(e){ e.textContent='v64'; });
+      var f64=document.querySelector('footer details');
+      if(f64&&!f64.querySelector('.ovaNota64')){
+        var n64=document.createElement('div');
+        n64.className='flag ovaNota64';
+        n64.innerHTML='<b>v64 · FIP del abridor (opcional).</b> En Ajustes puedes encender «FIP del abridor». Suma al ERA pronosticado de cada abridor con historial su FIP (ponches, boletos y jonrones, jalado hacia la liga), que se repite más de una salida a otra que las carreras limpias. Se midió con 2024, 2025 y 2026, ajustando con dos y midiendo en la tercera: sumarlo al ERA del año mejora el error 0.30% (t 3.35) y sumarlo al historial de 3 años 0.21% (t 2.84). El efecto es de unos 0.5 puntos de probabilidad de ese lado. Esa misma prueba con el historial no sostuvo ventaja contra el cierre de DraftKings, así que no esperes que cambie tus picks: por eso viene <b>apagado</b>. Pestaña Números: la fila «ERA con historial + FIP» aparece siempre, aunque esté apagado, sin tocar ningún porcentaje. Dos diferencias con la prueba, las mismas que tiene el historial: el ERA de liga es el del año en curso y el FIP crudo de la liga se aproxima con ERA de liga − 3.15.';
+        f64.appendChild(n64);
+      }
+    }catch(e){}
+    try{
       var f=document.querySelector('footer details');
       if(f&&!f.querySelector('.ovaNota47')){
         var n=document.createElement('div');
         n.className='flag ovaNota47';
-        n.innerHTML='<b>v47 · historial del abridor (opcional).</b> En Ajustes puedes encender «Historial del abridor (3 años)». Jala el ERA de temporada de cada abridor hacia su propio historial de las últimas tres temporadas (pesos 5-4-3, estilo Marcel) y no solo hacia el promedio de la liga. Se midió con 2024, 2025 y 2026, ajustando con dos y midiendo en la tercera: mejora del error de 0.31%, 0.41% y 0.44%, y 0.38% juntas. El efecto es chico, alrededor de 0.8 puntos de probabilidad de ese lado, y no se ha probado contra el mercado. Por eso viene <b>apagado</b>. Constantes: 40 innings de liga para el ERA del año, 60 para acolchar el historial, solo abridores con 40 o más innings en esos años. Dos diferencias con la prueba: allá el ERA de control fue el de temporada sin la mezcla de las últimas 5 (aquí solo se reemplaza el 70% de temporada) y allá el promedio de liga fue el del año previo (aquí el del año en curso). Aunque esté apagado, la pestaña Números muestra el historial y el ERA pronosticado al lado, sin tocar ningún porcentaje.';
+        n.innerHTML='<b>v47 · historial del abridor (opcional).</b> En Ajustes puedes encender «Historial del abridor (3 años)». Jala el ERA de temporada de cada abridor hacia su propio historial de las últimas tres temporadas (pesos 5-4-3, estilo Marcel) y no solo hacia el promedio de la liga. Se midió con 2024, 2025 y 2026, ajustando con dos y midiendo en la tercera: mejora del error de 0.31%, 0.41% y 0.44%, y 0.38% juntas. El efecto es chico, alrededor de 0.8 puntos de probabilidad de ese lado, y contra el cierre de DraftKings no sostuvo ventaja (mejoró en 2024, empeoró en 2026). Por eso viene <b>apagado</b>. Constantes: 40 innings de liga para el ERA del año, 60 para acolchar el historial, solo abridores con 40 o más innings en esos años. Dos diferencias con la prueba: allá el ERA de control fue el de temporada sin la mezcla de las últimas 5 (aquí solo se reemplaza el 70% de temporada) y allá el promedio de liga fue el del año previo (aquí el del año en curso). Aunque esté apagado, la pestaña Números muestra el historial y el ERA pronosticado al lado, sin tocar ningún porcentaje.';
         f.appendChild(n);
       }
     }catch(e){}
@@ -273,6 +332,6 @@ try{
       AVISO_ANIO+'\n\n'+_pd(lista);
   };
 
-  window.OVAHist={pHistDe:pHistDe,eraHistSeason:eraHistSeason,eAppDe:eAppDe,set:function(v){HIST=v;},get:function(){return HIST;}};
+  window.OVAHist={pHistDe:pHistDe,eraHistSeason:eraHistSeason,eAppDe:eAppDe,fipJalado:fipJalado,set:function(v){HIST=v;},get:function(){return HIST;},setFip:function(v){FIPX=v;},getFip:function(){return FIPX;}};
 }catch(e){ if(window.console) console.error('historial.js',e); }
 })();
