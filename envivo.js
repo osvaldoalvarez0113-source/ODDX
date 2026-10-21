@@ -3,7 +3,7 @@
    la vista del juego en vivo con refresco automático:
    · MLB: rombo con corredores, conteo (bolas, strikes, outs), zona de strike con cada lanzamiento, marcador por entrada
           y jugada por jugada. Fuente: MLB Stats API (gratis).
-   · NBA: cancha con cada tiro (anotado o fallado) según va pasando, jugadas y estadísticas. Fuente: ESPN.
+   · NBA: cancha con cada tiro (anotado o fallado) según va pasando, jugadas y estadísticas. Fuente: NBA.com (respaldo: ESPN).
    · Fútbol: comentarios minuto a minuto, línea de tiempo del partido (goles, tarjetas, cambios) y estadísticas. Fuente: ESPN.
    No hay posiciones de jugadores moviéndose: ese seguimiento es de pago y no existe gratis. Todo lo que se dibuja sale
    de datos reales; si una fuente no trae algo, esa parte no se muestra (no se inventa nada).
@@ -56,7 +56,11 @@ var TR=[
  [/\bPitching Change:/gi,'Cambio de lanzador:'],[/\bDefensive Substitution:?/gi,'Cambio defensivo:'],[/\bOffensive Substitution:?/gi,'Cambio ofensivo:'],
  [/\bpinch-hitter\b/gi,'bateador emergente'],[/\bpinch-runner\b/gi,'corredor emergente'],[/\bwild pitch\b/gi,'lanzamiento descontrolado'],
  [/\bpassed ball\b/gi,'bola pasada'],[/\bMound Visit\b/gi,'Visita al montículo'],[/\bumpire\b/gi,'árbitro'],
- /* básquet */
+ /* básquet (formato de NBA.com) */
+ [/\bMISS\b/g,'FALLA'],[/\b3PT Pullup Jump Shot\b/gi,'triple tras bote'],[/\b3PT Jump Shot\b/gi,'triple en suspensión'],[/\b3PT\b/g,'triple'],[/\bPullup Jump Shot\b/gi,'tiro tras bote'],[/\bStep Back Jump shot\b/gi,'tiro hacia atrás'],[/\bFloating Jump Shot\b/gi,'flotador'],[/\bHook Shot\b/gi,'gancho'],[/\bJump Shot\b/gi,'tiro en suspensión'],
+ [/\bFree Throw (\d) of (\d)\b/gi,'tiro libre $1 de $2'],[/\bBad Pass\b/gi,'pase malo'],[/\bBLOCK\b/g,'TAPÓN'],[/\bPTS\b/g,'pts'],[/\bOff:(\d+) Def:(\d+)/g,'of:$1 def:$2'],
+ [/\bSUB: (.+?) FOR (.+)$/g,'Cambio: entra $1 por $2'],[/\bStart of (\d)(?:st|nd|rd|th) Period\b/gi,'Comienza el cuarto $1'],[/\bEnd of (\d)(?:st|nd|rd|th) Period\b/gi,'Fin del cuarto $1'],
+ [/\bS\.FOUL\b/g,'falta en tiro'],[/\bP\.FOUL\b/g,'falta personal'],[/\bOFF\.FOUL\b/g,'falta ofensiva'],[/\bT\.FOUL\b/g,'falta técnica'],[/\bViolation:?/gi,'Violación:'],[/\bDefensive Goaltending\b/gi,'goaltending defensivo'],[/\bTravelling\b/gi,'pasos'],[/\bInstant Replay\b/gi,'Revisión de video'],
  [/\bmakes\b/gi,'anota'],[/\bmisses\b/gi,'falla'],[/\bthree point jumper\b/gi,'triple en suspensión'],[/\bthree point\b/gi,'triple'],
  [/\bdriving layup\b/gi,'bandeja en penetración'],[/\blayup\b/gi,'bandeja'],[/\bjumper\b/gi,'tiro en suspensión'],[/\bdunk\b/gi,'clavada'],
  [/\bfree throw\b/gi,'tiro libre'],[/\bdefensive rebound\b/gi,'rebote defensivo'],[/\boffensive rebound\b/gi,'rebote ofensivo'],[/\brebound\b/gi,'rebote'],
@@ -143,6 +147,58 @@ function resumenTiros(tiros,tid){
  var t=tiros.filter(function(p){ return p.tid===tid&&!p.tl; }), m=t.filter(function(p){ return p.sc; });
  return {fg:m.length,att:t.length,pct:t.length?Math.round(m.length/t.length*100):0,tres:m.filter(function(p){ return p.val===3; }).length};
 }
+/* NBA.com (cdn.nba.com): fuente principal de la NBA. Si no responde, la app usa ESPN. */
+var NBACDN='https://cdn.nba.com/static/json/liveData/';
+function isoClock(c){
+ var m=String(c||'').match(/^PT(\d+)M(\d+)(?:\.\d+)?S$/); if(!m) return '';
+ return parseInt(m[1],10)+':'+pad2(parseInt(m[2],10));
+}
+function relojNba(per,clock){ var c=isoClock(clock); per=num(per,0); return (c?c+' · ':'')+(per>4?'TE'+(per>5?(per-4):''):(per?per+'º':'')); }
+function tmNba(t){
+ t=t||{}; var id=t.teamId==null?'':String(t.teamId);
+ return {id:id,n:((t.teamCity||'')+' '+(t.teamName||'')).trim()||t.teamTricode||'?',ab:t.teamTricode||String(t.teamName||'?').slice(0,3).toUpperCase(),
+  logo:id?'https://cdn.nba.com/logos/nba/'+id+'/global/L/logo.svg':'',score:String(t.score!=null&&t.score!==''?t.score:0)};
+}
+function estadoNba(gs){ return gs===2?'in':(gs===3?'post':'pre'); }
+function detNba(st,per,clock,texto){
+ if(st==='in') return isoClock(clock)?relojNba(per,clock):detalleCorto(texto||'');
+ if(st==='post') return detalleCorto(texto||'Final');
+ return '';
+}
+function parseNbaScoreboard(j){
+ return (((j&&j.scoreboard&&j.scoreboard.games)||[]).map(function(g){
+  var st=estadoNba(g.gameStatus);
+  return {id:String(g.gameId),src:'nba',liga:'NBA',slug:'',state:st,det:detNba(st,g.period,g.gameClock,g.gameStatusText),clock:'',start:Date.parse(g.gameTimeUTC)||0,home:tmNba(g.homeTeam),away:tmNba(g.awayTeam)};
+ }));
+}
+/* las coordenadas de NBA.com vienen en décimas de pie con el aro en (0,0); se pasan al mismo sistema que usa la cancha (aro en x=25, y=5.25 pies) */
+function nbaComJugadas(j){
+ return (((j&&j.game&&j.game.actions)||[]).map(function(a,i){
+  var xl=parseFloat(a.xLegacy), yl=parseFloat(a.yLegacy), fx=25+xl/10, fy=5.25+yl/10, ty=String(a.actionType||'');
+  var ft=/free ?throw/i.test(ty), made=String(a.shotResult||'')==='Made';
+  return {id:String(a.actionNumber!=null?a.actionNumber:i),txt:a.description||'',per:num(a.period,0),clk:isoClock(a.clock),sc:made,shot:(a.isFieldGoal===1||a.isFieldGoal==='1'),
+   val:made?(ty==='3pt'?3:(ft?1:2)):0,tid:String(a.teamId||''),x:fx,y:fy,ok:isFinite(fx)&&isFinite(fy)&&fx>=0&&fx<=50&&fy>=0&&fy<=47,hs:a.scoreHome,as:a.scoreAway,tl:ft};
+ })).filter(function(p){ return p.txt; });
+}
+function cabeceraNba(j,g){
+ var b=(j&&j.box&&j.box.game)||null;
+ if(b&&b.homeTeam&&b.awayTeam){
+  var st=estadoNba(b.gameStatus), home=tmNba(b.homeTeam), away=tmNba(b.awayTeam);
+  return {home:home,away:away,state:st,det:detNba(st,b.period,b.gameClock,b.gameStatusText)||g.det,clock:isoClock(b.gameClock)};
+ }
+ return {home:g.home,away:g.away,state:g.state,det:g.det,clock:''};
+}
+var MAPA_NBACOM=[['fieldGoalsPercentage','% de tiros de campo',1],['threePointersPercentage','% de triples',1],['freeThrowsPercentage','% de tiros libres',1],['reboundsTotal','Rebotes'],['assists','Asistencias'],['turnovers','Pérdidas'],['steals','Robos'],['blocks','Tapones'],['pointsInThePaint','Puntos en la pintura'],['pointsFastBreak','Puntos al contraataque']];
+function statsNbaCom(box){
+ var g=(box&&box.game)||{}, H=(g.homeTeam&&g.homeTeam.statistics)||{}, A=(g.awayTeam&&g.awayTeam.statistics)||{}, rows=[];
+ MAPA_NBACOM.forEach(function(m){
+  var a=A[m[0]], hh=H[m[0]]; if(a==null&&hh==null) return;
+  function f(v){ var n=num(v,0); return m[2]&&n<=1?Math.round(n*1000)/10:n; }
+  var av=f(a), hv=f(hh);
+  rows.push({label:m[1],a:av,h:hv,as:a==null?'–':String(av),hs:hh==null?'–':String(hv),pct:!!m[2]});
+ });
+ return rows;
+}
 /* fútbol */
 function futEventos(j){
  return ((j&&j.keyEvents)||[]).map(function(k,i){
@@ -209,7 +265,7 @@ function mlbJugadas(j){
 }
 var API={esc:esc,tr:tr,minutoDe:minutoDe,coordOk:coordOk,plegar:plegar,parseEspnEventos:parseEspnEventos,parseMlbSchedule:parseMlbSchedule,ordenarJuegos:ordenarJuegos,
  nbaJugadas:nbaJugadas,nbaTiros:nbaTiros,resumenTiros:resumenTiros,futEventos:futEventos,futComentarios:futComentarios,statsPor:statsPor,MAPA_NBA:MAPA_NBA,MAPA_FUT:MAPA_FUT,
- mlbLanzamientos:mlbLanzamientos,mlbJugadas:mlbJugadas,detalleCorto:detalleCorto,iconoFut:iconoFut,nombreLlamada:nombreLlamada,nombreLanz:nombreLanz,safeUrl:safeUrl};
+ mlbLanzamientos:mlbLanzamientos,mlbJugadas:mlbJugadas,isoClock:isoClock,relojNba:relojNba,parseNbaScoreboard:parseNbaScoreboard,nbaComJugadas:nbaComJugadas,cabeceraNba:cabeceraNba,statsNbaCom:statsNbaCom,detalleCorto:detalleCorto,iconoFut:iconoFut,nombreLlamada:nombreLlamada,nombreLanz:nombreLanz,safeUrl:safeUrl};
 root.OVAEnVivo=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
 if(!doc) return;
@@ -311,7 +367,8 @@ function cargarLista(){
  var hoy=new Date(), ayer=new Date(hoy.getTime()-864e5), ps=[];
  if(APP==='nba'){
   var fechas=[ymd(hoy)]; if(hoy.getHours()<6) fechas.push(ymd(ayer));
-  ps=fechas.map(function(f){ return getJSON(ESPN+'basketball/nba/scoreboard?dates='+f+'&limit=100').then(function(j){ return parseEspnEventos(j,'NBA',''); }).catch(function(){ return null; }); });
+  var viaEspn=function(){ return Promise.all(fechas.map(function(f){ return getJSON(ESPN+'basketball/nba/scoreboard?dates='+f+'&limit=100').then(function(j){ return parseEspnEventos(j,'NBA','').map(function(g){ g.src='espn'; return g; }); }).catch(function(){ return null; }); })).then(function(rs){ var ok=rs.filter(function(r){ return r; }); if(!ok.length) throw new Error('sin ESPN'); return [].concat.apply([],ok); }); };
+  ps=[getJSON(NBACDN+'scoreboard/todaysScoreboard_00.json').then(parseNbaScoreboard).then(function(l){ if(!l.length) throw new Error('vacío'); return l; }).catch(viaEspn).catch(function(){ return null; })];
  } else if(APP==='fut'){
   ps=LIGAS.map(function(l){ return getJSON(ESPN+'soccer/'+l[0]+'/scoreboard').then(function(j){ return parseEspnEventos(j,l[1],l[0]); }).catch(function(){ return null; }); });
  } else {
@@ -336,9 +393,13 @@ function urlDetalle(g){
  if(APP==='fut') return ESPN+'soccer/'+g.slug+'/summary?event='+g.id+q;
  return MLBAPI+'v1.1/game/'+g.id+'/feed/live';
 }
+function detalleNba(g){
+ return Promise.all([getJSON(NBACDN+'playbyplay/playbyplay_'+g.id+'.json'),getJSON(NBACDN+'boxscore/boxscore_'+g.id+'.json').catch(function(){ return null; })]).then(function(r){ return {src:'nba',pbp:r[0],box:r[1]}; });
+}
 function cargarDetalle(){
  var g=S.cur; if(!g) return Promise.resolve(); var id=++S.req;
- return getJSON(urlDetalle(g)).catch(function(e){ if(APP==='mlb'||S.sinLang) throw e; S.sinLang=true; return getJSON(urlDetalle(g)); }).then(function(j){
+ var pedir=(APP==='nba'&&g.src==='nba')?detalleNba(g):getJSON(urlDetalle(g)).catch(function(e){ if(APP==='mlb'||S.sinLang) throw e; S.sinLang=true; return getJSON(urlDetalle(g)); });
+ return pedir.then(function(j){
   if(id!==S.req||S.view!=='game') return;
   S.det=j; S.error=''; S.upd=Date.now(); pintar();
  }).catch(function(){ if(id!==S.req||S.view!=='game') return; if(!S.det) S.error='No pude cargar este juego. Lo intento otra vez solo.'; pintar(); });
@@ -401,7 +462,7 @@ function canchaSVG(tiros,flt,home,away,nuevos){
  return s+'</svg>';
 }
 function renderNBA(g){
- var j=S.det, H=cabeceraEspn(j,g), A=H.away, Hm=H.home, pl=nbaJugadas(j), tiros=nbaTiros(pl), nuevos=marcarNuevos('p'+g.key,pl.map(function(p){ return p.id; }));
+ var j=S.det, nb=!!(j&&j.src==='nba'), H=nb?cabeceraNba(j,g):cabeceraEspn(j,g), A=H.away, Hm=H.home, pl=nb?nbaComJugadas(j.pbp):nbaJugadas(j), tiros=nbaTiros(pl), nuevos=marcarNuevos('p'+g.key,pl.map(function(p){ return p.id; }));
  var s=cabecera(g,H,A,Hm);
  s+='<div class="evTabs"><div role="button" tabindex="0" class="evTab'+(S.tab==='cancha'?' on':'')+'" data-a="tab" data-v="cancha">Cancha</div><div role="button" tabindex="0" class="evTab'+(S.tab==='jugadas'?' on':'')+'" data-a="tab" data-v="jugadas">Jugadas</div><div role="button" tabindex="0" class="evTab'+(S.tab==='stats'?' on':'')+'" data-a="tab" data-v="stats">Estadísticas</div></div>';
  if(S.tab==='cancha'){
@@ -417,10 +478,10 @@ function renderNBA(g){
  } else if(S.tab==='jugadas'){
   s+='<div class="evCard"><h3>Jugada por jugada</h3>'+feedNBA(pl.slice(-80).reverse(),nuevos)+'</div>';
  } else {
-  var rows=statsPor(j,Hm.id,A.id,MAPA_NBA);
+  var rows=nb?statsNbaCom(j.box):statsPor(j,Hm.id,A.id,MAPA_NBA);
   s+='<div class="evCard"><div class="evMatch"><div><b>'+esc(A.ab)+'</b></div><div><b>'+esc(Hm.ab)+'</b></div></div>'+barras(rows,A,Hm,false)+'</div>';
  }
- return s+nota('ESPN',APP);
+ return s+nota(nb?'NBA':'ESPN',APP);
 }
 function feedNBA(l,nuevos){
  if(!l.length) return '<div class="evVacio">Todavía no hay jugadas.</div>';
@@ -543,7 +604,7 @@ function lineaScore(ls,away,home){
 }
 function nota(fuente,app){
  var t=S.upd?new Date(S.upd).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'}):'';
- return '<div class="evNota">Datos: '+(fuente==='MLB'?'MLB Stats API':'ESPN')+' · se actualiza solo'+(t?' · '+esc(t):'')+(app==='fut'?'<br>El fútbol no trae las posiciones de los jugadores moviéndose (ese seguimiento es de pago).':'')+'</div>';
+ return '<div class="evNota">Datos: '+(fuente==='MLB'?'MLB Stats API':(fuente==='NBA'?'NBA.com':'ESPN'))+' · se actualiza solo'+(t?' · '+esc(t):'')+(app==='fut'?'<br>El fútbol no trae las posiciones de los jugadores moviéndose (ese seguimiento es de pago).':'')+'</div>';
 }
 
 /* ---------- lista ---------- */
@@ -562,7 +623,7 @@ function renderLista(){
  s+=vivos.length?vivos.map(function(g){ return filaJuego(g,liga); }).join(''):'<div class="evVacio" style="padding:14px 8px">No hay juegos en vivo en este momento.</div>';
  if(pre.length) s+='<div class="evSec">Próximos</div>'+pre.slice(0,25).map(function(g){ return filaJuego(g,liga); }).join('');
  if(fin.length) s+='<div class="evSec">Terminados</div>'+fin.slice(0,25).map(function(g){ return filaJuego(g,liga); }).join('');
- return s+'<div class="evNota">'+(APP==='mlb'?'Fuente: MLB Stats API':'Fuente: ESPN')+' · se actualiza solo cada 25 segundos</div>';
+ return s+'<div class="evNota">'+(APP==='mlb'?'Fuente: MLB Stats API':(APP==='nba'&&S.games.some(function(g){ return g.src==='nba'; })?'Fuente: NBA.com':'Fuente: ESPN'))+' · se actualiza solo cada 25 segundos</div>';
 }
 
 /* ---------- pintar ---------- */
