@@ -165,6 +165,32 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 .comoLee summary::before{content:'▸ '}
 .comoLee[open] summary::before{content:'▾ '}
 .comoLee .nota{margin-top:2px;font-size:12px}
+.rv{margin:14px 0 4px}
+.rv h4{margin:16px 0 7px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut2);font-weight:800}
+.rvMain{border:1px solid var(--line2);border-radius:var(--r2);padding:13px 14px;background:var(--bg2)}
+.rvMain .rvT{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut2);font-weight:800}
+.rvMain .rvH{font-size:19px;font-weight:800;margin:3px 0 6px;line-height:1.2}
+.rvMain .rvP{font-size:13px;color:var(--mut);line-height:1.5}
+.rvSig{display:inline-block;margin-top:9px;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700;border:1px solid var(--line2)}
+.rvSig.ok{color:var(--good);border-color:var(--good)}.rvSig.mid{color:var(--hot);border-color:var(--hot)}.rvSig.bad{color:var(--bad);border-color:var(--bad)}
+.rvTab{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:0;font-size:13px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.rvTab>div{padding:8px 9px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.rvTab>div:nth-last-child(-n+4){border-bottom:0}
+.rvTab .th{font-size:10.5px;color:var(--mut2);font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:var(--bg2)}
+.rvTab .n{text-align:right}.rvTab .nm{font-weight:600;color:var(--txt)}.rvTab .mk{color:var(--hot);font-weight:700}
+.rvTab .best{background:rgba(251,191,36,.08)}
+.rvChips{display:flex;gap:7px;flex-wrap:wrap}
+.rvChips div{background:var(--bg2);border-radius:99px;padding:6px 11px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.rvChips div small{color:var(--mut2);font-weight:600;margin-left:4px}
+.rvLs{display:grid;gap:6px}
+.rvLs div{display:flex;gap:9px;font-size:12.5px;line-height:1.45;color:var(--mut)}
+.rvLs i{font-style:normal;font-weight:800;flex:0 0 18px;text-align:center}
+.rvLs i.ok{color:var(--good)}.rvLs i.w{color:var(--hot)}.rvLs i.x{color:var(--bad)}
+.rvFm{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12.5px;color:var(--mut)}
+.rvFm b{flex:0 0 auto;max-width:42%;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rvFm .forma{margin:0}
+.rvGo{display:flex;gap:7px;margin-top:14px}
+.rvGo div{flex:1;text-align:center;border:1px solid var(--line2);border-radius:var(--r);padding:9px 4px;font-size:12.5px;font-weight:700;color:var(--mut);cursor:pointer}
 </style>
 </head>
 <body>
@@ -622,6 +648,52 @@ function pinNba(g,pr){
   return `<h3>Lo que dice Pinnacle</h3><div class="lineas">${fila(A.n+' gana',pA,1-mod)}${fila(H.n+' gana',hit.pH,mod)}</div>
    <div class="nota">Probabilidad de Pinnacle ya sin su margen y la cuota justa que le corresponde (actualizado hace ${min<90?min+' min':Math.round(min/60)+' h'}). Una cuota solo tiene valor si paga <b>más</b> que esa cuota justa. El mercado es la mejor estimación; el modelo queda de referencia.</div>`;
 }
+
+/* ---- Resumen completo del Veredicto: pronóstico, modelo contra mercado, líneas justas, qué tan confiable es y forma ---- */
+function formaMini(id,Tm){
+  const js=GAMES.filter(x=>x.h===id||x.a===id).sort((a,b)=>b.ts-a.ts).slice(0,10);
+  if(!js.length) return `<div class="rvFm"><b>${esc(Tm.n)}</b><span>sin partidos medidos</span></div>`;
+  let w=0,df=0,sp='';
+  js.forEach((x,i)=>{ const loc=x.h===id, f=loc?x.hs:x.as, c=loc?x.as:x.hs, res=f>c?'V':'D'; if(f>c) w++; df+=f-c; if(i<5) sp+=`<span class="${res}">${res}</span>`; });
+  return `<div class="rvFm"><b>${esc(Tm.n)}</b><div class="forma">${sp}</div><span>${w}-${js.length-w} · ${(df/js.length>=0?'+':'')+(df/js.length).toFixed(1)}</span></div>`;
+}
+function resumenN(g,pr,H,A){
+  const favH=pr.pH>=0.5, pmAbs=Math.abs(pr.pm);
+  let hit=null;
+  if(PIN_N){
+    const kh=nickN(H.n), ka=nickN(A.n);
+    PIN_N.juegos.forEach(x=>{
+      if(hit||Math.abs(Date.parse(x.t)-g.ts)>20*3600e3) return;
+      const a=nickN(x.n[0]), b=nickN(x.n[1]);
+      if(a===kh&&b===ka) hit=x.ml[0]; else if(a===ka&&b===kh) hit=x.ml[1];
+    });
+  }
+  const pH=(hit!==null)?hit:pr.pH, favM=pH>=0.5, pf=Math.max(pH,1-pH), nf=favM?H.n:A.n;
+  const gap=(hit!==null)?Math.abs(pr.pH-hit)*100:null;
+  const sig=hit===null?'<span class="rvSig mid">! Sin precio del mercado para este juego: pronóstico solo del modelo</span>':
+    (gap<=3&&favH===favM?'<span class="rvSig ok">✓ Modelo y mercado coinciden</span>':
+    (gap<=7&&favH===favM?`<span class="rvSig mid">≈ Diferencia de ${gap.toFixed(0)} pts · confía más en el mercado</span>`:
+    `<span class="rvSig bad">✗ Discrepan ${gap.toFixed(0)} pts · créele al mercado</span>`))+
+    (favH!==favM?`<div class="rvP" style="margin-top:7px">El modelo ve favorito a <b>${esc(favH?H.n:A.n)}</b> y el mercado a <b>${esc(nf)}</b>. Si no coinciden, el modelo casi siempre es el que falla: no sabe de lesiones.</div>`:'');
+  const main=`<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf>=0.6?esc(nf)+' gana · '+Math.round(pf*100)+'%':'Juego parejo'}</div>
+   <div class="rvP">${pf>=0.6?'Es el favorito'+(hit!==null?' según el mercado (Pinnacle, sin margen).':' según el modelo.'):'Ninguno pasa del 60%. Lo más probable: '+esc(nf)+' '+Math.round(pf*100)+'%.'}</div>${sig}
+   <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si una casa paga más que la cuota justa: para <b>${esc(nf)}</b> es <b>${amTxt(pf)}</b>${hit!==null?' (precio justo del mercado)':' (del modelo, menos confiable)'}. Si paga menos, no hay valor. Mete la cuota en la pestaña Cuotas para comprobarlo.</div></div>`;
+  const row=(n,m,k)=>`<div class="nm">${esc(n)} gana</div><div class="n">${pct1(m)}</div><div class="n mk">${k===null?'—':pct1(k)}</div><div class="n">${amTxt(k===null?m:k)}</div>`;
+  const tab=`<div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n,1-pr.pH,hit===null?null:1-hit)}${row(H.n,pr.pH,hit)}</div>
+   <div class="nota" style="margin-top:6px">Mercado = Pinnacle sin su margen. Cuota justa: la del mercado si hay, si no la del modelo.</div>`;
+  const chips=`<div class="rvChips"><div>${esc(favH?H.ab:A.ab)}<small>por ${pmAbs.toFixed(1)} pts</small></div><div>Hándicap justo<small>${esc(favH?H.ab:A.ab)} ${fmtL(-Math.round(pmAbs*2)/2)}</small></div><div>Total justo<small>${(Math.round(pr.pt*2)/2).toFixed(1)}</small></div></div>
+   <div class="nota" style="margin-top:6px">Margen esperado del favorito del modelo y las líneas que pondría el modelo. Si la casa pone otra muy distinta, desconfía del modelo.</div>`;
+  const L=(c,t)=>`<div><i class="${c}">${c==='ok'?'✓':(c==='w'?'!':'✗')}</i><span>${t}</span></div>`;
+  const li=[];
+  li.push(L('w','En 2,486 juegos medidos, la línea del mercado acertó más que el modelo. Por eso el mercado va primero y el modelo queda de referencia.'));
+  if(hit!==null){ const mn=Math.max(0,Math.round((Date.now()-Date.parse(PIN_N.generado))/60000)); li.push(L('ok',`Precio de Pinnacle de hace ${mn<90?mn+' min':Math.round(mn/60)+' h'}.`)); }
+  else li.push(L('w','No hay precio de Pinnacle para este juego (puede que aún no lo publique).'));
+  li.push(pr.bH||pr.bA?L('ok','Back-to-back ya descontado en el modelo.'):L('ok','Ningún equipo juega en back-to-back.'));
+  if(g.pre) li.push(L('w','Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
+  li.push(L('x','El modelo no sabe de lesiones. Revisa la pestaña Forma y usa el ajuste manual de abajo si falta una estrella.'));
+  const go='<div class="rvGo"><div role="button" data-go="cuo">Cuotas ›</div><div role="button" data-go="num">Números ›</div><div role="button" data-go="for">Forma y lesiones ›</div></div>';
+  return `<div class="rv"><h4>Pronóstico y pick</h4>${main}<h4>Modelo contra mercado</h4>${tab}<h4>Margen y líneas justas</h4>${chips}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div><h4>Cómo vienen los equipos</h4>${formaMini(g.a,A)}${formaMini(g.h,H)}${go}</div>`;
+}
 function pintarCuerpo(body,g){
   const pr=prediccion(g), H=T(g.h), A=T(g.a);
   const favH=pr.pH>=0.5, pmAbs=Math.abs(pr.pm);
@@ -632,8 +704,9 @@ function pintarCuerpo(body,g){
     <div class="side${favH?' fav':''}"><img src="${esc(H.logo)}" alt="" onerror="this.style.display='none'"><span class="ab">${esc(H.ab)}</span><span class="pc">${pct1(pr.pH)}</span></div>
    </div>
    <div class="bar"><span class="a" style="flex-grow:${Math.max(1-pr.pH,0.08)}">${pct1(1-pr.pH)}</span><span class="h" style="flex-grow:${Math.max(pr.pH,0.08)}">${pct1(pr.pH)}</span></div>
-   ${Math.max(pr.pH,1-pr.pH)>=0.6?`<div class="pick"><b>Favorito: ${esc(favH?H.n:A.n)}</b>${pct1(Math.max(pr.pH,1-pr.pH))} de ganar, por ${pmAbs.toFixed(1)} puntos de margen esperado.</div>`:`<div class="pick no"><b>Muy parejo</b>Ninguno pasa del 60% de probabilidad.</div>`}
+   ${Math.max(pr.pH,1-pr.pH)>=0.6?`<div class="pick"><b>Según el modelo, favorito: ${esc(favH?H.n:A.n)}</b>${pct1(Math.max(pr.pH,1-pr.pH))} de ganar, por ${pmAbs.toFixed(1)} puntos de margen esperado.</div>`:`<div class="pick no"><b>Según el modelo: muy parejo</b>Ninguno pasa del 60% de probabilidad.</div>`}
    <div class="kpi"><div><b>${esc(favH?H.ab:A.ab)} ${fmtL(-Math.round(pmAbs*2)/2)}</b><small>Hándicap justo</small></div><div><b>${(Math.round(pr.pt*2)/2).toFixed(1)}</b><small>Total justo</small></div><div><b>${amTxt(favH?pr.pH:1-pr.pH)}</b><small>Cuota justa fav.</small></div></div>
+   ${resumenN(g,pr,H,A)}
    ${g.odds?mercadoHtml(g,pr,H,A):''}
    ${(pr.bH||pr.bA)?`<div class="aviso">⏱ Back-to-back: ${[pr.bA?A.n:'',pr.bH?H.n:''].filter(Boolean).map(esc).join(' y ')} jugó ayer (el modelo ya lo descuenta).</div>`:''}
    ${g.pre?'<div class="aviso">🧪 Pretemporada: los equipos rotan jugadores y no cuentan para los ratings; toma estos números con mucha cautela.</div>':''}
@@ -692,6 +765,7 @@ function pintarCuerpo(body,g){
     body.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
     body.querySelector('.pane[data-p="'+b.dataset.t+'"]').classList.add('on');
   });
+  body.querySelectorAll('.rvGo div').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const t=body.querySelector('.tb[data-t="'+b.dataset.go+'"]'); if(t) t.click(); });
   const q=k=>body.querySelector('[data-k="'+k+'"]');
   body.querySelector('[data-a="adj"]').onclick=()=>{ g.adjA=parseFloat(q('adjA').value)||0; g.adjH=parseFloat(q('adjH').value)||0; pintarCuerpo(body,g); };
   body.querySelector('[data-a="ml"]').onclick=()=>{

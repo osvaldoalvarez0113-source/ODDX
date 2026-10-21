@@ -103,6 +103,33 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 .comoLee[open] summary::before{content:'▾ '}
 .comoLee .nota{margin-top:2px;font-size:12px}
 
+.rv{margin:14px 0 4px}
+.rv h4{margin:16px 0 7px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut2);font-weight:800}
+.rvMain{border:1px solid var(--line2);border-radius:var(--r2);padding:13px 14px;background:var(--bg2)}
+.rvMain .rvT{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut2);font-weight:800}
+.rvMain .rvH{font-size:19px;font-weight:800;margin:3px 0 6px;line-height:1.2}
+.rvMain .rvP{font-size:13px;color:var(--mut);line-height:1.5}
+.rvSig{display:inline-block;margin-top:9px;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700;border:1px solid var(--line2)}
+.rvSig.ok{color:var(--good);border-color:var(--good)}.rvSig.mid{color:var(--hot);border-color:var(--hot)}.rvSig.bad{color:var(--bad);border-color:var(--bad)}
+.rvTab{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:0;font-size:13px;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.rvTab>div{padding:8px 9px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.rvTab>div:nth-last-child(-n+4){border-bottom:0}
+.rvTab .th{font-size:10.5px;color:var(--mut2);font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:var(--bg2)}
+.rvTab .n{text-align:right}.rvTab .nm{font-weight:600;color:var(--txt)}.rvTab .mk{color:var(--hot);font-weight:700}
+.rvTab .best{background:rgba(251,191,36,.08)}
+.rvChips{display:flex;gap:7px;flex-wrap:wrap}
+.rvChips div{background:var(--bg2);border-radius:99px;padding:6px 11px;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.rvChips div small{color:var(--mut2);font-weight:600;margin-left:4px}
+.rvLs{display:grid;gap:6px}
+.rvLs div{display:flex;gap:9px;font-size:12.5px;line-height:1.45;color:var(--mut)}
+.rvLs i{font-style:normal;font-weight:800;flex:0 0 18px;text-align:center}
+.rvLs i.ok{color:var(--good)}.rvLs i.w{color:var(--hot)}.rvLs i.x{color:var(--bad)}
+.rvFm{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12.5px;color:var(--mut)}
+.rvFm b{flex:0 0 auto;max-width:42%;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rvFm .forma{margin:0}
+.rvGo{display:flex;gap:7px;margin-top:14px}
+.rvGo div{flex:1;text-align:center;border:1px solid var(--line2);border-radius:var(--r);padding:9px 4px;font-size:12.5px;font-weight:700;color:var(--mut);cursor:pointer}
+
 /* tabla de posiciones mini */
 .tabpos{width:100%;border-collapse:collapse;font-size:11.5px}
 .tabpos td{padding:6px 4px;border-bottom:1px solid var(--line)}
@@ -1775,12 +1802,12 @@ function bloqueBase(eL, eV, nombreLmostrar, nombreVmostrar){
   var pickHtml;
   var pct0=function(x){ return Math.round(x*100)+'%'; };
   var cj=function(x){ var a=cuotaJustaAmericana(x); return a===null?'—':(a>0?'+':'')+a; };
-  var golesTxt='Se esperan unos '+(r.lamL+r.lamV).toFixed(1)+' goles en total ('+(r.overLin[2.5]>=0.55?'tiende a más de 2.5':(r.overLin[2.5]<=0.45?'tiende a menos de 2.5':'está en el límite de 2.5'))+').';
+  var golesTxt='Se esperan unos '+(r.lamL+r.lamV).toFixed(1)+' goles en total ('+(r.overLin[2.5]>=0.55?'tiende a más de 2.5':(r.overLin[2.5]<=0.45?'tiende a menos de 2.5':'casi 50/50 entre más y menos de 2.5'))+').';
   if(favorito && mejor>=0.45){
-    pickHtml = '<div class="pick"><b>Favorito: '+favorito+'</b>'+favTxt+' de ganar (empate '+pct0(r.pD)+'). '+golesTxt+
+    pickHtml = '<div class="pick"><b>Según el modelo, favorito: '+favorito+'</b>'+favTxt+' de ganar (empate '+pct0(r.pD)+'). '+golesTxt+
       ' Cuota justa de '+favorito+': <strong>'+cj(mejor)+'</strong>; solo hay valor si la casa paga más.</div>';
   } else {
-    pickHtml = '<div class="pick no"><b>Muy parejo</b>Ningún equipo pasa del 45% — no hay favorito claro: '+nombreLmostrar+' '+pct0(r.pL)+', empate '+pct0(r.pD)+', '+nombreVmostrar+' '+pct0(r.pV)+'. '+golesTxt+'</div>';
+    pickHtml = '<div class="pick no"><b>Según el modelo: muy parejo</b>Ningún equipo pasa del 45% — no hay favorito claro: '+nombreLmostrar+' '+pct0(r.pL)+', empate '+pct0(r.pD)+', '+nombreVmostrar+' '+pct0(r.pV)+'. '+golesTxt+'</div>';
   }
   var mHtml='';
   r.marcadores.slice(0,6).forEach(function(m){
@@ -1953,6 +1980,61 @@ function pintarRankingFutbol(panel, p){
     });
   });
 }
+
+/* ---- Resumen completo del Veredicto: pronóstico, modelo contra mercado, goles, qué tan confiable es y forma ---- */
+function resumenVeredictoF(p, base, id){
+  var escR = function(t){ return String(t==null?'':t).replace(/[<>&"']/g,function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  var r = base.r, pc = function(x){ return (x*100).toFixed(1)+'%'; }, pc0 = function(x){ return Math.round(x*100)+'%'; };
+  var cj = function(x){ var a = cuotaJustaAmericana(x); return a===null ? '—' : (a>0?'+':'')+a; };
+  var m = buscarPinF(p), f = null, ou = null;
+  if(m){ f = m.inv ? [m.g.r[2], m.g.r[1], m.g.r[0]] : m.g.r.slice(); if(m.g.ou25) ou = m.g.ou25; }
+  var mod = [r.pL, r.pD, r.pV], nom = [p.local, 'Empate', p.visita];
+  var txtRes = function(i){ return i===1 ? 'Empate' : nom[i]+' gana'; };
+  var fuente = f || mod, best = 0, bm = 0, i;
+  for(i=1;i<3;i++){ if(fuente[i]>fuente[best]) best = i; if(mod[i]>mod[bm]) bm = i; }
+  var h, sub;
+  if(fuente[best] >= 0.45){ h = txtRes(best)+' · '+pc0(fuente[best]); sub = 'Es el resultado más probable'+(f?' según el mercado (Pinnacle, sin margen).':' según el modelo.'); }
+  else { var o = [0,1,2].sort(function(a,b){ return fuente[b]-fuente[a]; }); h = 'Partido parejo'; sub = 'Ninguno pasa del 45%. Lo más probable: '+txtRes(o[0])+' '+pc0(fuente[o[0]])+', luego '+txtRes(o[1])+' '+pc0(fuente[o[1]])+'.'; }
+  var sig = '';
+  if(f){
+    var mx = 0, mi = 0; for(i=0;i<3;i++){ var d = Math.abs(mod[i]-f[i])*100; if(d>mx){ mx = d; mi = i; } }
+    var mismo = (bm===best);
+    if(mx<=4 && mismo) sig = '<span class="rvSig ok">✓ Modelo y mercado coinciden</span>';
+    else if(mx<=8) sig = '<span class="rvSig mid">≈ Diferencia de '+mx.toFixed(0)+' pts en «'+txtRes(mi)+'» · confía más en el mercado</span>';
+    else sig = '<span class="rvSig bad">✗ Discrepan '+mx.toFixed(0)+' pts en «'+txtRes(mi)+'» · créele al mercado</span>';
+    if(!mismo) sig += '<div class="rvP" style="margin-top:7px">El modelo ve favorito a <b>'+txtRes(bm)+'</b> ('+pc0(mod[bm])+') y el mercado a <b>'+txtRes(best)+'</b> ('+pc0(f[best])+'). Si no coinciden, el modelo casi siempre es el que falla: no sabe de lesiones ni de alineaciones.</div>';
+  } else sig = '<span class="rvSig mid">! Sin precios del mercado para este partido: pronóstico solo del modelo</span>';
+  var pick = '<div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si una casa paga más que la cuota justa: para <b>'+txtRes(best)+'</b> es <b>'+cj(fuente[best])+'</b>'+(f?' (precio justo del mercado)':' (del modelo, menos confiable)')+'. Si paga menos, no hay valor. Mete la cuota en la pestaña Cuotas para comprobarlo.</div>';
+  var main = '<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">'+escR(h)+'</div><div class="rvP">'+escR(sub)+'</div>'+sig+pick+'</div>';
+
+  var cell = function(v){ return v===null||v===undefined ? '<div class="n">—</div>' : '<div class="n">'+pc(v)+'</div>'; };
+  var fila = function(t, vm, vk){ var ref = (vk!==null&&vk!==undefined)?vk:vm; return '<div class="nm">'+escR(t)+'</div>'+cell(vm)+'<div class="n mk">'+((vk===null||vk===undefined)?'—':pc(vk))+'</div><div class="n">'+(ref===null||ref===undefined?'—':cj(ref))+'</div>'; };
+  var tab = '<div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>'+
+    fila(p.local+' gana', r.pL, f?f[0]:null)+fila('Empate', r.pD, f?f[1]:null)+fila(p.visita+' gana', r.pV, f?f[2]:null)+
+    fila('Más de 2.5', r.overLin[2.5], ou?ou[0]:null)+fila('Menos de 2.5', 1-r.overLin[2.5], ou?ou[1]:null)+
+    fila('Ambos anotan', r.pBtts, null)+'</div>'+
+    '<div class="nota" style="margin-top:6px">Mercado = Pinnacle sin su margen. Cuota justa: la del mercado si hay, si no la del modelo. Ambos anotan no tiene precio de mercado.</div>';
+
+  var chips = '<div class="rvChips"><div>'+escR(p.local)+'<small>'+r.lamL.toFixed(2)+' goles</small></div><div>'+escR(p.visita)+'<small>'+r.lamV.toFixed(2)+' goles</small></div>';
+  r.marcadores.slice(0,3).forEach(function(mm){ chips += '<div>'+mm.i+'-'+mm.j+'<small>'+(mm.p*100).toFixed(1)+'%</small></div>'; });
+  chips += '</div><div class="nota" style="margin-top:6px">Goles esperados por equipo y los tres marcadores más probables.</div>';
+
+  var v = leerVeredictos(LIGA_ACTUAL), li = [];
+  var L = function(c, t){ return '<div><i class="'+c+'">'+(c==='ok'?'✓':(c==='w'?'!':'✗'))+'</i><span>'+t+'</span></div>'; };
+  li.push(r.dc ? L('ok','Modelo medido en 5,256 partidos de las 5 grandes ligas. Aun así, el mercado acertó más (error 0.964 contra 0.989).') : L('w','Modelo básico (copas o ligas menores): no se ha medido contra el mercado. Menos confiable.'));
+  if(f){ var mn = Math.max(0, Math.round((Date.now()-Date.parse(PIN_F.generado))/60000)); li.push(L('ok','Precios de Pinnacle de hace '+(mn<90?mn+' min':Math.round(mn/60)+' h')+'.')); }
+  else li.push(L('w','No hay precios de Pinnacle para este partido (puede que aún no los publique).'));
+  if(v && v.ou!==undefined && v.bt!==undefined){
+    var gan = veredictoDe(v.ou).t==='✓ le gana' && veredictoDe(v.bt).t==='✓ le gana';
+    li.push(gan ? L('ok','Más/Menos y Ambos anotan le ganan a la frecuencia de la liga en tu backtest.') : L('w','Más/Menos y Ambos anotan no le ganan a la frecuencia normal de la liga en tu backtest: úsalos solo de referencia.'));
+  } else li.push(L('w','Más/Menos y Ambos anotan: sin medir en esta liga.'));
+  li.push(L('x','No sabe de lesiones, sanciones ni alineaciones. Revisa las noticias en la pestaña Forma antes de decidir.'));
+  var conf = '<div class="rvLs">'+li.join('')+'</div>';
+
+  var forma = '<div class="rvFm"><b>'+escR(p.local)+'</b><div class="forma" id="'+id+'rfL"></div></div><div class="rvFm"><b>'+escR(p.visita)+'</b><div class="forma" id="'+id+'rfV"></div></div>';
+  var go = '<div class="rvGo"><div role="button" data-go="cuo">Cuotas ›</div><div role="button" data-go="num">Números ›</div><div role="button" data-go="for">Forma y noticias ›</div></div>';
+  return '<div class="rv"><h4>Pronóstico y pick</h4>'+main+'<h4>Modelo contra mercado</h4>'+tab+'<h4>Goles y marcadores</h4>'+chips+'<h4>Qué tan confiable es</h4>'+conf+'<h4>Cómo vienen los equipos</h4>'+forma+go+'</div>';
+}
 function pintarGameBody(bodyEl, p, eL, eV){
   var base = bloqueBase(eL, eV, p.local, p.visita);
   var id = 'g'+Math.random().toString(36).slice(2);
@@ -1974,7 +2056,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
       '<button class="tb" data-t="num">Números</button>' +
       '<button class="tb" data-t="for">Forma</button>' +
     '</div>' +
-    '<div class="pane on" id="'+id+'ver">' + base.veredictoHtml +
+    '<div class="pane on" id="'+id+'ver">' + base.veredictoHtml + resumenVeredictoF(p, base, id) +
       '<details class="comoLee"><summary>¿Cómo se lee y qué tan confiable es?</summary><div class="nota">'+
         '<b>Los tres porcentajes de arriba</b> son la probabilidad de que gane el local, empaten o gane la visita; suman 100%. '+
         '<b>Goles esp.</b> es el promedio de goles que el modelo espera de cada equipo. '+
@@ -2102,6 +2184,11 @@ function pintarGameBody(bodyEl, p, eL, eV){
     ], document.getElementById(id+'verBtts'), p);
   });
 
+  pintarForma(id+'rfL', p.local);
+  pintarForma(id+'rfV', p.visita);
+  bodyEl.querySelectorAll('.rvGo div').forEach(function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); var t = bodyEl.querySelector('#'+id+'tabs .tb[data-t="'+b.getAttribute('data-go')+'"]'); if(t) t.click(); });
+  });
   pintarForma(id+'formaL', p.local);
   pintarForma(id+'formaV', p.visita);
   pintarTendencias(id+'tend', p.local, p.visita);
