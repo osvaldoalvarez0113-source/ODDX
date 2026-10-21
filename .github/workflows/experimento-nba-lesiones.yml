@@ -1,0 +1,34 @@
+name: Experimento NBA (ausencias de jugadores vs linea de cierre)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [experimento-nba-lesiones]
+
+permissions:
+  contents: write
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr el experimento
+        run: node scripts/experimento_nba_lesiones.js 2>&1 | tee salida_nba_lesiones.txt
+      - name: Guardar el resultado en la rama resultados-nba-lesiones
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_nba_lesiones.txt resultado_nba_lesiones.txt resultado_nba_lesiones.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-nba-lesiones
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado del experimento NBA (ausencias)" || true
+          git push -f origin resultados-nba-lesiones
