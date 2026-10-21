@@ -419,7 +419,9 @@ function leerJuego(g,i){
  var j={g:g,idx:i};
  if(!o){
   var nm=$$('.head .eq span:not(.tag):not(.esc)',g).map(function(x){ return compactar(x.textContent); }).filter(Boolean);
-  o={na:nm[0]||'?',nh:nm[1]||'?',hora:compactar(($('.clock',g)||$('.hora',g)||{}).textContent),vs:'vs'};
+  var ck=$('.clock',g)||$('.hora',g), htxt='';
+  if(ck){ var cl=ck.cloneNode(true); $$('br',cl).forEach(function(b){ b.parentNode.replaceChild(doc.createTextNode(' · '),b); }); htxt=cl.textContent; }
+  o={na:nm[0]||'?',nh:nm[1]||'?',hora:compactar(htxt),vs:'vs'};
  }
  j.na=o.na; j.nh=o.nh; j.hora=o.hora||''; j.vivo=!!o.vivo; j.vs=o.vs||'vs';
  var c=g._calc, pa=o.pa, ph=o.ph;

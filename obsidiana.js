@@ -315,7 +315,11 @@ try{
   }
   function horaDe(g){
     var c = g.querySelector(".clock") || g.querySelector(".hora");
-    return c ? c.textContent.trim() : "";
+    if(!c) return "";
+    /* el <br> del marcador en vivo se cambia por un separador para que no quede "28-388:09" */
+    var cl = c.cloneNode(true), brs = cl.querySelectorAll("br");
+    for(var i=0;i<brs.length;i++){ brs[i].parentNode.replaceChild(document.createTextNode(" · "), brs[i]); }
+    return cl.textContent.replace(/\s+/g," ").trim();
   }
   function montarDestacados(){
     try{

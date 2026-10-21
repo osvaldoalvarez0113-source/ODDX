@@ -395,7 +395,13 @@ function ajustesMLB(){
 /* ---------- Boleto: cada juego como un ticket (solo se ve en el diseño Boleto) ----------
    Lee lo que la tarjeta ya muestra (equipos, hora, probabilidades, cuota justa, veredicto) y arma el boleto.
    No calcula nada y no borra nada: lo original se oculta con CSS y vuelve al cambiar de diseño. */
-function bzTxt(e){ return e?String(e.textContent||'').replace(/\s+/g,' ').trim():''; }
+function bzTxt(e){
+ if(!e) return '';
+ /* el marcador en vivo trae un <br> entre el marcador y el reloj; textContent lo borra y quedaba pegado ("28-388:09"), asi que se cambia por un separador */
+ var c=e.cloneNode(true), brs=c.querySelectorAll?c.querySelectorAll('br'):[];
+ for(var i=0;i<brs.length;i++){ brs[i].parentNode.replaceChild(d.createTextNode(' · '),brs[i]); }
+ return String(c.textContent||'').replace(/\s+/g,' ').trim();
+}
 function bzNum(s){ var m=String(s||'').replace(',','.').match(/-?\d+(?:\.\d+)?/); return m?parseFloat(m[0]):null; }
 function bzUi(){ var u=d.documentElement.getAttribute('data-ui')||''; return u.indexOf('boleto')===0; }
 function bzLeer(g){

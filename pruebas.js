@@ -525,6 +525,7 @@ sec('Diez diseños con cabecera propia: Historias, Duelo, Bento, Agenda, Radar d
  });
  ok('la cabecera nueva está oculta por defecto (Clásico y demás no la ven)',/\.nxT,\.nxProg,\.nxSum,\.nxPlot,\.nxAhora\{display:none\}/.test(I2.css));
  ok('diseno.js entrega el lector de tarjetas (OVALeerJuego) que usa interior2.js',/root\.OVALeerJuego=bzLeer/.test(rd('diseno.js')));
+ ok('el marcador en vivo no queda pegado al reloj (el <br> se cambia por un separador al leer la etiqueta)',/function bzTxt\(e\)\{[\s\S]*?querySelectorAll\('br'\)[\s\S]*?createTextNode\(' · '\)/.test(rd('diseno.js'))&&/querySelectorAll\("br"\)/.test(rd('obsidiana.js')));
  ['index.html','futbol.html','nba.html'].forEach(f=>{const h=rd(f),i1=h.indexOf('interior2.js'),i2=h.indexOf('<style>');ok(f+' carga interior2.js en la cabecera, después de interior.js',i1>h.indexOf('interior.js')&&i1<i2);});
  ok('el service worker guarda interior2.js para abrir sin internet',/'interior2\.js'/.test(rd('sw.js')));
  ok('los cinco respetan "reducir movimiento" (lo cubre interior.js para todo data-ui)',/prefers-reduced-motion:reduce\)\{html\[data-ui\] \*/.test(rd('interior.js')));
