@@ -96,6 +96,12 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
  border-radius:var(--r);padding:8px 11px;font-size:12.5px}
 .linea b{font-family:var(--cond)}
 .nota{font-size:10.5px;color:var(--mut2);line-height:1.5;margin-top:12px}
+.comoLee{margin-top:12px}
+.comoLee summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--mut);padding:8px 0;list-style:none}
+.comoLee summary::-webkit-details-marker{display:none}
+.comoLee summary::before{content:'▸ '}
+.comoLee[open] summary::before{content:'▾ '}
+.comoLee .nota{margin-top:2px;font-size:12px}
 
 /* tabla de posiciones mini */
 .tabpos{width:100%;border-collapse:collapse;font-size:11.5px}
@@ -1767,11 +1773,14 @@ function bloqueBase(eL, eV, nombreLmostrar, nombreVmostrar){
   else { favorito=null; }
 
   var pickHtml;
+  var pct0=function(x){ return Math.round(x*100)+'%'; };
+  var cj=function(x){ var a=cuotaJustaAmericana(x); return a===null?'—':(a>0?'+':'')+a; };
+  var golesTxt='Se esperan unos '+(r.lamL+r.lamV).toFixed(1)+' goles en total ('+(r.overLin[2.5]>=0.55?'tiende a más de 2.5':(r.overLin[2.5]<=0.45?'tiende a menos de 2.5':'está en el límite de 2.5'))+').';
   if(favorito && mejor>=0.45){
-    pickHtml = '<div class="pick"><b>Favorito: '+favorito+'</b>'+favTxt+' de probabilidad — '+
-      (r.overLin[2.5]>=0.55?'tendencia a más de 2.5 goles':'partido más cerrado en goles')+'.</div>';
+    pickHtml = '<div class="pick"><b>Favorito: '+favorito+'</b>'+favTxt+' de ganar (empate '+pct0(r.pD)+'). '+golesTxt+
+      ' Cuota justa de '+favorito+': <strong>'+cj(mejor)+'</strong>; solo hay valor si la casa paga más.</div>';
   } else {
-    pickHtml = '<div class="pick no"><b>Muy parejo</b>Ningún equipo pasa del 45% — no hay favorito claro.</div>';
+    pickHtml = '<div class="pick no"><b>Muy parejo</b>Ningún equipo pasa del 45% — no hay favorito claro: '+nombreLmostrar+' '+pct0(r.pL)+', empate '+pct0(r.pD)+', '+nombreVmostrar+' '+pct0(r.pV)+'. '+golesTxt+'</div>';
   }
   var mHtml='';
   r.marcadores.slice(0,6).forEach(function(m){
@@ -1957,7 +1966,13 @@ function pintarGameBody(bodyEl, p, eL, eV){
       '<button class="tb" data-t="for">Forma</button>' +
     '</div>' +
     '<div class="pane on" id="'+id+'ver">' + base.veredictoHtml +
-      (base.r.dc ? '<div class="nota">Modelo v4: Dixon-Coles con peso por antigüedad (ataque y defensa de cada equipo ajustados con esta temporada y la pasada, más peso a los partidos recientes; ascendidos con prior más flojo; corrección de marcadores bajos ρ='+DC_CFG.rho+'). Medido contra las cuotas de cierre de Pinnacle en 5,256 partidos de las 5 grandes ligas: error 1X2 0.989 vs 1.006 del modelo anterior y 0.964 del mercado. El mercado sigue acertando más, así que esto es una referencia, no una ventaja. Sin lesiones ni alineaciones.</div>' : '') +
+      (base.r.dc ? '<details class="comoLee"><summary>¿Cómo se lee y qué tan confiable es?</summary><div class="nota">'+
+        '<b>Los tres porcentajes de arriba</b> son la probabilidad de que gane el local, empaten o gane la visita; suman 100%. '+
+        '<b>Goles esp.</b> es el promedio de goles que el modelo espera de cada equipo. '+
+        '<b>Cuota justa</b> es lo que tendría que pagar la casa para que apostar ahí no gane ni pierda a la larga: si paga más, hay valor; si paga menos, no.<br><br>'+
+        '<b>Cómo se calcula:</b> con los goles que cada equipo ha metido y recibido esta temporada y la pasada (los partidos recientes pesan más). '+
+        '<b>Qué tan confiable es:</b> probado en 5,256 partidos de las 5 grandes ligas contra las cuotas de cierre de Pinnacle, el mercado acierta más que este modelo (error 0.964 contra 0.989). '+
+        'Así que es una referencia, no una ventaja. No sabe de lesiones ni de alineaciones.</div></details>' : '') +
       (base.r.dc ? '' : '<div class="nota">Modelo Poisson con encogimiento (K='+PARAMS.K+'), localía (h='+PARAMS.h+') y corrección de marcadores bajos (ρ='+PARAMS.rho+')'+(PARAMS.w<1?', confianza reducida (w='+PARAMS.w+')':'')+(PARAMS.S&&Object.keys(SEMILLA).length?', con historial de la temporada pasada (S='+PARAMS.S+')':'')+'. Más/Menos y Ambos anotan usan su propio encogimiento fuerte (K='+PARAMS.Kt+', w='+PARAMS.wt+'). Parámetros: '+estadoParams+'. Sin lesiones ni alineaciones. Datos en vivo de worldfootball.net.</div>') +
     '</div>' +
     '<div class="pane" id="'+id+'cuo">' +
@@ -3075,7 +3090,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
    var ok=function(k){ return !!(v && v[k]!==undefined && veredictoDe(v[k]).t==='✓ le gana'); };
    var kp=pane.querySelectorAll('.kpi div'), okOU=ok('ou'), okBT=ok('bt'), n=0;
    [okOU,okOU,okBT].forEach(function(o,i){ if(kp[i] && !o){ kp[i].classList.add('sinmed'); n++; } });
-   if(n){ var kEl=pane.querySelector('.kpi'); if(kEl) kEl.insertAdjacentHTML('afterend','<div class="nota" style="margin-top:-4px">Los porcentajes atenuados (Más/Menos y Ambos anotan) no le ganaron a la frecuencia de la liga en tu backtest, o no se han medido: úsalos solo de referencia. El 1X2 de arriba sí.</div>'); }
+   if(n){ var kEl=pane.querySelector('.kpi'); if(kEl) kEl.insertAdjacentHTML('afterend','<div class="nota" style="margin-top:-4px">Más/Menos 2.5 y Ambos anotan son solo de referencia: en tu backtest no le ganaron a lo que pasa normalmente en la liga (o no se han medido). El ganador/empate de arriba sí le ganó a esa frecuencia, aunque el mercado le sigue ganando a él.</div>'); }
   }catch(e){}
   /* Si Kalshi ya respondió 429 (límite de peticiones) en este partido, no se vuelve a ofrecer
      el botón en los demás: no funciona desde el teléfono y solo genera clics perdidos. */
@@ -3094,7 +3109,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
    row(escT(p.local)+' o empate (1X)',d.x1)+row(escT(p.visita)+' o empate (X2)',d.x2)+
    row(escT(p.local)+' o '+escT(p.visita)+' (12, sin empate)',d.x12)+
    row('Empate no apuesta · '+escT(p.local),d.dnbL)+row('Empate no apuesta · '+escT(p.visita),d.dnbV)+'</div>'+
-   '<div class="nota">Salen del mismo 1X2 de arriba (el mercado donde el modelo sí le ganó a la frecuencia de la liga), sin ninguna constante nueva. La cifra de la derecha es la cuota justa: solo hay valor si la casa paga <b>más</b>. En empate no apuesta, si empatan te devuelven el dinero.</div>';
+   '<div class="nota">1X = gana o empata el local, X2 = gana o empata la visita, 12 = no habrá empate. Salen del mismo ganador/empate de arriba. La cifra de la derecha es la cuota justa: solo hay valor si la casa paga <b>más</b>. En empate no apuesta, si empatan te devuelven el dinero.</div>';
   pane.appendChild(box);
  }
  if(typeof pintarGameBody==='function'){

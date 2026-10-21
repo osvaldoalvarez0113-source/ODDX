@@ -169,6 +169,13 @@ sec('NBA: Línea del mercado en palabras simples');
  ok('sin línea de ESPN no pinta nada',run({odds:{}},{pmMod:0,ptMod:220,pm:0,pt:220},H,A)==='');
 }
 
+sec('Fútbol: Veredicto en palabras simples');
+{
+ const h=rd('futbol.html');
+ ok('el cuadro del Veredicto dice las 3 probabilidades, los goles totales y la cuota justa con la misma función de la app',/Ningún equipo pasa del 45%/.test(h)&&/cuotaJustaAmericana\(x\)/.test(h)&&/Se esperan unos /.test(h)&&/solo hay valor si la casa paga más/.test(h));
+ ok('las notas largas van en un «¿Cómo se lee y qué tan confiable es?» plegado y ya no sale ρ ni «Dixon-Coles con peso por antigüedad» en pantalla del Veredicto',/<details class="comoLee">/.test(h)&&/¿Cómo se lee y qué tan confiable es\?/.test(h)&&!/Modelo v4: Dixon-Coles con peso/.test(h));
+}
+
 sec('NBA: cierre de picks (ganador, hándicap, total, push)');
 {
  const nb=rd('nba.html'),a=nb.indexOf('function resolver(p,g){'),b=nb.indexOf('let VERIF'),X={};
