@@ -75,6 +75,10 @@ async function muestraFut(e){
   if(u) extra={lastId:u.id,lastWall:u.wallclock||null,lastClk:u.clock&&u.clock.displayValue,lastClkVal:u.clock&&u.clock.value,lastPer:u.period&&u.period.number,lastType:u.type&&u.type.text,lastXY:typeof u.fieldPositionX==='number',gol:!!u.scoringPlay,txt:(u.text||'').slice(0,60)};
  }
  rec({src:'core',dep:'fut',ev:e.id,nombre:e.nombre,count:total,status:a.status,ms:a.ms,hdr:a.hdr,nueva:!!extra.lastId,...extra});
+ // misma consulta pero con un parámetro único en cada pedido (salta la copia en caché)
+ const ab=await get(base+'?limit=1&_='+Date.now(),true); const totalB=ab.j&&ab.j.count||0; const kb='coreb'+e.id; let extraB={};
+ if(totalB&&totalB!==ult[kb]){ ult[kb]=totalB; const bb=await get(base+'?limit=25&page='+Math.max(1,Math.ceil(totalB/25))+'&_='+Date.now(),true); const itb=(bb.j&&bb.j.items)||[]; const ub=itb[itb.length-1]; if(ub) extraB={lastId:ub.id,lastWall:ub.wallclock||null,lastClk:ub.clock&&ub.clock.displayValue,lastClkVal:ub.clock&&ub.clock.value,lastType:ub.type&&ub.type.text,gol:!!ub.scoringPlay,txt:(ub.text||'').slice(0,60)}; }
+ rec({src:'core-bust',dep:'fut',ev:e.id,nombre:e.nombre,count:totalB,status:ab.status,ms:ab.ms,hdr:ab.hdr,nueva:!!extraB.lastId,...extraB});
  const s=await get(ESPN+'soccer/'+e.liga+'/summary?event='+e.id,true); const j=s.j||{}; const com=j.commentary||[], key=j.keyEvents||[];
  const lc=com[0]&&(com[0].sequence!=null)?com.reduce((m,c)=>Math.max(m,c.sequence||0),0):0; const comUlt=com.find(c=>(c.sequence||0)===lc)||{};
  const cc=((j.header&&j.header.competitions&&j.header.competitions[0])||{}).competitors||[];

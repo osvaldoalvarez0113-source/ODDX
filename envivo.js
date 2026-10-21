@@ -313,7 +313,9 @@ var CSS=[
  '.evPitch{position:relative}.evPitchTop,.evPitchBot{display:flex;justify-content:space-between;align-items:center;gap:8px;font:700 12px system-ui,-apple-system,sans-serif;color:var(--mut,#9db2c8);padding:4px 2px}',
  '.evPitchBot{align-items:flex-start}.evPitchTxt{flex:1;text-align:right;font-weight:500;line-height:1.35}',
  '.evPitchSvg{display:block;width:100%;height:auto;border-radius:10px}',
- '.evPt{fill:#0b0f14}.evPt.l{fill:#3a2a00}.evPt.v{fill:#00263a}',
+ '.evPt{fill:#0b0f14;stroke:rgba(255,255,255,.6);stroke-width:.22}.evPt.l{stroke:#fbbf24}.evPt.v{stroke:#38bdf8}',
+ '.evPoss{font:800 3px system-ui,-apple-system,sans-serif;paint-order:stroke;stroke:rgba(0,0,0,.6);stroke-width:.6px}',
+ '.evPitch.evPost .evPitchSvg{filter:blur(2px) brightness(.75)}.evPitch.evPost::after{content:"Partido finalizado";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);padding:9px 16px;border-radius:10px;background:rgba(0,0,0,.72);color:#fff;font:700 13px system-ui,-apple-system,sans-serif;pointer-events:none}',
  '.evPase{stroke:#fff;stroke-width:.55;stroke-linecap:round;opacity:0}',
  '.evAct{transition:transform .3s ease-out}.evAct circle{fill:#0b0f14;stroke:#fff;stroke-width:.4}.evAct.l circle{fill:#7a5a00}.evAct.v circle{fill:#0b5f85}',
  '.evAct text{fill:#fff;font:700 2.1px system-ui,-apple-system,sans-serif;paint-order:stroke;stroke:rgba(0,0,0,.55);stroke-width:.5px}.evAct .evAx{font-size:2.3px}',
@@ -413,7 +415,8 @@ function urlDetalle(g){
  var q=S.sinLang?'':'&lang=es&region=us';
  if(APP==='nba') return ESPN+'basketball/nba/summary?event='+g.id+q;
  if(APP==='fut') return ESPN+'soccer/'+g.slug+'/summary?event='+g.id+q;
- return MLBAPI+'v1.1/game/'+g.id+'/feed/live';
+ /* la API de MLB guarda cada respuesta 10 s en caché y hasta 30 s más «mientras se renueva»: sin este parámetro el dato puede llegar con ~40 s de edad. Un valor distinto en cada pedido salta esa copia. */
+ return MLBAPI+'v1.1/game/'+g.id+'/feed/live'+(g.state==='in'?'?_='+Date.now():'');
 }
 function detalleNba(g){
  return Promise.all([getJSON(NBACDN+'playbyplay/playbyplay_'+g.id+'.json'),getJSON(NBACDN+'boxscore/boxscore_'+g.id+'.json').catch(function(){ return null; })]).then(function(r){ return {src:'nba',pbp:r[0],box:r[1]}; });
@@ -529,6 +532,7 @@ function cabeceraEspn(j,g){
 /* ---------- fútbol ---------- */
 function renderFut(g){
  var j=S.det, H=cabeceraEspn(j,g), Hm=H.home, A=H.away, ev=futEventos(j), com=futComentarios(j);
+ ESTADO[g.key]=H.state;
  var nuevos=marcarNuevos('c'+g.key,com.map(function(c){ return c.id; }));
  var s=cabecera(g,H,Hm,A);
  var gl=ev.filter(function(e){ return e.sc; }), lh=gl.filter(function(e){ return e.tid===Hm.id; }), la=gl.filter(function(e){ return e.tid===A.id; });
@@ -701,8 +705,11 @@ function onClick(ev){
 var CORE='https://sports.core.api.espn.com/v2/sports/soccer/leagues/';
 var PIT={};                                   /* un tablero por juego: se queda en memoria aunque cambies de pestaña */
 var COL_L='#fbbf24', COL_V='#38bdf8';
+function esc0(s){ return String(s==null?'':s); }
 function refEq(r){ var m=/teams\/(\d+)/.exec(String(r||'')); return m?m[1]:''; }
 function nombreJug(t){ var m=/(?:^|\.\s+)([^.()]+?)\s+\(([^)]+)\)/.exec(String(t||'')); return m?m[1].trim():''; }
+function inicialNombre(n){ var w=String(n||'').trim().split(/\s+/).filter(Boolean); if(!w.length) return ''; return w.length===1?w[0]:w[0].charAt(0)+'. '+w.slice(1).join(' '); }
+var ESTADO={};                                /* estado real de cada partido según el detalle (la lista se refresca más lento) */
 function jugadaCancha(p,g){
  var part=p.participants&&p.participants[0], tid=refEq(p.team&&p.team.$ref);
  var o={id:String(p.id),tipo:(p.type&&p.type.text)||'',txt:p.text||p.shortText||'',clk:(p.clock&&p.clock.displayValue)||'',wall:p.wallclock?Date.parse(p.wallclock):0,
@@ -719,7 +726,7 @@ var PITCH_SVG='<svg viewBox="0 0 105 68" class="evPitchSvg" role="img" aria-labe
  '<g fill="#348a38"><rect x="0" width="8.75" height="68"/><rect x="17.5" width="8.75" height="68"/><rect x="35" width="8.75" height="68"/><rect x="52.5" width="8.75" height="68"/><rect x="70" width="8.75" height="68"/><rect x="87.5" width="8.75" height="68"/></g>'+
  '<g fill="none" stroke="rgba(255,255,255,.72)" stroke-width=".35"><rect x="1" y="1" width="103" height="66"/><line x1="52.5" y1="1" x2="52.5" y2="67"/><circle cx="52.5" cy="34" r="9.15"/>'+
  '<rect x="1" y="13.85" width="16.5" height="40.3"/><rect x="87.5" y="13.85" width="16.5" height="40.3"/><rect x="1" y="24.85" width="5.5" height="18.3"/><rect x="98.5" y="24.85" width="5.5" height="18.3"/></g>'+
- '<g class="evPts"></g><line class="evPase" x1="0" y1="0" x2="0" y2="0"/>'+
+  '<text class="evPoss" x="102.6" y="65.6" text-anchor="end"></text><g class="evPts"></g><line class="evPase" x1="0" y1="0" x2="0" y2="0"/>'+
  '<g class="evAct" style="transform:translate(52.5px,34px)"><circle r="3"/><text class="evAn" y="-4.4" text-anchor="middle"></text><text class="evAx" y="0.9" text-anchor="middle"></text></g>'+
  '<g class="evBola" style="transform:translate(52.5px,34px)"><circle r="1.25"/></g></svg>';
 function comprimir(P,d,min){ var n=P.cola.length; if(n>25) return Math.min(d,Math.max(min,260)); if(n>10) return Math.min(d,Math.max(min,600)); return d; }
@@ -732,7 +739,7 @@ function nuevaCancha(g){
  return P;
 }
 function dibujarPunto(P,xy,local){
- var c=doc.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',xy[0].toFixed(1)); c.setAttribute('cy',xy[1].toFixed(1)); c.setAttribute('r','.9'); c.setAttribute('class','evPt'+(local?' l':' v'));
+ var c=doc.createElementNS('http://www.w3.org/2000/svg','circle'); c.setAttribute('cx',xy[0].toFixed(1)); c.setAttribute('cy',xy[1].toFixed(1)); c.setAttribute('r','1.05'); c.setAttribute('class','evPt'+(local?' l':' v'));
  P.gPts.appendChild(c); P.ptsN++;
  while(P.gPts.childNodes.length>36) P.gPts.removeChild(P.gPts.firstChild);
  var n=P.gPts.childNodes.length; for(var i=0;i<n;i++) P.gPts.childNodes[i].style.opacity=(0.18+0.82*(i+1)/n).toFixed(2);
@@ -742,12 +749,13 @@ function mostrarJugada(P,o,rapido){
  $('.evPitchClk',P.el).textContent=o.clk?'⏱ '+o.clk:'';
  $('.evPitchEq',P.el).innerHTML='<b style="color:'+col+'">'+(o.local?'':'‹ ')+esc(o.local?g.home.ab:g.away.ab)+(o.local?' ›':'')+'</b>';
  $('.evPitchTxt',P.el).textContent=tr(o.txt).slice(0,110);
+ $('.evPoss',P.svg).textContent=o.local?esc0(g.home.ab)+' »':'« '+esc0(g.away.ab); $('.evPoss',P.svg).setAttribute('fill',col);
  P.el.classList.toggle('evGolPit',!!o.gol);
  if(!o.xy) return;
  var a=aCancha(o.xy,o.local), b=o.xy2?aCancha(o.xy2,o.local):a;
  dibujarPunto(P,a,o.local);
  P.act.style.transform='translate('+a[0].toFixed(1)+'px,'+a[1].toFixed(1)+'px)'; P.act.setAttribute('class','evAct '+(o.local?'l':'v'));
- $('.evAn',P.act).textContent=o.nom?o.nom.split(' ').slice(-1)[0]:''; $('.evAx',P.act).textContent=o.dorsal||'';
+ $('.evAn',P.act).textContent=inicialNombre(o.nom); $('.evAx',P.act).textContent=o.dorsal||'';
  var L=Math.sqrt(Math.pow(b[0]-a[0],2)+Math.pow(b[1]-a[1],2));
  P.line.setAttribute('x1',a[0].toFixed(1)); P.line.setAttribute('y1',a[1].toFixed(1)); P.line.setAttribute('x2',b[0].toFixed(1)); P.line.setAttribute('y2',b[1].toFixed(1));
  P.line.style.transition='none'; P.line.style.strokeDasharray=L.toFixed(1)+' '+L.toFixed(1); P.line.style.strokeDashoffset=rapido?'0':L.toFixed(1); P.line.style.opacity=L>0.5?'1':'0';
@@ -822,7 +830,7 @@ function montarCanchas(raiz){
  var hs=raiz.querySelectorAll('.evPitchHost');
  for(var i=0;i<hs.length;i++){
   var k=hs[i].getAttribute('data-k'), g=juegoPorClave(k); if(!g) continue;
-  var P=PIT[k]||(PIT[k]=nuevaCancha(g)); P.g=g;
+  var P=PIT[k]||(PIT[k]=nuevaCancha(g)); P.g=g; P.estado=ESTADO[k]||g.state; P.el.classList.toggle('evPost',P.estado==='post');
   hs[i].innerHTML=''; hs[i].appendChild(P.el);
   if(g.state==='pre'){ $('.evPitchTxt',P.el).textContent='El partido todavía no empieza.'; }
   iniciarCancha(P);
