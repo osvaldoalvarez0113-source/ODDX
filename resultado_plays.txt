@@ -1,0 +1,19 @@
+Hora de la sonda (UTC): 2026-10-21T07:08:45.022Z
+Juegos encontrados: 31 {"pre":17,"post":14}
+EN VIVO ahora: ninguno
+CORS (core API) access-control-allow-origin = *
+[uefa.champions] SLP @ FEN (post) total jugadas=1424 · última página=24 · con coordenada=22 · con destino=13 · con dorsal=23 · 143/31 ms
+   tipos: {"Pass":7,"Take On":1,"Shot Off Target":1,"Assists Shot":1,"Out":2,"Goal Kick":2,"Foul":2,"Free Kick":2,"Cross":1,"Aerial":1,"Ball touch":1,"Dispossessed":1,"Tackle":1,"End Regular Time":1}
+   última jugada:  | reloj 90'+3' | wallclock 2026-10-20T18:37:00Z | retraso vs ahora = 45107 s
+   ejemplo pase: {"texto":"Milan Skriniar (Fenerbahce) Pass at 90'+1'","x":37.7,"y":40.5,"x2":50.5,"y2":26.4,"dorsal":"37","wall":"2026-10-20T18:34:32Z","reloj":"90'+1'"}
+[mex.1] NCX @ GDL (post) total jugadas=1490 · última página=90 · con coordenada=88 · con destino=55 · con dorsal=87 · 23/52 ms
+   tipos: {"Foul":2,"Free Kick":2,"Pass":44,"Clear":6,"Interception":1,"Cross":4,"Ball touch":5,"Attempted tackle":4,"Shot On Target":1,"Assists Shot":1,"Save":2,"Corner Awarded":2,"Out":3,"Throw In":3,"Shot Blocked":1,"Take On":1,"Tackle":
+   última jugada: Second Half ends, Guadalajara 1, Necaxa 0. | reloj 90'+5' | wallclock 2026-10-21T02:05:18Z | retraso vs ahora = 18209 s
+   ejemplo pase: {"texto":"Daniel Leyva (Necaxa) Free Kick at 89'","x":56.6,"y":45.1,"x2":44.7,"y2":69.3,"dorsal":"6","wall":"2026-10-21T01:59:20Z","reloj":"89'"}
+[eng.2] POR @ WOL (post) total jugadas=1369 · última página=69 · con coordenada=66 · con destino=31 · con dorsal=67 · 26/53 ms
+   tipos: {"Clear":3,"Shot Off Target":1,"Out":7,"Goal Kick":2,"Aerial":3,"Pass":20,"Ball touch":5,"Throw In":4,"Take On":3,"Tackle":4,"Attempted tackle":1,"Dispossessed":2,"Blocked Pass":3,"Interception":1,"Shot On Target":1,"Save":1,"Corn
+   última jugada: Second Half ends, Wolverhampton Wanderers 1, Portsmouth 1. | reloj 90'+7' | wallclock 2026-10-20T20:40:49Z | retraso vs ahora = 37678 s
+   ejemplo pase: {"texto":"Attempt missed. Tommy Doyle (Wolverhampton Wanderers) right footed shot from outside the box is high and wide to the left.","x":82.4,"y":55.6,"x2":100,"y2":56.1,"dorsal":"20","wall":"2026-10-20T20:34:34Z","reloj":"90'+1'"}
+CORS (site API) access-control-allow-origin = *
+Orden: página 1 ids = 53975920@2026-10-20T16:45:54Z , 53975921@2026-10-20T16:45:54Z , 53975922@2026-10-20T16:46:04Z
+Página 9999 → HTTP 200 items 0
