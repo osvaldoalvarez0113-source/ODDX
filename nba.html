@@ -159,7 +159,6 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 @keyframes ovaFlota{0%,100%{transform:translateY(-2px)}50%{transform:translateY(3px)}}
 @keyframes ovaLate{0%,100%{transform:scale(1);opacity:.75}50%{transform:scale(1.09);opacity:.35}}
 @media (prefers-reduced-motion:reduce){.vacio .vico svg,.vacio .anillo{animation:none}}
-.combo select{width:100%;margin-bottom:8px;background:var(--bg1);border:1px solid var(--line2);color:var(--txt);border-radius:8px;padding:9px;font-size:13px;font-family:var(--body)}
 </style>
 </head>
 <body>
@@ -206,7 +205,6 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
   <div id="respMsg" class="nota"></div>
  </div>
 
- <div class="vista" id="vComb"><div id="comboJuego" class="combo"></div><h3>Combinada entre juegos</h3><div id="comb"></div></div>
 </main>
 
 <nav class="tabbar">
@@ -215,7 +213,6 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
  <button class="tbar-btn" data-v="vRank"><span class="ic">📊</span><span class="lb">Ratings</span></button>
  <button class="tbar-btn" data-v="vBt"><span class="ic">📈</span><span class="lb">Backtest</span></button>
  <button class="tbar-btn" data-v="vReg"><span class="ic">📒</span><span class="lb">Registro</span></button>
- <button class="tbar-btn" data-v="vComb"><span class="ic">🎟️</span><span class="lb">Combina</span></button>
 </nav>
 
 <div class="ovaSheet" id="ovaSheet"><div class="card"><h2>Apariencia</h2><p>Toca un tema para verlo al instante. Se guarda y lo comparten MLB y fútbol.</p><div id="skinBox"></div></div></div>
@@ -740,12 +737,11 @@ function valorHtml(g,mercado,clave,filas,out){
     const imp=impProb(f.odd), ref=completo?imp/suma:imp, diff=(f.prob-ref)*100, val=diff>=3;
     g._rank[mercado].push({mercado:mercado,sel:f.sel,side:f.side,linea:f.linea,odd:f.odd,prob:f.prob,imp:imp,ref:ref,diff:diff,ev:f.prob/imp-1,conf:conf});
     const etq=val?`<span class="${conf===false?'no':'si'}">valor +${diff.toFixed(1)}${conf===false?' (no confiable)':''}</span>`:`<span class="no">sin valor ${diff.toFixed(1)}</span>`;
-    html+=`<div class="filaCuota"><span class="txt">${esc(f.sel)}: modelo ${pct1(f.prob)} vs ${completo?'mercado sin margen ':'cuota '}${pct1(ref)} — ${etq}</span><button class="btnChico" data-g="${i}">💾</button><button class="btnChico" data-c="${i}">🔗</button></div>`;
+    html+=`<div class="filaCuota"><span class="txt">${esc(f.sel)}: modelo ${pct1(f.prob)} vs ${completo?'mercado sin margen ':'cuota '}${pct1(ref)} — ${etq}</span><button class="btnChico" data-g="${i}">💾</button></div>`;
   });
   html+=completo?`<div class="nota" style="margin-top:6px">Margen de la casa ≈ ${((suma-1)*100).toFixed(1)}%; la comparación ya lo descuenta.</div>`:(filas.length>1?'<div class="nota" style="margin-top:6px">Mete las dos cuotas para descontar el margen de la casa (si no, el "valor" sale inflado).</div>':'');
   out.innerHTML=html;
   out.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{ const f=con[+b.dataset.g]; guardarPick({hId:g.h,aId:g.a,hN:T(g.h).n,aN:T(g.a).n,ts:g.ts,mercado:mercado,side:f.side,linea:f.linea,seleccion:f.sel,cuota:f.odd,prob:f.prob}); b.textContent='✓'; b.disabled=true; });
-  out.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{ const f=con[+b.dataset.c]; agregarComb({txt:T(g.a).ab+' @ '+T(g.h).ab+': '+f.sel,prob:f.prob}); b.textContent='✓'; });
   const cuerpo=out.closest('.body'); if(cuerpo) pintarRankNba(cuerpo,g);
 }
 /* Ranking del juego: junta lo que ya calculaste en Moneyline, Hándicap y Total y lo ordena por
@@ -765,12 +761,11 @@ function pintarRankNba(body,g){
   lista.forEach((f,i)=>{
     const ok=pasa(f), n=ok?buenos.indexOf(f):-1;
     const etq=ok?'valor':(f.conf===false&&f.diff>=3?'no confiable':'sin valor');
-    h+=`<div class="pick${ok?'':' no'}"><div class="filaCuota"><div class="txt"><b>${ok?(medal[n]||(n+1)+'.'):'·'} ${esc(f.sel)} ${fa(Math.round(+f.odd))}</b>${etq} · modelo ${pct1(f.prob)} contra ${pct1(f.ref)} del mercado · ${(f.diff>=0?'+':'')+f.diff.toFixed(1)} puntos · EV ${(f.ev>=0?'+':'')+(f.ev*100).toFixed(1)}% por dólar</div><button class="btnChico" data-rg="${i}">💾</button><button class="btnChico" data-rc="${i}">🔗</button></div></div>`;
+    h+=`<div class="pick${ok?'':' no'}"><div class="filaCuota"><div class="txt"><b>${ok?(medal[n]||(n+1)+'.'):'·'} ${esc(f.sel)} ${fa(Math.round(+f.odd))}</b>${etq} · modelo ${pct1(f.prob)} contra ${pct1(f.ref)} del mercado · ${(f.diff>=0?'+':'')+f.diff.toFixed(1)} puntos · EV ${(f.ev>=0?'+':'')+(f.ev*100).toFixed(1)}% por dólar</div><button class="btnChico" data-rg="${i}">💾</button></div></div>`;
   });
   h+='<div class="nota">Ordenado por puntos de ventaja, no por EV: el EV por dólar sale más grande con cuotas largas aunque la ventaja sea la misma. En 2,486 juegos medidos la línea del mercado acertó más que el modelo, así que toma estos puntos como pista y no como garantía.</div>';
   box.innerHTML=h;
   box.querySelectorAll('[data-rg]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const f=lista[+b.dataset.rg]; guardarPick({hId:g.h,aId:g.a,hN:T(g.h).n,aN:T(g.a).n,ts:g.ts,mercado:f.mercado,side:f.side,linea:f.linea,seleccion:f.sel,cuota:f.odd,prob:f.prob}); b.textContent='✓'; b.disabled=true; });
-  box.querySelectorAll('[data-rc]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const f=lista[+b.dataset.rc]; agregarComb({txt:T(g.a).ab+' @ '+T(g.h).ab+': '+f.sel,prob:f.prob}); b.textContent='✓'; });
 }
 
 // ---------- ranking ----------
@@ -889,23 +884,6 @@ function pintarRegistro(){
    <div class="nota">Récord y ganancia neta a stake plano de 1 unidad por pick. Con líneas enteras puede haber "push" (se devuelve, cuenta 0).</div>`;
   if(typeof OVACLV!=='undefined') OVACLV.ligar(cont,regGet,regSet,pintarRegistro);
 }
-// ---------- combinada ----------
-const cbGet=()=>LS.get('ova_nba_comb_v1')||[];
-const cbSet=a=>LS.set('ova_nba_comb_v1',a);
-function agregarComb(l){ const a=cbGet(); l.id=Date.now()+'_'+Math.random().toString(36).slice(2); a.push(l); cbSet(a); pintarComb(); }
-function pintarComb(){
-  const cont=$('comb'), arr=cbGet();
-  if(!arr.length){ cont.innerHTML='<div class="estado">Agrega selecciones con el botón 🔗 desde la pestaña Cuotas de cualquier partido.</div>'; return; }
-  const p=arr.reduce((a,l)=>a*l.prob,1), cj=cuotaJusta(p);
-  cont.innerHTML=`<div class="kpi"><div><b>${pct1(p)}</b><small>Prob. combinada</small></div><div><b>${cj===null?'—':(cj>0?'+':'')+cj}</b><small>Cuota justa</small></div><div><b>${arr.length}</b><small>Selecciones</small></div></div>
-   <div class="lineas" style="margin:10px 0">${arr.map(l=>`<div class="linea"><span>${esc(l.txt)} (${pct1(l.prob)})</span><button data-id="${l.id}" class="quitar" style="background:transparent;border:0;color:var(--bad);font-size:16px;cursor:pointer">✕</button></div>`).join('')}</div>
-   <div class="cuotasbox"><label>Cuota que te ofrece la casa (americana)</label><input type="number" id="oddComb" placeholder="+450"><button id="btnValComb" class="btnAncho">Ver si hay valor</button><div id="outComb" class="veredictoCuota"></div></div>
-   <div class="nota">Multiplicar probabilidades asume que los juegos son independientes, y una combinada multiplica el margen de la casa en cada pata. Con modelos simples casi nunca hay ventaja matemática aquí.</div>
-   <button id="btnVaciar" class="btnAncho sec">Vaciar combinada</button>`;
-  cont.querySelectorAll('.quitar').forEach(b=>b.onclick=()=>{ cbSet(cbGet().filter(l=>l.id!==b.dataset.id)); pintarComb(); });
-  $('btnVaciar').onclick=()=>{ cbSet([]); pintarComb(); };
-  $('btnValComb').onclick=()=>{ const imp=impProb($('oddComb').value), o=$('outComb'); if(imp===null){ o.textContent='Mete una cuota válida.'; return; } const d=(p-imp)*100; o.innerHTML=`Modelo: ${pct1(p)} vs cuota implica ${pct1(imp)} — `+(d>=3?`<span class="si">hay valor (+${d.toFixed(1)} pts)</span>`:`<span class="no">sin valor (${d.toFixed(1)} pts)</span>`); };
-}
 // ---------- diagnóstico ----------
 function armarDiag(){
   const L=[]; L.push('App '+VERSION+' · '+new Date().toLocaleString());
@@ -972,14 +950,13 @@ document.querySelectorAll('.tabbar .tbar-btn').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tabbar .tbar-btn').forEach(x=>x.classList.remove('on')); b.classList.add('on');
   document.querySelectorAll('main > .vista').forEach(v=>v.classList.remove('on')); $(b.dataset.v).classList.add('on');
   if(b.dataset.v==='vReg'){ pintarRegistro(); verificarRegistro(); }
-  if(b.dataset.v==='vComb'){ pintarComb(); if(typeof montarCombo==='function') montarCombo(); }
   if(b.dataset.v==='vRank') pintarRank();
   if(b.dataset.v==='vAlgane') pintarAlGane();
 });
 $('btnBtPas').onclick=btPasada; $('btnBtAct').onclick=btActual; $('btnCal').onclick=calibrar; $('btnVerif').onclick=verificarRegistro;
 $('btnDiag').onclick=()=>{ const el=$('diagOut'); if(el.style.display==='block') el.style.display='none'; else { el.textContent=armarDiag(); el.style.display='block'; } };
 $('btnResp').onclick=()=>{
-  const txt=JSON.stringify({app:'ova-nba',v:1,fecha:new Date().toISOString(),registro:regGet(),combinada:cbGet(),params:PARAMS.calibrado?{kM:PARAMS.kM,kT:PARAMS.kT,carry:PARAMS.carry,H:PARAMS.H,R:PARAMS.R}:null});
+  const txt=JSON.stringify({app:'ova-nba',v:1,fecha:new Date().toISOString(),registro:regGet(),params:PARAMS.calibrado?{kM:PARAMS.kM,kT:PARAMS.kT,carry:PARAMS.carry,H:PARAMS.H,R:PARAMS.R}:null});
   $('respTxt').value=txt; $('respMsg').textContent='Respaldo generado ('+regGet().length+' picks). Si no se copió solo, mantén presionado el texto, "Seleccionar todo" y "Copiar".';
   try{ navigator.clipboard.writeText(txt).then(()=>{ $('respMsg').textContent='Respaldo copiado ('+regGet().length+' picks). Pégalo en Notas.'; },()=>{}); }catch(e){}
 };
@@ -989,7 +966,6 @@ $('btnRest').onclick=()=>{
     const d=JSON.parse($('respTxt').value); if(!d||d.app!=='ova-nba') throw new Error('ese texto no es un respaldo de esta app');
     const reg=regGet(), ids={}; reg.forEach(p=>ids[p.id]=1); let n=0;
     (d.registro||[]).forEach(p=>{ if(p&&p.id&&!ids[p.id]){ reg.push(p); ids[p.id]=1; n++; } }); regSet(reg);
-    const cb=cbGet(), cid={}; cb.forEach(l=>cid[l.id]=1); (d.combinada||[]).forEach(l=>{ if(l&&l.id&&!cid[l.id]){ cb.push(l); cid[l.id]=1; } }); cbSet(cb);
     if(d.params&&isFinite(d.params.kM)){ LS.set('ova_nba_params_v1',d.params); PARAMS=Object.assign({},PDEF,d.params,{calibrado:true}); if(GAMES.length) recalc(); }
     m.textContent='Restaurado: '+n+' picks nuevos (los que ya estaban no se duplican).'; pintarRegistro();
   }catch(e){ m.textContent='No se pudo restaurar: '+e.message; }
@@ -1047,116 +1023,6 @@ iniciar();
   if(window.MutationObserver) new MutationObserver(()=>{ if(pend) return; pend=true; requestAnimationFrame(()=>{ pend=false; procesar(); }); }).observe(document.body,{childList:true,subtree:true});
   procesar();
  }catch(e){}
-})();
-
-/* ===== COMBO DEL MISMO JUEGO: probabilidad conjunta con el margen y el total del modelo =====
-   Margen y total se tratan como independientes (en la NBA su correlación es casi cero); los puntos de
-   cada equipo salen de los dos: local = (total + margen)/2, visita = (total − margen)/2. */
-(function(){
- const MK=[['','— sin usar —'],['gan','Ganador'],['spr','Hándicap'],['tot','Total del juego'],['ttL','Puntos de %L'],['ttV','Puntos de %V']];
- const opt=(v,t,sel)=>`<option value="${v}"${sel?' selected':''}>${t}</option>`;
- function legHtml(i){
-  return `<div class="cuotasbox" data-i="${i}"><label>Pata ${i+1}${i<2?'':' (opcional)'}</label>
-   <select class="cm"></select><select class="cs"></select>
-   <input type="number" step="0.5" class="cl" placeholder="línea (ej. 224.5 ó −5.5)" style="display:none"></div>`;
- }
- function sideOpts(mk,n){
-  if(mk==='gan') return [['H',n.h+' gana'],['A',n.a+' gana']];
-  if(mk==='spr') return [['H',n.h+' cubre'],['A',n.a+' cubre']];
-  if(mk==='tot'||mk==='ttL'||mk==='ttV') return [['o','Más de'],['u','Menos de']];
-  return [];
- }
- function sides(L,n){
-  const mk=L.querySelector('.cm').value, cs=L.querySelector('.cs'), cur=cs.value, os=sideOpts(mk,n);
-  cs.innerHTML=os.map((o,k)=>opt(o[0],o[1],o[0]===cur||(!cur&&k===0))).join('');
-  cs.style.display=os.length?'':'none';
-  L.querySelector('.cl').style.display=(mk==='spr'||mk==='tot'||mk==='ttL'||mk==='ttV')?'':'none';
-  L.querySelector('.cl').placeholder=mk==='spr'?'línea del local (ej. −5.5)':'línea (ej. 224.5)';
- }
- function relabel(box,n){
-  box.querySelectorAll('.cuotasbox[data-i] .cm').forEach(cm=>{
-   const cur=cm.value;
-   cm.innerHTML=MK.map(m=>opt(m[0],m[1].replace('%L',n.h).replace('%V',n.a),m[0]===cur)).join('');
-   sides(cm.closest('.cuotasbox'),n);
-  });
- }
- function legsFrom(box){
-  const legs=[]; let err=null;
-  box.querySelectorAll('.cuotasbox[data-i]').forEach(L=>{
-   const mk=L.querySelector('.cm').value; if(!mk) return;
-   const sd=L.querySelector('.cs').value, lv=parseFloat(L.querySelector('.cl').value);
-   if(mk==='gan'){ legs.push({k:'gan',s:sd}); return; }
-   if(!isFinite(lv)){ err='Falta la línea de una pata.'; return; }
-   legs.push({k:mk,s:sd,L:lv});
-  });
-  if(!err&&legs.filter(l=>l.k==='gan').length>1) err='Solo puede haber un ganador por combo.';
-  if(!err&&legs.length<2) err='Escoge al menos 2 patas para armar el combo.';
-  return {legs,err};
- }
- function cumple(l,m,t){
-  const h=(t+m)/2, a=(t-m)/2;
-  if(l.k==='gan') return l.s==='H'?m>0:m<0;
-  if(l.k==='spr') return l.s==='H'?(m+l.L>0):(m+l.L<0);
-  if(l.k==='tot') return l.s==='o'?t>l.L:t<l.L;
-  if(l.k==='ttL') return l.s==='o'?h>l.L:h<l.L;
-  return l.s==='o'?a>l.L:a<l.L;
- }
- function conjunta(pr,legs){
-  let W=0,F=0;
-  const t0=Math.round(pr.pt-4.5*pr.sT), t1=Math.round(pr.pt+4.5*pr.sT);
-  for(let m=-45;m<=45;m++){
-   if(m===0) continue;
-   const wm=Phi((m+0.5-pr.pm)/pr.sM)-Phi((m-0.5-pr.pm)/pr.sM); if(wm<1e-7) continue;
-   for(let t=t0;t<=t1;t++){
-    if(((t+m)&1)!==0) continue;
-    const w=wm*(Phi((t+0.5-pr.pt)/pr.sT)-Phi((t-0.5-pr.pt)/pr.sT)); if(w<1e-10) continue;
-    W+=w; if(legs.every(l=>cumple(l,m,t))) F+=w;
-   }
-  }
-  return W>0?F/W:0;
- }
- function texto(l,n){
-  if(l.k==='gan') return (l.s==='H'?n.h:n.a)+' gana';
-  if(l.k==='spr') return l.s==='H'?n.h+' '+fmtL(l.L):n.a+' '+fmtL(-l.L);
-  const nom=l.k==='tot'?'Total':(l.k==='ttL'?n.h:n.a);
-  return nom+' '+(l.s==='o'?'más de':'menos de')+' '+l.L;
- }
- function juego(box){ return PEND[+box.querySelector('#cmb_juego').value]; }
- function nombres(g){ return {h:T(g.h).ab,a:T(g.a).ab}; }
- function calcular(box){
-  const out=box.querySelector('#cmb_out'), g=juego(box);
-  if(!g){ out.innerHTML='<div class="aviso">No hay juego seleccionado.</div>'; return; }
-  const lg=legsFrom(box); if(lg.err){ out.innerHTML='<div class="aviso">'+lg.err+'</div>'; return; }
-  const pr=prediccion(g), n=nombres(g);
-  const pj=conjunta(pr,lg.legs); let pind=1; lg.legs.forEach(l=>{ pind*=conjunta(pr,[l]); });
-  const stake=parseFloat(box.querySelector('#cmb_stake').value), pay=parseFloat(box.querySelector('#cmb_pay').value);
-  const hay=isFinite(stake)&&stake>0&&isFinite(pay)&&pay>stake, be=hay?stake/pay:null;
-  let h=`<div class="kpi"><div><b>${pct1(pj)}</b><small>Modelo, patas relacionadas</small></div><div><b>${pct1(pind)}</b><small>Multiplicando por separado</small></div><div><b>${hay?pct1(be):'—'}</b><small>${hay?'Equilibrio del pago':'Escribe cuánto te pagan'}</small></div></div>`;
-  if(hay){
-   const e=(pj-be)*100;
-   if(e<=0) h+=`<div class="pick no"><b>Sin valor</b>Con ese pago hace falta ${pct1(be)} y el modelo da ${pct1(pj)}.</div>`;
-   else if(e<8) h+=`<div class="pick no"><b>Dentro del ruido</b>+${e.toFixed(1)} puntos, pero un combo pide más margen para confiar: el modelo solo le gana al promedio de la liga, no a la línea del mercado.</div>`;
-   else h+=`<div class="pick"><b>Valor +${e.toFixed(1)} puntos</b>Modelo ${pct1(pj)} contra equilibrio ${pct1(be)}.</div>`;
-  }
-  h+=`<div class="nota">Cuota justa del combo: ${amTxt(pj)}. Patas: ${lg.legs.map(l=>texto(l,n)).join(' · ')}.</div>
-   <div class="nota">Sale de la misma distribución de margen y total del Veredicto. Se asume margen y total independientes; los puntos de cada equipo salen de los dos. No se guarda en el registro: es solo calculadora.</div>`;
-  out.innerHTML=h;
- }
- window.montarCombo=function(){
-  const box=$('comboJuego'); if(!box) return;
-  if(!box.dataset.listo){
-   box.innerHTML=`<h3>Combo del mismo juego</h3><div class="cuotasbox"><label>Partido</label><select id="cmb_juego"></select></div>`+legHtml(0)+legHtml(1)+legHtml(2)+
-    `<div class="cuotasbox"><label>Apuestas ($)</label><input type="number" id="cmb_stake" value="10"><label style="margin-top:8px">Te pagan ($)</label><input type="number" id="cmb_pay" placeholder="ej. 18.5"></div>
-     <button class="btnAncho" id="cmb_go">Calcular combo</button><div id="cmb_out"></div>`;
-   box.querySelectorAll('.cuotasbox[data-i] .cm').forEach(cm=>cm.addEventListener('change',()=>{ const g=juego(box); sides(cm.closest('.cuotasbox'),g?nombres(g):{h:'Local',a:'Visita'}); }));
-   box.querySelector('#cmb_juego').addEventListener('change',()=>{ const g=juego(box); if(g) relabel(box,nombres(g)); });
-   box.querySelector('#cmb_go').addEventListener('click',()=>calcular(box));
-   box.dataset.listo='1';
-  }
-  const sel=box.querySelector('#cmb_juego'), prev=sel.value;
-  sel.innerHTML=PEND.length?PEND.map((g,i)=>`<option value="${i}"${String(i)===prev?' selected':''}>${esc(T(g.a).ab)} @ ${esc(T(g.h).ab)} · ${esc(etiquetaDia(g.ts))}</option>`).join(''):'<option value="">Sin juegos próximos</option>';
-  const g=PEND[+sel.value]; if(g) relabel(box,nombres(g));
- };
 })();
 </script>
 <script src="banca.js"></script>

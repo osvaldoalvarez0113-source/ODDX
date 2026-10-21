@@ -5,7 +5,7 @@
    APLICAR_ARRIBA = true   -> el Veredicto muestra los numeros del servidor (como estaba).
    APLICAR_ARRIBA = false  -> el Veredicto queda con el calculo propio de OVA y el servidor solo sale en la caja de comparacion.
 
-   OJO: el ranking de valor, «Guardar», «Al gane» y el combo SIEMPRE usan el calculo propio de OVA (index.html), nunca el del servidor.
+   OJO: el ranking de valor, «Guardar», «Al gane» SIEMPRE usan el calculo propio de OVA (index.html), nunca el del servidor.
    Si los dos numeros difieren, lo que ves arriba y lo que se guarda en Mis picks no son el mismo. Por eso la caja avisa la diferencia. */
 (function(){
 try{
@@ -126,7 +126,7 @@ try{
     var d = Math.abs(c.pH - j.home.chance);
     var col = d >= AVISO_DIF ? '#FBBF24' : '#9DB2C8';
     return '<br><span style="color:'+col+'">OVA propio: '+c.nomA+' <b>'+c.pA.toFixed(1)+'%</b> · '+c.nomH+' <b>'+c.pH.toFixed(1)+'%</b>'+
-      ' (difiere '+d.toFixed(1)+' pts del servidor). «Guardar», «Al gane» y el combo usan el número propio de OVA.</span>';
+      ' (difiere '+d.toFixed(1)+' pts del servidor). «Guardar», «Al gane» usan el número propio de OVA.</span>';
   }
 
   /* Una línea: lo que dice el servidor y si coincide con OVA. Al tocar se despliega el detalle. */

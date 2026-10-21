@@ -703,24 +703,6 @@ html[data-app=fut] .pane .ovaHero ~ .bar{display:none}
 .ovaApar h2{font-size:19px;margin:0 0 2px;font-weight:600;font-family:var(--cond)}
 .ovaApar p{margin:0;font-size:12.5px;color:var(--mut)}
 
-/* ---------- 4. pantalla Combo (MLB) ---------- */
-.ovaCombo h2{font-size:19px;margin:4px 0 4px;font-weight:600;font-family:var(--cond)}
-.ovaCombo .leg{background:var(--bg2);border-radius:var(--r);padding:10px;margin:8px 0;display:grid;
- grid-template-columns:1fr 1fr;gap:7px}
-.ovaCombo .leg .t{grid-column:1/-1;font-size:11.5px;color:var(--mut);font-weight:600}
-.ovaCombo .leg select,.ovaCombo .leg input{width:100%}
-.ovaCombo .pay{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
-.ovaCombo .pay label{display:block;font-size:12px;color:var(--mut);margin-bottom:3px}
-.ovaCombo .pay input{width:100%}
-.ovaCombo .res{margin-top:12px}
-.ovaCombo .big{font-family:var(--cond);font-size:36px;font-weight:800;line-height:1;color:var(--hot);
- font-variant-numeric:tabular-nums}
-.ovaCombo .cmpg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
-.ovaCombo .cmpg div{background:var(--bg2);border-radius:var(--r);padding:10px 8px;text-align:center}
-.ovaCombo .cmpg b{display:block;font-family:var(--cond);font-size:21px;font-weight:800;font-variant-numeric:tabular-nums}
-.ovaCombo .cmpg span{display:block;font-size:10.5px;color:var(--mut);margin-top:2px;line-height:1.3}
-.ovaCombo .cmpg .good b{color:var(--good)}
-.ovaCombo .cmpg .bad b{color:var(--bad)}
 .ovaDO table{margin-top:4px}
 
 /* ============ TEMA: ORO NEGRO ============ */
@@ -1046,7 +1028,6 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
         <option value="mix" selected>Mezcla 70 temporada / 30 &uacute;ltimas 5</option>
         <option value="season">Solo temporada</option>
         <option value="last5">Solo &uacute;ltimas 5</option>
-        <option value="fip">FIP de temporada</option>
       </select>
     </div>
 
@@ -1083,10 +1064,8 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
 
 <div class="gane" id="gane_zona" style="display:none">
   <h2><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5.2v1.6A3.2 3.2 0 0 0 8.4 11M16 6h2.8v1.6A3.2 3.2 0 0 1 15.6 11M10.4 17h3.2M9 20h6"/></svg>Al gane</h2>
-  <p class="flag">Todos los juegos del d&iacute;a ordenados por probabilidad pura, sin mirar cuota.
-  Marca dos o tres para ver qu&eacute; tendr&iacute;a que pagarte una combinada.</p>
+  <p class="flag">Todos los juegos del d&iacute;a ordenados por probabilidad pura, sin mirar cuota.</p>
   <div id="algane"></div>
-  <div id="combibox"></div>
 </div>
 
 <div class="manual">
@@ -1244,12 +1223,7 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
   cada abridor 40 innings de promedio de liga antes de creerle. Ese novato entra al cálculo con ~3.77 y
   el veterano con ~4.26, así que la diferencia real baja de 1.76 carreras a 0.49. Lo que faltaba no era
   el ajuste, era <b>verlo</b>: el aviso vivía escondido en la pestaña de Números y solo salía si el
-  movimiento pasaba de 0.75 carreras. Ahora sale en el Veredicto, con los innings, el ERA crudo, el que
-  de verdad entra, y los <b>hits por 9 y el WHIP</b>, que es justo lo que ni el ERA ni el FIP te dicen:
-  el FIP ignora los hits a propósito, así que un abridor al que le conectan 9 hits en 10 innings y aun
-  así muestra 2.54 se ve limpio en las dos métricas, cuando lo que pasa es que está dejando gente en
-  base y librándola. Los hits <b>no entran al cálculo</b>, solo se enseñan: meterlos con un peso
-  inventado sería repetir el error del multiplicador ×13.
+  movimiento pasaba de 0.75 carreras. Ahora sale en el Veredicto, con los innings, el ERA crudo y el que de verdad entra.
   El otro lado del problema es asimétrico y conviene tenerlo claro: al abridor con 100 innings no se le
   mueve nada, así que en esos juegos buena parte de la ventaja que ves es la distancia entre lo que
   sabemos de uno y lo que no sabemos del otro.
@@ -1278,10 +1252,7 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
   operación, 0.07 × precio × (1 − precio) por contrato, que sobre lo que arriesgas sale al
   0.07 × (1 − precio). Esa comisión se resta entera del EV y del Kelly porque se paga ganes o pierdas.
 
-  El <b>modo Al gane</b> ordena todos los juegos del día por probabilidad pura, ignorando la cuota. La
-  calculadora de combinada multiplica las probabilidades y te dice la cuota justa. Léela con cuidado: en
-  el backtest de 2025, 863 pares de picks de 60%+ ganaron los dos el 40.7% de las veces, contra el 39.1%
-  que da simplemente multiplicar. O sea que combinar no aporta nada extra.
+  El <b>modo Al gane</b> ordena todos los juegos del día por probabilidad pura, ignorando la cuota. Las combinadas ya no están en la app: el backtest de 2025 mostró que juntar picks no aporta nada extra.
 
   Al guardar un pick se marca si salió del modelo o de tu propio criterio, y el registro los separa
   en dos grupos con su CLV y sus unidades. Esa es la única medición de toda la app que no mide al
@@ -1842,7 +1813,6 @@ function temporada(id,year){
     var ip=ipToNum(st.inningsPitched);
     var hr=+(st.homeRuns||0), bb=+(st.baseOnBalls||0), hbp=+(st.hitByPitch||0), so=+(st.strikeOuts||0);
     var gs=+(st.gamesStarted||0);
-    var hh=+(st.hits||0);
     var era=(st.era!=null&&st.era!=='-.--')?parseFloat(st.era):null;
     /* Los hits NO entran al calculo, solo se enseñan. El FIP los ignora a
        proposito porque el BABIP es ruidoso, pero eso deja un hueco: un abridor
@@ -1854,8 +1824,6 @@ function temporada(id,year){
       w:+(st.wins||0), l:+(st.losses||0),
       fip: ip>=10 ? (13*hr+3*(bb+hbp)-2*so)/ip+3.15 : null,
       k9:  ip>0 ? so*9/ip : null,
-      h9:  ip>0 ? hh*9/ip : null,
-      whip:ip>0 ? (hh+bb)/ip : null,
       ipx: gs>0 ? ip/gs : null};
     cache.sea[k]=out; return out;
   }).catch(function(){
@@ -2183,18 +2151,15 @@ function eraUsado(se,l5){
     var L=(LIGA_ERA!=null?LIGA_ERA:4.10);
     anc=(se.fip*se.ip + L*30)/(se.ip+30);
   }
-  var s=reg(se.era,se.ip,PRIOR_ERA,anc), l=reg(l5.era,l5.ip,PRIOR_ERA*0.625,anc),
-      f=reg(se.fip,se.ip,PRIOR_ERA);
+  var s=reg(se.era,se.ip,PRIOR_ERA,anc), l=reg(l5.era,l5.ip,PRIOR_ERA*0.625,anc);
   if(MODO==='season') return s;
   if(MODO==='last5')  return l;
-  if(MODO==='fip')    return f!=null?f:s;
   if(s!=null&&l!=null) return s*0.70+l*0.30;
   return s!=null?s:l;
 }
 function eraCrudo(se,l5){
   if(MODO==='season') return se.era;
   if(MODO==='last5')  return l5.era;
-  if(MODO==='fip')    return se.fip!=null?se.fip:se.era;
   if(se.era!=null&&l5.era!=null) return se.era*0.70+l5.era*0.30;
   return se.era!=null?se.era:l5.era;
 }
@@ -2204,14 +2169,7 @@ function rgUsado(o,o14){
   return o.rg*0.70+o14.rg*0.30;
 }
 function etiquetaModo(){
-  return {mix:'mezcla 70/30',season:'temporada',last5:'últimas 5',fip:'FIP'}[MODO];
-}
-function suerte(nombre,se){
-  if(se.era==null||se.fip==null) return '';
-  var d=se.fip-se.era;
-  if(d>=0.50) return '<div class="flag"><b>'+esc(nombre)+'</b>: FIP '+num(se.fip)+' contra ERA '+num(se.era)+'. Está pitcheando peor de lo que dice su ERA — le ha ayudado la defensa o la suerte, y eso se corrige.</div>';
-  if(d<=-0.50) return '<div class="flag"><b>'+esc(nombre)+'</b>: FIP '+num(se.fip)+' contra ERA '+num(se.era)+'. Está pitcheando mejor de lo que dice su ERA.</div>';
-  return '';
+  return {mix:'mezcla 70/30',season:'temporada',last5:'últimas 5'}[MODO];
 }
 function manoTxt(m){ return m==='L'?'zurdo':m==='R'?'derecho':'—'; }
 
@@ -3121,7 +3079,7 @@ function avisoMuestra(nA,seA,cA,uA,nH,seH,cH,uH){
     var se=t[1], cr=t[2], us=t[3];
     if(!se||cr==null||us==null||!isFinite(cr)||!isFinite(us)) return;
     if(se.ip>=30) return;
-    f.push({n:t[0], ip:se.ip, gs:se.gs, cr:cr, us:us, h9:se.h9, whip:se.whip});
+    f.push({n:t[0], ip:se.ip, gs:se.gs, cr:cr, us:us});
   });
   if(!f.length) return '';
   var o='<div class="aviso"><b>⚠️ Muestra corta en el montículo</b><br>';
@@ -3129,12 +3087,6 @@ function avisoMuestra(nA,seA,cA,uA,nH,seH,cH,uH){
     o+='<b>'+esc(p.n)+'</b> lleva '+num(p.ip,1)+' innings'+(p.gs?' en '+p.gs+' aperturas':'')+
        '. Su ERA dice '+num(p.cr)+', pero al cálculo entra con <b>'+num(p.us)+'</b>: se jaló hacia el '+
        'promedio de la liga porque con esos innings ese número todavía no significa nada.';
-    if(p.h9!=null&&isFinite(p.h9)){
-      o+=' Le conectan '+num(p.h9,1)+' hits por 9'+
-         (p.whip!=null&&isFinite(p.whip)?' y su WHIP es '+num(p.whip):'')+'.';
-      if(p.h9>=9.5) o+=' <b>Le están pegando.</b> Lo que lo salva son los corredores que deja en base, '+
-         'y eso no se sostiene: el ERA le va a subir.';
-    }
     o+='<br>';
   });
   o+='Y ojo con la otra mitad: al abridor de enfrente, si lleva 80 o 100 innings, no se le mueve casi '+
@@ -3172,9 +3124,7 @@ function cargar(){
   STAND=null;
   $('slate').innerHTML='';
   $('algane').innerHTML='';
-  $('combibox').innerHTML='';
   $('gane_zona').style.display='none';
-  COMBI={};
   $('status').className='status';
   $('status').textContent='Buscando juegos…';
   if(LIGA_YEAR!==+y){
@@ -3650,8 +3600,6 @@ function detalle(x){
   '<tr><td>ERA temporada</td><td class="n">'+num(sea.era)+'</td><td class="n">'+num(seh.era)+'</td></tr>'+
   '<tr><td>ERA últimas '+l5a.n+'/'+l5h.n+'</td><td class="n">'+num(l5a.era)+'</td><td class="n">'+num(l5h.era)+'</td></tr>'+
   '<tr><td>FIP temporada</td><td class="n">'+num(sea.fip)+'</td><td class="n">'+num(seh.fip)+'</td></tr>'+
-  '<tr><td>Hits por 9 (temporada)</td><td class="n">'+num(sea.h9,1)+'</td><td class="n">'+num(seh.h9,1)+'</td></tr>'+
-  '<tr><td>WHIP</td><td class="n">'+num(sea.whip)+'</td><td class="n">'+num(seh.whip)+'</td></tr>'+
   '<tr class="usa"><td>ERA usado ('+etiquetaModo()+', ajustado)</td><td class="n">'+num(eA)+'</td><td class="n">'+num(eH)+'</td></tr>'+
   '<tr><td>Innings de temporada</td><td class="n">'+num(sea.ip,1)+'</td><td class="n">'+num(seh.ip,1)+'</td></tr>'+
   '<tr><td>Innings por apertura</td><td class="n">'+num(l5a.ipxAb!=null?l5a.ipxAb:sea.ipx,1)+'</td><td class="n">'+num(l5h.ipxAb!=null?l5h.ipxAb:seh.ipx,1)+'</td></tr>'+
@@ -3666,7 +3614,7 @@ function detalle(x){
   '<tr><td>Carreras esperadas en F5</td><td class="n">'+num(lamA5,1)+'</td><td class="n">'+num(lamH5,1)+'</td></tr>'+
   '<tr><td>Cuota justa al ganador</td><td class="n">'+american(pA)+'</td><td class="n">'+american(pH)+'</td></tr>'+
   '</table>'+
-  suerte(pa.fullName,sea)+suerte(pih.fullName,seh)+ajuste(pa.fullName,cA,eA)+ajuste(pih.fullName,cH,eH)+
+  ajuste(pa.fullName,cA,eA)+ajuste(pih.fullName,cH,eH)+
 
   '<h3><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.2 7.2h7.6M8.2 12h2.2M13.6 12h2.2M8.2 16.4h2.2M13.6 16.4h2.2"/></svg>Cómo salió el número</h3>'+
   desglose(r,nomA,nomH)+
@@ -4038,9 +3986,6 @@ function conectar(root){
 }
 
 /* ---------- modo Al gane ---------- */
-var COMBI={};
-var COMBI_CUOTA='';
-
 function correrAlGane(){
   var gs=[].slice.call(document.querySelectorAll('.game'));
   if(!gs.length){ $('status').textContent='Primero carga una fecha.'; return; }
@@ -4077,11 +4022,6 @@ function pintarAlGane(){
   }
   lista.sort(function(a,b){ return b.p-a.p; });
   try{ if(window.OVAHoy){ var _fe=($('fecha')&&$('fecha').value)||''; OVAHoy.publicar('mlb',lista.slice(0,10).map(function(z){ return {n:z.gana+' ('+z.juego+')',p:z.p,sub:'ventaja '+z.vc.toFixed(2)+' carr · '+_fe}; })); } }catch(e){}
-  for(var kk in COMBI){
-    var fresco=null;
-    lista.forEach(function(z){ if(String(z.pk)===String(kk)) fresco=z; });
-    if(fresco) COMBI[kk]=fresco; else delete COMBI[kk];
-  }
   var o='';
   lista.forEach(function(m,i){
     var alto=(m.vc>=CORTE_SOLIDO), gris=(m.vc<CORTE_GRIS);
@@ -4093,7 +4033,6 @@ function pintarAlGane(){
        (m.capped?' · tope alcanzado':'')+'</span></div>'+
        '<div class="track"><i style="width:'+m.p.toFixed(1)+'%"></i></div>'+
        '<div class="pct">'+m.p.toFixed(1)+'%<em>'+american(m.p)+'</em></div>'+
-       '<input type="checkbox" class="chk"'+(COMBI[m.pk]?' checked':'')+'>'+
        '</div>'+
        '<div class="ganeacc" data-gana="'+esc(m.gana)+'" data-juego="'+esc(m.juego)+
        '" data-p="'+m.p.toFixed(2)+'">'+
@@ -4113,18 +4052,6 @@ function pintarAlGane(){
      'entregó lo que prometía fue el de 60% para arriba — los de abajo son casi moneda al aire por más '+
      'que salgan primeros en la lista.</div>';
   caja.innerHTML=o;
-  caja.querySelectorAll('.fila').forEach(function(f){
-    var pk=f.dataset.pk;
-    var chk=f.querySelector('.chk');
-    chk.addEventListener('change',function(){
-      if(chk.checked){
-        var m=null;
-        lista.forEach(function(z){ if(String(z.pk)===String(pk)) m=z; });
-        if(m) COMBI[pk]=m;
-      }else delete COMBI[pk];
-      pintarCombi();
-    });
-  });
   caja.querySelectorAll('.fila .txt').forEach(function(t){
     t.style.cursor='pointer';
     t.addEventListener('click',function(){
@@ -4150,63 +4077,6 @@ function pintarAlGane(){
         }else di('No se pudo guardar.',1);
       });
     });
-  });
-  pintarCombi();
-}
-
-function pintarCombi(){
-  var caja=$('combibox');
-  var sel=[];
-  for(var k in COMBI) sel.push(COMBI[k]);
-  if(sel.length<2){
-    caja.innerHTML='<div class="flag">Marca dos o tres juegos de arriba para armar una combinada.</div>';
-    return;
-  }
-  sel.sort(function(a,b){ return b.p-a.p; });
-  var prod=1;
-  sel.forEach(function(m){ prod*=m.p/100; });
-  var pPct=prod*100;
-  var o='<h3><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r="1.2"/><circle cx="15" cy="15" r="1.2"/></svg>La combinada</h3>';
-  o+='<table><tr><th>Pata</th><th>Prob.</th><th>Cuota justa</th></tr>';
-  sel.forEach(function(m){
-    o+='<tr><td>'+eqNom(m.id,esc(m.gana),17)+'</td><td class="n">'+m.p.toFixed(1)+'%</td>'+
-       '<td class="n">'+american(m.p)+'</td></tr>';
-  });
-  o+='<tr class="usa"><td>Las '+sel.length+' juntas</td><td class="n">'+pPct.toFixed(1)+'%</td>'+
-     '<td class="n">'+american(pPct)+'</td></tr></table>';
-  o+='<div class="row"><label>'+(PLATA==='kalshi'?'Precio del contrato':'Lo que te paga la casa')+'</label>'+
-     '<input type="text" id="combi_cuota" value="'+esc(COMBI_CUOTA)+'" placeholder="'+ph('+245','29')+'">'+
-     '<div class="out" id="combi_out"></div></div>';
-  o+='<div class="flag"><b>La cuota justa de esta combinada es '+american(pPct)+'.</b> '+
-     'Si la casa te paga menos que eso, pierdes dinero a la larga aunque aciertes a la tasa que dice el modelo.</div>';
-  o+='<div class="leyenda">Lo que el backtest encontró sobre combinar, con tus propios datos: en 2025, '+
-     '863 pares de picks de 60%+ ganaron los dos el 40.7% de las veces, contra el 39.1% que da simplemente '+
-     'multiplicar las dos probabilidades. O sea que juntar dos juegos <b>no aporta nada extra</b>. Lo único '+
-     'que cambia es que la comisión se paga en cada pata: con un vig de 4.5% por pata, una sencilla bien '+
-     'pagada te deja −4.5% por dólar y un par te deja −8.8%.</div>';
-  caja.innerHTML=o;
-  var inp=$('combi_cuota'), out=$('combi_out');
-  if(inp) inp.addEventListener('input',function(){
-    COMBI_CUOTA=inp.value;
-    var imp=impMod(inp.value);
-    var pg=pagoMod(inp.value);
-    if(imp==null||!pg){ out.textContent=''; out.className='out'; return; }
-    var p=pPct/100;
-    var ev=p*pg.b-(1-p)-pg.fee;
-    var bk=banca();
-    var bn=pg.b-pg.fee;
-    var f=bn>0?(p*bn-(1-p)*(1+pg.fee))/bn:0;
-    var stake=(bk&&f>0)?bk*f*0.25:null;
-    if(ev>0){
-      out.className='out si';
-      out.textContent='Te pagan por encima de la justa · EV +'+(ev*100).toFixed(1)+'% por dólar'+
-        (stake?' · ¼ Kelly $'+stake.toFixed(2):'')+
-        '. Ojo: cada pata tiene su propio error del modelo, y aquí se multiplican.';
-    }else{
-      out.className='out no';
-      out.textContent='Te pagan por debajo de la justa · EV '+(ev*100).toFixed(1)+'% por dólar. '+
-        'Necesitarías '+american(pPct)+' o más.';
-    }
   });
 }
 
@@ -4256,7 +4126,6 @@ $('viento') && $('viento').addEventListener('change',function(){ WIND_COEF=+this
 $('plata').addEventListener('change',function(){
   PLATA=this.value;
   LIMPIAR=true;
-  COMBI_CUOTA='';
   repintarTodo();
   LIMPIAR=false;
   $('manual_out').innerHTML='';
@@ -4268,7 +4137,6 @@ $('banca').addEventListener('input',function(){
      vueltas con cada tecla que escribias. */
   document.querySelectorAll('.game.open .body').forEach(actualizarRanking);
   var mo=$('manual_out'); if(mo&&mo.innerHTML) actualizarRanking(mo);
-  if($('gane_zona').style.display!=='none') pintarCombi();
 });
 $('reg_backup').addEventListener('click',function(){
   var t=JSON.stringify(regLeer());
@@ -4774,7 +4642,7 @@ document.addEventListener('visibilitychange',function(){
 
 </script>
 <script>
-/* OVA MLB · v44: arco de probabilidad, combo del mismo juego, selector de tema. */
+/* OVA MLB · v44: arco de probabilidad y selector de tema. */
 (function(){
  var VER='v46';
  function $q(s,r){ return (r||document).querySelector(s); }
@@ -4824,192 +4692,7 @@ document.addEventListener('visibilitychange',function(){
   pintar=function(el){ _p(el); try{ hero(el); }catch(e){} };
  }
 
- /* ---------- 2. combo del mismo juego (matematica pura, sin DOM) ---------- */
- var MAXX=25;
- function cellW(side,x,y){ /* x = carreras de la visita, y = del local; el empate se reparte 50/50 como hace la app */
-  if(side==='A') return x>y?1:(x===y?0.5:0);
-  return y>x?1:(x===y?0.5:0);
- }
- function legOk(leg,x,y){
-  if(leg.k==='tt'){ var r=leg.t==='A'?x:y; return leg.d==='o' ? r>leg.L : r<leg.L; }
-  if(leg.k==='tot'){ var t=x+y; return leg.d==='o' ? t>leg.L : t<leg.L; }
-  return true;
- }
- /* legs: [{k:'ml',s:'A'|'H'},{k:'tt',t:'A'|'H',d:'o'|'u',L},{k:'tot',d:'o'|'u',L}]
-    Con un ganador entre las patas, la probabilidad del ganador se ancla al numero CALIBRADO de la
-    app (pStar) y la parte de carreras sale de la distribucion condicionada a que ese equipo gane. */
- function joint(lamA,lamH,pStarA,legs){
-  var A=[],H=[],i,j;
-  for(i=0;i<=MAXX;i++){ A.push(pmf(i,lamA)); H.push(pmf(i,lamH)); }
-  var mass=0; for(i=0;i<=MAXX;i++) for(j=0;j<=MAXX;j++) mass+=A[i]*H[j];
-  var ml=null, others=[];
-  legs.forEach(function(l){ if(l.k==='ml') ml=l; else others.push(l); });
-  var w0=0, raw=0, marg=others.map(function(){ return 0; });
-  for(i=0;i<=MAXX;i++) for(j=0;j<=MAXX;j++){
-   var m=A[i]*H[j]/mass, s=ml?cellW(ml.s,i,j):1, ok=true;
-   for(var k=0;k<others.length;k++){ if(legOk(others[k],i,j)) marg[k]+=m; else ok=false; }
-   if(ml) w0+=m*s;
-   if(ok) raw+=m*s;
-  }
-  var pMl=null, out;
-  if(ml){
-   pMl = ml.s==='A' ? pStarA : 1-pStarA;
-   out = w0>0 ? pMl*(raw/w0) : 0;
-  } else out=raw;
-  var indep = ml?pMl:1; marg.forEach(function(v){ indep*=v; });
-  return {joint:out, indep:indep, pMl:pMl, marg:marg, w0:w0};
- }
-
- /* ---------- 3. pantalla Combo ---------- */
- var MK=[['','— sin usar —'],['ml','Ganador'],['ttA','Carreras de %A'],['ttH','Carreras de %H'],['tot','Total del juego']];
- function games(){ return $$('#slate .game'); }
- function names(g){ var e=g&&g._eq; return e?{a:e.a.ab,h:e.h.ab}:{a:'Visita',h:'Local'}; }
- function sideOpts(mk,n){
-  if(mk==='ml') return [['A',n.a+' gana'],['H',n.h+' gana']];
-  if(mk==='ttA'||mk==='ttH'||mk==='tot') return [['o','Más de (Over)'],['u','Menos de (Under)']];
-  return [];
- }
- function opt(v,t,sel){ return '<option value="'+v+'"'+(sel?' selected':'')+'>'+t+'</option>'; }
- function legHtml(i){
-  return '<div class="leg" data-i="'+i+'"><div class="t">Pata '+(i+1)+(i<2?'':' (opcional)')+'</div>'+
-   '<select class="cm" aria-label="Mercado pata '+(i+1)+'"></select>'+
-   '<select class="cs" aria-label="Lado pata '+(i+1)+'"></select>'+
-   '<input type="text" inputmode="decimal" class="cl" placeholder="línea, ej. 3.5" style="grid-column:1/-1;display:none" aria-label="Línea pata '+(i+1)+'"></div>';
- }
- function relabel(pane){
-  var g=games()[+$q('#cmb_juego',pane).value], n=names(g);
-  $$('.leg',pane).forEach(function(L,i){
-   var cm=$q('.cm',L), cur=cm.value||(i===0?'ml':(i===1?'ttA':''));
-   cm.innerHTML=MK.map(function(m){ return opt(m[0],m[1].replace('%A',n.a).replace('%H',n.h),m[0]===cur); }).join('');
-   sides(L,n);
-  });
- }
- function sides(L,n){
-  var mk=$q('.cm',L).value, cs=$q('.cs',L), cur=cs.value;
-  var os=sideOpts(mk,n);
-  cs.innerHTML=os.map(function(o,k){ return opt(o[0],o[1],o[0]===cur||(!cur&&k===0)); }).join('');
-  cs.style.display=os.length?'':'none';
-  $q('.cl',L).style.display=(mk==='ttA'||mk==='ttH'||mk==='tot')?'':'none';
- }
- function fmtP(p){ return (p*100).toFixed(1)+'%'; }
- function readGame(g){
-  var body=$q('.body',g), cmp=body&&$q('.row.cmp',body), tts=body?$$('.row[data-tt]',body):[];
-  if(!cmp||tts.length<2) return null;
-  return {pA:+cmp.dataset.pa, pH:+cmp.dataset.ph, na:cmp.dataset.na, nh:cmp.dataset.nh,
-          cap:cmp.dataset.cap==='1', lamA:+tts[0].dataset.tt, lamH:+tts[1].dataset.tt};
- }
- function legsFrom(pane,n){
-  var legs=[], names=[], err=null;
-  $$('.leg',pane).forEach(function(L){
-   var mk=$q('.cm',L).value; if(!mk) return;
-   var sd=$q('.cs',L).value, raw=($q('.cl',L).value||'').replace(',','.').trim(), lv=parseFloat(raw);
-   if(mk==='ml'){ legs.push({k:'ml',s:sd}); names.push((sd==='A'?n.a:n.h)+' gana'); return; }
-   if(!isFinite(lv)){ err='Falta la línea de una pata (por ejemplo 3.5).'; return; }
-   if(Math.abs(lv*2-Math.round(lv*2))>1e-9 || Math.abs(lv-Math.floor(lv)-0.5)>1e-9){ err='Usa líneas terminadas en .5 (como 3.5), que es como las pone Kalshi.'; return; }
-   var dtx=sd==='o'?'más de ':'menos de ';
-   if(mk==='tot'){ legs.push({k:'tot',d:sd,L:lv}); names.push('Total '+dtx+lv); }
-   else { var t=mk==='ttA'?'A':'H'; legs.push({k:'tt',t:t,d:sd,L:lv}); names.push((t==='A'?n.a:n.h)+' '+dtx+lv+' carreras'); }
-  });
-  var nml=legs.filter(function(l){ return l.k==='ml'; }).length;
-  if(!err&&legs.length<2) err='Escoge al menos 2 patas para armar el combo.';
-  if(!err&&nml>1) err='Solo puede haber un ganador por combo.';
-  return {legs:legs,names:names,err:err};
- }
- function amFromPay(stake,pay){
-  var b=pay/stake-1;
-  return b>=1 ? '+'+Math.round(b*100) : '-'+Math.round(100/b);
- }
- function resultado(pane,g,info,lg,box){
-  var r=joint(info.lamA,info.lamH,info.pA/100,lg.legs);
-  var stake=parseFloat(($q('#cmb_stake',pane).value||'').replace(',','.')), pay=parseFloat(($q('#cmb_pay',pane).value||'').replace(',','.'));
-  var p=r.joint, n=names(g);
-  var hasPay=isFinite(stake)&&stake>0&&isFinite(pay)&&pay>stake;
-  var be=hasPay?stake/pay:null, edge=null, ev=null, klass='';
-  if(hasPay){ edge=(p-be)*100; ev=p*(pay/stake)-1; klass=edge>0?'good':'bad'; }
-  var out='<div class="cmpg"><div><b>'+fmtP(p)+'</b><span>Modelo, con las patas relacionadas</span></div>'+
-    '<div><b>'+fmtP(r.indep)+'</b><span>Multiplicando como si fueran independientes</span></div>'+
-    '<div'+(klass?' class="'+klass+'"':'')+'><b>'+(hasPay?fmtP(be):'—')+'</b><span>'+
-    (hasPay?'Equilibrio del pago ($'+stake+' pagan $'+pay+')':'Escribe cuánto te pagan')+'</span></div></div>';
-  var umbral=lg.legs.some(function(l){ return l.k!=='ml'; })?8:2;
-  var v='';
-  if(hasPay){
-   if(ev<=0){
-    v='<div class="pick no"><div class="q">Sin valor</div><div class="r">Con este pago el modelo da '+fmtP(p)+' y hace falta '+fmtP(be)+
-      '. Tendría que pagar '+(1/p).toFixed(2)+'x o más y te pagan '+(pay/stake).toFixed(2)+'x.</div></div>';
-   } else if(edge<umbral){
-    v='<div class="pick no"><div class="q">Dentro del ruido</div><div class="r">+'+edge.toFixed(1)+' puntos de ventaja, pero un combo con carreras pide '+umbral+
-      '. El modelo de carreras salió flojo al medirlo: no lo estires.</div></div>';
-   } else {
-    var kel='';
-    if(typeof banca==='function'&&banca()){ var b=pay/stake-1, f=(p*b-(1-p))/b; if(f>0) kel=' ¼ Kelly $'+(banca()*f*0.25).toFixed(2)+'.'; }
-    v='<div class="pick'+(edge>=umbral+4?' big':'')+'"><div class="q">Valor +'+edge.toFixed(1)+' puntos</div><div class="r">Modelo '+fmtP(p)+' contra equilibrio '+fmtP(be)+
-      ' · EV +'+(ev*100).toFixed(1)+'% por dólar.'+kel+'</div></div>';
-   }
-  }
-  var mi=0, partes=lg.legs.map(function(l,k){ return lg.names[k]+' → '+fmtP(l.k==='ml'?r.pMl:r.marg[mi++]); });
-  var det='<div class="flag">Cuota justa del combo: <b>'+fmtAm(p*100)+'</b> ('+(1/p).toFixed(2)+'x). Cada pata por separado: '+partes.join(' · ')+'.</div>';
-  var ley='<div class="leyenda">Cómo sale: se arma la distribución de carreras de los dos equipos (la misma de la pestaña Cuotas, con su forma medida ×2.3) y se cuentan los marcadores que cumplen todas las patas a la vez. Si una pata es el ganador, su probabilidad se ancla al número <b>calibrado</b> de la app y las carreras se condicionan a que ese equipo gane. Por eso «gana» y «más de 3.5 carreras» del mismo equipo dan bastante más que multiplicarlas: casi siempre van juntas. <b>Sin medir como combo</b>: las carreras por equipo salieron flojas (0.11) en el backtest y el modelo no ve la correlación real entre lo que anotan los dos equipos.</div>';
-  var guard='<div class="row" style="background:transparent;padding:0"><button class="ghost" data-org="modelo" id="cmb_g1">Guardar · del modelo</button>'+
-    '<button class="ghost" data-org="mio" id="cmb_g2">Guardar · mío 👁</button><div class="out" id="cmb_gm"></div></div>';
-  box.innerHTML=(info.cap?'<div class="aviso">⚠️ El porcentaje del modelo chocó con el tope de 22–78% en este juego, así que el ganador viene recortado.</div>':'')+
-    out+v+det+ley+(hasPay?guard:'');
-  if(hasPay){
-   [$q('#cmb_g1',box),$q('#cmb_g2',box)].forEach(function(bt){
-    bt.addEventListener('click',function(){
-     var fe=$q('#fecha'), base={f:(fe&&fe.value)||'', juego:n.a+' @ '+n.h, m:'Combo: '+lg.names.join(' + '), p:p*100, am:amFromPay(stake,pay), plat:'book'};
-     var m=$q('#cmb_gm',box);
-     if(typeof regExiste==='function'&&regExiste(base)){ m.textContent='Ya lo tienes guardado ✓'; return; }
-     var id=(typeof regAdd==='function')?regAdd({f:base.f,juego:base.juego,m:base.m,p:base.p,am:base.am,plat:base.plat,org:bt.getAttribute('data-org'),cierre:null,res:null}):null;
-     if(id){ m.textContent='Guardado en Mis picks ✓'; if(typeof pintarRegistro==='function') pintarRegistro(); }
-     else m.textContent='No se pudo guardar.';
-    });
-   });
-  }
- }
- function calcular(pane){
-  var box=$q('#cmb_out',pane), gs=games(), g=gs[+$q('#cmb_juego',pane).value];
-  if(!g){ box.innerHTML='<div class="aviso">Primero carga los partidos en la pestaña Juegos.</div>'; return; }
-  var n=names(g), lg=legsFrom(pane,n);
-  if(lg.err){ box.innerHTML='<div class="aviso">'+lg.err+'</div>'; return; }
-  box.innerHTML='<div class="status">Calculando…</div>';
-  Promise.resolve(g._cargar?g._cargar():null).then(function(){
-   var info=readGame(g);
-   if(!info){ box.innerHTML='<div class="aviso">Ese juego todavía no tiene abridores confirmados; no hay números para armar el combo.</div>'; return; }
-   resultado(pane,g,info,lg,box);
-  }).catch(function(){ box.innerHTML='<div class="aviso">No se pudo calcular ese juego.</div>'; });
- }
- function mountCombo(){
-  var wrap=$q('.wrap'), nav=$q('.navbar');
-  if(!wrap||!nav||$q('#pane-combo')) return;
-  var pane=document.createElement('section'); pane.className='pane'; pane.id='pane-combo';
-  pane.innerHTML='<div class="ovaCombo"><h2>Combo del mismo juego</h2>'+
-   '<p class="flag">Para combos tipo Kalshi (por ejemplo «Milwaukee gana» + «Milwaukee más de 3.5 carreras»). La app calcula la probabilidad de que se cumplan <b>a la vez</b>, y la compara con lo que te pagan.</p>'+
-   '<div class="row"><label for="cmb_juego">Juego</label><select id="cmb_juego" style="flex:1 1 100%"></select></div>'+
-   legHtml(0)+legHtml(1)+legHtml(2)+
-   '<div class="pay"><div><label for="cmb_stake">Apuestas ($)</label><input type="text" inputmode="decimal" id="cmb_stake" value="10"></div>'+
-   '<div><label for="cmb_pay">Te pagan ($)</label><input type="text" inputmode="decimal" id="cmb_pay" placeholder="ej. 18.74"></div></div>'+
-   '<div class="controls"><button id="cmb_go">Calcular combo</button></div><div id="cmb_out" class="res"></div></div>';
-  wrap.appendChild(pane);
-  var b=document.createElement('button'); b.setAttribute('data-p','combo');
-  b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16M4 16h16M8 4l-2 16M18 4l-2 16"/></svg><span>Combo</span>';
-  nav.insertBefore(b, nav.children[2]||null);
-  function abrir(){
-   var sel=$q('#cmb_juego',pane), gs=games(), prev=sel.value;
-   sel.innerHTML=gs.length?gs.map(function(g,i){ var n=names(g); return opt(i,n.a+' @ '+n.h,String(i)===prev); }).join(''):opt('','Carga los partidos primero',true);
-   relabel(pane);
-  }
-  b.addEventListener('click',function(){
-   $$('.pane').forEach(function(p){ p.classList.toggle('on',p===pane); });
-   $$('.navbar button').forEach(function(x){ x.classList.toggle('on',x===b); });
-   abrir(); window.scrollTo(0,0);
-  });
-  $$('.navbar button').forEach(function(o){ if(o!==b) o.addEventListener('click',function(){ pane.classList.remove('on'); b.classList.remove('on'); }); });
-  $q('#cmb_juego',pane).addEventListener('change',function(){ relabel(pane); $q('#cmb_out',pane).innerHTML=''; });
-  $$('.leg',pane).forEach(function(L){ $q('.cm',L).addEventListener('change',function(){ sides(L,names(games()[+$q('#cmb_juego',pane).value])); }); });
-  $q('#cmb_go',pane).addEventListener('click',function(){ calcular(pane); });
- }
-
- /* ---------- 4. selector de tema en Ajustes + version ---------- */
+ /* ---------- 2. selector de tema en Ajustes + version ---------- */
  function mountTema(){
   var pa=$q('#pane-ajustes'); if(!pa||$q('.ovaApar',pa)||!window.OVASkins) return;
   var box=document.createElement('div'); box.className='ovaApar';
@@ -5031,8 +4714,8 @@ document.addEventListener('visibilitychange',function(){
   var a=document.createElement('a'); a.className='ovaHome'; a.href='hub.html'; a.setAttribute('aria-label','Volver al inicio'); a.textContent='‹ Inicio';
   top.appendChild(a);
  }
- function init(){ try{ inicio(); }catch(e){} try{ mountCombo(); }catch(e){ if(window.console) console.error('ova combo',e); } try{ mountTema(); }catch(e){} try{ ver(); }catch(e){} }
- window.OVAMLB={joint:joint,init:init,hero:hero};
+ function init(){ try{ inicio(); }catch(e){} try{ mountTema(); }catch(e){} try{ ver(); }catch(e){} }
+ window.OVAMLB={init:init,hero:hero};
  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
 

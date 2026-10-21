@@ -52,7 +52,7 @@ else{
   const tops=new Set(),res=[];
   src.forEach(([l,s])=>{const r=analizar(s);res.push([l,r]);r.top.forEach(t=>tops.add(t));r.sets.forEach(t=>tops.add(t));});
   const ids=new Set();let m;const rid=/\bid="([^"]+)"/g;while((m=rid.exec(h)))ids.add(m[1]);
-  const FALSOS=new Set(['OVASkins','montarCombo','OVAHoy','OVARespaldo','OVACLV']);   /* se crean con window.X y están protegidos con typeof */
+  const FALSOS=new Set(['OVASkins','OVAHoy','OVARespaldo','OVACLV']);   /* se crean con window.X y están protegidos con typeof */
   const mal=new Map();
   res.forEach(([l,r])=>r.refs.forEach(([n,line,sc])=>{if(sc.has(n)||tops.has(n)||BROWSER.has(n)||ids.has(n)||FALSOS.has(n))return;if(!mal.has(n))mal.set(n,l+':'+line);}));
   ok(app+' sin nombres inexistentes',mal.size===0,[...mal].map(([n,w])=>n+' ('+w+')').join(', '));
@@ -91,23 +91,6 @@ t_envivo=async()=>{
   const a=await run('in');ok('en juego muestra 2–1 (local–visitante)',/🔴 2–1/.test(a),a);
   const b=await run('post');ok('terminado muestra 2–1',/Terminó 2–1/.test(b),b);
  };
-}
-
-/* ---------------- 5. combo de fútbol ---------------- */
-sec('Fútbol: combo coincide con el Veredicto');
-{
- const h=rd('futbol.html'),mod=h.slice(h.indexOf('var MAXG = 8;'),h.indexOf('// ---------- historial')),M={};
- new Function('M',mod+';M.probsModelo=probsModelo;')(M);
- const blk=h.slice(h.indexOf('<!--OVAPATCH:COMBO:BEGIN-->'),h.indexOf('<!--OVAPATCH:COMBO:END-->'));
- const joint=new Function(blk.slice(blk.indexOf('  function joint(marc,legs'),blk.indexOf('  function textoLeg'))+';return joint;')();
- const P={K:6,h:1.13,rho:-0.08,w:0.8,S:0,Kt:16,wt:0.5,ct:1,A:1,At:1},r=M.probsModelo({pj:6,gf:11,gc:5},{pj:6,gf:6,gc:9},1.45,P,true);
- const anc={L:r.pL,D:r.pD,V:r.pV};
- ok('"Gana local" del combo = Veredicto (con w<1)',Math.abs(joint(r.marcadores,[{k:'gan',s:'L'}],anc)-r.pL)<1e-9);
- ok('combo ≤ pata sola',joint(r.marcadores,[{k:'gan',s:'L'},{k:'tot',d:'o',L:2.5}],anc)<=r.pL+1e-12);
- ok('L+E+V suma 1',Math.abs(['L','D','V'].reduce((s,k)=>s+joint(r.marcadores,[{k:'gan',s:k}],anc),0)-1)<1e-9);
- const r1=M.probsModelo({pj:6,gf:11,gc:5},{pj:6,gf:6,gc:9},1.45,Object.assign({},P,{w:1}),true);
- const sinAnc=joint(r1.marcadores,[{k:'gan',s:'L'},{k:'tot',d:'o',L:2.5}]),conAnc=joint(r1.marcadores,[{k:'gan',s:'L'},{k:'tot',d:'o',L:2.5}],{L:r1.pL,D:r1.pD,V:r1.pV});
- ok('con w=1 no cambia nada',Math.abs(sinAnc-conAnc)<1e-12);
 }
 
 /* ---------------- Fútbol: modelo Dixon-Coles (liga simulada de fuerza conocida) ---------------- */
@@ -250,8 +233,8 @@ sec('Diseño unificado: misma barra en las 3 apps, lo técnico en Ajustes');
  const dj=rd('diseno.js');
  ok('diseno.js existe y lo cargan MLB, fútbol y NBA',['index.html','futbol.html','nba.html'].every(f=>/<script src="diseno\.js"><\/script>/.test(rd(f))));
  ok('el service worker lo guarda para abrir sin internet',/'diseno\.js'/.test(rd('sw.js')));
- ok('fútbol y NBA renombran Registro → «Mis picks» y Combina → «Combo»',/Mis picks/.test(dj)&&/'Combo'/.test(dj));
- ok('la barra queda en el orden Juegos · Al gane · Combo · Mis picks · Ajustes',/\['vJuegos','vAlgane','vComb','vReg','dsAjustes'\]/.test(dj)&&/\['juegos','algane','combo','registro','dsAjustes'\]/.test(dj));
+ ok('fútbol y NBA renombran Registro → «Mis picks»',/Mis picks/.test(dj));
+ ok('la barra queda en el orden Juegos · Al gane · Mis picks · Ajustes',/\['vJuegos','vAlgane','vReg','dsAjustes'\]/.test(dj)&&/\['juegos','algane','registro','dsAjustes'\]/.test(dj));
  ok('los botones originales se ocultan, no se borran (conservan sus eventos)',/style\.display='none'/.test(dj)&&!/removeChild/.test(dj));
  ok('MLB: abre con los juegos de hoy cargados',/function autoMLB/.test(dj)&&/b\.click\(\)/.test(dj));
  ok('MLB: cargar() ignora respuestas viejas (no duplica juegos si se toca dos veces)',/CARGA_TK/.test(rd('index.html'))&&/if\(_tk!==CARGA_TK\) return;/.test(rd('index.html')));
@@ -403,7 +386,7 @@ ok('18 diseños: los 8 de siempre, los 5 de la segunda tanda (historias, duelo, 
  ok('ninguna regla suelta puede afectar al Clásico',sueltos.length===0,sueltos.slice(0,2).join(' | '));
  ok('toda regla de diseño cuelga de html[data-ui]',css.split('\n').filter(l=>/^html/.test(l)).every(l=>l.indexOf('data-ui')>=0));
  ok('el diseño Clásico no recibe reglas (solo existen cristal y broadcast)',!/data-ui="clasico"/.test(css));
- ['juegos','al gane','combo','combina','mis picks','registro','ajustes','ratings','backtest'].forEach(l=>ok('icono nuevo para «'+l+'»',!!UI._icons[UI._clave(l)]));
+ ['juegos','al gane','mis picks','registro','ajustes','ratings','backtest'].forEach(l=>ok('icono nuevo para «'+l+'»',!!UI._icons[UI._clave(l)]));
  ok('respeta "reducir movimiento"',/prefers-reduced-motion:reduce/.test(css));
  ['index.html','futbol.html','nba.html'].forEach(f=>{const h=rd(f),i1=h.indexOf('interior.js'),i2=h.indexOf('<style>');ok(f+' carga interior.js en la cabecera (sin parpadeo)',i1>0&&i1<i2);});
  ok('el service worker guarda interior.js para abrir sin internet',/'interior\.js'/.test(rd('sw.js')));

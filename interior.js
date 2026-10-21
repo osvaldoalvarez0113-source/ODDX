@@ -261,9 +261,9 @@ html[data-ui^="boleto"] button:not(.tbar-btn):not(.tb):not(.diaBtn):not(.teq):no
 html[data-ui^="boleto"] button.ghost:not(.game button):not(.ajustes button){background:transparent!important;color:var(--txt)!important;border:1.5px solid rgba(255,255,255,.3)!important;font-weight:700}
 html[data-ui^="boleto"] .cargafila #cargar{background:transparent!important;color:var(--txt)!important;border:1.5px solid rgba(255,255,255,.3)!important;border-radius:12px!important}
 /* ---- superficies de papel: el ticket y todo lo que vive dentro de él ---- */
-html[data-ui^="boleto"] :is(.game,.fila,.fila-rank,.pk,.vacio,.ajustes,.dsCard,.dsAv,.cuotasbox,.observ,.calc,.ovaCombo .row,.ovaCombo .leg,.ovaCombo .res,.ova-d-card){--bg1:var(--bzBg1);--bg2:var(--bzBg2);--bg3:var(--bzBg3);--line:var(--bzLine);--line2:var(--bzLine2);--txt:var(--bzTxt);--mut:var(--bzMut);--mut2:var(--bzMut2);--acc:var(--bzInk);--acc2:var(--bzMut);--accTx:var(--bzOnInk);--hot:var(--bzHi);--hotTx:var(--bzHiTx);--good:var(--bzGood);--bad:var(--bzBad);--info:var(--bzTxt);--ia:var(--bzMut);color:var(--txt);color-scheme:light}
-html[data-ui="boletonoche"] :is(.game,.fila,.fila-rank,.pk,.vacio,.ajustes,.dsCard,.dsAv,.cuotasbox,.observ,.calc,.ovaCombo .row,.ovaCombo .leg,.ovaCombo .res,.ova-d-card){color-scheme:dark}
-html[data-ui^="boleto"] :is(.fila,.fila-rank,.pk,.vacio,.ajustes,.dsCard,.dsAv,.cuotasbox,.observ,.calc,.ovaCombo .row,.ovaCombo .leg,.ovaCombo .res,.ova-d-card){background:var(--bg1)!important;border:0!important;border-radius:14px;box-shadow:0 10px 18px -12px rgba(0,0,0,.6)}
+html[data-ui^="boleto"] :is(.game,.fila,.fila-rank,.pk,.vacio,.ajustes,.dsCard,.dsAv,.cuotasbox,.observ,.calc,.ova-d-card){--bg1:var(--bzBg1);--bg2:var(--bzBg2);--bg3:var(--bzBg3);--line:var(--bzLine);--line2:var(--bzLine2);--txt:var(--bzTxt);--mut:var(--bzMut);--mut2:var(--bzMut2);--acc:var(--bzInk);--acc2:var(--bzMut);--accTx:var(--bzOnInk);--hot:var(--bzHi);--hotTx:var(--bzHiTx);--good:var(--bzGood);--bad:var(--bzBad);--info:var(--bzTxt);--ia:var(--bzMut);color:var(--txt);color-scheme:light}
+html[data-ui="boletonoche"] :is(.game,.fila,.fila-rank,.pk,.vacio,.ajustes,.dsCard,.dsAv,.cuotasbox,.observ,.calc,.ova-d-card){color-scheme:dark}
+html[data-ui^="boleto"] :is(.fila,.fila-rank,.pk,.vacio,.ajustes,.dsCard,.dsAv,.cuotasbox,.observ,.calc,.ova-d-card){background:var(--bg1)!important;border:0!important;border-radius:14px;box-shadow:0 10px 18px -12px rgba(0,0,0,.6)}
 html[data-ui^="boleto"] :is(.fila,.fila-rank,.pk){margin:10px 0!important}
 html[data-ui^="boleto"] :is(.fila,.fila-rank) .pct{color:var(--txt)!important;font-weight:800}
 html[data-ui^="boleto"] .ova-d-card{padding:12px 14px}
@@ -565,7 +565,7 @@ var IC={
 };
 function claveIcono(txt){
   var t=String(txt||'').toLowerCase().replace(/[^a-záéíóúñ ]/g,'').trim();
-  if(t==='juegos') return 'ball'; if(t==='al gane') return 'trophy'; if(t==='combo'||t==='combina') return 'layers';
+  if(t==='juegos') return 'ball'; if(t==='al gane') return 'trophy'; 
   if(t==='mis picks'||t==='registro') return 'mark'; if(t==='ajustes') return 'sliders'; if(t==='ratings') return 'bars'; if(t==='backtest') return 'chart';
   return null;
 }

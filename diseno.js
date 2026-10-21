@@ -1,6 +1,6 @@
 /* OVA · diseño común (MLB v53 / fútbol v15 / NBA v3.6).
    Un solo script que iguala la navegación de las tres apps y limpia lo técnico:
-     · Barra de abajo igual en las tres:  Juegos · Al gane · Combo · Mis picks · Ajustes
+     · Barra de abajo igual en las tres:  Juegos · Al gane · Mis picks · Ajustes
      · Lo técnico (Backtest, Ratings, Diagnóstico, herramientas pesadas) vive en Ajustes → Avanzado
      · El respaldo de picks vive en Ajustes
      · La versión se ve siempre en Ajustes (en el tema Cristal la etiqueta del título está oculta)
@@ -23,7 +23,7 @@ function el(tag,cls,html){ var e=d.createElement(tag); if(cls) e.className=cls; 
 var CSS=[
  /* letra mínima 12 px y un gris más legible para las notas */
  '.nota,.kpi small,.kpi span,.marcadores small,.h2h div small,.cuotasbox label,.ajuste label,.fila-rank .nom small,.tabla-bt th,',
- '.cabp .nm span,td small,.tarj span,.fila .pct em,.ovaSk .tx span,.ovaCombo .cmpg span,.hero .mid small,.ovaMini small,.ovaHero .cx small{font-size:12px!important}',
+ '.cabp .nm span,td small,.tarj span,.fila .pct em,.ovaSk .tx span,.hero .mid small,.ovaMini small,.ovaHero .cx small{font-size:12px!important}',
  '.nota{color:var(--mut)!important}',
  '.ver,.medido,.row.hcrow .cab,.bug .ft{font-size:11px!important}',
  '#diagOut,textarea.resp{font-size:12px!important}',
@@ -75,9 +75,6 @@ var CSS=[
  '.dsPesado>summary{cursor:pointer;padding:10px 2px;font-size:13px;color:var(--mut);font-weight:700}',
  '.dsPesado .btnAncho{margin-bottom:8px}',
  /* selector Mismo partido / Varios partidos */
- '.dsSeg{display:flex;gap:6px;margin:14px 0 6px;background:var(--bg1);border:1px solid var(--line2);border-radius:99px;padding:4px}',
- '.dsSeg button{flex:1;border:0;background:transparent;color:var(--mut);font-weight:700;font-size:13px;padding:8px 6px;border-radius:99px;cursor:pointer;font-family:inherit}',
- '.dsSeg button.on{background:var(--acc);color:var(--accTx,#fff)}',
  /* tarjeta de versión en Ajustes de MLB */
  '#pane-ajustes .dsCard{margin-top:6px}'
 ].join('\n');
@@ -215,11 +212,10 @@ function ordenar(barra,orden,clave){
 }
 
 function unificarNBA(){
- var barra=$('.tabbar'); if(!barra||!$('[data-v="vComb"]',barra)||$('#dsAjustes')) return true;
+ var barra=$('.tabbar'); if(!barra||!$('[data-v="vReg"]',barra)||$('#dsAjustes')) return true;
  var porV=function(k){ return $('[data-v="'+k+'"]',barra); };
  diagEnEncabezado();
  ponerLabel(porV('vReg'),'Mis picks');
- ponerLabel(porV('vComb'),'Combo','🧩');
  var aj=armarAjustes('nba',{
   attr:'data-v',
   tabBtn:porV,
@@ -234,33 +230,9 @@ function unificarNBA(){
  });
  if(!aj) return false;
  var bt=$('#btnCal'); if(bt) pesadas([bt],'Herramientas pesadas');
- ordenar(barra,['vJuegos','vAlgane','vComb','vReg','dsAjustes'],function(b){ return b.getAttribute('data-v'); });
+ ordenar(barra,['vJuegos','vAlgane','vReg','dsAjustes'],function(b){ return b.getAttribute('data-v'); });
  return true;
 }
-
-function fusionarComboFut(barra){
- var cBtn=$('[data-vista="combo"]',barra), pBtn=$('[data-vista="combinada"]',barra), vC=$('#vistaCombo'), vP=$('#vistaCombinada');
- if(!cBtn||!pBtn||!vC||!vP) return false;
- if($('.dsSeg',vC)) return true;
- function seg(activo){
-  var s=el('div','dsSeg','<button type="button" data-t="uno">Mismo partido</button><button type="button" data-t="varios">Varios partidos</button>');
-  $$('button',s).forEach(function(b){
-   b.classList.toggle('on',b.getAttribute('data-t')===activo);
-   b.addEventListener('click',function(){
-    if(b.getAttribute('data-t')===activo) return;
-    (b.getAttribute('data-t')==='uno'?cBtn:pBtn).click();
-    cBtn.classList.add('on'); pBtn.classList.remove('on');
-    root.scrollTo(0,0);
-   });
-  });
-  return s;
- }
- vC.insertBefore(seg('uno'),vC.firstChild);
- vP.insertBefore(seg('varios'),vP.firstChild);
- pBtn.style.display='none';
- return true;
-}
-
 
 /* fútbol: Ajustes → Mezcla con Elo (apagada por defecto). futbol.html la lee al calcular; aquí solo se guarda la elección. */
 function mezclaElo(vista){
@@ -275,13 +247,11 @@ function mezclaElo(vista){
  var ref=$('.dsAv',vista); vista.insertBefore(b,ref||null);
 }
 
-function unificarFut(sinCombo){
+function unificarFut(){
  var barra=$('.tabbar'); if(!barra||$('#dsAjustes')) return true;
- if(!fusionarComboFut(barra) && !sinCombo) return false;       /* el Combo se inyecta un poco más tarde */
  var porK=function(k){ return $('[data-vista="'+k+'"]',barra); };
  diagEnEncabezado();
  ponerLabel(porK('registro'),'Mis picks');
- ponerLabel(porK('combo'),'Combo','🧩');
  var aj=armarAjustes('fut',{
   attr:'data-vista',
   tabBtn:porK,
@@ -296,7 +266,7 @@ function unificarFut(sinCombo){
  if(!aj) return false;
  var t=$('#btnTiros'), c=$('#btnCalibrar'); if(t&&c) pesadas([t,c],'Herramientas pesadas (descargas y calibración)');
  mezclaElo(aj.vista);
- ordenar(barra,['juegos','algane','combo','registro','dsAjustes'],function(b){ return b.getAttribute('data-vista'); });
+ ordenar(barra,['juegos','algane','registro','dsAjustes'],function(b){ return b.getAttribute('data-vista'); });
  return true;
 }
 
@@ -517,7 +487,7 @@ function arrancar(){
   var ok=true;
   try{
    if(a==='nba') ok=unificarNBA();
-   else if(a==='fut') ok=unificarFut(intentos>=30);
+   else if(a==='fut') ok=unificarFut();
    else if(a==='mlb') ok=unificarMLB();
   }catch(e){ ok=true; if(root.console) console.error('ova diseño',e); }
   if(!ok && ++intentos<40) setTimeout(paso,150);
