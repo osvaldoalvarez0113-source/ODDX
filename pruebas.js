@@ -786,6 +786,7 @@ sec('En vivo (envivo.js): lista de juegos, cancha de la NBA, zona de strike de M
  ok('en vivo: mientras el juego está en vivo se actualiza cada 5-6 s y el reproductor usa una cola con pausas',/function msVivo/.test(se)&&/P\.espera\?P\.espera/.test(se));
  ok('MLB: la bola bateada solo se anima cuando trae datos del golpe o la jugada terminó',/d\.isInPlay&&!hd&&!fin/.test(se));
  ok('cancha: la animación respeta reduce-motion',/prefers-reduced-motion:reduce\)\{\.evAro,\.evPlus,\.evAct,\.evBola/.test(se));
+ok('fútbol: pide las jugadas sin la copia en caché (?_=) y muestra el reloj con segundos',/var bust=\(P\.estado\|\|g\.state\)==='in'/.test(se)&&/function relojFut/.test(se)&&/cs:\(p\.clock&&typeof p\.clock\.value==='number'/.test(se));
  ok('no usa eval, new Function ni document.write',!/\beval\s*\(|new Function|document\.write/.test(se));
  ok('todo texto que llega de afuera se escapa (esc) y los logos solo aceptan https',E.esc('<img src=x onerror=alert(1)>')==='&lt;img src=x onerror=alert(1)&gt;'&&E.safeUrl('javascript:alert(1)')===''&&E.safeUrl('https://a.b/c.png')==='https://a.b/c.png');
  ok('traduce lo que narran las fuentes: béisbol, básquet y fútbol',/sencillo en rola a campocorto/.test(E.tr('Steven Kwan singles on a ground ball to shortstop Taylor Walls.'))&&/se poncha tirándole/.test(E.tr('Juan Soto strikes out swinging.'))&&/anota/.test(E.tr('Jalen Brunson makes 26-foot three point jumper'))&&/¡Gol!/.test(E.tr('Goal! PSG 4, Barcelona 2.'))&&/Tiro atajado/.test(E.tr('Attempt saved. X (Y) header')));

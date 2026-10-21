@@ -712,7 +712,7 @@ function inicialNombre(n){ var w=String(n||'').trim().split(/\s+/).filter(Boolea
 var ESTADO={};                                /* estado real de cada partido según el detalle (la lista se refresca más lento) */
 function jugadaCancha(p,g){
  var part=p.participants&&p.participants[0], tid=refEq(p.team&&p.team.$ref);
- var o={id:String(p.id),tipo:(p.type&&p.type.text)||'',txt:p.text||p.shortText||'',clk:(p.clock&&p.clock.displayValue)||'',wall:p.wallclock?Date.parse(p.wallclock):0,
+ var o={id:String(p.id),tipo:(p.type&&p.type.text)||'',txt:p.text||p.shortText||'',clk:(p.clock&&p.clock.displayValue)||'',cs:(p.clock&&typeof p.clock.value==='number'&&isFinite(p.clock.value))?p.clock.value:-1,wall:p.wallclock?Date.parse(p.wallclock):0,
   local:tid===''||tid===String(g.home.id),dorsal:part&&part.jersey?String(part.jersey):'',nom:nombreJug(p.text||p.shortText),gol:!!p.scoringPlay||/^goal/i.test((p.type&&p.type.text)||'')};
  if(typeof p.fieldPositionX==='number'&&typeof p.fieldPositionY==='number'&&isFinite(p.fieldPositionX)&&isFinite(p.fieldPositionY)){
   o.xy=[p.fieldPositionX,p.fieldPositionY];
@@ -744,9 +744,13 @@ function dibujarPunto(P,xy,local){
  while(P.gPts.childNodes.length>36) P.gPts.removeChild(P.gPts.firstChild);
  var n=P.gPts.childNodes.length; for(var i=0;i<n;i++) P.gPts.childNodes[i].style.opacity=(0.18+0.82*(i+1)/n).toFixed(2);
 }
+function relojFut(o){
+ if(!o.clk) return ''; if(o.cs<0||/\+/.test(o.clk)) return '⏱ '+o.clk;
+ var m=Math.floor(o.cs/60), s=Math.floor(o.cs%60); return '⏱ '+m+':'+(s<10?'0':'')+s;
+}
 function mostrarJugada(P,o,rapido){
  var g=P.g, col=o.local?COL_L:COL_V;
- $('.evPitchClk',P.el).textContent=o.clk?'⏱ '+o.clk:'';
+ $('.evPitchClk',P.el).textContent=relojFut(o);
  $('.evPitchEq',P.el).innerHTML='<b style="color:'+col+'">'+(o.local?'':'‹ ')+esc(o.local?g.home.ab:g.away.ab)+(o.local?' ›':'')+'</b>';
  $('.evPitchTxt',P.el).textContent=tr(o.txt).slice(0,110);
  $('.evPoss',P.svg).textContent=o.local?esc0(g.home.ab)+' »':'« '+esc0(g.away.ab); $('.evPoss',P.svg).setAttribute('fill',col);
@@ -778,12 +782,13 @@ function pedirPases(P){
  var g=P.g; if(P.cargando||!g.slug) return Promise.resolve();
  P.cargando=true;
  var base=CORE+g.slug+'/events/'+g.id+'/competitions/'+g.id+'/plays';
- return getJSON(base+'?limit=1').then(function(a){
+ var bust=(P.estado||g.state)==='in'?'&_='+Date.now():'';     /* sin esto ESPN sirve una copia de hasta ~10 s (medido: ve las jugadas ~5 s antes) */
+ return getJSON(base+'?limit=1'+bust).then(function(a){
   var total=num(a&&a.count,0); P.total=total; if(!total) return null;
   var tam=100, ult=Math.ceil(total/tam), pgs=[ult];
   if(ult>1&&(P.inicio||ult!==P.pgAnt)) pgs.unshift(ult-1);
   P.pgAnt=ult;
-  return Promise.all(pgs.map(function(pg){ return getJSON(base+'?limit='+tam+'&page='+pg); }));
+  return Promise.all(pgs.map(function(pg){ return getJSON(base+'?limit='+tam+'&page='+pg+bust); }));
  }).then(function(rs){
   if(!rs) return;
   var items=[].concat.apply([],rs.map(function(r){ return (r&&r.items)||[]; })), nuevos=[];
@@ -818,7 +823,7 @@ function iniciarCancha(P){
    if(!doc.contains(P.el)||doc.hidden){ if(!doc.contains(P.el)){ clearInterval(P.poll); P.poll=null; clearInterval(P.tick); P.tick=null; } return; }
    if(P.g.state!=='in'){ return; }
    pedirPases(P);
-  },6000);
+  },4000);
  } else { reproducir(P); }
  if(!P.tick) P.tick=setInterval(function(){ if(doc.contains(P.el)) actualizarLag(P); },1000);
 }
