@@ -1,5 +1,5 @@
 /* OVA · En vivo — MLB, fútbol y NBA.
-   Un botón flotante «En vivo» que abre una pantalla con los juegos que se están jugando ahora y, al tocar uno,
+   Una pestaña «En vivo» dentro de cada juego y una pantalla con todos los juegos que se están jugando ahora; al tocar uno,
    la vista del juego en vivo con refresco automático:
    · MLB: rombo con corredores, conteo (bolas, strikes, outs), zona de strike con cada lanzamiento, marcador por entrada
           y jugada por jugada. Fuente: MLB Stats API (gratis).
@@ -296,12 +296,6 @@ function diaTxt(ms){
 }
 
 var CSS=[
- '.evFab{position:fixed;right:12px;bottom:calc(130px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;align-items:center;gap:8px;padding:11px 15px;border-radius:99px;background:var(--bg2,#131d2c);color:var(--txt,#f1f5fb);border:1px solid var(--line2,#2a3e56);font:700 14px system-ui,-apple-system,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.45);cursor:pointer;-webkit-tap-highlight-color:transparent;min-height:44px;box-sizing:border-box;user-select:none;-webkit-user-select:none}',
- '.evFab{font-size:0!important;padding:0!important;min-width:44px;justify-content:center;gap:4px!important;opacity:.82;transition:transform .25s ease,opacity .25s ease}',
- '.evFab.evOculto,.msFab.evOculto{transform:translateX(72px);opacity:0;pointer-events:none}',
- '.evFab i{width:10px;height:10px;border-radius:50%;background:var(--mut,#9db2c8);display:inline-block}',
- '.evFab.evHas{border-color:var(--bad,#f87171)}.evFab.evHas i{background:var(--bad,#f87171);animation:evPulso 1.4s ease-in-out infinite}',
- '.evFab b{background:var(--bad,#f87171);color:#fff;border-radius:99px;min-width:20px;height:20px;padding:0 6px;font-size:12px;line-height:20px;text-align:center}',
  '@keyframes evPulso{0%,100%{box-shadow:0 0 0 0 rgba(248,113,113,.7)}50%{box-shadow:0 0 0 7px rgba(248,113,113,0)}}',
  '.evSheet{display:none;position:fixed;inset:0;z-index:96;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--bg,#070b12);color:var(--txt,#f1f5fb);font-family:system-ui,-apple-system,sans-serif;padding:0 0 calc(40px + env(safe-area-inset-bottom,0px))}',
  '.evSheet.on{display:block}',
@@ -326,6 +320,9 @@ var CSS=[
  '.evGol{display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--mut,#9db2c8);padding:2px 8px 6px}.evGol div{flex:1;line-height:1.5}.evGol div:last-child{text-align:right}',
  '.evTabs{display:flex;gap:6px;margin:12px 0 10px;overflow-x:auto}.evTab{flex:1;white-space:nowrap;border:1px solid var(--line2,#2a3e56);background:var(--bg1,#0d1420);color:var(--mut,#9db2c8);border-radius:99px;padding:9px 14px;font:700 13px system-ui;cursor:pointer;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none}',
  '.evTab.on{background:var(--hot,#fbbf24);color:var(--hotTx,#1a1305);border-color:var(--hot,#fbbf24)}',
+
+ '.evMas{margin:14px 0 4px;padding:12px;border-radius:12px;text-align:center;font:700 13px system-ui,-apple-system,sans-serif;color:var(--mut,#9db2c8);border:1px dashed var(--line2,#2a3e56);cursor:pointer}',
+ '.evTabBtn.evHas::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--bad,#f87171);margin-right:6px;vertical-align:middle;animation:evPulso 1.4s ease-in-out infinite}',
  '.evCard{background:var(--bg1,#0d1420);border:1px solid var(--line2,#2a3e56);border-radius:16px;padding:12px;margin:0 0 10px}',
  '.evCard h3{margin:0 0 8px;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--mut,#9db2c8)}',
  '.evCourt,.evZone,.evDiam{display:block;width:100%;height:auto}',
@@ -361,7 +358,7 @@ var CSS=[
  '.evBanner{border-radius:12px;padding:10px 12px;margin:0 0 10px;background:var(--bg2,#131d2c);font-size:14px;line-height:1.45}.evBanner.g{border:1px solid var(--hot,#fbbf24)}',
  '.evNota{margin:14px 4px 0;font-size:11.5px;color:var(--mut,#9db2c8);line-height:1.5;text-align:center}',
  '.evRun{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;justify-content:center}.evRun span{font-size:11.5px;background:var(--bg2,#131d2c);border-radius:99px;padding:3px 9px;color:var(--mut,#9db2c8)}',
- '@media (prefers-reduced-motion:reduce){.evNewDot,.evRing,.evItem.evNew,.evFab.evHas i{animation:none}}'
+ '@media (prefers-reduced-motion:reduce){.evNewDot,.evRing,.evItem.evNew,.evTabBtn.evHas::before{animation:none}}'
 ].join('\n');
 
 /* ---------- carga ---------- */
@@ -387,8 +384,8 @@ function cargarLista(){
 }
 function enVivo(){ return S.games.filter(function(g){ return g.state==='in'; }); }
 function actualizarFab(){
- if(!fab) return; var n=enVivo().length;
- fab.classList.toggle('evHas',n>0); fabN.textContent=n?String(n):''; fabN.style.display=n?'':'none';
+ var n=enVivo().length, els=doc.querySelectorAll('.evTabBtn');
+ for(var i=0;i<els.length;i++) els[i].classList.toggle('evHas',n>0);
 }
 function urlDetalle(g){
  var q=S.sinLang?'':'&lang=es&region=us';
@@ -657,26 +654,121 @@ function volver(){
  S.view='list'; S.cur=null; S.det=null; S.req++; pintar(); sheet.scrollTop=S.listY||0; programar(); cargarLista().then(pintar);
 }
 function abrir(){
- S.open=true; sheet.classList.add('on'); fab.style.display='none'; S.view='list'; pintar(); programar();
+ S.open=true; sheet.classList.add('on'); S.view='list'; pintar(); programar();
  cargarLista().then(pintar);
 }
-function cerrar(){ S.open=false; S.req++; sheet.classList.remove('on'); fab.style.display=''; programar(); }
+function cerrar(){ S.open=false; S.req++; sheet.classList.remove('on'); programar(); }
 function onClick(ev){
  var t=ev.target; while(t&&t!==sheet&&!(t.getAttribute&&t.getAttribute('data-a'))) t=t.parentNode;
  if(!t||t===sheet) return; var a=t.getAttribute('data-a');
  if(a==='close') cerrar(); else if(a==='back') volver(); else if(a==='open') abrirJuego(t.getAttribute('data-k'));
  else if(a==='tab'){ S.tab=t.getAttribute('data-v'); pintar(); } else if(a==='filt'){ S.filt=t.getAttribute('data-v'); pintar(); }
 }
+
+/* ---------- pestaña «En vivo» dentro de cada juego ---------- */
+var I=null;                           /* juego que se está viendo en una pestaña: {pane,g,det,tab,filt,error,req,timer} */
+function normTxt(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim(); }
+/* Texto del elemento con un espacio entre cada pieza (textContent pega «Magic» con «LOCAL» y rompe las palabras) */
+function textoDe(el){
+ var out=[], w=doc.createTreeWalker(el,4,null,false), n;
+ while((n=w.nextNode())) out.push(n.nodeValue);
+ return out.join(' ');
+}
+function puntajeEq(t,txt){
+ var w=normTxt(t&&t.n).split(' ').filter(function(x){ return x.length>=3; }); if(!w.length) return 0;
+ var hit=0; for(var i=0;i<w.length;i++) if((' '+txt+' ').indexOf(' '+w[i]+' ')>=0) hit++;
+ return hit/w.length;
+}
+/* Busca, de adentro hacia afuera, el primer contenedor del juego donde aparezcan los dos equipos de un juego de la lista */
+function juegoDe(el){
+ var a=el;
+ for(var n=0;a&&n<8;n++,a=a.parentNode){
+  if(a._pk!=null){ for(var i=0;i<S.games.length;i++) if(String(S.games[i].id)===String(a._pk)) return S.games[i]; }
+  var txt=normTxt(textoDe(a)), mejor=null, mp=0;
+  for(var j=0;j<S.games.length;j++){
+   var g=S.games[j], p1=puntajeEq(g.home,txt), p2=puntajeEq(g.away,txt);
+   if(p1>=0.5&&p2>=0.5&&p1+p2>mp){ mp=p1+p2; mejor=g; }
+  }
+  if(mejor) return mejor;
+ }
+ return null;
+}
+function porDefecto(){ return APP==='nba'?'cancha':(APP==='fut'?'com':''); }
+function pintarInline(){
+ if(!I) return;
+ if(!doc.contains(I.pane)){ pararInline(); return; }
+ var sv={cur:S.cur,det:S.det,tab:S.tab,filt:S.filt,error:S.error}, html='';
+ S.cur=I.g; S.det=I.det; S.tab=I.tab; S.filt=I.filt; S.error=I.error;
+ try{
+  if(!I.det) html='<div class="evVacio">'+(I.error?esc(I.error):'Cargando el juego…')+'</div>';
+  else html=(APP==='nba'?renderNBA(I.g):(APP==='fut'?renderFut(I.g):renderMLB(I.g)));
+ }catch(e){ html='<div class="evVacio">No pude dibujar este juego con los datos que llegaron.</div>'; if(root.console) root.console.error('envivo',e); }
+ I.tab=S.tab; I.filt=S.filt;
+ S.cur=sv.cur; S.det=sv.det; S.tab=sv.tab; S.filt=sv.filt; S.error=sv.error;
+ I.pane.innerHTML='<div class="evWrap">'+html+'<div role="button" tabindex="0" class="evMas" data-a="lista">Ver todos los juegos en vivo ›</div></div>';
+ var im=I.pane.querySelectorAll('img'); for(var i=0;i<im.length;i++) im[i].addEventListener('error',function(ev){ ev.target.style.visibility='hidden'; });
+}
+function cargarInline(){
+ if(!I) return Promise.resolve(); var g=I.g, id=++I.req;
+ var pedir=(APP==='nba'&&g.src==='nba')?detalleNba(g):getJSON(urlDetalle(g)).catch(function(e){ if(APP==='mlb'||S.sinLang) throw e; S.sinLang=true; return getJSON(urlDetalle(g)); });
+ return pedir.then(function(j){ if(!I||id!==I.req) return; I.det=j; I.error=''; S.upd=Date.now(); pintarInline(); })
+  .catch(function(){ if(!I||id!==I.req) return; if(!I.det) I.error='No pude cargar este juego. Lo intento otra vez solo.'; pintarInline(); });
+}
+function pararInline(){ if(I&&I.timer) clearInterval(I.timer); I=null; }
+function activarInline(pane,g){
+ if(I&&I.pane!==pane) pararInline();
+ if(I&&I.pane===pane){ cargarInline(); return; }
+ I={pane:pane,g:g,key:g.key,det:null,tab:porDefecto(),filt:'all',error:'',req:0,timer:null};
+ if(!pane._evL){
+  pane._evL=1;
+  pane.addEventListener('click',function(ev){
+   var t=ev.target; while(t&&t!==pane&&!(t.getAttribute&&t.getAttribute('data-a'))) t=t.parentNode;
+   if(!t||t===pane) return; ev.stopPropagation(); var a=t.getAttribute('data-a');
+   if(a==='lista') abrir(); else if(I&&I.pane===pane){ if(a==='tab'){ I.tab=t.getAttribute('data-v'); pintarInline(); } else if(a==='filt'){ I.filt=t.getAttribute('data-v'); pintarInline(); } }
+  });
+ }
+ pintarInline();
+ if(g.state==='pre'&&APP!=='mlb'){ I.det={}; pintarInline(); } else cargarInline();
+ I.timer=setInterval(function(){
+  if(doc.hidden) return;
+  if(!I||!doc.contains(I.pane)){ pararInline(); return; }
+  if(!I.pane.classList.contains('on')) return;               /* solo se actualiza mientras la pestaña está a la vista */
+  for(var i=0;i<S.games.length;i++) if(S.games[i].key===I.key){ I.g=S.games[i]; break; }
+  if(I.g.state==='pre'&&APP!=='mlb'){ pintarInline(); return; }
+  cargarInline();
+ },10000);
+}
+function ponerPestana(st){
+ if(st.querySelector('.evTabBtn')) return;
+ var body=st.closest?st.closest('.body'):null; if(!body||!st.querySelector('.tb')) return;
+ var muestra=body.querySelector('.tab[data-t]'), esMlb=!!muestra;
+ var panes=body.querySelectorAll(esMlb?'.tab[data-t]':'.pane'); if(!panes.length) return;
+ var btn=mk('button','tb evTabBtn','En vivo'); btn.setAttribute('type','button'); btn.setAttribute('data-t','evv');
+ var pane=mk(esMlb?'section':'div',(esMlb?'tab':'pane')+' evPane'); pane.setAttribute('data-t','evv'); pane.setAttribute('data-p','evv');
+ panes[panes.length-1].parentNode.appendChild(pane);
+ st.appendChild(btn);
+ btn.addEventListener('click',function(ev){
+  ev.stopPropagation();
+  var bs=st.querySelectorAll('.tb'); for(var i=0;i<bs.length;i++) bs[i].classList.toggle('on',bs[i]===btn);
+  var ps=body.querySelectorAll('.tab[data-t],.pane'); for(var j=0;j<ps.length;j++) ps[j].classList.toggle('on',ps[j]===pane);
+  var go=function(){
+   var g=juegoDe(body);
+   if(!g){ pane.innerHTML='<div class="evWrap"><div class="evVacio">No encontré este juego en la lista de ESPN/MLB. Puede que todavía no esté publicado.</div><div role="button" tabindex="0" class="evMas" data-a="lista">Ver todos los juegos en vivo ›</div></div>'; if(!pane._evL){ pane._evL=1; pane.addEventListener('click',function(e2){ var t=e2.target; while(t&&t!==pane&&!(t.getAttribute&&t.getAttribute('data-a'))) t=t.parentNode; if(t&&t!==pane&&t.getAttribute('data-a')==='lista'){ e2.stopPropagation(); abrir(); } }); } return; }
+   activarInline(pane,g);
+  };
+  if(S.cargado) go(); else { pane.innerHTML='<div class="evWrap"><div class="evVacio">Buscando el juego…</div></div>'; cargarLista().then(go,go); }
+ });
+}
+function escanearPestanas(){ var l=doc.querySelectorAll('.tabs'); for(var i=0;i<l.length;i++) try{ ponerPestana(l[i]); }catch(e){} }
+function vigilarJuegos(){
+ var prog=false;
+ var obs=new root.MutationObserver(function(){ if(prog) return; prog=true; (root.requestAnimationFrame||root.setTimeout)(function(){ prog=false; escanearPestanas(); }); });
+ obs.observe(doc.body,{childList:true,subtree:true}); escanearPestanas();
+}
+
 function armar(){
- if($('.evFab')) return;
+ if($('#evCss')) return;
  var st=mk('style'); st.id='evCss'; st.textContent=CSS; (doc.head||doc.documentElement).appendChild(st);
- fab=mk('div','evFab'); fab.setAttribute('role','button'); fab.setAttribute('tabindex','0'); fab.setAttribute('aria-label','Ver juegos en vivo');
- fab.appendChild(mk('i')); fab.appendChild(doc.createTextNode('En vivo')); fabN=mk('b'); fabN.style.display='none'; fab.appendChild(fabN);
- fab.setAttribute('title','En vivo');
- /* mientras se hace scroll, los botones flotantes se esconden a la derecha y vuelven al parar (no tapan el texto) */
- (function(){ var t=null; function esconder(){ var f=[].slice.call(doc.querySelectorAll('.evFab,.msFab')); f.forEach(function(x){ x.classList.add('evOculto'); }); if(t) clearTimeout(t); t=setTimeout(function(){ f.forEach(function(x){ x.classList.remove('evOculto'); }); },900); }
-  doc.addEventListener('scroll',esconder,{capture:true,passive:true}); doc.addEventListener('touchmove',esconder,{passive:true}); })();
- fab.addEventListener('click',abrir); fab.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); abrir(); } }); doc.body.appendChild(fab);
  sheet=mk('div','evSheet'); sheet.setAttribute('role','dialog'); sheet.setAttribute('aria-label','Juegos en vivo');
  var bar=mk('div','evBar');
  backEl=mk('div','evBtn','‹ Juegos'); backEl.setAttribute('role','button'); backEl.setAttribute('tabindex','0'); backEl.setAttribute('data-a','back'); backEl.style.visibility='hidden';
@@ -684,6 +776,7 @@ function armar(){
  var x=mk('div','evBtn','✕'); x.setAttribute('role','button'); x.setAttribute('tabindex','0'); x.setAttribute('data-a','close'); x.setAttribute('aria-label','Cerrar');
  bar.appendChild(backEl); bar.appendChild(titleEl); bar.appendChild(x); sheet.appendChild(bar);
  bodyEl=mk('div'); sheet.appendChild(bodyEl); sheet.addEventListener('click',onClick); sheet.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ var t=e.target; if(t&&t.getAttribute&&t.getAttribute('role')==='button'){ e.preventDefault(); onClick(e); } } }); doc.body.appendChild(sheet);
+ vigilarJuegos();
  setTimeout(function(){ cargarLista(); },2500);
  S.pollList=setInterval(function(){ if(!doc.hidden&&!S.open) cargarLista(); },90000);
 }

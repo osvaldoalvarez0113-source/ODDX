@@ -1,5 +1,5 @@
-/* OVA · Mesa (asistente) — MLB, fútbol y NBA.
-   Un botón flotante que abre «Mesa de hoy». Hace tres cosas, en este orden de confianza:
+/* OVA · Escáner (antes «Mesa») — MLB, fútbol y NBA.
+   Una barra dentro de la lista de juegos que abre el «Escáner de hoy». Hace tres cosas, en este orden de confianza:
    1) LEE todos los juegos de la pantalla, pestaña por pestaña (Veredicto, Cuotas, Números, Forma, Parque…),
       sin que tengas que abrirlos uno por uno.
    2) ORDENA los juegos con reglas fijas y sin internet (probabilidad del modelo + qué tan buenos son los datos).
@@ -227,9 +227,9 @@ function ls(k,v){
 }
 
 var CSS=[
- '.msFab{position:fixed;right:12px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;align-items:center;gap:7px;padding:11px 15px;border-radius:99px;background:var(--bg2,#131c2a);color:var(--txt,#fff);border:1px solid var(--hot,#fbbf24);font:700 14px system-ui,-apple-system,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.45);cursor:pointer;-webkit-tap-highlight-color:transparent;min-height:44px}',
- '.msFab{font-size:0!important;padding:0!important;min-width:44px;justify-content:center;gap:0!important;opacity:.82;transition:transform .25s ease,opacity .25s ease}',
- '.msFab b{color:var(--hot,#fbbf24);font-size:22px;line-height:1}',
+ '.msBarra{display:flex;align-items:center;gap:12px;margin:12px 0;padding:12px 14px;border-radius:14px;background:var(--bg2,#131c2a);color:var(--txt,#fff);border:1px solid var(--hot,#fbbf24);font:700 14px system-ui,-apple-system,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;min-height:44px;box-sizing:border-box;user-select:none;-webkit-user-select:none}',
+ '.msBarra b{color:var(--hot,#fbbf24);font-size:22px;line-height:1}',
+ '.msBarra span{display:block;font-weight:500;font-size:12px;color:var(--mut,#9db2c8);margin-top:2px}',
  '.msSheet{display:none;position:fixed;inset:0;z-index:95;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg,#070b12);color:var(--txt,#fff);padding:0 14px calc(60px + env(safe-area-inset-bottom,0px));font-family:system-ui,-apple-system,sans-serif}',
  '.msSheet.on{display:block;animation:msIn .22s cubic-bezier(.22,.7,.3,1)}',
  '@keyframes msIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}',
@@ -509,7 +509,7 @@ function leer(){
  if(ST.cargando) return;
  ST.cargando=true;
  var gs=$$('.game');
- if(!gs.length){ estado.textContent='Primero carga los juegos (fecha / liga) y vuelve a abrir la Mesa.'; ST.cargando=false; return; }
+ if(!gs.length){ estado.textContent='Primero carga los juegos (fecha / liga) y vuelve a abrir el Escáner.'; ST.cargando=false; return; }
  estado.textContent='Leyendo '+gs.length+' juegos…';
  try{ ST.cuotas=JSON.parse(ls('ova_mesa_cu_'+APP+'_'+fechaApp())||'{}')||{}; }catch(e){ ST.cuotas={}; }
  Promise.all([cargarMercado(),cargarOficial(),cargarTodo(function(h,t){ estado.textContent='Leyendo juego '+h+' de '+t+'…'; }).catch(function(){})]).then(function(){
@@ -525,15 +525,22 @@ function abrir(){
 }
 function cerrar(){ sheet.classList.remove('on'); fab.style.display=''; }
 
+/* La barra va dentro de la lista de juegos (arriba de las tarjetas), no flotando encima del texto. */
+function colocar(){
+ var lista=doc.getElementById('slate')||doc.getElementById('juegos');
+ if(lista&&lista.parentNode){ lista.parentNode.insertBefore(fab,lista); return; }
+ doc.body.appendChild(fab);
+}
 function armar(){
- if($('.msFab')) return;
+ if($('.msBarra')) return;
  APP=appActual();
  var s=mk('style'); s.id='msCss'; s.textContent=CSS; (doc.head||doc.documentElement).appendChild(s);
- fab=boton('msFab','',abrir); fab.appendChild(mk('b','','◎')); fab.appendChild(doc.createTextNode('Mesa'));
- fab.setAttribute('aria-label','Abrir la Mesa de hoy'); fab.setAttribute('title','Mesa de hoy');
- doc.body.appendChild(fab);
- sheet=mk('div','msSheet'); sheet.setAttribute('role','dialog'); sheet.setAttribute('aria-label','Mesa de hoy');
- var bar=mk('div','msBar'); var h=mk('h2','','Mesa de hoy'); h.appendChild(mk('small','',({mlb:'MLB',fut:'Fútbol',nba:'NBA'})[APP]+' · lee todos los juegos y todas las pestañas'));
+ fab=boton('msBarra','',abrir); fab.appendChild(mk('b','','🔍'));
+ var tx=mk('div'); tx.appendChild(doc.createTextNode('Escáner del día')); tx.appendChild(mk('span','','Analiza todos los juegos: ordena, filtra y calcula el valor con tu cuota'));
+ fab.appendChild(tx); fab.setAttribute('aria-label','Abrir el Escáner del día');
+ colocar();
+ sheet=mk('div','msSheet'); sheet.setAttribute('role','dialog'); sheet.setAttribute('aria-label','Escáner de hoy');
+ var bar=mk('div','msBar'); var h=mk('h2','','Escáner de hoy'); h.appendChild(mk('small','',({mlb:'MLB',fut:'Fútbol',nba:'NBA'})[APP]+' · lee todos los juegos y todas las pestañas'));
  bar.appendChild(h); bar.appendChild(boton('msX','✕ Cerrar',cerrar)); sheet.appendChild(bar);
  /* «Cómo leerla»: abierto la primera vez, después queda cerrado y se abre con un toque (en el iPhone ocupaba media pantalla) */
  avPrimera=ls(AV_KEY)!=='1';

@@ -185,6 +185,17 @@ sec('MLB: Veredicto en palabras simples');
  ok('zona gris y muy parejo explican el porqué en palabras normales, también cuando responde el servidor',/Zona gris · sin pick/.test(h)&&/Zona gris · sin pick/.test(r)&&/lo mínimo para jugarlo/.test(h)&&/lo mínimo para jugarlo/.test(r));
 }
 
+sec('Sin botones flotantes: En vivo es una pestaña de cada juego y el Escáner va en la lista');
+{
+ const ev=rd('envivo.js'), sa=rd('asistente.js');
+ ok('envivo.js ya no crea el botón flotante .evFab',!/mk\('div','evFab'\)/.test(ev)&&!/\.evFab\{/.test(ev));
+ ok('cada juego recibe una pestaña «En vivo» (MutationObserver) y la actualiza solo mientras está a la vista',/function ponerPestana\(/.test(ev)&&/new root\.MutationObserver/.test(ev)&&/classList\.contains\('on'\)\)\s*return;/.test(ev));
+ ok('el juego de la tarjeta se reconoce por el id de MLB o por los nombres de los dos equipos (con espacio entre piezas de texto)',/a\._pk!=null/.test(ev)&&/function textoDe\(/.test(ev)&&/p1>=0\.5&&p2>=0\.5/.test(ev));
+ ok('la pestaña es botón de verdad con clase tb y el panel usa la misma clase que los de cada app, así cada app la oculta sola al cambiar de pestaña',/mk\('button','tb evTabBtn'/.test(ev)&&/esMlb\?'tab':'pane'/.test(ev));
+ ok('lo que muestra la pestaña lo escribe como texto/HTML ya escapado igual que el panel grande (no se agregó innerHTML con datos crudos)',/I\.pane\.innerHTML='<div class="evWrap">'\+html\+/.test(ev));
+ ok('el Escáner se llama así, va dentro de la lista de juegos y ya no es un botón flotante',/Escáner del día/.test(sa)&&/function colocar\(/.test(sa)&&/insertBefore\(fab,lista\)/.test(sa)&&!/\.msFab/.test(sa)&&!/Mesa de hoy/.test(sa));
+}
+
 sec('NBA: cierre de picks (ganador, hándicap, total, push)');
 {
  const nb=rd('nba.html'),a=nb.indexOf('function resolver(p,g){'),b=nb.indexOf('let VERIF'),X={};
@@ -677,7 +688,7 @@ sec('Estructura del repo (lo que encontró la auditoría de oct 2026)');
  }
 }
 
-sec('Mesa (asistente.js): lee todas las pestañas, ordena sin internet y calcula el valor con tu cuota');
+sec('Escáner (asistente.js): lee todas las pestañas, ordena sin internet y calcula el valor con tu cuota');
 {
  const M=require(path.join(__dirname,'asistente.js')), sa=rd('asistente.js');
  ok('aDecimal entiende -140, +120, 1.85, 55¢ y rechaza basura',Math.abs(M.aDecimal('-140')-1.7143)<1e-3&&M.aDecimal('+120')===2.2&&M.aDecimal('1.85')===1.85&&Math.abs(M.aDecimal('55¢')-1.8182)<1e-3&&M.aDecimal('abc')===null&&M.aDecimal('')===null);
