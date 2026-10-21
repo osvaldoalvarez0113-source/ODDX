@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html'];
-const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -836,6 +836,56 @@ sec('FIP del abridor (v64): apagado no cambia nada, encendido calcula lo que mid
  ok('el selector «FIP del abridor» se monta en Ajustes, apagado por defecto, junto al del historial',T.ins.length===2&&/id="hist"/.test(T.ins[0].innerHTML)&&/id="fipx"/.test(T.ins[1].innerHTML)&&/<option value="off" selected>/.test(T.ins[1].innerHTML));
  ok('la versión visible pasó a v64 y la nota explica que viene apagado',T.vers.every(v=>v.textContent==='v64')&&T.notas.some(n=>/ovaNota64/.test(n.className)&&/apagado/.test(n.innerHTML)));
  ok('los coeficientes del código son los que salieron del backtest (a, b_e, b_ph, b_f) y están anotados en el encabezado',/FA=1\.5913, FB1=0\.1739, FBH=0\.3329, FBF=0\.5375/.test(src)&&/1\.5913\+0\.1739\*ERA_del_año_jalado/.test(src.replace(/ /g,'')));
+}
+
+sec('En vivo (envivo.js): lista de juegos, cancha de la NBA, zona de strike de MLB y comentarios de fútbol');
+{
+ const E=require(path.join(__dirname,'envivo.js')), se=rd('envivo.js');
+ ok('envivo.js se carga en los tres, después de asistente.js',['index.html','futbol.html','nba.html'].every(f=>{const x=rd(f);return x.indexOf('envivo.js')>x.indexOf('asistente.js')&&x.indexOf('asistente.js')>0;}));
+ ok('el service worker guarda envivo.js',/'envivo\.js'/.test(rd('sw.js')));
+ ok('no usa eval, new Function ni document.write',!/\beval\s*\(|new Function|document\.write/.test(se));
+ ok('todo texto que llega de afuera se escapa (esc) y los logos solo aceptan https',E.esc('<img src=x onerror=alert(1)>')==='&lt;img src=x onerror=alert(1)&gt;'&&E.safeUrl('javascript:alert(1)')===''&&E.safeUrl('https://a.b/c.png')==='https://a.b/c.png');
+ ok('traduce lo que narran las fuentes: béisbol, básquet y fútbol',/sencillo en rola a campocorto/.test(E.tr('Steven Kwan singles on a ground ball to shortstop Taylor Walls.'))&&/se poncha tirándole/.test(E.tr('Juan Soto strikes out swinging.'))&&/anota/.test(E.tr('Jalen Brunson makes 26-foot three point jumper'))&&/¡Gol!/.test(E.tr('Goal! PSG 4, Barcelona 2.'))&&/Tiro atajado/.test(E.tr('Attempt saved. X (Y) header')));
+ ok('fútbol: «Foul by» y «misses to the right» no los pisa la traducción del básquet',E.tr('Foul by Pedri (Barcelona).')==='Falta de Pedri (Barcelona).'&&/se va por la derecha/.test(E.tr('shot misses to the right.')));
+ ok('si ESPN rechazara el idioma (lang/region), se vuelve a pedir el juego sin eso',/S\.sinLang=true; return getJSON\(urlDetalle\(g\)\)/.test(se));
+ ok('lo que ya viene en español no se toca',E.tr('Fuera el disparo de Lamine Yamal')==='Fuera el disparo de Lamine Yamal');
+ ok("minutos de fútbol: 90'+3' = 93 y 45' = 45",E.minutoDe("90'+3'")===93&&E.minutoDe("45'")===45&&E.minutoDe('')===0);
+ ok('NBA: las coordenadas basura de ESPN (-214748340) se ignoran y los tiros de la otra mitad se giran a la misma media cancha',!E.coordOk(-214748340,-214748340)&&E.coordOk(25,5)&&E.plegar(10,80).x===40&&E.plegar(10,80).y===14&&E.plegar(10,20).y===20);
+ const sb={events:[
+  {id:'1',date:'2026-10-20T23:00Z',status:{type:{state:'in',shortDetail:'7:12 - 2nd'}},competitions:[{competitors:[{homeAway:'home',score:'38',team:{id:'20',displayName:'New York Knicks',abbreviation:'NY',logo:'https://x/ny.png'}},{homeAway:'away',score:'28',team:{id:'20',displayName:'Philadelphia 76ers',abbreviation:'PHI',logo:'javascript:1'}}]}]},
+  {id:'2',date:'2026-10-20T22:00Z',status:{type:{state:'post',shortDetail:'Final'}},competitions:[{competitors:[{homeAway:'home',score:'100',team:{id:'1',displayName:'A',abbreviation:'A'}},{homeAway:'away',score:'90',team:{id:'2',displayName:'B',abbreviation:'B'}}]}]},
+  {id:'3',date:'2026-10-21T02:30Z',status:{type:{state:'pre',shortDetail:'10/20 - 9:30 PM EDT'}},competitions:[{competitors:[{homeAway:'home',team:{id:'3',displayName:'C',abbreviation:'C'}},{homeAway:'away',team:{id:'4',displayName:'D',abbreviation:'D'}}]}]}]};
+ const ev=E.parseEspnEventos(sb,'NBA',''), ord=E.ordenarJuegos(ev);
+ ok('lista ESPN: lee equipos, marcador y estado; el de logo peligroso queda sin logo; los vivos van primero y los terminados al final',ev.length===3&&ev[0].home.score==='38'&&ev[0].away.logo===''&&ev[0].det==='7:12 · 2º'&&ord[0].state==='in'&&ord[2].state==='post'&&ev[2].home.score==='0');
+ const mlb=E.parseMlbSchedule({dates:[{games:[
+  {gamePk:11,gameDate:'2026-10-20T23:00:00Z',status:{abstractGameState:'Live',detailedState:'In Progress'},linescore:{currentInning:5,isTopInning:true,outs:2},teams:{away:{score:2,team:{id:147,name:'New York Yankees',abbreviation:'NYY'}},home:{score:1,team:{id:111,name:'Boston Red Sox',abbreviation:'BOS'}}}},
+  {gamePk:12,gameDate:'2026-10-20T23:00:00Z',status:{abstractGameState:'Live',detailedState:'Warmup'},teams:{away:{team:{id:1,name:'A'}},home:{team:{id:2,name:'B'}}}},
+  {gamePk:13,gameDate:'2026-10-20T23:00:00Z',status:{abstractGameState:'Final',detailedState:'Postponed'},teams:{away:{team:{id:1,name:'A'}},home:{team:{id:2,name:'B'}}}},
+  {gamePk:14,gameDate:'2026-10-20T23:00:00Z',status:{abstractGameState:'Final',detailedState:'Final'},linescore:{currentInning:9},teams:{away:{score:7,team:{id:1,name:'A'}},home:{score:3,team:{id:2,name:'B'}}}}]}]});
+ ok('lista MLB: en vivo con entrada y outs, el calentamiento cuenta como por empezar, el pospuesto no sale como vivo, y el logo sale del id del equipo',mlb[0].state==='in'&&mlb[0].det==='▲5 · 2 outs'&&mlb[0].home.logo==='https://www.mlbstatic.com/team-logos/111.svg'&&mlb[1].state==='pre'&&mlb[2].det==='Pospuesto'&&mlb[2].state==='post'&&mlb[3].det==='Final');
+ const pj=E.nbaJugadas({plays:[
+  {id:'a',text:'X makes layup',period:{number:1},clock:{displayValue:'11:40'},scoringPlay:true,shootingPlay:true,scoreValue:2,team:{id:'10'},coordinate:{x:25,y:6},homeScore:2,awayScore:0},
+  {id:'b',text:'Y misses jumper',period:{number:1},clock:{displayValue:'11:20'},scoringPlay:false,shootingPlay:true,scoreValue:0,team:{id:'10'},coordinate:{x:12,y:20}},
+  {id:'c',text:'Z makes three point jumper',period:{number:1},clock:{displayValue:'11:00'},scoringPlay:true,shootingPlay:true,scoreValue:3,team:{id:'10'},coordinate:{x:5,y:70}},
+  {id:'d',text:'Z makes free throw 1 of 2',period:{number:1},clock:{displayValue:'10:40'},scoringPlay:true,shootingPlay:true,scoreValue:1,team:{id:'10'},coordinate:{x:25,y:19}},
+  {id:'e',text:'End of the 1st Quarter',period:{number:1},clock:{displayValue:'0:00'},coordinate:{x:-214748340,y:-214748340}}]});
+ const ti=E.nbaTiros(pj), rs=E.resumenTiros(ti,'10');
+ ok('NBA: solo cuentan como tiros las jugadas de tiro con coordenada válida; los libres no entran en el % de campo',pj.length===5&&ti.length===4&&rs.att===3&&rs.fg===2&&rs.pct===67&&rs.tres===1);
+ const fc=E.futComentarios({commentary:[{sequence:1,time:{displayValue:"1'"},text:'Kick off'},{sequence:9,time:{displayValue:"90'+3'"},text:'Goal!'},{sequence:5,time:{displayValue:"45'"},text:''}]});
+ ok('fútbol: comentarios del más nuevo al más viejo y sin los vacíos',fc.length===2&&fc[0].txt==='Goal!');
+ const fe=E.futEventos({keyEvents:[{id:'1',type:{text:'Kickoff'},clock:{displayValue:"0'"}},{id:'2',type:{text:'Goal'},scoringPlay:true,clock:{displayValue:"79'"},team:{id:'5'},participants:[{athlete:{displayName:'Lamine Yamal'}}]},{id:'3',type:{text:'Yellow Card'},clock:{displayValue:"81'"},team:{id:'6'}}]});
+ ok('fútbol: eventos con jugador y minuto, sin el pitazo inicial',fe.length===2&&fe[0].who==='Lamine Yamal'&&fe[0].min===79&&fe[0].sc===true&&E.iconoFut(fe[1].ty,false)==='🟨'&&E.iconoFut('Goal',true)==='⚽');
+ const sp=E.statsPor({boxscore:{teams:[{team:{id:'5'},statistics:[{name:'possessionPct',displayValue:'61.5'},{name:'totalShots',displayValue:'14'}]},{team:{id:'6'},statistics:[{name:'possessionPct',displayValue:'38.5'},{name:'totalShots',displayValue:'6'}]}]}},'5','6',E.MAPA_FUT);
+ ok('fútbol: estadísticas casa contra visita, solo las que la fuente trae',sp.length===2&&sp[0].h===61.5&&sp[0].a===38.5&&sp[1].h===14&&sp[1].a===6);
+ const lz=E.mlbLanzamientos({about:{atBatIndex:3},playEvents:[
+  {isPitch:true,details:{call:{description:'Called Strike',code:'C'},type:{description:'Four-Seam Fastball'},isStrike:true},pitchData:{startSpeed:96.24,coordinates:{pX:0.1,pZ:2.5},strikeZoneTop:3.4,strikeZoneBottom:1.6}},
+  {isPitch:false,details:{description:'Mound visit'}},
+  {isPitch:true,details:{call:{description:'Ball',code:'B'},type:{description:'Slider'},isBall:true},pitchData:{startSpeed:85,coordinates:{pX:-1.4,pZ:0.9}}},
+  {isPitch:true,details:{call:{description:'In play, out(s)',code:'X'},type:{description:'Sinker'},isInPlay:true},pitchData:{startSpeed:93,coordinates:{pX:0.3,pZ:2}}}]});
+ ok('MLB: lanzamientos numerados (el que no es lanzamiento no cuenta), con velocidad, color por resultado y nombre en español',lz.length===3&&lz[0].n===1&&lz[0].v===96.2&&lz[0].cl==='st'&&lz[1].cl==='ba'&&lz[2].cl==='ip'&&lz[0].tipo==='Recta 4 costuras'&&lz[0].res==='Strike cantado'&&lz[2].res==='En juego, out'&&lz[0].top===3.4);
+ const mj=E.mlbJugadas({liveData:{plays:{allPlays:[{result:{description:'A singles.',awayScore:0,homeScore:0},about:{inning:1,halfInning:'top',atBatIndex:0}},{result:{description:'B homers.',awayScore:2,homeScore:0},about:{inning:1,halfInning:'top',isScoringPlay:true,atBatIndex:1}},{result:{},about:{inning:1,halfInning:'bottom',atBatIndex:2}}]}}});
+ ok('MLB: jugadas de la más nueva a la más vieja, sin la que todavía no tiene descripción',mj.length===2&&mj[0].txt==='B homers.'&&mj[0].sc===true&&mj[0].top===true);
+ ok('detalles de estado de ESPN al español',E.detalleCorto('Halftime')==='Medio tiempo'&&E.detalleCorto('7:12 - 2nd')==='7:12 · 2º'&&E.detalleCorto("67'")==="67'"&&E.detalleCorto('Final/OT')==='Final/TE');
 }
 
 (async()=>{ await t_envivo(); await t_respaldo(); await t_sw(); })().then(()=>{
