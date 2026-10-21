@@ -139,7 +139,7 @@ function nbaJugadas(j){
   var ty=(p.type&&p.type.text)||'', txt=p.text||'';
   return {id:String(p.id!=null?p.id:(p.sequenceNumber!=null?p.sequenceNumber:i)),txt:txt,per:num(p.period&&p.period.number!=null?p.period.number:p.period,0),
    clk:(p.clock&&p.clock.displayValue)||'',sc:!!p.scoringPlay,shot:!!p.shootingPlay,val:num(p.scoreValue,0),tid:String((p.team&&p.team.id)||''),
-   who:((/^([A-Z][^ ]*(?: [A-Z][^ ]*)?(?: (?:Jr\.|Sr\.|II|III|IV))?) (?:makes|misses|blocks)\b/.exec(txt))||[])[1]||'',pid:'',t:0,
+   who:((/^([A-Z][^ ]*(?: [A-Z][^ ]*)?(?: (?:Jr\.|Sr\.|II|III|IV))?) (?:makes|misses|blocks)\b/.exec(txt))||[])[1]||'',pid:'',t:Date.parse(p.wallclock)||0,
    x:x,y:y,ok:coordOk(x,y),hs:p.homeScore,as:p.awayScore,tl:/free throw/i.test(ty+' '+txt)};
  });
 }
@@ -386,13 +386,13 @@ var CSS=[
 ].join('\n');
 
 /* ---------- carga ---------- */
-var NBA_ERR='';
+var NBA_ERR='', NBA_OFF=false;   /* cdn.nba.com solo contesta a páginas de nba.com (CORS): si falla una vez, se usa ESPN sin volver a intentarlo */
 function cargarLista(){
  var hoy=new Date(), ayer=new Date(hoy.getTime()-864e5), ps=[];
  if(APP==='nba'){
   var fechas=[ymd(hoy)]; if(hoy.getHours()<6) fechas.push(ymd(ayer));
   var viaEspn=function(){ return Promise.all(fechas.map(function(f){ return getJSON(ESPN+'basketball/nba/scoreboard?dates='+f+'&limit=100').then(function(j){ return parseEspnEventos(j,'NBA','').map(function(g){ g.src='espn'; return g; }); }).catch(function(){ return null; }); })).then(function(rs){ var ok=rs.filter(function(r){ return r; }); if(!ok.length) throw new Error('sin ESPN'); return [].concat.apply([],ok); }); };
-  ps=[getJSON(NBACDN+'scoreboard/todaysScoreboard_00.json').then(parseNbaScoreboard).then(function(l){ if(!l.length) throw new Error('vacío'); NBA_ERR=''; return l; }).catch(function(e){ NBA_ERR=String((e&&e.message)||e).slice(0,70); return viaEspn(); }).catch(function(){ return null; })];
+  ps=[(NBA_OFF?Promise.reject(new Error('NBA.com no deja leer sus datos desde otra página web')):getJSON(NBACDN+'scoreboard/todaysScoreboard_00.json')).then(parseNbaScoreboard).then(function(l){ if(!l.length) throw new Error('vacío'); NBA_ERR=''; return l; }).catch(function(e){ NBA_OFF=true; NBA_ERR=String((e&&e.message)||e).slice(0,70); return viaEspn(); }).catch(function(){ return null; })];
  } else if(APP==='fut'){
   ps=LIGAS.map(function(l){ return getJSON(ESPN+'soccer/'+l[0]+'/scoreboard').then(function(j){ return parseEspnEventos(j,l[1],l[0]); }).catch(function(){ return null; }); });
  } else {
@@ -639,7 +639,7 @@ function lineaScore(ls,away,home){
 }
 function nota(fuente,app){
  var t=S.upd?new Date(S.upd).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'}):'';
- return '<div class="evNota">Datos: '+(fuente==='MLB'?'MLB Stats API':(fuente==='NBA'?'NBA.com':'ESPN'))+' · se actualiza solo'+(t?' · '+esc(t):'')+(app==='nba'&&fuente==='ESPN'&&NBA_ERR?'<br>NBA.com no respondió ('+esc(NBA_ERR)+'), por eso se usa ESPN.':'')+(app==='fut'?'<br>La cancha se arma con las jugadas que reporta ESPN (pases, tiros, faltas) y llega con unos segundos de atraso; no es el seguimiento de cada jugador moviéndose (ese es de pago).':'')+'</div>';
+ return '<div class="evNota">Datos: '+(fuente==='MLB'?'MLB Stats API':(fuente==='NBA'?'NBA.com':'ESPN'))+' · se actualiza solo'+(t?' · '+esc(t):'')+(app==='nba'&&fuente==='ESPN'&&NBA_ERR?'<br>NBA.com no deja que otras páginas lean sus datos, por eso se usa ESPN.':'')+(app==='fut'?'<br>La cancha se arma con las jugadas que reporta ESPN (pases, tiros, faltas) y llega con unos segundos de atraso; no es el seguimiento de cada jugador moviéndose (ese es de pago).':'')+'</div>';
 }
 
 /* ---------- lista ---------- */
