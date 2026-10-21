@@ -176,6 +176,15 @@ sec('Fútbol: Veredicto en palabras simples');
  ok('las notas largas van en un «¿Cómo se lee y qué tan confiable es?» plegado y ya no sale ρ ni «Dixon-Coles con peso por antigüedad» en pantalla del Veredicto',/<details class="comoLee">/.test(h)&&/¿Cómo se lee y qué tan confiable es\?/.test(h)&&!/Modelo v4: Dixon-Coles con peso/.test(h));
 }
 
+sec('MLB: Veredicto en palabras simples');
+{
+ const h=rd('index.html'), r=rd('railway.js');
+ const v=h.slice(h.indexOf("  var tVer="),h.indexOf('/* ---------- pestana CUOTAS'));
+ ok('el Veredicto abre con la conclusión (pick) y ya no repite el 56.4% / cuota justa / total en una tira aparte',v.indexOf('pickbox')<v.indexOf('calwrap')&&!/class="kpi"/.test(v));
+ ok('lo que falta de datos va plegado en «¿Qué falta?»',/<summary>¿Qué falta\?<\/summary>/.test(h));
+ ok('zona gris y muy parejo explican el porqué en palabras normales, también cuando responde el servidor',/Zona gris · sin pick/.test(h)&&/Zona gris · sin pick/.test(r)&&/lo mínimo para jugarlo/.test(h)&&/lo mínimo para jugarlo/.test(r));
+}
+
 sec('NBA: cierre de picks (ganador, hándicap, total, push)');
 {
  const nb=rd('nba.html'),a=nb.indexOf('function resolver(p,g){'),b=nb.indexOf('let VERIF'),X={};

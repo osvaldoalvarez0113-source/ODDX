@@ -299,6 +299,11 @@ footer details summary:before{content:none}
 .cal.alta{border-left:3px solid var(--good)}   .cal.alta .n{color:var(--good)}
 .cal.media{border-left:3px solid var(--acc)}   .cal.media .n{color:var(--acc)}
 .cal.baja{border-left:3px solid var(--bad)}    .cal.baja .n{color:var(--bad)}
+.comoLee{margin:6px 0}
+.comoLee summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--mut);padding:6px 0;list-style:none}
+.comoLee summary::-webkit-details-marker{display:none}
+.comoLee summary::before{content:'▸ '}
+.comoLee[open] summary::before{content:'▾ '}
 
 .medido{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;
  letter-spacing:.3px;border-radius:4px;padding:2px 6px;margin-left:6px;vertical-align:middle}
@@ -2272,7 +2277,7 @@ function calBloque(c){
     : c.s>=60
       ? 'Falta algo. El número sirve, pero no lo estires.'
       : 'El modelo está calculando a ciegas en varias entradas. No apuestes este juego por bonito que salga el número.';
-  var det = c.faltan.length ? '<div class="flag">Falta: '+esc(c.faltan.join(' · '))+'.</div>' : '';
+  var det = c.faltan.length ? '<details class="comoLee"><summary>¿Qué falta?</summary><div class="flag">'+esc(c.faltan.join(' · '))+'.</div></details>' : '';
   return '<div class="cal '+cls+'"><div class="n">'+c.s+'</div>'+
          '<div class="t"><b>'+tit+'</b>'+txt+'</div></div>'+det;
 }
@@ -3423,13 +3428,13 @@ function detalle(x){
 
   var pick;
   if(vc<CORTE_GRIS)
-    pick='<div class="pick no"><div class="q">Sin pick al ganador</div><div class="r">Ventaja de solo '+vc.toFixed(2)+' carreras, por debajo de tu corte de '+CORTE_GRIS.toFixed(2)+'. Muy parejos.</div></div>';
+    pick='<div class="pick no"><div class="q">Muy parejo · sin pick</div><div class="r">Los dos equipos están casi igual: ventaja de solo '+vc.toFixed(2)+' carreras (hay que tener al menos '+CORTE_GRIS.toFixed(2)+' para mirarlo). '+esc(gana)+' tiene '+pctGana.toFixed(1)+'%, cuota justa '+american(pctGana)+'.</div></div>';
   else if(vc>=CORTE_FUERTE)
     pick='<div class="pick big"><div class="q">'+escudo(idGana,24)+'Juégale a '+esc(gana)+'</div><div class="r">Gran oportunidad · '+pctGana.toFixed(1)+'% · cuota justa '+american(pctGana)+' · ventaja de '+vc.toFixed(2)+' carreras. Solo si el book paga más de '+american(pctGana)+'.</div></div>';
   else if(vc>=CORTE_SOLIDO)
     pick='<div class="pick"><div class="q">'+escudo(idGana,24)+'Juégale a '+esc(gana)+'</div><div class="r">Ventaja sólida · '+pctGana.toFixed(1)+'% · cuota justa '+american(pctGana)+' · ventaja de '+vc.toFixed(2)+' carreras. Solo si el book paga más de '+american(pctGana)+'.</div></div>';
   else
-    pick='<div class="pick no"><div class="q">Zona gris</div><div class="r">'+esc(gana)+' sale arriba con '+pctGana.toFixed(1)+'% y '+vc.toFixed(2)+' carreras de ventaja, que no llega a '+CORTE_SOLIDO.toFixed(2)+'. Déjalo pasar salvo que el book regale la línea.</div></div>';
+    pick='<div class="pick no"><div class="q">Zona gris · sin pick</div><div class="r">'+esc(gana)+' va arriba ('+pctGana.toFixed(1)+'%, cuota justa '+american(pctGana)+'), pero su ventaja de '+vc.toFixed(2)+' carreras no llega a '+CORTE_SOLIDO.toFixed(2)+', que es lo mínimo para jugarlo. Déjalo pasar salvo que el book pague mucho más que '+american(pctGana)+'.</div></div>';
 
   var avisos=[];
   if(l5a.n<5||l5h.n<5) avisos.push('Muestra corta en últimas salidas: '+l5a.n+' y '+l5h.n+'.');
@@ -3443,28 +3448,22 @@ function detalle(x){
 
   /* ---------- pestana VEREDICTO ---------- */
   var tVer=
-  '<div class="calwrap">'+calBloque(cal)+'</div>'+
+  '<div class="pickbox">'+pick+'</div>'+
   '<div class="bar">'+
     '<span class="'+(homeLead?'trail':'lead')+'" style="flex-grow:'+pA.toFixed(1)+'">'+
       escudo(idA,20)+pA.toFixed(1)+'%</span>'+
     '<span class="'+(homeLead?'lead':'trail')+'" style="flex-grow:'+pH.toFixed(1)+'">'+
       pH.toFixed(1)+'%'+escudo(idH,20)+'</span>'+
   '</div>'+
-  '<div class="kpi">'+
-    '<div><b>'+pctGana.toFixed(1)+'%</b><span>'+(homeLead?nomH:nomA)+' gana</span></div>'+
-    '<div><b>'+american(pctGana)+'</b><span>cuota justa</span></div>'+
-    '<div><b>'+num(T,1)+'</b><span>total esperado</span></div>'+
-  '</div>'+
-  '<div class="pickbox">'+pick+'</div>'+
   avisoMuestra(pa.fullName,sea,cA,eA,pih.fullName,seh,cH,eH)+
   '<table>'+
     '<tr><th>Carreras esperadas</th><th>'+thA+'</th><th>'+thH+'</th></tr>'+
     '<tr class="usa"><td>Juego completo</td><td class="n">'+num(lamAt,1)+'</td><td class="n">'+num(lamHt,1)+'</td></tr>'+
     '<tr><td>Primeras 5 entradas</td><td class="n">'+num(lamA5,1)+'</td><td class="n">'+num(lamH5,1)+'</td></tr>'+
   '</table>'+
-  '<div class="flag">No es lo mismo un total de '+num(T,1)+' que sale de '+num(lamAt,1)+'–'+num(lamHt,1)+
-  ' que uno parejo. Esta tabla te dice de dónde salen las carreras, y es la base de los mercados '+
-  'de <b>carreras por equipo</b> y <b>primeras 5</b> que están en la pestaña de Cuotas.</div>'+
+  '<div class="flag">Carreras que se espera que anote cada equipo; sumadas dan el total de '+num(T,1)+'. '+
+  'De aquí salen los mercados de <b>carreras por equipo</b> y <b>primeras 5</b> de la pestaña Cuotas.</div>'+
+  '<div class="calwrap">'+calBloque(cal)+'</div>'+
   '<div class="leyenda">&#128681; Este veredicto sale <b>solo del modelo</b>, sin mirar el mercado. '+
   'Toca la pesta&ntilde;a &#128176; <b>Cuotas</b> y escribe los precios: ah&iacute; se recalcula por valor real '+
   'contra la l&iacute;nea y aparece el &#127942; Ranking del juego.</div>'+
@@ -4683,7 +4682,7 @@ document.addEventListener('visibilitychange',function(){
   div.className='ovaHero mlb';
   div.innerHTML='<div class="row3">'+side(d.a.team.id,c.nomA,pA,fav==='a')+
    '<div class="gz">'+arcHtml(pA,pH,fav)+'<div class="cx"><small>cuota justa</small><b>'+fmtAm(Math.max(pA,pH))+'</b></div></div>'+
-   side(d.h.team.id,c.nomH,pH,fav==='h')+'</div><div class="cap">'+cap+'</div>';
+   side(d.h.team.id,c.nomH,pH,fav==='h')+'</div>';
   tab.insertBefore(div,tab.firstChild);
   animar(div);
  }
