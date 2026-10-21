@@ -228,7 +228,8 @@ function ls(k,v){
 
 var CSS=[
  '.msFab{position:fixed;right:12px;bottom:calc(74px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;align-items:center;gap:7px;padding:11px 15px;border-radius:99px;background:var(--bg2,#131c2a);color:var(--txt,#fff);border:1px solid var(--hot,#fbbf24);font:700 14px system-ui,-apple-system,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.45);cursor:pointer;-webkit-tap-highlight-color:transparent;min-height:44px}',
- '.msFab b{color:var(--hot,#fbbf24);font-size:16px;line-height:1}',
+ '.msFab{font-size:0!important;padding:0!important;min-width:44px;justify-content:center;gap:0!important;opacity:.82;transition:transform .25s ease,opacity .25s ease}',
+ '.msFab b{color:var(--hot,#fbbf24);font-size:22px;line-height:1}',
  '.msSheet{display:none;position:fixed;inset:0;z-index:95;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg,#070b12);color:var(--txt,#fff);padding:0 14px calc(60px + env(safe-area-inset-bottom,0px));font-family:system-ui,-apple-system,sans-serif}',
  '.msSheet.on{display:block;animation:msIn .22s cubic-bezier(.22,.7,.3,1)}',
  '@keyframes msIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}',
@@ -529,7 +530,7 @@ function armar(){
  APP=appActual();
  var s=mk('style'); s.id='msCss'; s.textContent=CSS; (doc.head||doc.documentElement).appendChild(s);
  fab=boton('msFab','',abrir); fab.appendChild(mk('b','','◎')); fab.appendChild(doc.createTextNode('Mesa'));
- fab.setAttribute('aria-label','Abrir la Mesa de hoy');
+ fab.setAttribute('aria-label','Abrir la Mesa de hoy'); fab.setAttribute('title','Mesa de hoy');
  doc.body.appendChild(fab);
  sheet=mk('div','msSheet'); sheet.setAttribute('role','dialog'); sheet.setAttribute('aria-label','Mesa de hoy');
  var bar=mk('div','msBar'); var h=mk('h2','','Mesa de hoy'); h.appendChild(mk('small','',({mlb:'MLB',fut:'Fútbol',nba:'NBA'})[APP]+' · lee todos los juegos y todas las pestañas'));

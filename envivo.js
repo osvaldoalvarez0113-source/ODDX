@@ -297,6 +297,8 @@ function diaTxt(ms){
 
 var CSS=[
  '.evFab{position:fixed;right:12px;bottom:calc(130px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;align-items:center;gap:8px;padding:11px 15px;border-radius:99px;background:var(--bg2,#131d2c);color:var(--txt,#f1f5fb);border:1px solid var(--line2,#2a3e56);font:700 14px system-ui,-apple-system,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.45);cursor:pointer;-webkit-tap-highlight-color:transparent;min-height:44px;box-sizing:border-box;user-select:none;-webkit-user-select:none}',
+ '.evFab{font-size:0!important;padding:0!important;min-width:44px;justify-content:center;gap:4px!important;opacity:.82;transition:transform .25s ease,opacity .25s ease}',
+ '.evFab.evOculto,.msFab.evOculto{transform:translateX(72px);opacity:0;pointer-events:none}',
  '.evFab i{width:10px;height:10px;border-radius:50%;background:var(--mut,#9db2c8);display:inline-block}',
  '.evFab.evHas{border-color:var(--bad,#f87171)}.evFab.evHas i{background:var(--bad,#f87171);animation:evPulso 1.4s ease-in-out infinite}',
  '.evFab b{background:var(--bad,#f87171);color:#fff;border-radius:99px;min-width:20px;height:20px;padding:0 6px;font-size:12px;line-height:20px;text-align:center}',
@@ -670,6 +672,10 @@ function armar(){
  var st=mk('style'); st.id='evCss'; st.textContent=CSS; (doc.head||doc.documentElement).appendChild(st);
  fab=mk('div','evFab'); fab.setAttribute('role','button'); fab.setAttribute('tabindex','0'); fab.setAttribute('aria-label','Ver juegos en vivo');
  fab.appendChild(mk('i')); fab.appendChild(doc.createTextNode('En vivo')); fabN=mk('b'); fabN.style.display='none'; fab.appendChild(fabN);
+ fab.setAttribute('title','En vivo');
+ /* mientras se hace scroll, los botones flotantes se esconden a la derecha y vuelven al parar (no tapan el texto) */
+ (function(){ var t=null; function esconder(){ var f=[].slice.call(doc.querySelectorAll('.evFab,.msFab')); f.forEach(function(x){ x.classList.add('evOculto'); }); if(t) clearTimeout(t); t=setTimeout(function(){ f.forEach(function(x){ x.classList.remove('evOculto'); }); },900); }
+  doc.addEventListener('scroll',esconder,{capture:true,passive:true}); doc.addEventListener('touchmove',esconder,{passive:true}); })();
  fab.addEventListener('click',abrir); fab.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); abrir(); } }); doc.body.appendChild(fab);
  sheet=mk('div','evSheet'); sheet.setAttribute('role','dialog'); sheet.setAttribute('aria-label','Juegos en vivo');
  var bar=mk('div','evBar');
