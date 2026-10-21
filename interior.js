@@ -97,7 +97,7 @@ html[data-ui="cristal"] .tb.on{background:linear-gradient(135deg,var(--acc),var(
 html[data-ui="cristal"] .tab,html[data-ui="cristal"] .pane.on{animation:uiFade .4s ease}
 html[data-ui="cristal"] .game.open .head{position:relative!important;top:auto!important;background:transparent!important;box-shadow:none!important;border-radius:0!important}
 html[data-ui="cristal"] .game{--headh:0px!important}
-html[data-ui="cristal"] .game.open .tabs{position:sticky;top:calc(var(--barra,60px) + 6px)!important;z-index:12;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+html[data-ui="cristal"] .game.open .tabs{position:sticky;top:calc(var(--barra,60px) + 6px)!important;z-index:8;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
 html[data-ui="cristal"] .game .body{padding-left:14px;padding-right:14px}
 /* tarjetas internas */
 html[data-ui="cristal"] .ovaHero{border-radius:26px;background:linear-gradient(160deg,rgba(255,255,255,.1),rgba(255,255,255,.03))!important;border:1px solid rgba(255,255,255,.16);padding:18px 10px 14px}
@@ -686,14 +686,23 @@ function pulsacion(el){
 }
 function params(){ try{ var m=String(root.location.search||'').match(/[?&]ui=([^&]+)/); return m&&BY[decodeURIComponent(m[1])]?decodeURIComponent(m[1]):null; }catch(e){ return null; } }
 
+/* fútbol y NBA no definen --barra (alto del encabezado fijo): sin él las pestañas pegajosas del tema Cristal quedaban encima del título */
+function barra(){
+  try{
+    if(root.getComputedStyle(html).getPropertyValue('--barra').trim()&&!html.__barraMia) return;
+    var h=doc.querySelector('.topbar, header'); if(!h) return;
+    var alto=h.offsetHeight; if(alto>0){ html.style.setProperty('--barra',alto+'px'); html.__barraMia=1; }
+  }catch(e){}
+}
 function arrancar(){
   var url=params(), id=url||leer();
   aplicar(id,{inicial:true,guardar:!!url});     /* en <head>: marca el diseño antes de pintar (sin parpadeo) */
   function listo(){
     try{
       [].forEach.call(doc.querySelectorAll('.topbar .brand, header h1'),pulsacion);
-      iconos(); colorear(); montar();
-      [250,800,1800,3500,6000].forEach(function(ms){ root.setTimeout(function(){ iconos(); colorear(); montar(); },ms); });
+      iconos(); colorear(); montar(); barra();
+      [250,800,1800,3500,6000].forEach(function(ms){ root.setTimeout(function(){ iconos(); colorear(); montar(); barra(); },ms); });
+      root.addEventListener('resize',barra);
       var slate=doc.getElementById('slate');
       if(slate&&root.MutationObserver) new root.MutationObserver(function(){ colorear(); }).observe(slate,{childList:true});
       var nav=doc.querySelector('.navbar, .tabbar');

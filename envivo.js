@@ -635,7 +635,7 @@ function lineaScore(ls,away,home){
 }
 function nota(fuente,app){
  var t=S.upd?new Date(S.upd).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'}):'';
- return '<div class="evNota">Datos: '+(fuente==='MLB'?'MLB Stats API':(fuente==='NBA'?'NBA.com':'ESPN'))+' · se actualiza solo'+(t?' · '+esc(t):'')+(app==='nba'&&fuente==='ESPN'&&NBA_ERR?'<br>NBA.com no respondió ('+esc(NBA_ERR)+'), por eso se usa ESPN.':'')+(app==='fut'?'<br>El fútbol no trae las posiciones de los jugadores moviéndose (ese seguimiento es de pago).':'')+'</div>';
+ return '<div class="evNota">Datos: '+(fuente==='MLB'?'MLB Stats API':(fuente==='NBA'?'NBA.com':'ESPN'))+' · se actualiza solo'+(t?' · '+esc(t):'')+(app==='nba'&&fuente==='ESPN'&&NBA_ERR?'<br>NBA.com no respondió ('+esc(NBA_ERR)+'), por eso se usa ESPN.':'')+(app==='fut'?'<br>La cancha se arma con las jugadas que reporta ESPN (pases, tiros, faltas) y llega con unos segundos de atraso; no es el seguimiento de cada jugador moviéndose (ese es de pago).':'')+'</div>';
 }
 
 /* ---------- lista ---------- */
@@ -720,7 +720,7 @@ var PITCH_SVG='<svg viewBox="0 0 105 68" class="evPitchSvg" role="img" aria-labe
  '<g fill="none" stroke="rgba(255,255,255,.72)" stroke-width=".35"><rect x="1" y="1" width="103" height="66"/><line x1="52.5" y1="1" x2="52.5" y2="67"/><circle cx="52.5" cy="34" r="9.15"/>'+
  '<rect x="1" y="13.85" width="16.5" height="40.3"/><rect x="87.5" y="13.85" width="16.5" height="40.3"/><rect x="1" y="24.85" width="5.5" height="18.3"/><rect x="98.5" y="24.85" width="5.5" height="18.3"/></g>'+
  '<g class="evPts"></g><line class="evPase" x1="0" y1="0" x2="0" y2="0"/>'+
- '<g class="evAct" style="transform:translate(52.5px,34px)"><circle r="2.5"/><text class="evAn" y="1" text-anchor="middle"></text><text class="evAx" y="6.4" text-anchor="middle"></text></g>'+
+ '<g class="evAct" style="transform:translate(52.5px,34px)"><circle r="3"/><text class="evAn" y="-4.4" text-anchor="middle"></text><text class="evAx" y="0.9" text-anchor="middle"></text></g>'+
  '<g class="evBola" style="transform:translate(52.5px,34px)"><circle r="1.25"/></g></svg>';
 function comprimir(P,d,min){ var n=P.cola.length; if(n>25) return Math.min(d,Math.max(min,260)); if(n>10) return Math.min(d,Math.max(min,600)); return d; }
 function esperaFut(o,sig,P){ var d=(sig&&sig.wall&&o.wall)?Math.min(2400,Math.max(450,(sig.wall-o.wall)*0.9)):800; return comprimir(P,d,450); }
