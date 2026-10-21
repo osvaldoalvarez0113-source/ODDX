@@ -1,18 +1,14 @@
 /* OVA · Mesa (asistente) — MLB, fútbol y NBA.
-   Un botón flotante que abre «Mesa de hoy». Hace cuatro cosas, en este orden de confianza:
+   Un botón flotante que abre «Mesa de hoy». Hace tres cosas, en este orden de confianza:
    1) LEE todos los juegos de la pantalla, pestaña por pestaña (Veredicto, Cuotas, Números, Forma, Parque…),
       sin que tengas que abrirlos uno por uno.
    2) ORDENA los juegos con reglas fijas y sin internet (probabilidad del modelo + qué tan buenos son los datos).
       Esto funciona aunque no haya Worker ni red.
    3) CUOTA → VALOR: escribes la cuota que te pagan y calcula, con la probabilidad del modelo, si paga más que la justa.
-   4) IA con internet (opcional): le manda TODO lo que leyó (≤ 12,000 caracteres, el tope del Worker) y le pide lineups,
-      lesiones, noticias y una señal por juego. Usa el mismo Worker de la 🦈 IA: no hay nada que re-publicar en Cloudflare.
    No cambia ningún cálculo de la app ni escribe en tus registros: solo lee. No promete ganadores. */
 (function(root){
 "use strict";
 var doc=root.document;
-var MAX_PROMPT=11500;      /* el Worker rechaza más de 12,000: aquí se deja margen */
-var WORKER_DEF='https://ova-ia.osvaldoalvarez0113.workers.dev';
 
 /* ---------- funciones puras (se prueban en node) ---------- */
 function compactar(t){ return String(t==null?'':t).replace(/[​-‏﻿]/g,'').replace(/\s+/g,' ').trim(); }
@@ -162,80 +158,6 @@ function textoOficial(of,na,nh,edad){
  if(of.mov.length) l.push('movimientos de lesionados/suspensiones (ult. 2 dias): '+of.mov.join(' ; '));
  return 'OFICIAL (MLB StatsAPI, '+(edad||'ahora')+'): '+l.join(' · ');
 }
-var ORDEN_TAB={ver:0,v:0,cuo:1,c:1,num:2,n:2,for:3,f:3,x:4};
-var PESO_TAB=[0.30,0.25,0.25,0.12,0.08];
-function bloqueJuego(i,j,B){
- var o=[], t=j.titulo+(j.hora?' | '+j.hora:'')+(j.dia?' | '+j.dia:'');
- o.push('### '+i+'. '+t);
- var m=[];
- if(j.pa!=null) m.push('Modelo: '+j.na+' '+(+j.pa).toFixed(1)+'% / '+j.nh+' '+(+j.ph).toFixed(1)+'%');
- if(j.emp) m.push('empate '+j.emp);
- if(j.tot) m.push('total '+j.tot);
- if(j.cu) m.push('cuota justa del favorito '+j.cu);
- if(j.sello) m.push('sello de la app: '+j.sello);
- if(j.conf) m.push('datos '+j.conf);
- if(m.length) o.push(m.join(' · '));
- if(j.of) o.push(recortar(textoOficial(j.of,j.na,j.nh,'verificado ahora'),900));
- if(j.mer&&j.cmp){
-  var mm=j.cmp.mer;
-  o.push('MERCADO (Pinnacle sin margen, '+(j.merEdad||'reciente')+'): '+j.na+' '+j.mer.a.toFixed(1)+'% / '+j.nh+' '+j.mer.h.toFixed(1)+'%'+(j.mer.d!=null?' / empate '+j.mer.d.toFixed(1)+'%':'')+
-   ' -> '+(j.cmp.k==='coinc'?'COINCIDE con el modelo (diferencia '+Math.abs(j.cmp.dif).toFixed(1)+' pts)':(j.cmp.k==='cerca'?'parecido (diferencia '+Math.abs(j.cmp.dif).toFixed(1)+' pts)':'CHOCA con el modelo ('+(j.cmp.favMod!==j.cmp.favMer?'distinto favorito':'diferencia '+Math.abs(j.cmp.dif).toFixed(1)+' pts')+')')));
- }else if(j.sinMer){ o.push('MERCADO: sin datos del servidor para este juego'); }
- if(j.cuotaMia&&j.fav){
-  var v=valorDe(j.pf,j.cuotaMia,j.cmp?j.cmp.mer:null);
-  o.push('Cuota que pago yo por '+j.fav+': '+j.cuotaMia+(v?' (con el modelo da EV '+(v.ev*100>=0?'+':'')+(v.ev*100).toFixed(1)+'%'+(v.evM!=null?'; contra el precio justo del mercado '+(v.evM*100>=0?'+':'')+(v.evM*100).toFixed(1)+'%':'')+')':''));
- }
- var usado=o.join('\n').length, libre=Math.max(120,B-usado-20);
- var tabs=(j.tabs||[]).slice().sort(function(a,b){ return (ORDEN_TAB[a.id]==null?9:ORDEN_TAB[a.id])-(ORDEN_TAB[b.id]==null?9:ORDEN_TAB[b.id]); });
- tabs.forEach(function(tb,ix){
-  var cap=Math.floor(libre*(PESO_TAB[ix]!=null?PESO_TAB[ix]:0.08));
-  if(cap<60||!tb.txt) return;
-  o.push('['+tb.nombre+'] '+recortar(tb.txt,cap));
- });
- return o.join('\n');
-}
-var DEPORTE={mlb:'MLB (beisbol)',fut:'futbol',nba:'NBA'};
-var MODELO_NO_VE={mlb:'ERA, carreras por juego y ERA de bullpen; NO ve lineups ni noticias',
- fut:'goles a favor y en contra, local/visita y forma; NO ve alineaciones, lesiones ni noticias',
- nba:'ratings de equipo y back-to-back; NO ve lesiones ni descansos de estrellas'};
-function construirPrompt(o){
- /* o: {app,fecha,juegos:[...],registro,pregunta,previa} → texto ≤ MAX_PROMPT */
- var dep=DEPORTE[o.app]||o.app;
- var head='Eres un analista de apuestas de '+dep+', directo y esceptico. Fecha: '+o.fecha+'. '+
-  'Abajo va, juego por juego, TODO lo que muestra mi app leido de cada pestana (mi modelo usa '+(MODELO_NO_VE[o.app]||'estadisticas')+'). '+
-  'Los porcentajes son de mi modelo, no del mercado. Una cuota solo tiene valor si paga MAS que la cuota justa.\n';
- var reglas='Reglas: no inventes nada; si no encuentras un dato escribe "no encontre". Pon fuente y hora aproximada de cada dato importante. '+
-  'Usa SOLO informacion de esa fecha y de esa temporada; descarta articulos de otros anos aunque el enfrentamiento sea igual. '+
-  'Ignora rumores sin fuente. Separa lo que ENCONTRASTE de lo que SUPONES. Nunca digas que algo es seguro. '+
-  'El mercado (Pinnacle sin margen) acierta mas que mi modelo. Cuando modelo y mercado COINCIDEN es lo mas confiable; cuando CHOCAN, asume que el mercado tiene la razon, '+
-  'salvo que encuentres una noticia concreta y reciente que el mercado no pudo ver (y en ese caso explicala). Si tu hallazgo y el modelo chocan, dilo y pesa cuanto.\n';
- var tarea, reg=o.registro?('\nMi registro con esta app: '+o.registro+'\n'):'\n';
- if(o.pregunta){
-  tarea='\nPREGUNTA MIA: '+recortar(o.pregunta,400)+'\n'+
-   (o.previa?'\nTU RESPUESTA ANTERIOR (resumida):\n'+recortar(o.previa,2200)+'\n':'')+
-   '\nResponde directo en espanol, maximo 200 palabras, buscando en internet lo que haga falta.\n'+reglas;
- }else{
-  tarea='\nTAREA: busca en internet lineups o alineaciones confirmadas, lesiones y bajas de ultima hora, cambios de abridor o de titulares, '+
-   'uso reciente del bullpen o descanso, que se juega cada equipo, y clima donde importe. Responde en espanol, maximo 60 palabras por juego, '+
-   'con EXACTAMENTE este formato por juego:\n'+
-   'JUEGO n: Equipo A vs Equipo B\nSENAL: JUEGA | CUIDADO | EVITAR\nPROBABLE: lo mas probable segun modelo + lo que encontraste (una linea)\n'+
-   'VALOR: SI | NO | NO SE  (solo SI o NO si arriba te di la cuota que pago; sin cuota es NO SE)\nPOR QUE: maximo 2 lineas, con fuente\n'+
-   'Al final: RESUMEN con JUEGA: (lista), EVITAR: (lista) y una linea de lo que no se puede saber. '+
-   'JUEGA solo si el modelo da ventaja clara, el mercado no lo contradice, nada de lo que encontraste lo contradice y la informacion clave esta confirmada; en duda, CUIDADO.\n'+reglas;
- }
- if((o.juegos||[]).some(function(j){ return j.of; })) head+='Las lineas OFICIAL ya vienen de la API oficial de MLB y ya fueron verificadas: NO las repitas ni las busques otra vez; usa tu busqueda para lo que NO esta ahi (noticias, descanso de titulares, uso del bullpen, motivacion, rumores confirmados por fuente).\n';
- var fijo=head.length+reg.length+tarea.length+60;
- var js=o.juegos||[], n=Math.max(1,js.length);
- var B=Math.max(300,Math.floor((MAX_PROMPT-fijo)/n)-8);
- var cuerpo=js.map(function(j,i){ return bloqueJuego(i+1,j,B); }).join('\n\n');
- var p=head+'\nDATOS DE LA APP:\n'+cuerpo+'\n'+reg+tarea;
- if(p.length>MAX_PROMPT){            /* último recurso: recorta los datos, nunca la tarea */
-  var sobra=p.length-MAX_PROMPT;
-  cuerpo=cuerpo.slice(0,Math.max(0,cuerpo.length-sobra-1))+'…';
-  p=head+'\nDATOS DE LA APP:\n'+cuerpo+'\n'+reg+tarea;
- }
- return p;
-}
 function resumenRegistro(app,leer){
  try{
   var k={mlb:'ventaja_picks_v1',fut:'ova_futbol_registro_v1',nba:'ova_nba_registro_v1'}[app];
@@ -274,26 +196,8 @@ function subPct(j){
  var o=['solo modelo']; if(j.cu) o.push('justa '+j.cu);
  return o;
 }
-/* ejemplo del cuadro de preguntas con un equipo real de la lista (un número «el 3» no sirve con un solo juego) */
-function placeholderPregunta(js){
- var c=(js||[]).filter(function(j){ return j&&j.pf!=null&&j.fav; });
- if(!c.length) return 'Pregúntale algo sobre los juegos de hoy';
- var e=c.filter(function(j){ return j.et&&j.et.k==='evit'; })[0];
- return e?'Ej: ¿por qué evitas a '+e.fav+'?':'Ej: ¿qué riesgo ves en '+c[0].fav+'?';
-}
-/* marcas ✓ por defecto: los 8 mejores que sean Candidato o Cuidado (un «evitar» no se manda a la IA solo); lo que marcaste o desmarcaste tú se respeta */
-function seleccionInicial(juegos,manual){
- var nuevo={}; manual=manual||{}; juegos=juegos||[];
- juegos.filter(function(j){ return j.pf!=null&&!j.vivo&&j.et&&(j.et.k==='cand'||j.et.k==='cuid'); })
-  .sort(function(a,b){ return b.pf-a.pf; }).slice(0,8).forEach(function(j){ nuevo[j.key]=true; });
- juegos.forEach(function(j){
-  if(manual[j.key]===false) nuevo[j.key]=false;
-  else if(manual[j.key]===true&&j.pf!=null&&!j.vivo) nuevo[j.key]=true;
- });
- return nuevo;
-}
-var API={pl:pl,resumenEstado:resumenEstado,subPct:subPct,placeholderPregunta:placeholderPregunta,seleccionInicial:seleccionInicial,compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,oficialDe:oficialDe,ajustarPorOficial:ajustarPorOficial,textoOficial:textoOficial,tokens:tokens,mismoEq:mismoEq,cruzarMercado:cruzarMercado,compararMercado:compararMercado,mezclar:mezclar,ajustarPorMercado:ajustarPorMercado,
- construirPrompt:construirPrompt,bloqueJuego:bloqueJuego,resumenRegistro:resumenRegistro,MAX_PROMPT:MAX_PROMPT};
+var API={pl:pl,resumenEstado:resumenEstado,subPct:subPct,compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,oficialDe:oficialDe,ajustarPorOficial:ajustarPorOficial,textoOficial:textoOficial,tokens:tokens,mismoEq:mismoEq,cruzarMercado:cruzarMercado,compararMercado:compararMercado,mezclar:mezclar,ajustarPorMercado:ajustarPorMercado,
+ resumenRegistro:resumenRegistro};
 root.OVAMesa=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
 if(!doc) return;
@@ -334,8 +238,6 @@ var CSS=[
  '.msX,.msBtn,.msMini{display:inline-flex;align-items:center;justify-content:center;border-radius:99px;font:700 14px system-ui,-apple-system,sans-serif;cursor:pointer;-webkit-tap-highlight-color:transparent;text-align:center}',
  '.msX{background:var(--bg2,#131c2a);color:var(--hot,#fbbf24);padding:9px 14px;min-height:40px}',
  '.msBtn{width:100%;box-sizing:border-box;background:var(--hot,#fbbf24);color:#101418;padding:14px;min-height:50px;margin:10px 0 6px;border-radius:14px}',
- '.msBtn.off{opacity:.5;pointer-events:none}',
- '.msBtn.sec{background:var(--bg2,#131c2a);color:var(--txt,#fff);border:1px solid var(--line2,#2a3340)}',
  '.msMini{background:var(--bg2,#131c2a);color:var(--txt,#fff);padding:8px 13px;min-height:36px;font-size:13px;border:1px solid var(--line2,#2a3340)}',
  '.msAviso{margin:10px 0;border-radius:12px;background:var(--bg1,#0d1420);border:1px solid var(--line2,#2a3340);font-size:12.5px;line-height:1.45;color:var(--mut,#9aa);overflow:hidden}',
  '.msAvH{display:block;padding:12px 13px;font-weight:800;font-size:13px;color:var(--txt,#fff);cursor:pointer;-webkit-tap-highlight-color:transparent}',
@@ -355,30 +257,19 @@ var CSS=[
  '.msChip.mcoinc{background:#0f5132;color:#d1f5e0;margin-left:0}.msChip.mcerca{background:#2a3340;color:#cfd8e3;margin-left:0}.msChip.mchoca{background:#5a1a1a;color:#ffd5d5;margin-left:0}.msChip.msin{background:transparent;color:var(--mut,#9aa);font-weight:600;padding-left:0;padding-right:0}',
  '.msChip.sin,.msChip.vivo{background:#2a3340;color:#cfd8e3}',
  '.msChip.valor{background:#0f5132;color:#d1f5e0}.msChip.justo{background:#2a3340;color:#cfd8e3}.msChip.sinv{background:#5a1a1a;color:#ffd5d5}',
- '.msSel{flex:0 0 26px;height:26px;border-radius:8px;border:2px solid var(--line2,#2a3340);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#101418;cursor:pointer}',
- '.msSel.on{background:var(--hot,#fbbf24);border-color:var(--hot,#fbbf24)}',
  '.msDet{display:none;padding:0 12px 12px;border-top:1px solid var(--line2,#2a3340)}',
  '.msRow.open .msDet{display:block}',
  '.msCu{display:flex;align-items:center;gap:8px;margin:10px 0 6px;font-size:13px}',
  '.msCu label{flex:1;color:var(--mut,#9aa)}',
  '.msSheet input.msIn{width:120px;box-sizing:border-box;padding:9px 10px;border-radius:10px;border:1px solid var(--line2,#2a3340);background:var(--bg,#070b12);color:var(--txt,#fff);font-size:16px;margin:0}',
- '.msSheet input.msQ{width:100%;box-sizing:border-box;padding:12px;border-radius:12px;border:1px solid var(--line2,#2a3340);background:var(--bg1,#0d1420);color:var(--txt,#fff);font-size:16px;margin:8px 0 0}',
  '.msLeido{margin-top:8px;font-size:12px;line-height:1.45;color:var(--mut,#9aa);white-space:pre-wrap;word-break:break-word}',
  '.msLeido b{color:var(--txt,#fff)}',
- '.msH{margin:18px 0 6px;font-size:15px;font-weight:800}',
- '.msIA{margin:10px 0;padding:12px 13px;border-radius:14px;background:var(--bg1,#0d1420);border:1px solid var(--line2,#2a3340);font-size:14px;line-height:1.5}',
- '.msIA .msQp{font-weight:800;color:var(--hot,#fbbf24);margin-bottom:6px}',
- '.msIA .msJ{margin:12px 0 2px;font-weight:800;font-size:15px}',
- '.msIA p{margin:4px 0}',
- '.msIA .msSen{display:inline-block;margin:3px 0;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:800}',
- '.msIA .msSen.j{background:#0f5132;color:#d1f5e0}.msIA .msSen.c{background:#6b4a00;color:#ffe9b0}.msIA .msSen.e{background:#5a1a1a;color:#ffd5d5}',
- '.msIA small{display:block;color:var(--mut,#9aa);margin-top:8px;font-size:11.5px}',
  '.msErr{color:#ffb4b4}'
 ].join('\n');
 
-var ST={of:null,mer:null,juegos:[],sel:{},manual:{},cuotas:{},cargando:false,previa:'',leyo:0};
+var ST={of:null,mer:null,juegos:[],cuotas:{},cargando:false,leyo:0};
 var AV_KEY='ova_mesa_av_v1', avPrimera=false;     /* «Cómo leerla» sale abierto solo la primera vez */
-var sheet,lista,estado,btnIA,iaCaja,inpQ,fab,infoCtx;
+var sheet,lista,estado,fab;
 
 function diaDe(g){
  var e=g.previousElementSibling, n=0;
@@ -519,16 +410,6 @@ function nuevaFila(j,pos){
   subPct(j).forEach(function(t){ pc.appendChild(mk('small','',t)); });
   top.appendChild(pc);
  }
- var puede=j.pf!=null&&!j.vivo;
- var sel=mk('div','msSel'+(ST.sel[j.key]&&puede?' on':''),ST.sel[j.key]&&puede?'✓':'');
- sel.setAttribute('role','checkbox'); sel.setAttribute('aria-checked',String(!!ST.sel[j.key]));
- if(puede){
-  sel.addEventListener('click',function(e){
-   e.stopPropagation(); ST.sel[j.key]=!ST.sel[j.key]; ST.manual[j.key]=ST.sel[j.key];
-   sel.classList.toggle('on',!!ST.sel[j.key]); sel.textContent=ST.sel[j.key]?'✓':''; sel.setAttribute('aria-checked',String(!!ST.sel[j.key])); actualizarBtn();
-  });
- }else sel.style.opacity='.3';
- top.appendChild(sel);
  top.addEventListener('click',function(){ row.classList.toggle('open'); });
  row.appendChild(top);
  var det=mk('div','msDet');
@@ -584,28 +465,7 @@ function pintarLista(){
  var cr=js.filter(function(j){ return j.mer; }).length, co=js.filter(function(j){ return j.cmp&&j.cmp.k==='coinc'; }).length, ch=js.filter(function(j){ return j.cmp&&j.cmp.k==='choca'; }).length;
  var ofn=js.filter(function(j){ return j.of; }).length, lp=js.filter(function(j){ return j.of&&!j.of.lin.ok&&!j.of.empezo; }).length, cb=js.filter(function(j){ return j.of&&j.of.camb.length; }).length;
  estado.textContent=resumenEstado({app:APP,n:js.length,c:c,ev:ev,cr:cr,co:co,ch:ch,ofn:ofn,lp:lp,cb:cb,tieneOf:!!ST.of,tieneMer:!!ST.mer,edad:ST.mer?ST.mer.edad:'',viejo:!!(ST.mer&&ST.mer.viejo)});
- inpQ.placeholder=placeholderPregunta(js);
- actualizarBtn();
 }
-function elegidos(){
- return ST.juegos.filter(function(j){ return ST.sel[j.key]&&j.pf!=null&&!j.vivo; })
-  .sort(function(a,b){ return b.pf-a.pf; });
-}
-function actualizarBtn(){
- var n=elegidos().length;
- btnIA.textContent=n?'🦈 Preguntar a la IA con internet ('+n+' juego'+(n===1?'':'s')+')':'Marca al menos un juego con ✓';
- btnIA.classList.toggle('off',!n||ST.cargando);
- var ult=ls('ova_mesa_ia_'+APP);
- if(ult&&!iaCaja.firstChild) try{
-  var u=JSON.parse(ult);
-  if(u&&u.fecha===fechaApp()&&u.txt){ pintarRespuesta('Última respuesta guardada ('+haceTxt(u.t)+')',u.txt,true); ST.previa=u.txt; }
- }catch(e){}
-}
-function haceTxt(t){
- var m=Math.max(0,Math.round((Date.now()-(+t||0))/60000));
- return m<2?'hace un momento':(m<90?'hace '+m+' min':'hace '+Math.round(m/60)+' h');
-}
-
 function diaMas(f,n){ try{ var t=new Date(f+'T12:00:00Z'); t.setUTCDate(t.getUTCDate()+n); return t.toISOString().slice(0,10); }catch(e){ return f; } }
 function cargarOficial(){
  ST.of=null; if(APP!=='mlb') return Promise.resolve();
@@ -646,79 +506,15 @@ function cargarMercado(){
 }
 function leer(){
  if(ST.cargando) return;
- ST.cargando=true; actualizarBtn();
+ ST.cargando=true;
  var gs=$$('.game');
  if(!gs.length){ estado.textContent='Primero carga los juegos (fecha / liga) y vuelve a abrir la Mesa.'; ST.cargando=false; return; }
  estado.textContent='Leyendo '+gs.length+' juegos…';
  try{ ST.cuotas=JSON.parse(ls('ova_mesa_cu_'+APP+'_'+fechaApp())||'{}')||{}; }catch(e){ ST.cuotas={}; }
  Promise.all([cargarMercado(),cargarOficial(),cargarTodo(function(h,t){ estado.textContent='Leyendo juego '+h+' de '+t+'…'; }).catch(function(){})]).then(function(){
   ST.juegos=$$('.game').map(leerJuego);
-  /* por defecto: los 8 mejores Candidato/Cuidado sin empezar; los «evitar» quedan sin marcar */
-  ST.sel=seleccionInicial(ST.juegos,ST.manual); ST.cargando=false; pintarLista();
+  ST.cargando=false; pintarLista();
  });
-}
-
-/* ---------- IA ---------- */
-function llamar(prompt){
- var url=root.WORKER_URL||WORKER_DEF;
- return root.fetch(url,{
-  method:'POST',
-  headers:{'content-type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-  body:JSON.stringify({max_tokens:4000,messages:[{role:'user',content:prompt}],tools:[{type:'web_search_20250305',name:'web_search',max_uses:10}]})
- }).then(function(r){
-  if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP '+r.status+' -- '+t.slice(0,180)); });
-  return r.json();
- }).then(function(d){
-  if(d.error) throw new Error(d.error.message||'Error de la API');
-  var t=(d.content||[]).filter(function(c){ return c.type==='text'; }).map(function(c){ return c.text; }).join('\n\n');
-  return t||'Sin respuesta de texto.';
- });
-}
-function conNegritas(p,txt){
- String(txt).split('**').forEach(function(s,i){
-  if(!s) return;
-  if(i%2){ var b=mk('b','',s); p.appendChild(b); } else p.appendChild(doc.createTextNode(s));
- });
-}
-function pintarRespuesta(titulo,txt,esGuardada){
- var caja=mk('div','msIA');
- caja.appendChild(mk('div','msQp',titulo));
- String(txt).split(/\n+/).forEach(function(l){
-  l=l.replace(/^[#>\s]+/,'').trim(); if(!l) return;
-  var m;
-  if((m=l.match(/^\**\s*JUEGO\s*\d+\s*[:.-]\s*(.*)$/i))){ caja.appendChild(mk('div','msJ',m[0].replace(/\*/g,''))); return; }
-  if((m=l.match(/^\**\s*SE[ÑN]AL\s*:?\**\s*\**\s*(JUEGA|CUIDADO|EVITAR|MANTENER)\b(.*)$/i))){
-   var w=m[1].toUpperCase(), k=(w==='JUEGA'||w==='MANTENER')?'j':(w==='CUIDADO'?'c':'e');
-   caja.appendChild(mk('span','msSen '+k,'SEÑAL: '+w)); if(compactar(m[2]).replace(/[*:.\s-]/g,'')){ var p0=mk('p',''); conNegritas(p0,m[2].replace(/^[\s:.-]+/,'')); caja.appendChild(p0); }
-   return;
-  }
-  var p=mk('p',''); conNegritas(p,l); caja.appendChild(p);
- });
- if(!esGuardada) caja.appendChild(mk('small','','Lo escribió la IA con búsqueda web: revisa las fuentes que cita antes de jugar. No es una garantía.'));
- iaCaja.insertBefore(caja,iaCaja.firstChild);
- return caja;
-}
-function aviso(txt,err){ var d=mk('div','msIA'+(err?' msErr':''),txt); iaCaja.insertBefore(d,iaCaja.firstChild); return d; }
-
-function preguntar(pregunta){
- var sel=elegidos().slice(0,8);
- if(!sel.length){ aviso('Marca al menos un juego con ✓.',true); return; }
- /* se relee el texto de cada pestaña por si cambió (cuotas escritas, carga tardía) */
- sel.forEach(function(j){ j.tabs=tabsDe(j.g); j.cuotaMia=ST.cuotas[j.key]||''; });
- var prompt=construirPrompt({app:APP,fecha:fechaApp(),juegos:sel,registro:resumenRegistro(APP,function(k){ return ls(k); }),
-  pregunta:pregunta||'',previa:pregunta?ST.previa:''});
- infoCtx.textContent='Contexto enviado: '+prompt.length.toLocaleString('es')+' de 12,000 caracteres · '+sel.length+' juegos';
- ST.cargando=true; actualizarBtn();
- var esp=aviso(pregunta?'Pensando tu pregunta…':'Buscando lineups, lesiones y noticias de '+sel.length+' juegos… puede tardar un minuto.');
- llamar(prompt).then(function(txt){
-  if(esp.parentNode) esp.parentNode.removeChild(esp);
-  pintarRespuesta(pregunta?'Tú: '+recortar(pregunta,160):'🦈 Mesa · análisis con internet',txt,false);
-  if(!pregunta){ ST.previa=txt; ls('ova_mesa_ia_'+APP,JSON.stringify({fecha:fechaApp(),t:Date.now(),txt:txt})); }
-  else ST.previa=ST.previa+'\n\nPREGUNTA: '+recortar(pregunta,200)+'\nRESPUESTA: '+recortar(txt,900);
- }).catch(function(e){
-  if(esp.parentNode) esp.parentNode.removeChild(esp);
-  aviso('No se pudo consultar la IA: '+(e&&e.message?e.message:e)+'. La lista de arriba sigue valiendo: no depende de internet.',true);
- }).then(function(){ ST.cargando=false; actualizarBtn(); });
 }
 
 function abrir(){
@@ -753,15 +549,6 @@ function armar(){
  lista=mk('div',''); sheet.appendChild(lista);
  var reg=resumenRegistro(APP,function(k){ return ls(k); });
  if(reg) sheet.appendChild(mk('div','msEst','Tu registro en esta app: '+reg+'.'));
- sheet.appendChild(mk('div','msH','IA con internet'));
- btnIA=boton('msBtn','Marca al menos un juego con ✓',function(){ if(!btnIA.classList.contains('off')) preguntar(''); });
- sheet.appendChild(btnIA);
- infoCtx=mk('div','msEst',''); sheet.appendChild(infoCtx);
- inpQ=mk('input','msQ'); inpQ.type='text'; inpQ.placeholder='Pregúntale algo sobre los juegos de hoy';
- inpQ.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); var q=compactar(inpQ.value); if(q&&!ST.cargando){ inpQ.value=''; preguntar(q); } } });
- sheet.appendChild(inpQ);
- sheet.appendChild(boton('msBtn sec','Preguntar',function(){ var q=compactar(inpQ.value); if(q&&!ST.cargando){ inpQ.value=''; preguntar(q); } }));
- iaCaja=mk('div',''); sheet.appendChild(iaCaja);
  doc.body.appendChild(sheet);
 }
 function arrancar(){ try{ armar(); }catch(e){ if(root.console) root.console.error('asistente',e); } }

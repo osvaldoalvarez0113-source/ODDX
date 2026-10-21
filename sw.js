@@ -4,7 +4,7 @@
    No toca las APIs (MLB, ESPN, Kalshi, Railway...): solo archivos de este mismo sitio. */
 var CACHE = 'ova-shell-v1';
 var SHELL = ['hub.html','panel.html','index.html','futbol.html','nba.html','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','banca.js','herramientas.html','herramientas.js','obsidiana.js','mejoras.js','selecciones.js',
-  'historial.js','railway.js','pinnacle.js','diseno.js','manifest.json','icon-180.png','icon-192.png','icon-512.png'];
+  'railway.js','pinnacle.js','diseno.js','manifest.json','icon-180.png','icon-192.png','icon-512.png'];
 
 self.addEventListener('install', function(e){
   e.waitUntil(

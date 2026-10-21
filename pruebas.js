@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html'];
-const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -58,7 +58,7 @@ else{
   ok(app+' sin nombres inexistentes',mal.size===0,[...mal].map(([n,w])=>n+' ('+w+')').join(', '));
  }
  revisar('futbol.html',['ovaextra.js','interior.js','interior2.js','obsidiana.js','mejoras.js','selecciones.js']);
- revisar('index.html',['ovaextra.js','interior.js','interior2.js','ajustes.js','asistente.js','obsidiana.js','railway.js','historial.js']);
+ revisar('index.html',['ovaextra.js','interior.js','interior2.js','ajustes.js','asistente.js','obsidiana.js','railway.js']);
  revisar('nba.html',['ovaextra.js','interior.js','interior2.js']);
  revisar('hub.html',['ovaextra.js','hubestilos.js']);
  revisar('panel.html',['ovaextra.js']);
@@ -667,7 +667,7 @@ sec('Estructura del repo (lo que encontró la auditoría de oct 2026)');
  }
 }
 
-sec('Mesa (asistente.js): lee todas las pestañas, ordena sin internet, valor con tu cuota y IA con internet');
+sec('Mesa (asistente.js): lee todas las pestañas, ordena sin internet y calcula el valor con tu cuota');
 {
  const M=require(path.join(__dirname,'asistente.js')), sa=rd('asistente.js');
  ok('aDecimal entiende -140, +120, 1.85, 55¢ y rechaza basura',Math.abs(M.aDecimal('-140')-1.7143)<1e-3&&M.aDecimal('+120')===2.2&&M.aDecimal('1.85')===1.85&&Math.abs(M.aDecimal('55¢')-1.8182)<1e-3&&M.aDecimal('abc')===null&&M.aDecimal('')===null);
@@ -678,24 +678,10 @@ sec('Mesa (asistente.js): lee todas las pestañas, ordena sin internet, valor co
  ok('etiqueta MLB/NBA: 62+ candidato, 55-62 cuidado, abajo parejo; datos flojos bajan un nivel',M.etiqueta(65,'alta','mlb').k==='cand'&&M.etiqueta(58,'alta','mlb').k==='cuid'&&M.etiqueta(51,'alta','mlb').k==='evit'&&M.etiqueta(65,'baja','mlb').k==='cuid'&&M.etiqueta(58,'baja','mlb').k==='evit');
  ok('etiqueta fútbol usa cortes más bajos (hay empate): 52+ candidato',M.etiqueta(53,'alta','fut').k==='cand'&&M.etiqueta(53,'alta','mlb').k==='evit');
  ok('etiqueta: en vivo y sin números no cuentan como candidatos',M.etiqueta(70,'alta','mlb',true).k==='vivo'&&M.etiqueta(null,'','mlb').k==='sin');
- const mkJ=(i,tx)=>({titulo:'Equipo'+i+' @ Otro'+i,hora:'7:10 PM',na:'Equipo'+i,nh:'Otro'+i,pa:60,ph:40,fav:'Equipo'+i,pf:60,cu:'-150',sello:'Sólido',conf:'80%',cuotaMia:'-140',
-  tabs:[{id:'ver',nombre:'Veredicto',txt:tx},{id:'cuo',nombre:'Cuotas',txt:tx},{id:'num',nombre:'Números',txt:tx},{id:'for',nombre:'Forma',txt:tx},{id:'x',nombre:'Parque',txt:tx}]});
- const gran='dato '.repeat(900);
- [1,4,8,12,20].forEach(n=>{
-  const p=M.construirPrompt({app:'mlb',fecha:'2026-10-12',juegos:Array.from({length:n},(_,i)=>mkJ(i+1,gran)),registro:'12-9 (57%)',pregunta:'',previa:''});
-  ok('construirPrompt con '+n+' juegos de texto enorme nunca pasa de 11,500 (el Worker rechaza 12,000)',p.length<=M.MAX_PROMPT&&M.MAX_PROMPT<12000,String(p.length));
-  ok('  …y con '+n+' juegos conserva la tarea y el formato de SENAL al final',/SENAL: JUEGA \| CUIDADO \| EVITAR/.test(p)&&/Nunca digas que algo es seguro/.test(p));
- });
- const pq=M.construirPrompt({app:'mlb',fecha:'2026-10-12',juegos:[mkJ(1,gran),mkJ(2,gran)],registro:'',pregunta:'por que evitas el 2?',previa:'x '.repeat(5000)});
- ok('una pregunta de seguimiento lleva la pregunta, la respuesta anterior recortada y cabe',/PREGUNTA MIA: por que evitas el 2\?/.test(pq)&&/RESPUESTA ANTERIOR/.test(pq)&&pq.length<=M.MAX_PROMPT);
- const pj=M.construirPrompt({app:'fut',fecha:'2026-10-12',juegos:[mkJ(1,'x')],registro:'',pregunta:'',previa:''});
- ok('el prompt incluye la cuota que escribió el usuario y el EV que da el modelo',/Cuota que pago yo por Equipo1: -140 \(con el modelo da EV \+/.test(pj));
- ok('el prompt pide VALOR: NO SE cuando no hay cuota y prohíbe datos de otros años',/sin cuota es NO SE/.test(pj)&&/descarta articulos de otros anos/.test(pj));
  ok('resumenRegistro cuenta ganados y perdidos por app y avisa de muestra chica',M.resumenRegistro('mlb',()=>JSON.stringify([{res:'G'},{res:'G'},{res:'P'},{res:null}]))==='2-1 (67% de 3 resueltos, muestra chica: no concluye nada)'&&M.resumenRegistro('fut',()=>JSON.stringify([{estado:'ganado'},{estado:'perdido'}])).startsWith('1-1')&&M.resumenRegistro('nba',()=>'basura')==='');
  ok('la Mesa solo LEE: no escribe en ningún registro de picks',!/setItem\([^)]*(ventaja_picks|registro_v1)/.test(sa)&&!/ls\('(ventaja_picks|ova_futbol_registro|ova_nba_registro)/.test(sa));
  ok('ningún innerHTML en asistente.js (todo el texto de la app y de la IA entra como textContent)',!/innerHTML/.test(sa));
  ok('los botones de la Mesa no son <button> (los diseños con !important los pintarían de amarillo)',/mk\('div',cls,txt\)/.test(sa)&&!/createElement\('button'\)/.test(sa));
- ok('usa el mismo Worker de la IA (no hay nada que re-publicar en Cloudflare) y no lleva ninguna clave',/ova-ia\.osvaldoalvarez0113\.workers\.dev/.test(sa)&&!/sk-ant|x-api-key/.test(sa));
 
  /* ---- mercado del servidor (pinnacle-*.json) ---- */
  ok('mismoEq: «Red Sox» ≈ «Boston Red Sox», «FC Barcelona» ≈ «Barcelona», pero «White Sox» ≠ «Red Sox» y «Man City» ≠ «Man United»',M.mismoEq('Red Sox','Boston Red Sox')&&M.mismoEq('FC Barcelona','Barcelona')&&M.mismoEq('Atlético de Madrid','Atletico Madrid')&&!M.mismoEq('White Sox','Red Sox')&&!M.mismoEq('Manchester City','Manchester United'));
@@ -711,7 +697,6 @@ ok('mezclar: 50/50 modelo+mercado, favorito de la mezcla; null si falta un dato'
 ok('regla medida: modelo 58 % con mercado 70 % (mismo favorito) sube a Candidato por la mezcla (64 % ≥ 62 %), y modelo 66 % con mercado 52 % baja a Cuidado (59 %)',M.etiqueta(M.mezclar(58,42,70,30).pf,'alta','mlb').k==='cand'&&M.etiqueta(M.mezclar(66,34,52,48).pf,'alta','mlb').k==='cuid');
  const vm=M.valorDe(64,'-140',62), vs=M.valorDe(64,'-140',55);
  ok('con mercado, valor = pagar más que el precio justo de Pinnacle; si solo el modelo lo ve, se marca sospechoso',vm.k==='valor'&&vm.evM>0.05&&vs.k==='sin'&&vs.soloModelo===true);
- ok('el prompt dice que el mercado manda cuando chocan y explica coincide/choca por juego',/CHOCAN, asume que el mercado tiene la razon/.test(pj)&&/COINCIDE con el modelo|CHOCA con el modelo/.test(M.bloqueJuego(1,Object.assign(mkJ(1,'x'),{mer:{a:60,h:40,d:null},cmp:{k:'coinc',dif:1,mer:59,favMod:'a',favMer:'a'},na:'A',nh:'B'}),600)));
  ok('la Mesa lee los tres archivos del servidor y no toca su contenido',/pinnacle-datos\.json/.test(sa)&&/pinnacle-futbol\.json/.test(sa)&&/pinnacle-nba\.json/.test(sa)&&!/pinnacle[^']*'\s*,\s*\{\s*method/.test(sa));
 
  /* ---- verificación oficial (MLB StatsAPI) ---- */
@@ -747,19 +732,7 @@ ok('regla medida: modelo 58 % con mercado 70 % (mismo favorito) sube a Candidato
  ok('subPct: si la mezcla escoge otro favorito que el modelo, el % lleva el nombre de ese equipo; si coinciden no agrega nada',
   JSON.stringify(M.subPct({fav:'Cleveland Guardians',na:'Cleveland Guardians',nh:'Tampa Bay Rays',mix:{pf:52.2,fav:'h'}}))==='["modelo+mercado","de Tampa Bay Rays"]'&&
   JSON.stringify(M.subPct({fav:'Cleveland Guardians',na:'Cleveland Guardians',nh:'Tampa Bay Rays',mix:{pf:52.2,fav:'a'}}))==='["modelo+mercado"]');
- const GJ=(k,fav,pf,et,extra)=>Object.assign({key:k,fav:fav,pf:pf,et:{k:et}},extra||{});
- ok('placeholder: usa un equipo real (con un solo juego no sale «el 3»); con un «evitar» pregunta por ese; sin juegos es genérico',
-  M.placeholderPregunta([GJ('a','Cleveland Guardians',51,'evit')])==='Ej: ¿por qué evitas a Cleveland Guardians?'&&
-  M.placeholderPregunta([GJ('a','Yankees',66,'cand'),GJ('b','Cubs',50,'evit')])==='Ej: ¿por qué evitas a Cubs?'&&
-  M.placeholderPregunta([GJ('a','Yankees',66,'cand')])==='Ej: ¿qué riesgo ves en Yankees?'&&
-  M.placeholderPregunta([])==='Pregúntale algo sobre los juegos de hoy'&&!/evitas el 3\?/.test(sa));
- const SJX=[GJ('a','A',70,'cand'),GJ('b','B',58,'cuid'),GJ('c','C',51,'evit'),GJ('d','D',80,'cand',{vivo:true}),GJ('e','E',null,'sin')];
- const s0=M.seleccionInicial(SJX,{});
- ok('marcas por defecto: Candidato y Cuidado sí; «evitar», en vivo y sin números no (el de «evitar» ya no se manda marcado a la IA)',s0.a===true&&s0.b===true&&!s0.c&&!s0.d&&!s0.e);
- const s1=M.seleccionInicial(SJX,{a:false,c:true});
- ok('lo que marcaste o desmarcaste tú se respeta al volver a leer (marcar un «evitar» a mano se queda)',s1.a===false&&s1.b===true&&s1.c===true);
- ok('nunca marca más de 8 por defecto',Object.keys(M.seleccionInicial(Array.from({length:12},(_,i)=>GJ('k'+i,'E'+i,60+i,'cand')),{})).length===8);
- ok('la Mesa usa esos textos y «Cómo leerla» sale cerrado después de la primera vez (se abre con un toque)',/resumenEstado\(\{app:APP/.test(sa)&&/placeholderPregunta\(js\)/.test(sa)&&/seleccionInicial\(ST\.juegos,ST\.manual\)/.test(sa)&&/avPrimera=ls\(AV_KEY\)!=='1'/.test(sa)&&/aria-expanded/.test(sa)&&/\.msAviso\.on \.msAvB\{display:block\}/.test(sa));
+ ok('la Mesa usa esos textos y «Cómo leerla» sale cerrado después de la primera vez (se abre con un toque)',/resumenEstado\(\{app:APP/.test(sa)&&/avPrimera=ls\(AV_KEY\)!=='1'/.test(sa)&&/aria-expanded/.test(sa)&&/\.msAviso\.on \.msAvB\{display:block\}/.test(sa));
  ok('las píldoras ya no van pegadas (margen derecho) y «sin dato del mercado» no arrastra margen suelto',/\.msChip\{display:inline-block;margin:5px 6px 0 0/.test(sa)&&!/margin-left:6px;font-weight:600/.test(sa));
 }
 
@@ -775,67 +748,8 @@ sec('Auditoría 2: nombres de ESPN limpios en el origen, peticiones compartidas,
  ok('NBA: esc() también escapa la comilla simple (igual que MLB y fútbol)',/replace\(\/\[<>&"'\]\/g,c=>/.test(nb)&&/"'":'&#39;'/.test(nb));
  ok('MLB: j() comparte las peticiones iguales que salen a la vez y entrega un JSON propio a cada quien',/var EN_VUELO=\{\}/.test(ix)&&/return r\.text\(\)/.test(ix)&&/JSON\.parse\(t\)/.test(ix)&&/delete EN_VUELO\[url\]/.test(ix));
  ok('los botones del encabezado (🎨 y 🔍) y el selector de liga miden al menos 38 px de alto',/#ovaSkBtn\{min-width:38px;min-height:38px/.test(dj)&&/select#ligaSel\{min-height:38px/.test(dj)&&/#btnDiag\.dsDiag\{[^}]*padding:8px 10px/.test(dj));
- ok('sin funciones muertas conocidas (impDe, iaSinAcentos)',!/function impDe\(/.test(rd('herramientas.js'))&&!/iaSinAcentos/.test(rd('historial.js')));
+ ok('sin funciones muertas conocidas (impDe)',!/function impDe\(/.test(rd('herramientas.js')));
  ok('pruebas.yml no se dispara cuando solo cambian los datos del mercado',['pinnacle-datos.json','pinnacle-futbol.json','pinnacle-nba.json'].every(f=>rd('.github/workflows/pruebas.yml').includes('- '+f)));
-}
-
-sec('FIP del abridor (v64): apagado no cambia nada, encendido calcula lo que midió el backtest');
-{
- const src=rd('historial.js');
- function montarHist(){
-  const ins=[], vers=[{textContent:''},{textContent:''}], notas=[];
-  const els={}, padre={insertBefore(n){ins.push(n);}};
-  const mk=()=>{const o={className:'',_h:'',handlers:{},addEventListener(e,f){o.handlers[e]=f;},parentNode:padre,closest(){return o;},querySelector(){return null;}};
-   Object.defineProperty(o,'innerHTML',{get(){return o._h;},set(v){o._h=v;}});return o;};
-  const modoBox=mk(), modo=mk(); modo.closest=()=>modoBox;
-  const doc={readyState:'complete',addEventListener(){},
-   getElementById(id){ if(id==='modo') return modo; if(id==='fecha') return {value:'2026-10-13'}; const n=ins.find(x=>x._h.indexOf('id="'+id+'"')>=0); return n?Object.assign(n,{value:'off'}):null; },
-   createElement(){return mk();},
-   querySelectorAll(q){return q==='.ver'?vers:[];},
-   querySelector(q){return q==='footer details'?{querySelector(){return null;},appendChild(n){notas.push(n);}}:null;}};
-  const reg=(era,ip,prior,ancla)=>{ if(era==null||!isFinite(era)) return null; const L=(ancla!=null&&isFinite(ancla))?ancla:4.0; return (era*ip+L*prior)/(ip+prior); };
-  const ctx={console,Promise,Math,JSON,isFinite,parseFloat,parseInt,document:doc,window:{},
-   LIGA_ERA:4.0,MODO:'mix',PRIOR_ERA:40,API:'',WORKER_URL:'',reg,
-   ipToNum:x=>+x,j:()=>Promise.resolve({}),num:x=>x==null?'–':(+x).toFixed(2),esc:x=>String(x),ymd:x=>x,repintarTodo(){},
-   temporada:(id,y)=>Promise.resolve({era:3.2,ip:120}),
-   eraUsado:()=>99,
-   detalle:()=>'<table><tr class="usa"><td>ERA usado (mezcla)</td><td class="n">3.50</td><td class="n">3.60</td></tr></table>',
-   llamarIA(){},promptJuego(){return '';},promptDia(){return '';}};
-  vm.createContext(ctx);
-  vm.runInContext(src,ctx,{filename:'historial.js'});
-  return {ctx,ins,vers,notas,H:ctx.window.OVAHist};
- }
- const T=montarHist(), H=T.H;
- const hist={2025:{ip:150,er:60},2024:{ip:170,er:75},2023:{ip:100,er:50}};
- const se={era:3.20,ip:120,fip:3.60,hist,hy:2026}, l5={era:2.5,ip:30};
- /* cuentas hechas aparte, a mano, con las constantes del backtest (a=1.5913, b_e=0.1739, b_ph=0.3329, b_f=0.5375) */
- const e=(3.20*120+40*4.0)/(120+40);
- const pH=(5*9*60+4*9*75+3*9*50+60*4.0)/(5*150+4*170+3*100+60);
- const f=((3.60-3.15)*120+40*(4.0-3.15))/(120+40);
- const sFip=1.5913+0.1739*e+0.3329*pH+0.5375*f;
- const sMarcel=0.8505+0.4410*e+0.3724*pH;
- const anc=(3.60*120+4.0*30)/(120+30), l=(2.5*30+anc*40*0.625)/(30+40*0.625);
- const cerca=(a,b)=>Math.abs(a-b)<1e-9;
- ok('apagado (valor por defecto): el ERA usado sale igual que antes de v64',T.ctx.eraUsado(se,l5)===99&&H.getFip()==='off'&&H.get()==='off');
- H.set('on');
- ok('solo historial encendido: sigue dando el modelo de Marcel de v47 (sin FIP)',cerca(T.ctx.eraUsado(se,l5),sMarcel*0.70+l*0.30));
- H.set('off'); H.setFip('on');
- ok('FIP encendido: ERA usado = (1.5913 + 0.1739·ERA año + 0.3329·historial + 0.5375·FIP jalado) al 70% + últimas 5 al 30%',cerca(T.ctx.eraUsado(se,l5),sFip*0.70+l*0.30));
- ok('el FIP jalado es el del backtest: (13HR+3BB-2K + 40·liga crudo)/(IP+40), con liga crudo = ERA liga - 3.15',cerca(H.fipJalado(se),f));
- ok('sin 10 innings (se.fip nulo) el FIP jalado cae a la liga y no truena',cerca(H.fipJalado({era:null,ip:0,fip:null}),4.0-3.15)&&cerca(H.fipJalado({era:4,ip:5,fip:null}),(40*(4.0-3.15))/45));
- ok('abridor sin historial suficiente (menos de 40 IP en 3 años): se queda como estaba',T.ctx.eraUsado({era:3.2,ip:120,fip:3.6,hist:{2025:{ip:30,er:12}},hy:2026},l5)===99&&T.ctx.eraUsado({era:3.2,ip:120,fip:3.6},l5)===99);
- T.ctx.MODO='last5';
- ok('modo «últimas 5» o «FIP» de la app: no se toca aunque esté encendido',T.ctx.eraUsado(se,l5)===99);
- T.ctx.MODO='mix';
- const x={sea:se,seh:{era:3.9,ip:90,fip:4.2,hist,hy:2026},year:2026,pa:{fullName:'Abridor A'},ph:{fullName:'Abridor B'}};
- H.setFip('on');
- const dOn=T.ctx.detalle(x);
- H.setFip('off');
- const dOff=T.ctx.detalle(x);
- ok('pestaña Números: la fila «ERA con historial + FIP» sale siempre, «(solo informativo)» si está apagado y «(en uso)» si está encendido',/ERA con historial \+ FIP \(solo informativo\)/.test(dOff)&&/ERA con historial \+ FIP \(en uso\)/.test(dOn)&&/ERA con historial \(solo informativo\)/.test(dOn));
- ok('el selector «FIP del abridor» se monta en Ajustes, apagado por defecto, junto al del historial',T.ins.length===2&&/id="hist"/.test(T.ins[0].innerHTML)&&/id="fipx"/.test(T.ins[1].innerHTML)&&/<option value="off" selected>/.test(T.ins[1].innerHTML));
- ok('la versión visible pasó a v64 y la nota explica que viene apagado',T.vers.every(v=>v.textContent==='v64')&&T.notas.some(n=>/ovaNota64/.test(n.className)&&/apagado/.test(n.innerHTML)));
- ok('los coeficientes del código son los que salieron del backtest (a, b_e, b_ph, b_f) y están anotados en el encabezado',/FA=1\.5913, FB1=0\.1739, FBH=0\.3329, FBF=0\.5375/.test(src)&&/1\.5913\+0\.1739\*ERA_del_año_jalado/.test(src.replace(/ /g,'')));
 }
 
 sec('En vivo (envivo.js): lista de juegos, cancha de la NBA, zona de strike de MLB y comentarios de fútbol');
