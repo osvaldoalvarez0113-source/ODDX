@@ -363,12 +363,13 @@ var CSS=[
 ].join('\n');
 
 /* ---------- carga ---------- */
+var NBA_ERR='';
 function cargarLista(){
  var hoy=new Date(), ayer=new Date(hoy.getTime()-864e5), ps=[];
  if(APP==='nba'){
   var fechas=[ymd(hoy)]; if(hoy.getHours()<6) fechas.push(ymd(ayer));
   var viaEspn=function(){ return Promise.all(fechas.map(function(f){ return getJSON(ESPN+'basketball/nba/scoreboard?dates='+f+'&limit=100').then(function(j){ return parseEspnEventos(j,'NBA','').map(function(g){ g.src='espn'; return g; }); }).catch(function(){ return null; }); })).then(function(rs){ var ok=rs.filter(function(r){ return r; }); if(!ok.length) throw new Error('sin ESPN'); return [].concat.apply([],ok); }); };
-  ps=[getJSON(NBACDN+'scoreboard/todaysScoreboard_00.json').then(parseNbaScoreboard).then(function(l){ if(!l.length) throw new Error('vacío'); return l; }).catch(viaEspn).catch(function(){ return null; })];
+  ps=[getJSON(NBACDN+'scoreboard/todaysScoreboard_00.json').then(parseNbaScoreboard).then(function(l){ if(!l.length) throw new Error('vacío'); NBA_ERR=''; return l; }).catch(function(e){ NBA_ERR=String((e&&e.message)||e).slice(0,70); return viaEspn(); }).catch(function(){ return null; })];
  } else if(APP==='fut'){
   ps=LIGAS.map(function(l){ return getJSON(ESPN+'soccer/'+l[0]+'/scoreboard').then(function(j){ return parseEspnEventos(j,l[1],l[0]); }).catch(function(){ return null; }); });
  } else {
@@ -604,7 +605,7 @@ function lineaScore(ls,away,home){
 }
 function nota(fuente,app){
  var t=S.upd?new Date(S.upd).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'}):'';
- return '<div class="evNota">Datos: '+(fuente==='MLB'?'MLB Stats API':(fuente==='NBA'?'NBA.com':'ESPN'))+' · se actualiza solo'+(t?' · '+esc(t):'')+(app==='fut'?'<br>El fútbol no trae las posiciones de los jugadores moviéndose (ese seguimiento es de pago).':'')+'</div>';
+ return '<div class="evNota">Datos: '+(fuente==='MLB'?'MLB Stats API':(fuente==='NBA'?'NBA.com':'ESPN'))+' · se actualiza solo'+(t?' · '+esc(t):'')+(app==='nba'&&fuente==='ESPN'&&NBA_ERR?'<br>NBA.com no respondió ('+esc(NBA_ERR)+'), por eso se usa ESPN.':'')+(app==='fut'?'<br>El fútbol no trae las posiciones de los jugadores moviéndose (ese seguimiento es de pago).':'')+'</div>';
 }
 
 /* ---------- lista ---------- */
