@@ -71,6 +71,7 @@ html[data-ui="cristal"] .game::before{content:"";position:absolute;inset:0 0 aut
 html[data-ui="cristal"] .game.open{border-color:rgba(255,255,255,.32)}
 html[data-ui="cristal"] .game .head{position:relative;display:block;padding:50px 18px 18px}
 html[data-ui="cristal"] .game .hrow{display:block}
+html[data-ui="cristal"] .game.dsPC .head,html[data-ui="cristal"] .game.live.open .head{padding-top:50px!important}   /* la hora flota arriba a la derecha: el compacto de diseno.js no puede quitarle ese espacio */
 html[data-ui="cristal"] .game .hrow>div:not(.match){position:absolute;top:14px;right:14px;z-index:3;text-align:right}
 html[data-ui="cristal"] .game .match{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;justify-items:center;text-align:center;gap:6px 8px;font:700 15px/1.2 ui-rounded,"SF Pro Rounded",system-ui,sans-serif}
 html[data-ui="cristal"] .game .match .eq{flex-direction:column;gap:9px;align-items:center}
