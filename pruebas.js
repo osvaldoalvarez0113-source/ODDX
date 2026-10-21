@@ -173,7 +173,7 @@ sec('Fútbol: Veredicto en palabras simples');
 {
  const h=rd('futbol.html');
  ok('el cuadro del Veredicto dice las 3 probabilidades, los goles totales y la cuota justa con la misma función de la app',/Ningún equipo pasa del 45%/.test(h)&&/cuotaJustaAmericana\(x\)/.test(h)&&/Se esperan unos /.test(h)&&/solo hay valor si la casa paga más/.test(h));
- ok('las notas largas van en un «¿Cómo se lee y qué tan confiable es?» plegado y ya no sale ρ ni «Dixon-Coles con peso por antigüedad» en pantalla del Veredicto',/<details class="comoLee">/.test(h)&&/¿Cómo se lee y qué tan confiable es\?/.test(h)&&!/Modelo v4: Dixon-Coles con peso/.test(h));
+ ok('las notas largas van en un «¿Cómo se lee y qué tan confiable es?» plegado y ya no sale ρ ni «Dixon-Coles con peso por antigüedad» en pantalla del Veredicto',/<details class="comoLee"( open)?>/.test(h)&&/¿Cómo se lee y qué tan confiable es\?/.test(h)&&!/Modelo v4: Dixon-Coles con peso/.test(h));
 }
 
 sec('MLB: Veredicto en palabras simples');
@@ -781,7 +781,7 @@ sec('En vivo (envivo.js): lista de juegos, cancha de la NBA, zona de strike de M
  ok('fútbol: la cancha en vivo usa las jugadas con posición de ESPN y es la pestaña por defecto',/sports\.core\.api\.espn\.com/.test(se)&&/fieldPositionX/.test(se)&&/fieldPosition2X/.test(se)&&/data-v="cancha">Cancha/.test(se)&&/function porDefecto\(\)\{ return \(APP==='nba'\|\|APP==='fut'\)/.test(se));
  ok('cancha: el visitante se voltea para jugar hacia el otro lado y las coordenadas se mantienen dentro de la cancha',/100-xy\[0\]/.test(se)&&/Math\.min\(100,/.test(se));
  ok('cancha: el nombre del jugador sale de ESPN y se pinta con textContent (sin HTML)',/\.evAn',P\.act\)\.textContent/.test(se)&&/\.evPitchTxt',P\.el\)\.textContent/.test(se));
- ok('Veredicto legible en todos los modelos: fútbol muestra «Cómo se lee» también con el modelo básico (Champions/Europa) y la NBA lo trae; el texto técnico va plegado',/var comoCalc = base\.r\.dc \?/.test(rd('futbol.html'))&&!/\(base\.r\.dc \? '' : '<div class="nota">Modelo Poisson/.test(rd('futbol.html'))&&/<details class="comoLee">/.test(rd('nba.html')));
+ ok('Veredicto legible en todos los modelos: fútbol muestra «Cómo se lee» también con el modelo básico (Champions/Europa) y la NBA lo trae; el texto técnico va plegado',/var comoCalc = base\.r\.dc \?/.test(rd('futbol.html'))&&!/\(base\.r\.dc \? '' : '<div class="nota">Modelo Poisson/.test(rd('futbol.html'))&&/<details class="comoLee"( open)?>/.test(rd('nba.html')));
  ok('NBA y MLB: pestaña de jugada animada (tiro al aro y campo con bola bateada) con jugadores y dorsales',/function mostrarNBA/.test(se)&&/function mostrarMLB/.test(se)&&/jerseyNum/.test(se)&&/jerseyNumber/.test(se)&&/hitData/.test(se)&&/coordX/.test(se)&&/class="evLiveHost" data-t="nba"/.test(se)&&/class="evLiveHost" data-t="mlb"/.test(se));
  ok('en vivo: mientras el juego está en vivo se actualiza cada 5-6 s y el reproductor usa una cola con pausas',/function msVivo/.test(se)&&/P\.espera\?P\.espera/.test(se));
  ok('MLB: la bola bateada solo se anima cuando trae datos del golpe o la jugada terminó',/d\.isInPlay&&!hd&&!fin/.test(se));
