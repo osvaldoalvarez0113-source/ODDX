@@ -1114,8 +1114,8 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
 
 <div class="registro">
   <h2><svg class="ic" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h11.5a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2z"/><path d="M5 16.5h13.5"/></svg>Mis picks</h2>
-  <p class="flag">Guarda el pick cuando lo tomes. Después vuelve, mete la cuota de cierre y el
-  resultado. El CLV te dice si tu número le gana al mercado, que es lo único que te dice la verdad
+  <p class="flag">Guarda el pick cuando lo tomes. Después vuelve: el resultado y, en los picks de ganador, la cuota de cierre
+  se rellenan solos (si ESPN la trae). En los demás mercados, escribe el cierre tú. El CLV te dice si tu número le gana al mercado, que es lo único que te dice la verdad
   rápido: puedes perder tres semanas seguidas con CLV positivo y aun así estar haciéndolo bien.</p>
   <p class="flag">Al guardar escoges <b>del modelo</b> o <b>mío</b>. Mío es cuando lo tomas por algo
   que tú ves y el número no — que el abridor está tirando mejor de lo que dice su ERA, que el otro
@@ -5287,7 +5287,7 @@ document.addEventListener('visibilitychange',function(){
  function montar(){
   var reg=$q('#pane-picks .registro'), rs=$q('#reg_resumen'); if(!reg||!rs||$q('.ovaAuto',reg)) return;
   var d=document.createElement('div'); d.className='ovaAuto';
-  d.innerHTML='<button class="ghost" id="auto_btn">Cerrar picks solos</button><div class="flag" id="auto_msg">Busca en la MLB cómo terminó cada juego y marca ganó o perdió. Lo que cierres a mano no se toca. La cuota de cierre (para el CLV) sigue siendo manual.</div>';
+  d.innerHTML='<button class="ghost" id="auto_btn">Cerrar picks solos</button><div class="flag" id="auto_msg">Busca en la MLB cómo terminó cada juego y marca ganó o perdió. Lo que cierres a mano no se toca. La cuota de cierre (para el CLV) se rellena sola en los picks de ganador cuando ESPN la trae; si no, escríbela tú.</div>';
   reg.insertBefore(d,rs);
   $q('#auto_btn',d).addEventListener('click',function(){ correr(false); });
   var nav=$q('.navbar button[data-p=picks]');
@@ -5342,5 +5342,6 @@ document.addEventListener('visibilitychange',function(){
 <script src="ajustes.js"></script>
 <script src="asistente.js"></script>
 <script src="envivo.js"></script>
+<script src="cierre.js"></script>
 </body>
 </html>

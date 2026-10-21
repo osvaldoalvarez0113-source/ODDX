@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html'];
-const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','historial.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -911,7 +911,58 @@ sec('En vivo (envivo.js): lista de juegos, cancha de la NBA, zona de strike de M
  ok('detalles de estado de ESPN al español',E.detalleCorto('Halftime')==='Medio tiempo'&&E.detalleCorto('7:12 - 2nd')==='7:12 · 2º'&&E.detalleCorto("67'")==="67'"&&E.detalleCorto('Final/OT')==='Final/TE');
 }
 
-(async()=>{ await t_envivo(); await t_respaldo(); await t_sw(); })().then(()=>{
+
+let t_cierre=async()=>{
+sec('Cierre automático (cierre.js): CLV sin escribir la cuota a mano');
+ const C=require(path.join(__dirname,'cierre.js')), sc=rd('cierre.js');
+ ok('cierre.js se carga en los tres, después de envivo.js y el service worker lo guarda',['index.html','futbol.html','nba.html'].every(f=>{const x=rd(f);return x.indexOf('src="cierre.js"')>x.indexOf('envivo.js')&&x.indexOf('envivo.js')>0;})&&/'cierre\.js'/.test(rd('sw.js')));
+ ok('cierre.js solo lee el CIERRE de ESPN: no usa el precio actual ni el de en vivo',/\.close&&/.test(sc)&&!/current/.test(sc)&&!/\.moneyLine\b[^;]*current/.test(sc));
+ const dk={items:[{provider:{name:'ESPN BET'},homeTeamOdds:{close:{moneyLine:{american:'-150'}}},awayTeamOdds:{close:{moneyLine:{american:'+130'}}}},{provider:{name:'DraftKings'},homeTeamOdds:{close:{moneyLine:{american:'-160'}}},awayTeamOdds:{close:{moneyLine:{american:'+135'}}}}]};
+ const c1=C.leerCierreML(dk);
+ ok('cierre: prefiere DraftKings y le quita el margen (suma 100%)',c1&&c1.prov==='DraftKings'&&Math.abs(c1.nv.h+c1.nv.a-1)<1e-9&&Math.abs(c1.nv.h-0.5912)<0.001);
+ ok('cierre: sin «close» (solo precio actual) o con precio de juego decidido no devuelve nada',C.leerCierreML({items:[{homeTeamOdds:{current:{moneyLine:{american:'-150'}}},awayTeamOdds:{current:{moneyLine:{american:'+130'}}}}]})===null&&C.leerCierreML({items:[{homeTeamOdds:{close:{moneyLine:{american:'-90000'}}},awayTeamOdds:{close:{moneyLine:{american:'+9000'}}}}]})===null&&C.leerCierreML(null)===null);
+ const c3=C.leerCierreML({items:[{provider:{name:'X'},homeTeamOdds:{close:{moneyLine:{american:'+150'}}},awayTeamOdds:{close:{moneyLine:{american:'+190'}}},drawOdds:{close:{moneyLine:{american:'+230'}}}}]});
+ ok('cierre: el fútbol con empate suma 100% entre los tres',c3&&c3.nv.d>0&&Math.abs(c3.nv.h+c3.nv.a+c3.nv.d-1)<1e-9);
+ ok('formato: Kalshi en centavos, el resto en americana, igual que el pick',C.formato(0.59,'-150',true)==='59'&&C.formato(0.59,'-150',false)==='-144'&&C.formato(0.41,'+135',false)==='+144'&&C.formato(0.59,'64')==='59'&&C.formato(0.59,'-135')==='-144'&&C.formato(1.2,'-135')===null);
+ ok('picks: solo entran los de ganador; Over, hándicap y combos se dejan en paz',C.infoPick('mlb',{f:'2026-10-20',juego:'A Team @ B Team',m:'Over 8.5 carreras'})===null&&C.infoPick('mlb',{f:'2026-10-20',juego:'A Team @ B Team',m:'Combo: x'})===null&&C.infoPick('nba',{mercado:'SPR',side:'H',ts:1,aN:'a',hN:'b'})===null&&C.infoPick('fut',{liga:'pl',mercado:'OU2.5',local:'a',visita:'b',fecha:'20.10.2026'})===null);
+ const i1=C.infoPick('mlb',{f:'2026-10-20',juego:'Los Angeles Dodgers @ New York Yankees',m:'New York Yankees gana',am:'64',plat:'kalshi'});
+ ok('picks: MLB entiende «X gana» (lado y plataforma)',i1&&i1.lado==='h'&&i1.kalshi===true&&i1.liga==='baseball/mlb');
+ const sb={events:[{id:'401',date:'2026-10-21T00:00:00Z',status:{type:{state:'post'}},competitions:[{competitors:[{homeAway:'home',team:{displayName:'New York Yankees',abbreviation:'NYY',name:'Yankees',location:'New York'}},{homeAway:'away',team:{displayName:'Los Angeles Dodgers',abbreviation:'LAD',name:'Dodgers',location:'Los Angeles'}}]}]}]};
+ ok('evento: se encuentra por nombre completo, apodo o abreviatura; si no está, null',C.buscarEvento(sb,'Los Angeles Dodgers','New York Yankees').id==='401'&&C.buscarEvento(sb,'Dodgers','Yankees').id==='401'&&C.buscarEvento(sb,'LAD','NYY').id==='401'&&C.buscarEvento(sb,'Mets','Yankees')===null);
+ const sb2={events:sb.events.concat([Object.assign({},sb.events[0],{id:'402'})])};
+ ok('evento: doble jornada no se adivina',C.buscarEvento(sb2,'Dodgers','Yankees').doble===true);
+ /* --- de punta a punta con ESPN y localStorage de mentira --- */
+ const guardaF=globalThis.fetch, guardaL=globalThis.localStorage, mem={};
+ globalThis.localStorage={getItem:k=>(k in mem?mem[k]:null),setItem:(k,v)=>{mem[k]=String(v);}};
+ const eventos=[{id:'401',date:'2026-10-21T00:00:00Z',status:{type:{state:'post'}},competitions:[{competitors:[{homeAway:'home',team:{displayName:'New York Yankees',abbreviation:'NYY'}},{homeAway:'away',team:{displayName:'Los Angeles Dodgers',abbreviation:'LAD'}}]}]},
+  {id:'402',date:'2026-10-21T01:00:00Z',status:{type:{state:'pre'}},competitions:[{competitors:[{homeAway:'home',team:{displayName:'Boston Red Sox',abbreviation:'BOS'}},{homeAway:'away',team:{displayName:'Houston Astros',abbreviation:'HOU'}}]}]}];
+ const pedidos=[];
+ globalThis.fetch=async(u)=>{ pedidos.push(u);
+  if(/scoreboard/.test(u)) return {ok:true,status:200,json:async()=>({events:eventos})};
+  if(/events\/401\/competitions\/401\/odds/.test(u)) return {ok:true,status:200,json:async()=>dk};
+  return {ok:false,status:404,json:async()=>({})}; };
+ mem['ventaja_picks_v1']=JSON.stringify([
+  {id:'a1',f:'2026-10-20',juego:'Los Angeles Dodgers @ New York Yankees',m:'New York Yankees gana',am:'55',plat:'kalshi',cierre:null,res:'G'},
+  {id:'a2',f:'2026-10-20',juego:'Los Angeles Dodgers @ New York Yankees',m:'Los Angeles Dodgers gana',am:'+150',plat:'bovada',cierre:'+120',res:'P'},
+  {id:'a3',f:'2026-10-20',juego:'Houston Astros @ Boston Red Sox',m:'Boston Red Sox gana',am:'-120',plat:'bovada',cierre:null,res:null},
+  {id:'a4',f:'2026-10-20',juego:'Los Angeles Dodgers @ New York Yankees',m:'Over 8.5 carreras',am:'-110',plat:'bovada',cierre:null,res:'G'}]);
+ const est=await C.procesar('mlb'), gu=JSON.parse(mem['ventaja_picks_v1']);
+ ok('cierre MLB: rellena el pick de Kalshi en centavos (59) y lo marca como automático con su fuente',gu[0].cierre==='59'&&gu[0].cierreAuto===true&&/DraftKings/.test(gu[0].cierreFuente),JSON.stringify(gu[0]));
+ ok('cierre MLB: no pisa el cierre que escribió el usuario, deja en paz el Over, y el juego que no empieza espera',gu[1].cierre==='+120'&&gu[1].cierreAuto===undefined&&gu[2].cierre===null&&gu[3].cierre===null&&est.rellenados===1&&est.yaTienen===1&&est.espera===1,JSON.stringify(est));
+ ok('cierre: el texto del panel cuenta lo que pasó',/1 relleno ahora/.test(C.notaTxt(est))&&/esperan a que termine/.test(C.notaTxt(est))&&/Solo picks de ganador/.test(C.notaTxt(est)));
+ const antes=pedidos.length; await C.procesar('mlb'); 
+ ok('cierre: un pick que ya tiene cierre no vuelve a pedir nada a ESPN',pedidos.length===antes||pedidos.slice(antes).every(u=>!/events\/401\//.test(u)));
+ mem['ova_nba_registro_v1']=JSON.stringify([{id:'n1',mercado:'ML',side:'A',ts:Date.parse('2026-10-20T23:30:00Z'),aN:'Los Angeles Dodgers',hN:'New York Yankees',cuota:'+140',estado:'ganado'}]);
+ await C.procesar('nba'); const nb=JSON.parse(mem['ova_nba_registro_v1']);
+ ok('cierre NBA: el pick de la visita recibe su cierre en americana (+145)',nb[0].cierre==='+145'&&nb[0].cierreAuto===true,JSON.stringify(nb[0]));
+ globalThis.fetch=async()=>{ throw new Error('sin red'); };
+ mem['ventaja_picks_v1']=JSON.stringify([{id:'b1',f:'2026-10-25',juego:'Los Angeles Dodgers @ New York Yankees',m:'New York Yankees gana',am:'-150',plat:'bovada',cierre:null,res:'G'}]);
+ const e2=await C.procesar('mlb');
+ ok('cierre: si ESPN no responde no inventa nada y lo cuenta como sin dato',JSON.parse(mem['ventaja_picks_v1'])[0].cierre===null&&(e2.sinDato+e2.noEncontrado)===1,JSON.stringify(e2));
+ globalThis.fetch=guardaF; if(guardaL===undefined) delete globalThis.localStorage; else globalThis.localStorage=guardaL;
+};
+
+(async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);
 }).catch(e=>{console.log('ERROR en pruebas',e);process.exit(1);});

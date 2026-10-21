@@ -313,7 +313,7 @@ var HOY={publicar:publicar,resumen:resumen,hoyLocal:hoyLocal};
 /* ===================== 2b. CLV (futbol y NBA) =====================
    CLV = cuanto mejor (o peor) fue tu precio que el de cierre. Se mide en puntos de probabilidad implicita:
    (implicita del cierre) - (implicita de lo que pagaste). Positivo = compraste mas barato que el cierre.
-   Igual que en MLB (index.html, clvPts): la cuota de cierre la escribes tu, del mismo lado y la misma casa.
+   Igual que en MLB (index.html, clvPts): en los picks de ganador (ML / 1X2) cierre.js la rellena sola desde ESPN (sin margen); en el resto la escribes tu, del mismo lado y la misma casa.
    Acepta americana (-175, +120) o centavos de Kalshi (64). No inventa ningun cierre. */
 function escH(x){ return String(x==null?'':x).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function impPct(x){
@@ -344,7 +344,7 @@ function resumenCLVHtml(arr){
   var h='<div class="kpi" style="margin-top:10px">'+
     '<div><b>'+(R.prom==null?'—':(R.prom>0?'+':'')+R.prom.toFixed(1))+'</b><small>CLV promedio en puntos ('+R.n+' con cierre)</small></div>'+
     '<div><b>'+(R.ganaPct==null?'—':R.ganaPct.toFixed(0)+'%')+'</b><small>picks que le ganaron al cierre</small></div></div>';
-  if(R.n===0) h+='<div class="nota">Escribe la cuota de cierre de cada pick (la última antes de que empiece el juego, mismo lado y misma casa). Sin eso no hay CLV.</div>';
+  if(R.n===0) h+='<div class="nota">En los picks de ganador el cierre se rellena solo cuando termina el juego. Para el resto, escribe la cuota de cierre de cada pick (la última antes de que empiece el juego, mismo lado y misma casa). Sin eso no hay CLV.</div>';
   else if(R.n<25) h+='<div class="nota">Con '+R.n+' picks el CLV todavía no dice nada firme. A partir de 30 o 40 empieza a tener lectura.</div>';
   else if(R.prom>0) h+='<div class="nota">CLV positivo: tus precios le están ganando al cierre. Vale más que el resultado de la semana.</div>';
   else h+='<div class="nota">CLV en cero o negativo: el cierre te está ganando. Si se sostiene sobre 40 picks, el método no está dando ventaja, por bien que te haya ido en resultados.</div>';
