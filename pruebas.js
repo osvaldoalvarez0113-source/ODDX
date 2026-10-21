@@ -158,6 +158,17 @@ sec('MLB: cierre automático de picks');
  const Gt={a:{ab:'NYY',name:'x',runs:2},h:{ab:'BOS',name:'y',runs:2},inn:[],ks:null};
  ok('juego empatado no cierra el ganador (no inventa resultado)',!A.resolver({m:'NYY gana',juego:'NYY @ BOS'},Gt).res);
 }
+sec('NBA: Línea del mercado en palabras simples');
+{
+ const h=rd('nba.html'), f=h.slice(h.indexOf('function mercadoHtml('),h.indexOf('function formaHtml('));
+ const run=new Function('LAM_M','fmtL',f+';return mercadoHtml;')(0.05,x=>String(x));
+ const H={ab:'WSH'},A={ab:'MIL'};
+ const a=run({odds:{spread:-4.5,total:239.5}},{pmMod:-0.9,ptMod:228.2,pm:4.23,pt:238.9},H,A), b=run({odds:{spread:-4.5,total:230.5}},{pmMod:3.9,ptMod:229.2,pm:4.4,pt:230.4},H,A);
+ ok('con +5.4 pts y -11.3 en el total avisa que el modelo anda dudoso y muestra Mercado / Modelo solo / La app usa',/no coinciden/.test(a)&&/WSH por 4\.5/.test(a)&&/MIL por 0\.9/.test(a)&&/WSH por 4\.2/.test(a)&&/228\.2/.test(a)&&/no apuestes Over\/Under/.test(a));
+ ok('con diferencias chicas dice que coinciden y no regaña',/🟢/.test(b)&&!/no coinciden/.test(b)&&!/dudoso/.test(b));
+ ok('sin línea de ESPN no pinta nada',run({odds:{}},{pmMod:0,ptMod:220,pm:0,pt:220},H,A)==='');
+}
+
 sec('NBA: cierre de picks (ganador, hándicap, total, push)');
 {
  const nb=rd('nba.html'),a=nb.indexOf('function resolver(p,g){'),b=nb.indexOf('let VERIF'),X={};

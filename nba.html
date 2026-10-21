@@ -707,11 +707,28 @@ function pintarCuerpo(body,g){
   }).catch(()=>{ const el=q('les'); if(el) el.textContent='ESPN no devolvió la lista de lesionados ahora mismo.'; });
 }
 function mercadoHtml(g,pr,H,A){
-  const o=g.odds, f=[];
-  if(o.spread!==undefined){ const fair=-pr.pmMod, d=fair-o.spread; f.push(`<div><b>${esc(H.ab)} ${fmtL(o.spread)}</b><small>Línea ESPN</small></div><div><b>${(d>=0?'+':'')+d.toFixed(1)}</b><small>Modelo vs línea (pts)</small></div>`); }
-  if(o.total!==undefined){ const d=pr.ptMod-o.total; f.push(`<div><b>${o.total}</b><small>Total ESPN</small></div><div><b>${(d>=0?'+':'')+d.toFixed(1)}</b><small>Modelo vs total</small></div>`); }
-  if(!f.length) return '';
-  return `<h3>Línea del mercado</h3><div class="kpi" style="grid-template-columns:repeat(${f.length*2>=4?4:2},1fr)">${f.join('')}</div><div class="nota" style="margin-top:-4px">Las probabilidades de este juego parten de la línea de ESPN: en 2,486 juegos medidos (2024-25 y 2025-26) la línea acertó más que el modelo (error de margen 13.9 vs 14.4 pts) y el modelo casi no aportó nada encima de ella (peso ${Math.round(LAM_M*100)}%). Apostar contra la línea cuando el modelo difiere perdió: 3+ pts de diferencia → 50.6% de acierto (−3.5%); 5+ pts → 47.5% (−9.4%). Las diferencias de arriba son para dudar, no para apostar.</div>`;
+  const o=g.odds, hayS=o.spread!==undefined&&isFinite(o.spread), hayT=o.total!==undefined&&isFinite(o.total);
+  if(!hayS&&!hayT) return '';
+  const quien=m=>Math.abs(m)<0.05?'Parejo':(m>=0?H.ab:A.ab)+' por '+Math.abs(m).toFixed(1);
+  const sig=d=>(d>=0?'+':'')+d.toFixed(1);
+  let filas='', av=[], dm=0, dt=0;
+  if(hayS){ const mer=-o.spread; dm=pr.pmMod-mer;
+    filas+=`<tr><td>Quién gana</td><td class="n">${quien(mer)}</td><td class="n">${quien(pr.pmMod)}</td><td class="n usa">${quien(pr.pm)}</td></tr>`; }
+  if(hayT){ dt=pr.ptMod-o.total;
+    filas+=`<tr><td>Total de puntos</td><td class="n">${o.total.toFixed(1)}</td><td class="n">${pr.ptMod.toFixed(1)}</td><td class="n usa">${pr.pt.toFixed(1)}</td></tr>`; }
+  if(hayS){
+    if(Math.abs(dm)<3) av.push('En quién gana, el modelo y el mercado <strong>coinciden</strong> (dif. '+sig(dm)+' pts). No hay nada raro.');
+    else av.push('En quién gana, el modelo se separa <strong>'+Math.abs(dm).toFixed(1)+' pts</strong> del mercado. En las pruebas, apostar contra la línea en estos casos perdió: tómalo como <strong>aviso de que el modelo anda dudoso</strong>, no como ventaja.');
+  }
+  if(hayT){
+    if(Math.abs(dt)<4) av.push('En el total, también coinciden (dif. '+sig(dt)+' pts).');
+    else av.push('En el total, el modelo se separa <strong>'+Math.abs(dt).toFixed(1)+' pts</strong>. Es mucho: al inicio de temporada el modelo todavía usa ratings viejos, así que <strong>no apuestes Over/Under por eso</strong>.');
+  }
+  const malo=Math.abs(dm)>=3||Math.abs(dt)>=4;
+  return `<h3>Línea del mercado</h3>
+  <div class="pick${malo?' no':''}"><b>${malo?'🟡 El modelo y el mercado no coinciden':'🟢 El modelo y el mercado coinciden'}</b>${av.join(' ')}</div>
+  <table class="tabla-bt"><tr><th></th><th>Mercado (ESPN)</th><th>Modelo solo</th><th>La app usa</th></tr>${filas}</table>
+  <div class="nota">«La app usa» es casi todo mercado (95%) y un poco de modelo (${Math.round(LAM_M*100)}%). Razón: en 2,486 juegos medidos (2024-25 y 2025-26) la línea acertó más que el modelo (error de margen 13.9 vs 14.4 pts). Apostar contra la línea cuando el modelo difiere perdió: 3+ pts de diferencia → 50.6% de acierto (−3.5%); 5+ pts → 47.5% (−9.4%).</div>`;
 }
 function formaHtml(id,Tm){
   const js=GAMES.filter(x=>x.h===id||x.a===id).sort((a,b)=>b.ts-a.ts).slice(0,10);
