@@ -72,7 +72,7 @@ async function muestraFut(e){
  let extra={};
  if(total&&total!==ult[k]){
   ult[k]=total; const b=await get(base+'?limit=25&page='+Math.max(1,Math.ceil(total/25)),true); const it=(b.j&&b.j.items)||[]; const u=it[it.length-1];
-  if(u) extra={lastId:u.id,lastWall:u.wallclock||null,lastClk:u.clock&&u.clock.displayValue,lastType:u.type&&u.type.text,lastXY:typeof u.fieldPositionX==='number',gol:!!u.scoringPlay,txt:(u.text||'').slice(0,60)};
+  if(u) extra={lastId:u.id,lastWall:u.wallclock||null,lastClk:u.clock&&u.clock.displayValue,lastClkVal:u.clock&&u.clock.value,lastPer:u.period&&u.period.number,lastType:u.type&&u.type.text,lastXY:typeof u.fieldPositionX==='number',gol:!!u.scoringPlay,txt:(u.text||'').slice(0,60)};
  }
  rec({src:'core',dep:'fut',ev:e.id,nombre:e.nombre,count:total,status:a.status,ms:a.ms,hdr:a.hdr,nueva:!!extra.lastId,...extra});
  const s=await get(ESPN+'soccer/'+e.liga+'/summary?event='+e.id,true); const j=s.j||{}; const com=j.commentary||[], key=j.keyEvents||[];
@@ -93,6 +93,9 @@ async function muestraNba(e){
 async function muestraMlb(e){
  const f=await get('https://statsapi.mlb.com/api/v1.1/game/'+e.id+'/feed/live',true); const j=f.j||{}; const all=(j.liveData&&j.liveData.plays&&j.liveData.plays.allPlays)||[]; const cp=(j.liveData&&j.liveData.plays&&j.liveData.plays.currentPlay)||{}; const ev=(cp.playEvents||[]); const le=ev[ev.length-1]||{};
  rec({src:'mlb-feed',dep:'mlb',ev:e.id,nombre:e.nombre,status:f.status,ms:f.ms,len:f.len,hdr:f.hdr,tsMeta:j.metaData&&j.metaData.timeStamp,plays:all.length,evN:ev.length,lastEvEnd:le.endTime||null,lastEvStart:le.startTime||null,lastEvType:le.details&&le.details.description,atBat:cp.about&&cp.about.atBatIndex});
+ const fb=await get('https://statsapi.mlb.com/api/v1.1/game/'+e.id+'/feed/live?_='+Date.now(),true); const jb=fb.j||{}; const cb=(jb.liveData&&jb.liveData.plays&&jb.liveData.plays.currentPlay)||{}; const eb=(cb.playEvents||[]); const lb=eb[eb.length-1]||{};
+ rec({src:'mlb-feed-bust',dep:'mlb',ev:e.id,status:fb.status,ms:fb.ms,len:fb.len,hdr:fb.hdr,tsMeta:jb.metaData&&jb.metaData.timeStamp,plays:((jb.liveData&&jb.liveData.plays&&jb.liveData.plays.allPlays)||[]).length,evN:eb.length,lastEvEnd:lb.endTime||null,lastEvStart:lb.startTime||null,atBat:cb.about&&cb.about.atBatIndex});
+ const tsr=await get('https://statsapi.mlb.com/api/v1.1/game/'+e.id+'/feed/live/timestamps?_='+Date.now(),true); rec({src:'mlb-timestamps',dep:'mlb',ev:e.id,status:tsr.status,ms:tsr.ms,len:tsr.len,hdr:tsr.hdr,n:Array.isArray(tsr.j)?tsr.j.length:null,last:Array.isArray(tsr.j)?tsr.j[tsr.j.length-1]:null});
  const g=await get('https://baseballsavant.mlb.com/gf?game_pk='+e.id,true); const gj=g.j||{};
  rec({src:'savant-gf',dep:'mlb',ev:e.id,status:g.status,ms:g.ms,len:g.len,hdr:g.hdr,keys:Object.keys(gj).slice(0,8).join(','),last:(gj.exit_velocity&&gj.exit_velocity.length)||null});
 }
