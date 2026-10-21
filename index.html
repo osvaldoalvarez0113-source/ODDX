@@ -1871,6 +1871,10 @@ function boxscore(pk){
     return j(API+'/game/'+pk+'/boxscore');
   });
 }
+/* Regular + postemporada (Wild Card F, Serie Divisional D, Serie de Campeonato L, Serie Mundial W): en octubre la forma reciente
+   de un abridor o de un equipo son sus juegos de playoffs, no los de septiembre. */
+var TIPOS_JUEGO='R,F,D,L,W';
+var TIPOS_LISTA=TIPOS_JUEGO.split(',');
 function ipToNum(ip){
   if(ip==null) return 0;
   var n=parseFloat(String(ip));
@@ -1881,8 +1885,8 @@ function ipToNum(ip){
 function ultimas5(id,year){
   var k=id+'-'+year+corteSufijo();
   if(cache.log[k]) return Promise.resolve(cache.log[k]);
-  return j(API+'/people/'+id+'/stats?stats=gameLog&group=pitching&season='+year+'&gameType=R').then(function(d){
-    var splits=(d.stats&&d.stats[0]&&d.stats[0].splits)||[];
+  return j(API+'/people/'+id+'/stats?stats=gameLog&group=pitching&season='+year+'&gameType='+TIPOS_JUEGO).then(function(d){
+    var splits=((d.stats&&d.stats[0]&&d.stats[0].splits)||[]).slice().sort(function(x,y){ return (x.date||'')<(y.date||'')?-1:((x.date||'')>(y.date||'')?1:0); });
     if(CORTE) splits=splits.filter(function(s){ return s.date && s.date<=CORTE; });
     var sal=splits.filter(function(s){return +(s.stat.gamesStarted||0)===1;});
     var use=(sal.length?sal:splits).slice(-5);
@@ -1951,20 +1955,43 @@ function ofensiva(teamId,year){
     cache.hit[k]=out; return out;
   }).catch(function(){ return {rg:null,g:0,kpct:null,ops:null}; });
 }
+/* Ofensiva reciente: la API de equipos solo deja pedir un tipo de juego a la vez, asi que se piden los cinco
+   (temporada y las cuatro rondas) y se suman. OPS se recalcula con los componentes; si solo hay un tipo se usa el OPS tal cual. */
+var SUMAS_OFF=['gamesPlayed','runs','atBats','hits','baseOnBalls','hitByPitch','sacFlies','totalBases'];
+function ofensivaVentana(teamId,ini,fin,year){
+  return Promise.all(TIPOS_LISTA.map(function(t){
+    return j(API+'/teams/'+teamId+'/stats?stats=byDateRange&startDate='+ini+'&endDate='+fin+
+             '&group=hitting&season='+year+'&gameType='+t).then(function(d){
+      var sp=d&&d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
+      return sp&&sp.stat?sp.stat:null;
+    },function(){ return null; });
+  })).then(function(sts){
+    var con=sts.filter(function(x){ return x; });
+    if(!con.length) return {rg:null,g:0,ops:null};
+    var acc={}; SUMAS_OFF.forEach(function(k){ acc[k]=0; });
+    con.forEach(function(st){ SUMAS_OFF.forEach(function(k){ acc[k]+=+(st[k]||0); }); });
+    var ops=null;
+    if(con.length===1&&con[0].ops!=null) ops=parseFloat(con[0].ops);
+    else if(acc.atBats>0){
+      var den=acc.atBats+acc.baseOnBalls+acc.hitByPitch+acc.sacFlies;
+      if(den>0) ops=(acc.hits+acc.baseOnBalls+acc.hitByPitch)/den+acc.totalBases/acc.atBats;
+    }
+    return {rg:acc.gamesPlayed>0?acc.runs/acc.gamesPlayed:null, g:acc.gamesPlayed, ops:isFinite(ops)?ops:null};
+  });
+}
 function ofensiva14(teamId,baseDate,year){
   var k=teamId+'-'+ymd(baseDate);
   if(cache.off14[k]) return Promise.resolve(cache.off14[k]);
-  var ini=ymd(new Date(baseDate.getTime()-14*86400000));
   var fin=ymd(new Date(baseDate.getTime()-86400000));
-  return j(API+'/teams/'+teamId+'/stats?stats=byDateRange&startDate='+ini+'&endDate='+fin+
-           '&group=hitting&season='+year+'&gameType=R').then(function(d){
-    var s=d.stats&&d.stats[0]&&d.stats[0].splits&&d.stats[0].splits[0];
-    var st=s?s.stat:{};
-    var g=+(st.gamesPlayed||0), r=+(st.runs||0);
-    var out={rg: g>=5 ? r/g : null, g:g, ops: st.ops!=null?parseFloat(st.ops):null};
-    cache.off14[k]=out; return out;
-  }).catch(function(){ var out={rg:null,g:0,ops:null}; cache.off14[k]=out; return out; });
+  function ventana(dias){ return ofensivaVentana(teamId,ymd(new Date(baseDate.getTime()-dias*86400000)),fin,year); }
+  return ventana(14).then(function(v){
+    /* en playoffs un equipo puede tener menos de 5 juegos en 14 dias (descanso entre series): se amplia a 28 y se avisa */
+    if(v.g>=5) return {rg:v.rg,g:v.g,ops:v.ops,dias:14};
+    return ventana(28).then(function(w){ return (w.g>=5)?{rg:w.rg,g:w.g,ops:w.ops,dias:28}:{rg:null,g:Math.max(v.g,w.g),ops:v.ops,dias:14}; });
+  }).then(function(out){ cache.off14[k]=out; return out; })
+    .catch(function(){ var out={rg:null,g:0,ops:null,dias:14}; cache.off14[k]=out; return out; });
 }
+function dias14(x){ var a=(x.o14a&&x.o14a.dias)||14, h=(x.o14h&&x.o14h.dias)||14; return (a===14&&h===14)?'14 días':(a===h?a+' días':'14–28 días'); }
 function bullpen(teamId,year){
   var k=teamId+'-'+year+corteSufijo();
   if(cache.pen[k]) return Promise.resolve(cache.pen[k]);
@@ -2042,7 +2069,7 @@ function historial(teamId,baseDate){
   if(cache.hist[k]) return Promise.resolve(cache.hist[k]);
   var ini=ymd(new Date(baseDate.getTime()-60*86400000));
   var fin=ymd(new Date(baseDate.getTime()-86400000));
-  return j(API+'/schedule?sportId=1&teamId='+teamId+'&startDate='+ini+'&endDate='+fin+'&gameType=R')
+  return j(API+'/schedule?sportId=1&teamId='+teamId+'&startDate='+ini+'&endDate='+fin+'&gameType='+TIPOS_JUEGO)
    .then(function(sc){
      var gs=[];
      (sc.dates||[]).forEach(function(d){ (d.games||[]).forEach(function(g){
@@ -2461,8 +2488,8 @@ function formaTabla(x,nomA,nomH){
   o+='<tr><td>Racha activa</td><td class="n">'+rachaTxt(ja)+'</td><td class="n">'+rachaTxt(jh)+'</td></tr>';
   o+='<tr><td>Anota / permite en esos 5</td><td class="n">'+num(ua.rs,1)+' / '+num(ua.ra,1)+'</td><td class="n">'+num(uh.rs,1)+' / '+num(uh.ra,1)+'</td></tr>';
   o+='<tr><td>Carreras por juego (temporada)</td><td class="n">'+num(x.oa.rg)+'</td><td class="n">'+num(x.oh.rg)+'</td></tr>';
-  o+='<tr><td>Carreras por juego (14 días)</td><td class="n">'+num(x.o14a&&x.o14a.rg)+'</td><td class="n">'+num(x.o14h&&x.o14h.rg)+'</td></tr>';
-  o+='<tr><td>OPS de 14 días</td><td class="n">'+num(x.o14a&&x.o14a.ops,3)+'</td><td class="n">'+num(x.o14h&&x.o14h.ops,3)+'</td></tr>';
+  o+='<tr><td>Carreras por juego ('+dias14(x)+')</td><td class="n">'+num(x.o14a&&x.o14a.rg)+'</td><td class="n">'+num(x.o14h&&x.o14h.rg)+'</td></tr>';
+  o+='<tr><td>OPS de '+dias14(x)+'</td><td class="n">'+num(x.o14a&&x.o14a.ops,3)+'</td><td class="n">'+num(x.o14h&&x.o14h.ops,3)+'</td></tr>';
   o+='</table>';
   var av=[];
   [[x.o14a,nomA,x.oa],[x.o14h,nomH,x.oh]].forEach(function(t){
@@ -3723,7 +3750,7 @@ function detalle(x){
   '<tr><td>Innings de temporada</td><td class="n">'+num(sea.ip,1)+'</td><td class="n">'+num(seh.ip,1)+'</td></tr>'+
   '<tr><td>Innings por apertura</td><td class="n">'+num(l5a.ipxAb!=null?l5a.ipxAb:sea.ipx,1)+'</td><td class="n">'+num(l5h.ipxAb!=null?l5h.ipxAb:seh.ipx,1)+'</td></tr>'+
   '<tr><td>Carreras por juego (temporada)</td><td class="n">'+num(oa.rg)+'</td><td class="n">'+num(oh.rg)+'</td></tr>'+
-  '<tr><td>Carreras por juego (14 días)</td><td class="n">'+num(x.o14a&&x.o14a.rg)+'</td><td class="n">'+num(x.o14h&&x.o14h.rg)+'</td></tr>'+
+  '<tr><td>Carreras por juego ('+dias14(x)+')</td><td class="n">'+num(x.o14a&&x.o14a.rg)+'</td><td class="n">'+num(x.o14h&&x.o14h.rg)+'</td></tr>'+
   '<tr><td>OPS vs mano rival</td><td class="n">'+num(x.splitA,3)+'</td><td class="n">'+num(x.splitH,3)+'</td></tr>'+
   '<tr class="usa"><td>Carreras por juego usadas</td><td class="n">'+num(rgA)+'</td><td class="n">'+num(rgH)+'</td></tr>'+
   '<tr><td>ERA bullpen'+((ba.aprox||bh.aprox)?' *':'')+'</td><td class="n">'+num(ba.era)+'</td><td class="n">'+num(bh.era)+'</td></tr>'+

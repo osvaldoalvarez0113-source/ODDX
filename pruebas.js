@@ -959,6 +959,10 @@ sec('Cierre automático (cierre.js): CLV sin escribir la cuota a mano');
  mem['ventaja_picks_v1']=JSON.stringify([{id:'b1',f:'2026-10-25',juego:'Los Angeles Dodgers @ New York Yankees',m:'New York Yankees gana',am:'-150',plat:'bovada',cierre:null,res:'G'}]);
  const e2=await C.procesar('mlb');
  ok('cierre: si ESPN no responde no inventa nada y lo cuenta como sin dato',JSON.parse(mem['ventaja_picks_v1'])[0].cierre===null&&(e2.sinDato+e2.noEncontrado)===1,JSON.stringify(e2));
+ const ix=rd('index.html');
+ sec('MLB en playoffs: la forma reciente incluye postemporada');
+ ok('MLB: últimas salidas del abridor y juegos del equipo (Forma) piden temporada + Wild Card, Serie Divisional, de Campeonato y Mundial',/stats=gameLog&group=pitching&season='\+year\+'&gameType='\+TIPOS_JUEGO/.test(ix)&&/startDate='\+ini\+'&endDate='\+fin\+'&gameType='\+TIPOS_JUEGO\)/.test(ix)&&/var TIPOS_JUEGO='R,F,D,L,W'/.test(ix));
+ ok('MLB: la ofensiva de 14 días suma los cinco tipos de juego (la API de equipos pide uno a la vez), recalcula el OPS y se amplía a 28 días si hay menos de 5 juegos',/function ofensivaVentana/.test(ix)&&/TIPOS_LISTA\.map/.test(ix)&&/ventana\(28\)/.test(ix)&&/function dias14\(x\)/.test(ix));
  globalThis.fetch=guardaF; if(guardaL===undefined) delete globalThis.localStorage; else globalThis.localStorage=guardaL;
 };
 
