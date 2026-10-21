@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: sonda-latencia
+  cancel-in-progress: true
+
 jobs:
   sonda:
     runs-on: ubuntu-latest

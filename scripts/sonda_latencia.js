@@ -12,7 +12,7 @@ const ymd=d=>d.toISOString().slice(0,10).replace(/-/g,'');
 async function get(url,origen){
  const t0=Date.now();
  try{
-  const r=await fetch(url,{headers:Object.assign({'User-Agent':'Mozilla/5.0 (sonda de latencia)'},origen?{Origin:ORIGEN}:{})});
+  const nba=/nba\.com/.test(url); const r=await fetch(url,{headers:Object.assign({'User-Agent':'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1','Accept':'application/json, text/plain, */*'},nba?{Referer:'https://www.nba.com/',Origin:'https://www.nba.com'}:(origen?{Origin:ORIGEN}:{}))});
   const txt=await r.text(); let j=null; try{ j=JSON.parse(txt); }catch(e){}
   const h=r.headers;
   return {status:r.status,ms:Date.now()-t0,j,len:txt.length,hdr:{age:h.get('age'),cc:h.get('cache-control'),date:h.get('date'),lm:h.get('last-modified'),cors:h.get('access-control-allow-origin'),srv:h.get('x-cache')||h.get('x-served-by')||h.get('server')}};
@@ -46,8 +46,8 @@ async function cabeceras(){
 async function vivosFut(){
  const out=[];
  for(const l of LIGAS){
-  const r=await get(ESPN+'soccer/'+l+'/scoreboard?dates='+ymd(new Date())+'-'+ymd(new Date(Date.now()+864e5)));
-  ((r.j&&r.j.events)||[]).forEach(e=>{ const st=e.status&&e.status.type&&e.status.type.state; if(st==='in'){ const c=(e.competitions&&e.competitions[0])||{}; out.push({dep:'fut',liga:l,id:e.id,nombre:e.shortName||e.name,sc:(c.competitors||[]).map(x=>x.score).join('-'),clk:e.status.displayClock}); } });
+  const evs=[]; for(const dd of [new Date(),new Date(Date.now()-864e5)]){ const r=await get(ESPN+'soccer/'+l+'/scoreboard?dates='+ymd(dd)); ((r.j&&r.j.events)||[]).forEach(e=>evs.push(e)); }
+  const vistos={}; evs.forEach(e=>{ if(vistos[e.id]) return; vistos[e.id]=1; const st=e.status&&e.status.type&&e.status.type.state; if(st==='in'){ const c=(e.competitions&&e.competitions[0])||{}; out.push({dep:'fut',liga:l,id:e.id,nombre:e.shortName||e.name,sc:(c.competitors||[]).map(x=>x.score).join('-'),clk:e.status.displayClock}); } });
  }
  return out;
 }
