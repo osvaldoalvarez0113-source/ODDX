@@ -1,0 +1,40 @@
+name: Sonda de atraso (fuentes en vivo)
+
+on:
+  workflow_dispatch:
+    inputs:
+      minutos:
+        description: "Minutos que debe medir"
+        default: "200"
+  push:
+    branches: [experimento-latencia]
+
+permissions:
+  contents: write
+
+jobs:
+  sonda:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      DUR_MIN: ${{ github.event.inputs.minutos || '200' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Medir y publicar resultados cada 10 minutos
+        run: |
+          publicar(){
+            rm -rf /tmp/pub && mkdir /tmp/pub
+            cp -f muestras.jsonl salida.txt /tmp/pub/ 2>/dev/null || true
+            ( cd /tmp/pub && git init -q && git checkout -q -b resultados-latencia && git add -A &&
+              git -c user.name=bot -c user.email=bot@users.noreply.github.com commit -qm "muestras" &&
+              git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" resultados-latencia ) || true
+          }
+          node scripts/sonda_latencia.js > salida.txt 2>&1 &
+          PID=$!
+          sleep 45; publicar
+          while kill -0 $PID 2>/dev/null; do sleep 420; publicar; done
+          publicar
