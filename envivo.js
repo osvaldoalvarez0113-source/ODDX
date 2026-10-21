@@ -447,7 +447,7 @@ function marcarNuevos(clave,ids){
 /* ---------- NBA ---------- */
 function cuarto(p){ return p>4?('TE'+(p>5?(p-4):'')):('C'+p); }
 function canchaSVG(tiros,flt,home,away,nuevos){
- var cH='#fbbf24', cA='#38bdf8', ult=null, s='<svg class="evCourt" viewBox="0 0 500 470" role="img" aria-label="Mapa de tiros en vivo"><rect class="evCtBg" x="0" y="0" width="500" height="470" rx="14"/>';
+ var cH='#fbbf24', cA='#38bdf8', ult=null, s='<svg class="evCourt" viewBox="-14 -14 528 498" role="img" aria-label="Mapa de tiros en vivo"><rect class="evCtBg" x="-14" y="-14" width="528" height="498" rx="14"/>';
  s+='<rect class="evLn" x="170" y="2" width="160" height="188"/><path class="evLn" d="M190 190 A60 60 0 0 0 310 190"/><path class="evLn evLnD" d="M190 190 A60 60 0 0 1 310 190"/>';
  s+='<path class="evLn" d="M30 2 L30 142 A237.5 237.5 0 0 0 470 142 L470 2"/><path class="evLn" d="M210 52.5 A40 40 0 0 0 290 52.5"/><line class="evLn" x1="220" y1="40" x2="280" y2="40"/><circle class="evLn" cx="250" cy="52.5" r="7.5"/>';
  s+='<path class="evLn" d="M190 468 A60 60 0 0 1 310 468"/>';
