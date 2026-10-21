@@ -350,7 +350,7 @@ function tick(){
 function programar(){
  if(S.timer){ clearInterval(S.timer); S.timer=null; }
  if(!S.open) return;
- var ms=S.view==='game'?(APP==='fut'?15000:10000):25000;
+ var ms=S.view==='game'?10000:25000;
  S.timer=setInterval(tick,ms);
 }
 
