@@ -1957,6 +1957,15 @@ function pintarGameBody(bodyEl, p, eL, eV){
   var base = bloqueBase(eL, eV, p.local, p.visita);
   var id = 'g'+Math.random().toString(36).slice(2);
   var estadoParams = PARAMS.calibrado ? 'calibrados con datos reales' : 'valores de arranque, aún sin calibrar (ve a Backtest)';
+  /* texto de «Cómo se lee»: el modelo de las 5 ligas grandes está medido; el básico (Champions, Europa, Conference o si faltan datos) no */
+  var comoCalc = base.r.dc ?
+    '<b>Cómo se calcula:</b> con los goles que cada equipo ha metido y recibido esta temporada y la pasada (los partidos recientes pesan más). '+
+    '<b>Qué tan confiable es:</b> probado en 5,256 partidos de las 5 grandes ligas contra las cuotas de cierre de Pinnacle, el mercado acierta más que este modelo (error 0.964 contra 0.989). '+
+    'Así que es una referencia, no una ventaja. No sabe de lesiones ni de alineaciones.' :
+    '<b>Cómo se calcula:</b> con los goles que cada equipo lleva a favor y en contra en la tabla de esta competencia. '+
+    '<b>Qué tan confiable es:</b> menos que en las 5 grandes ligas. Con pocos partidos jugados los números se mueven mucho, y este modo no se ha medido contra las cuotas del mercado. '+
+    'Úsalo solo como referencia, no como ventaja. No sabe de lesiones ni de alineaciones.'+
+    '<br><br><b>Detalles técnicos:</b> '+'Modelo Poisson con encogimiento (K='+PARAMS.K+'), localía (h='+PARAMS.h+') y corrección de marcadores bajos (ρ='+PARAMS.rho+')'+(PARAMS.w<1?', confianza reducida (w='+PARAMS.w+')':'')+(PARAMS.S&&Object.keys(SEMILLA).length?', con historial de la temporada pasada (S='+PARAMS.S+')':'')+'. Más/Menos y Ambos anotan usan su propio encogimiento fuerte (K='+PARAMS.Kt+', w='+PARAMS.wt+'). Parámetros: '+estadoParams+'. Sin lesiones ni alineaciones. Datos en vivo de worldfootball.net.';
 
   bodyEl.innerHTML =
     '<div class="tabs" id="'+id+'tabs">' +
@@ -1966,14 +1975,11 @@ function pintarGameBody(bodyEl, p, eL, eV){
       '<button class="tb" data-t="for">Forma</button>' +
     '</div>' +
     '<div class="pane on" id="'+id+'ver">' + base.veredictoHtml +
-      (base.r.dc ? '<details class="comoLee"><summary>¿Cómo se lee y qué tan confiable es?</summary><div class="nota">'+
+      '<details class="comoLee"><summary>¿Cómo se lee y qué tan confiable es?</summary><div class="nota">'+
         '<b>Los tres porcentajes de arriba</b> son la probabilidad de que gane el local, empaten o gane la visita; suman 100%. '+
         '<b>Goles esp.</b> es el promedio de goles que el modelo espera de cada equipo. '+
         '<b>Cuota justa</b> es lo que tendría que pagar la casa para que apostar ahí no gane ni pierda a la larga: si paga más, hay valor; si paga menos, no.<br><br>'+
-        '<b>Cómo se calcula:</b> con los goles que cada equipo ha metido y recibido esta temporada y la pasada (los partidos recientes pesan más). '+
-        '<b>Qué tan confiable es:</b> probado en 5,256 partidos de las 5 grandes ligas contra las cuotas de cierre de Pinnacle, el mercado acierta más que este modelo (error 0.964 contra 0.989). '+
-        'Así que es una referencia, no una ventaja. No sabe de lesiones ni de alineaciones.</div></details>' : '') +
-      (base.r.dc ? '' : '<div class="nota">Modelo Poisson con encogimiento (K='+PARAMS.K+'), localía (h='+PARAMS.h+') y corrección de marcadores bajos (ρ='+PARAMS.rho+')'+(PARAMS.w<1?', confianza reducida (w='+PARAMS.w+')':'')+(PARAMS.S&&Object.keys(SEMILLA).length?', con historial de la temporada pasada (S='+PARAMS.S+')':'')+'. Más/Menos y Ambos anotan usan su propio encogimiento fuerte (K='+PARAMS.Kt+', w='+PARAMS.wt+'). Parámetros: '+estadoParams+'. Sin lesiones ni alineaciones. Datos en vivo de worldfootball.net.</div>') +
+        comoCalc+'</div></details>' +
     '</div>' +
     '<div class="pane" id="'+id+'cuo">' +
       '<div class="rankbox"></div>' +
@@ -2188,7 +2194,7 @@ function aplicarSelectorDias(){
 function pintarGameBodyCopa(bodyEl, p){
   var id = 'c'+Math.random().toString(36).slice(2);
   bodyEl.innerHTML =
-    '<div class="aviso">🏆 Copa de eliminación directa — no existe tabla de temporada para este tipo de competencia, así que aquí no se corre el modelo Poisson ni se compara contra cuotas. Solo forma reciente y cara a cara dentro de esta copa.</div>' +
+    '<div class="aviso">🏆 Es una copa de eliminación directa: no hay tabla de temporada, así que aquí no hay porcentajes de ganar ni cuota justa. Lo que sí ves es cómo vienen los dos equipos (forma reciente) y si ya se enfrentaron en esta copa.</div>' +
     '<h3>Forma reciente</h3>' +
     '<div class="observ"><b>'+p.local+'</b></div>' +
     '<div class="forma" id="'+id+'formaL"></div>' +
