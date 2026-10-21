@@ -90,6 +90,8 @@ async function muestraNba(e){
  const p=await get('https://cdn.nba.com/static/json/liveData/playbyplay/playbyplay_'+e.id+'.json',true); const ac=(p.j&&p.j.game&&p.j.game.actions)||[]; const u=ac[ac.length-1]||{};
  rec({src:'nbacom-pbp',dep:'nba',ev:e.id,nombre:e.nombre,status:p.status,ms:p.ms,len:p.len,hdr:p.hdr,count:ac.length,lastNum:u.actionNumber,lastTA:u.timeActual||null,lastClk:u.clock,lastPer:u.period,lastType:u.actionType,txt:(u.description||'').slice(0,50),hs:u.scoreHome,as:u.scoreAway});
  if(e.espn){
+  const sb=await get(ESPN+'basketball/nba/summary?event='+e.espn+'&_='+Date.now(),true); const plb=(sb.j&&sb.j.plays)||[]; const lb=plb[plb.length-1]||{};
+  rec({src:'espn-summary-bust',dep:'nba',ev:e.id,espn:e.espn,nombre:e.nombre,status:sb.status,ms:sb.ms,len:sb.len,hdr:sb.hdr,count:plb.length,lastId:lb.id,lastWall:lb.wallclock||null,lastClk:lb.clock&&lb.clock.displayValue,lastPer:lb.period&&lb.period.number,txt:(lb.text||'').slice(0,50),hs:lb.homeScore,as:lb.awayScore});
   const s=await get(ESPN+'basketball/nba/summary?event='+e.espn,true); const pl=(s.j&&s.j.plays)||[]; const l=pl[pl.length-1]||{};
   rec({src:'espn-summary',dep:'nba',ev:e.id,espn:e.espn,nombre:e.nombre,status:s.status,ms:s.ms,len:s.len,hdr:s.hdr,count:pl.length,lastId:l.id,lastWall:l.wallclock||null,lastClk:l.clock&&l.clock.displayValue,lastPer:l.period&&l.period.number,txt:(l.text||'').slice(0,50),hs:l.homeScore,as:l.awayScore});
  }
