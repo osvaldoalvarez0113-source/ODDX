@@ -644,7 +644,7 @@ sec('Estructura del repo (lo que encontró la auditoría de oct 2026)');
   ok('fila: escapa HTML en el id y en el cierre',!/<script|"><img/i.test(C.fila({id:'a"><img src=x onerror=1>',cuota:'-110',cierre:'<script>1</script>'})));
   ok('fila: muestra «sin cierre» y luego el CLV con signo',/sin cierre/.test(C.fila({id:'1',cuota:'-110'}))&&/CLV \+3\.6 pts/.test(C.fila({id:'1',cuota:'+110',cierre:'-105'})));
   ok('resumenHtml: con menos de 25 picks avisa que todavía no dice nada firme',/todavía no dice nada firme/.test(C.resumenHtml(arr)));
-  ok('resumenHtml: sin ningún cierre pide escribirlo',/Escribe la cuota de cierre/.test(C.resumenHtml([{cuota:'-110'}])));
+  ok('resumenHtml: sin ningún cierre pide escribirlo',/escribe la cuota de cierre/.test(C.resumenHtml([{cuota:'-110'}])));
   {
    // la fila escrita en el campo «Cierre» se guarda en el registro y se repinta
    const store=[{id:'x1',cuota:'+110'},{id:'x2',cuota:'-150'}];let repintado=0,handler=null;
