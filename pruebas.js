@@ -778,6 +778,10 @@ sec('En vivo (envivo.js): lista de juegos, cancha de la NBA, zona de strike de M
  const E=require(path.join(__dirname,'envivo.js')), se=rd('envivo.js');
  ok('envivo.js se carga en los tres, después de asistente.js',['index.html','futbol.html','nba.html'].every(f=>{const x=rd(f);return x.indexOf('envivo.js')>x.indexOf('asistente.js')&&x.indexOf('asistente.js')>0;}));
  ok('el service worker guarda envivo.js',/'envivo\.js'/.test(rd('sw.js')));
+ ok('fútbol: la cancha en vivo usa las jugadas con posición de ESPN y es la pestaña por defecto',/sports\.core\.api\.espn\.com/.test(se)&&/fieldPositionX/.test(se)&&/fieldPosition2X/.test(se)&&/data-v="cancha">Cancha/.test(se)&&/function porDefecto\(\)\{ return \(APP==='nba'\|\|APP==='fut'\)/.test(se));
+ ok('cancha: el visitante se voltea para jugar hacia el otro lado y las coordenadas se mantienen dentro de la cancha',/100-xy\[0\]/.test(se)&&/Math\.min\(100,/.test(se));
+ ok('cancha: el nombre del jugador sale de ESPN y se pinta con textContent (sin HTML)',/\.evAn',P\.act\)\.textContent/.test(se)&&/\.evPitchTxt',P\.el\)\.textContent/.test(se));
+ ok('cancha: la animación respeta reduce-motion',/prefers-reduced-motion:reduce\)\{\.evAct,\.evBola/.test(se));
  ok('no usa eval, new Function ni document.write',!/\beval\s*\(|new Function|document\.write/.test(se));
  ok('todo texto que llega de afuera se escapa (esc) y los logos solo aceptan https',E.esc('<img src=x onerror=alert(1)>')==='&lt;img src=x onerror=alert(1)&gt;'&&E.safeUrl('javascript:alert(1)')===''&&E.safeUrl('https://a.b/c.png')==='https://a.b/c.png');
  ok('traduce lo que narran las fuentes: béisbol, básquet y fútbol',/sencillo en rola a campocorto/.test(E.tr('Steven Kwan singles on a ground ball to shortstop Taylor Walls.'))&&/se poncha tirándole/.test(E.tr('Juan Soto strikes out swinging.'))&&/anota/.test(E.tr('Jalen Brunson makes 26-foot three point jumper'))&&/¡Gol!/.test(E.tr('Goal! PSG 4, Barcelona 2.'))&&/Tiro atajado/.test(E.tr('Attempt saved. X (Y) header')));
