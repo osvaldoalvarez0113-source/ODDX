@@ -1,0 +1,54 @@
+## NBA · ¿la linea descuenta bien las ausencias de jugadores importantes?
+
+### Datos
+```
+juegos: 2650 · con boxscore: 2646 · con boxscore y spread: 2641
+errores de descarga: 4 (primeros: box 401869402 HTTP 404 https://site.api.espn.com/apis/site/v2/sports/baske | box 401871334 HTTP 404 https://site.api.espn.com/apis/site/v2/sports/baske | box 401871337 HTTP 404 https://site.api.espn.com/apis/site/v2/sports/baske)
+ejemplo de jugadores leidos: [{"id":"4065648","min":30,"prod":46.8,"jugo":true},{"id":"3213","min":26,"prod":16.6,"jugo":true},{"id":"3995","min":31,"prod":23.6,"jugo":true}]
+```
+
+Juegos medibles (ambos equipos con >=10 juegos previos): 2329. Talento que falta = produccion promedio (PTS + 0.7·REB + 0.7·AST) de los jugadores habituales (top 8 por minutos) que NO jugaron esa noche.
+
+### 1) ¿Cuantos juegos tienen ausencias grandes?
+| Diferencia de talento que falta (local − visita) | Juegos | Margen real − linea (pts, + = el local rindio mas de lo que decia la linea) | z |
+|---|---|---|---|
+|  ≤ −15 (le falta mucho a la VISITA) | 773 | 0.08 ± 1.01 | 0.2 |
+| −15 a −8 | 154 | 0.42 ± 2.31 | 0.4 |
+| −8 a 8 (parejo) | 465 | -0.70 ± 1.39 | -1.0 |
+| 8 a 15 | 184 | -0.24 ± 2.04 | -0.2 |
+| ≥ 15 (le falta mucho al LOCAL) | 753 | -0.49 ± 0.98 | -1.0 |
+
+
+### 2) Regresion: margen real = a + b·(linea) + c·(talento que falta, local − visita)
+**c** = cuanto vale la ausencia ENCIMA de lo que ya dice la linea (0 = la linea ya lo sabe; negativo = la linea se queda corta con las ausencias del local).
+
+| b (linea) | c (ausencias) | z de c |
+|---|---|---|
+| 1.027 ± 0.082 | -0.010 ± 0.018 | -1.1 |
+
+
+### 3) Misma regresion por temporada (¿se repite?)
+| Temporada | Juegos | c ± 2·se | z |
+|---|---|---|---|
+| 2024-25 | 1166 | -0.000 ± 0.026 | -0.0 |
+| 2025-26 | 1163 | -0.018 ± 0.024 | -1.5 |
+
+
+### 4) Efecto crudo (sin mirar la linea): margen real = a + c·(talento que falta)
+c = -0.119 ± 0.017 pts de margen por cada punto de produccion que falta (si c ≈ −0.3, perder 15 de produccion cuesta ~4.5 pts). Esto prueba que las ausencias importan; la seccion 2 dice si la linea ya las cobra.
+
+### 5) Apostar por el equipo SANO contra la linea de cierre (a −110; hay que ganar 52.4%)
+| Diferencia de talento | Apuestas | G-P | % ganadas | ROI ± 2·se |
+|---|---|---|---|---|
+| 8+ | 1864 | 937-927 | 50.3% | -4.0% ± 4.4% |
+| 12+ | 1660 | 837-823 | 50.4% | -3.7% ± 4.7% |
+| 16+ | 1460 | 728-732 | 49.9% | -4.8% ± 5.0% |
+| 20+ | 1294 | 644-650 | 49.8% | -5.0% ± 5.3% |
+
+
+### Resumen
+```
+c (ausencias encima de la linea) = -0.010 ± 0.018
+Si el intervalo incluye 0, la linea de cierre ya descuenta las ausencias y no hay ventaja en usarlas.
+```
+
