@@ -1,0 +1,42 @@
+temporada 2023: 1319 juegos
+temporada 2024: 1324 juegos
+temporada 2025: 1326 juegos
+Bajando lineas de 2650 juegos...
+  400/2650
+  800/2650
+  1200/2650
+  1600/2650
+  2000/2650
+  2400/2650
+### Datos
+```
+juegos con linea y modelo listo: 2486 · errores: 0
+```
+### 1) ¿Cuantas veces acierta quien gana?
+| Metodo | Juegos | % aciertos | Intervalo 95% |
+|---|---|---|---|
+| Siempre el LOCAL | 2486 | 55.1% | 53.2–57.1% |
+| Favorito de la LINEA (lo que usa la app) | 2486 | 68.9% | 67.1–70.7% |
+| Favorito del MODELO solo | 2486 | 67.5% | 65.7–69.4% |
+
+### 2) Favorito de la linea, segun que tan favorito es (spread)
+| Spread | Juegos | % aciertos | Intervalo 95% |
+|---|---|---|---|
+| spread < 3 (parejo) | 494 | 51.2% | 46.8–55.6% |
+| 3 a 6 | 685 | 62.2% | 58.5–65.7% |
+| 6 a 9 | 556 | 73.4% | 69.6–76.9% |
+| 9 a 12 | 370 | 77.0% | 72.5–81.0% |
+| 12 o mas (favorito claro) | 381 | 89.8% | 86.3–92.4% |
+
+### 3) Cuando el MODELO y la LINEA eligen distinto
+| Quien | Juegos | % aciertos | Intervalo 95% |
+|---|---|---|---|
+| Gana el favorito de la LINEA | 341 | 55.1% | 49.8–60.3% |
+| Gana el favorito del MODELO | 341 | 44.9% | 39.7–50.2% |
+
+### 4) Por temporada (favorito de la linea / del modelo / local)
+| Temporada | Juegos | Linea | Modelo | Local |
+|---|---|---|---|---|
+| 2024-25 | 1243 | 69.2% | 67.1% | 55.0% |
+| 2025-26 | 1243 | 68.7% | 68.0% | 55.3% |
+
