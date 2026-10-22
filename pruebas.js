@@ -988,6 +988,8 @@ sec('ovaedge.js: vig, Kelly, CLV, calibración y Monte Carlo, y su chequeo en el
    ok('Stake: una línea entera con push (Over 8, 13% de empate) mezcla sobre la probabilidad condicionada y no truena',(()=>{const a=val(cE,52,'-110',.13,undefined);return a&&(a.stake===null||a.stake>0)&&isFinite(a.ev);})());
    ok('El ranking pasa el sin-vig del par al stake del ganador y avisa cuando la mezcla no deja valor',/valor\(m\.p,m\.am,m\.push,undefined,m\.fair\)/.test(ix)&&/devig\(b\.querySelector\('\.ca'\)\.value,b\.querySelector\('\.ch'\)\.value\)/.test(ix)&&/sin stake sugerido/.test(ix));
    ok('El aviso de «precio imposible» trae el dato de 6 temporadas (1,713 juegos, −5.6%, perdió en 5 de 6)',/1,713 juegos/.test(V(70,'-110','-110'))&&/-5\.6%/.test(V(70,'-110','-110'))&&/5 de las 6 temporadas/.test(V(70,'-110','-110')));
+   ok('Veredicto: trae la línea «Si prefieres el favorito» con el EV si el mercado acierta (la comisión) cuando el favorito no es el pick',(()=>{const h=txt(V(40,'+150','-170'));return /Si prefieres el favorito: Local \(-170\)/.test(h)&&/si el mercado acierta, -\d+\.\d%/.test(h);})());
+   ok('Veredicto: no repite la línea del favorito cuando el favorito YA es el pick con valor',!/Si prefieres el favorito/.test(txt(V(62,'-110','-110'))));
    {  // con el peso REAL de index.html (medido en 6 temporadas): 0.05, no el 0.24 de las pruebas de mecánica de arriba
     const wReal=+((/var W_MODELO=([\d.]+);/.exec(ix)||[])[1]);
     ok('W_MODELO = 0.05: el peso medido en 6 temporadas (óptimo junto ≈0.04; ajustado en 5 y probado en la sexta, 0.01 a 0.08)',wReal===0.05);

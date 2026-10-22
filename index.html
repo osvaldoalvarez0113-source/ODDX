@@ -998,7 +998,7 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v69</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v70</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -3202,6 +3202,15 @@ function veredictoEV(pA,pH,amA,amH,nomA,nomH,vc){
   if(vc!=null&&vc<CORTE_GRIS&&best.ev>0) o+='<div class="flag">Ojo: la ventaja en carreras es de solo '+
      vc.toFixed(2)+', por debajo de tu corte de '+CORTE_GRIS.toFixed(2)+'. Hay valor contra la cuota pero el modelo está '+
      'partiendo de un margen muy fino.</div>';
+  /* Para quien prefiere jugar el favorito y no el lado de valor: una línea con lo que cuesta. */
+  var fav=(lados[0].fair>=lados[1].fair)?lados[0]:lados[1];
+  if(fav!==best||best.ev<=0){
+    var evM=fav.fair/100*fav.b-(1-fav.fair/100)-fav.fee;
+    o+='<div class="flag"><b>Si prefieres el favorito:</b> '+esc(fav.n)+' ('+esc(String(fav.raw))+') · el mercado le da '+fav.fair.toFixed(1)+
+       '% y tu número '+(fav===lados[0]?pA:pH).toFixed(1)+'% · EV con tu número '+(fav.ev>=0?'+':'')+(fav.ev*100).toFixed(1)+
+       '%; si el mercado acierta, '+(evM>=0?'+':'')+(evM*100).toFixed(1)+'% (la comisión). En 6 temporadas, a la cuota de cierre, '+
+       'los favoritos rindieron entre -5% y 0%: acertar más no paga más.</div>';
+  }
   if(best.ev<=EV_IMPOSIBLE) o+=chequeoMercado(lados,amA,amH);
   return o;
 }
