@@ -189,14 +189,12 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 .rvFm{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12.5px;color:var(--mut)}
 .rvFm b{flex:0 0 auto;max-width:42%;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rvFm .forma{margin:0}
-.rvGo{display:flex;gap:7px;margin-top:14px}
 .rvIn{margin-top:10px}
 .rvIn label{display:block;font-size:11.5px;color:var(--mut);font-weight:700;margin-bottom:4px}
 .rvIn input{width:100%;padding:10px 12px;font-size:16px;border-radius:var(--r);border:1px solid var(--line2);background:var(--bg1);color:var(--txt)}
 .rvVal{margin-top:8px;font-size:13px;line-height:1.45;border-radius:var(--r);padding:0}
 .rvVal b{font-weight:800}
 .rvVal.ok{color:var(--good)}.rvVal.no{color:var(--bad)}
-.rvGo div{flex:1;text-align:center;border:1px solid var(--line2);border-radius:var(--r);padding:9px 4px;font-size:12.5px;font-weight:700;color:var(--mut);cursor:pointer}
 </style>
 </head>
 <body>
@@ -702,8 +700,7 @@ function resumenN(g,pr,H,A){
   li.push(pr.bH||pr.bA?L('ok','Back-to-back: '+[pr.bA?A.n:'',pr.bH?H.n:''].filter(Boolean).map(esc).join(' y ')+' jugó ayer (ya descontado).'):L('ok','Sin back-to-back.'));
   if(g.pre) li.push(L('w','Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
   li.push(L('x','No sabe de lesiones: mira Forma y usa el ajuste manual de abajo.'));
-  const go='<div class="rvGo"><div role="button" data-go="cuo">Cuotas ›</div><div role="button" data-go="num">Números ›</div><div role="button" data-go="for">Forma y lesiones ›</div></div>';
-  return `<div class="rv"><h4>Pronóstico y pick</h4>${main}<h4>Modelo contra mercado</h4>${tab}<h4>Margen y líneas justas</h4>${chips}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div><h4>Cómo vienen los equipos</h4>${formaMini(g.a,A)}${formaMini(g.h,H)}${go}</div>`;
+  return `<div class="rv"><h4>Pronóstico y pick</h4>${main}<h4>Modelo contra mercado</h4>${tab}<h4>Margen y líneas justas</h4>${chips}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div><h4>Cómo vienen los equipos</h4>${formaMini(g.a,A)}${formaMini(g.h,H)}</div>`;
 }
 function pintarCuerpo(body,g){
   const pr=prediccion(g), H=T(g.h), A=T(g.a);
@@ -784,7 +781,6 @@ function pintarCuerpo(body,g){
       else { vr.className='rvVal no'; vr.innerHTML=`✗ <b>No hay valor:</b> la cuota justa es ${jt} y esta paga menos. Pérdida esperada: ${(ev*100).toFixed(1)}% por cada $1.`; }
     });
   })();
-  body.querySelectorAll('.rvGo div').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const t=body.querySelector('.tb[data-t="'+b.dataset.go+'"]'); if(t) t.click(); });
   const q=k=>body.querySelector('[data-k="'+k+'"]');
   body.querySelector('[data-a="adj"]').onclick=()=>{ g.adjA=parseFloat(q('adjA').value)||0; g.adjH=parseFloat(q('adjH').value)||0; pintarCuerpo(body,g); };
   body.querySelector('[data-a="ml"]').onclick=()=>{
