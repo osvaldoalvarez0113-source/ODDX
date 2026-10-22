@@ -2027,7 +2027,7 @@ function resumenVeredictoF(p, base, id){
   if(v && v.ou!==undefined && v.bt!==undefined){
     var gan = veredictoDe(v.ou).t==='✓ le gana' && veredictoDe(v.bt).t==='✓ le gana';
     li.push(gan ? L('ok','Más/Menos y Ambos anotan le ganan a la frecuencia de la liga.') : L('w','Más/Menos y Ambos anotan no le ganan a la frecuencia de la liga: solo referencia.'));
-  } else li.push(L('w','Más/Menos y Ambos anotan: sin medir, solo referencia.'));
+  } else li.push(L('w','Más/Menos y Ambos anotan: no medidos en este teléfono (en tu backtest no le ganaron a la frecuencia de la liga). Solo referencia.'));
   li.push(L('x','No sabe de lesiones ni alineaciones: mira Forma y noticias.'));
   var conf = '<div class="rvLs">'+li.join('')+'</div>';
 
