@@ -182,7 +182,7 @@ sec('MLB: Veredicto en palabras simples');
  const v=h.slice(h.indexOf("  var tVer="),h.indexOf('/* ---------- pestana CUOTAS'));
  ok('el Veredicto abre con la conclusión (pick) y ya no repite el 56.4% / cuota justa / total en una tira aparte',v.indexOf('pickbox')<v.indexOf('calwrap')&&!/class="kpi"/.test(v));
  ok('lo que falta de datos va plegado en «¿Qué falta?»',/<summary>¿Qué falta\?<\/summary>/.test(h));
- ok('zona gris y muy parejo explican el porqué en palabras normales, también cuando responde el servidor',/Zona gris · sin pick/.test(h)&&/Zona gris · sin pick/.test(r)&&/lo mínimo para jugarlo/.test(h)&&/lo mínimo para jugarlo/.test(r));
+ ok('zona gris y muy parejo explican el porqué en palabras normales, también cuando responde el servidor',/zona gris · sin pick/.test(h)&&/zona gris · sin pick/.test(r)&&/lo mínimo para jugarlo/.test(h)&&/lo mínimo para jugarlo/.test(r));
 }
 
 sec('Sin botones flotantes: En vivo es una pestaña de cada juego y el Escáner va en la lista');
@@ -909,6 +909,10 @@ sec('Cierre automático (cierre.js): CLV sin escribir la cuota a mano');
  const e2=await C.procesar('mlb');
  ok('cierre: si ESPN no responde no inventa nada y lo cuenta como sin dato',JSON.parse(mem['ventaja_picks_v1'])[0].cierre===null&&(e2.sinDato+e2.noEncontrado)===1,JSON.stringify(e2));
  const ix=rd('index.html');
+ sec('MLB: Veredicto con mercado');
+ const pk=rd('pinnacle.js');
+ ok('MLB Veredicto: pinnacle.js arma el bloque .rvM con dos casillas de cuota, usa la prob. del mercado y avisa si no hay precio',/function aplicarVeredicto/.test(pk)&&/rvM/.test(pk)&&/data-k/.test(pk)&&/window\.OVAMercado/.test(pk)&&/Sin precio del mercado/.test(pk));
+ ok('MLB: etiquetas del pick coinciden en index.html y railway.js',/OVA: zona gris · sin pick/.test(ix)&&/OVA: zona gris · sin pick/.test(rd('railway.js')));
  sec('MLB en playoffs: la forma reciente incluye postemporada');
  ok('MLB: últimas salidas del abridor y juegos del equipo (Forma) piden temporada + Wild Card, Serie Divisional, de Campeonato y Mundial',/stats=gameLog&group=pitching&season='\+year\+'&gameType='\+TIPOS_JUEGO/.test(ix)&&/startDate='\+ini\+'&endDate='\+fin\+'&gameType='\+TIPOS_JUEGO\)/.test(ix)&&/var TIPOS_JUEGO='R,F,D,L,W'/.test(ix));
  ok('MLB: la ofensiva de 14 días suma los cinco tipos de juego (la API de equipos pide uno a la vez), recalcula el OPS y se amplía a 28 días si hay menos de 5 juegos',/function ofensivaVentana/.test(ix)&&/TIPOS_LISTA\.map/.test(ix)&&/ventana\(28\)/.test(ix)&&/function dias14\(x\)/.test(ix));

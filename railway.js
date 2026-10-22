@@ -47,15 +47,15 @@ try{
     var cs = (typeof CORTE_SOLIDO !== 'undefined') ? CORTE_SOLIDO : 1.20;
     var cf = (typeof CORTE_FUERTE !== 'undefined') ? CORTE_FUERTE : 1.70;
     if(vc < cg){
-      return '<div class="pick no"><div class="q">Muy parejo · sin pick</div><div class="r">Los dos equipos están casi igual (servidor): ventaja de solo '+vc.toFixed(2)+' carreras (hay que tener al menos '+cg.toFixed(2)+' para mirarlo). '+ganaName+' tiene '+pctGana.toFixed(1)+'%, cuota justa '+cuotaJusta+'.</div></div>';
+      return '<div class="pick no"><div class="q">OVA: muy parejo · sin pick</div><div class="r">Los dos equipos están casi igual (servidor): ventaja de solo '+vc.toFixed(2)+' carreras (hay que tener al menos '+cg.toFixed(2)+' para mirarlo). '+ganaName+' tiene '+pctGana.toFixed(1)+'%, cuota justa '+cuotaJusta+'.</div></div>';
     }
     if(vc >= cf){
-      return '<div class="pick big"><div class="q">'+esco+'Juégale a '+ganaName+'</div><div class="r">Gran oportunidad (servidor) · '+pctGana.toFixed(1)+'% · cuota justa '+cuotaJusta+' · ventaja de '+vc.toFixed(2)+' carreras.</div></div>';
+      return '<div class="pick big"><div class="q">'+esco+'OVA: juégale a '+ganaName+'</div><div class="r">Gran oportunidad (servidor) · '+pctGana.toFixed(1)+'% · cuota justa '+cuotaJusta+' · ventaja de '+vc.toFixed(2)+' carreras.</div></div>';
     }
     if(vc >= cs){
-      return '<div class="pick"><div class="q">'+esco+'Juégale a '+ganaName+'</div><div class="r">Ventaja sólida (servidor) · '+pctGana.toFixed(1)+'% · cuota justa '+cuotaJusta+' · ventaja de '+vc.toFixed(2)+' carreras.</div></div>';
+      return '<div class="pick"><div class="q">'+esco+'OVA: juégale a '+ganaName+'</div><div class="r">Ventaja sólida (servidor) · '+pctGana.toFixed(1)+'% · cuota justa '+cuotaJusta+' · ventaja de '+vc.toFixed(2)+' carreras.</div></div>';
     }
-    return '<div class="pick no"><div class="q">Zona gris · sin pick</div><div class="r">'+ganaName+' va arriba (servidor: '+pctGana.toFixed(1)+'%, cuota justa '+cuotaJusta+'), pero su ventaja de '+vc.toFixed(2)+' carreras no llega a '+cs.toFixed(2)+', que es lo mínimo para jugarlo.</div></div>';
+    return '<div class="pick no"><div class="q">OVA: zona gris · sin pick</div><div class="r">'+ganaName+' va arriba (servidor: '+pctGana.toFixed(1)+'%, cuota justa '+cuotaJusta+'), pero su ventaja de '+vc.toFixed(2)+' carreras no llega a '+cs.toFixed(2)+', que es lo mínimo para jugarlo.</div></div>';
   }
 
   function actualizarConServidor(el, j){
