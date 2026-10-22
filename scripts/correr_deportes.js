@@ -296,7 +296,7 @@ const DIAG = { errores: [], rango: 0, dia: 0 };
 async function main() {
   const arg = /^\d{4}(,\d{4})*$/.test(process.argv[2] || '') ? process.argv[2] : (process.env.TEMPS_NBA || '2024,2025');
   const evalSk = arg.split(',').map(s => parseInt(s, 10)).filter(isFinite);
-  const skMin = 2021, skMax = Math.max(...evalSk), skTune = 2023;
+  const skMin = process.env.NBA_SKMIN ? parseInt(process.env.NBA_SKMIN, 10) : 2021, skMax = Math.max(...evalSk), skTune = 2023;
   let out = '## NBA contra el mercado — temporadas evaluadas: ' + evalSk.map(s => s + '-' + String(s + 1).slice(2)).join(', ') + '\n\n';
   const log = t => { out += t + '\n\n'; console.log(t); };
   console.log('Bajando resultados...');
@@ -331,10 +331,11 @@ async function main() {
   const rows = [];
   objetivo.forEach(g => {
     const l = g.linea; if (!l || l.spread == null) return;
-    const r = { id: g.id, sk: seasonOf(g.ts), ty: g.ty, mar: g.hs - g.as, tot: g.hs + g.as, spread: l.spread, total: l.total, mlH: l.mlH, mlA: l.mlA, v: {} };
+    const r = { id: g.id, ts: g.ts, prov: l.prov, sk: seasonOf(g.ts), ty: g.ty, mar: g.hs - g.as, tot: g.hs + g.as, spread: l.spread, total: l.total, mlH: l.mlH, mlA: l.mlA, v: {} };
     let ok = true; Object.keys(V).forEach(k => { const x = pred[k].get(g.id); if (!x) ok = false; else r.v[k] = x; });
     if (ok) rows.push(r);
   });
+  if (process.env.VOLCAR_PARTIDOS) fs.writeFileSync('filas_nba.json', JSON.stringify(rows.map(r => ({ id: r.id, ts: r.ts, prov: r.prov, sk: r.sk, ty: r.ty, mar: r.mar, tot: r.tot, spread: r.spread, total: r.total, mlH: r.mlH, mlA: r.mlA, V0: r.v.V0, V3: r.v.V3 }))));
   const sks = [...new Set(rows.map(r => r.sk))].sort();
   log('Juegos con linea y con modelo listo (>=5 juegos previos de cada equipo): ' + rows.length + ' (' + sks.map(s => s + ': ' + rows.filter(r => r.sk === s).length).join(', ') + ')');
 
