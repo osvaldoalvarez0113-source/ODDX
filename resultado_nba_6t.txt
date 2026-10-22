@@ -1,0 +1,124 @@
+Bajando resultados...
+  temporada 2019: 1054 eventos
+  temporada 2020: 1250 eventos
+  temporada 2021: 1401 eventos
+  temporada 2022: 1390 eventos
+  temporada 2023: 1395 eventos
+  temporada 2024: 1403 eventos
+  temporada 2025: 1401 eventos
+### Datos
+```
+juegos finales por temporada: {"2019":973,"2020":1169,"2021":1324,"2022":1321,"2023":1319,"2024":1324,"2025":1326}
+errores de descarga: 63 (primeros: rango 20191001: HTTP 400 https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20191001-20191031&limit=1000 | rango 20191201: HTTP 400 https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20191201-20191231&limit=1000 | rango 20200101: HTTP 400 https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard?dates=20200101-20200131&limit=1000)
+```
+Bajando lineas de cierre de 7783 juegos...
+  lineas 400/7783
+  lineas 800/7783
+  lineas 1200/7783
+  lineas 1600/7783
+  lineas 2000/7783
+  lineas 2400/7783
+  lineas 2800/7783
+  lineas 3200/7783
+  lineas 3600/7783
+  lineas 4000/7783
+  lineas 4400/7783
+  lineas 4800/7783
+  lineas 5200/7783
+  lineas 5600/7783
+  lineas 6000/7783
+  lineas 6400/7783
+  lineas 6800/7783
+  lineas 7200/7783
+  lineas 7600/7783
+### Conexion con las lineas
+```
+juegos a medir: 7783 | con spread 7777 | con total 7773 | con moneyline 7777 | pedidos fallidos 0
+proveedores: {"DraftKings":4923,"Caesars":37,"BetfairSportsbook":108,"sin linea":6,"Caesars Sportsbook":1,"ESPN BET":1639,"ESPN Bet - Live Odds":1,"Draft Kings - Live Odds":4,"Draft Kings":1064}
+ejemplo crudo del primer proveedor (para depurar si algo sale raro):
+{"$ref":"http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events/401248434/competitions/401248434/odds/38?lang=en&region=us","provider":{"$ref":"http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/providers/38?lang=en&region=us","id":"38","name":"Caesars","priority":0},"details":"LAL -10.5","overUnder":216.5,"spread":-10.5,"overOdds":-110,"underOdds":-110,"awayTeamOdds":{"favorite":false,"underdog":true,"moneyLine":475,"spreadOdds":-110,"current":{"pointSpread":{"alternateDisplayValue":"+10.5","american":"+10.5"},"spread":{"alternateDisplayValue":"-110","american":"-110"},"moneyLine":{"alternateDisplayValue":"+475","american":"+475"}},"team":{"$ref":"http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2020/teams/14?lang=en&region=us"}},"homeTeamOdds":{"favorite":true,"underdog":false,"moneyLine":-650,"spreadOdds":-110,"current":{"pointSpread":{"alternateDisplayValue":"-10.5","american":"-10.5"},"spread":{"alternateDisplayValue":"-110","american":"-110"},"moneyLine":{"alternateDisplayValue":"-650","american":"-650"}},"team":{"$ref":"http://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/2020/teams/13?lang=en&region=us"}},"moneylineWinner":false,"spreadWinner":false,"current":{"over":{"alternateDisplayValue":"-110","american":"-110"},"under":{"alternateDisplayValue":"-110","american":"-110"},"total":{"alternateDisplayValue":"216.5","american":"216.5"}}}
+```
+Ajuste (solo con la temporada 2023-24, sin mirar el mercado): error cuadr. de margen app 203.2 -> tuneado 202.1 -> +descanso 202.1 -> +forma 202.1 | totales kT 0.05
+Juegos con linea y con modelo listo (>=5 juegos previos de cada equipo): 7293 (2020: 1083, 2021: 1245, 2022: 1241, 2023: 1238, 2024: 1243, 2025: 1243)
+### 1) Margen (spread): modelo contra la linea de cierre
+Error medio de cuadrados: "dif" = (error del modelo)² − (error del mercado)². Positivo = el mercado acierta mas.
+
+| Modelo | Juegos | RMSE modelo | RMSE mercado | dif ± 2·se | z | Veredicto |
+|---|---|---|---|---|---|---|
+| V0 app actual (v3.2) | 7293 | 14.07 | 13.55 | 14.3 ± 2.3 | 12.2 | MERCADO MEJOR (z=12.2) |
+| V1 reajustada | 7293 | 14.05 | 13.55 | 13.7 ± 2.3 | 11.9 | MERCADO MEJOR (z=11.9) |
+| V2 + descanso (3 en 4, dias) | 7293 | 14.06 | 13.55 | 14.1 ± 2.3 | 12.0 | MERCADO MEJOR (z=12.0) |
+| V3 + forma reciente | 7293 | 14.06 | 13.55 | 14.1 ± 2.3 | 12.0 | MERCADO MEJOR (z=12.0) |
+
+| Temporada | Juegos | RMSE modelo | RMSE mercado | dif ± 2·se | z | Veredicto |
+|---|---|---|---|---|---|---|
+| 2020-21 (V3) | 1083 | 14.05 | 13.44 | 16.8 ± 6.0 | 5.6 | MERCADO MEJOR (z=5.6) |
+| 2021-22 (V3) | 1245 | 14.19 | 13.70 | 13.7 ± 5.4 | 5.1 | MERCADO MEJOR (z=5.1) |
+| 2022-23 (V3) | 1241 | 12.99 | 12.51 | 12.2 ± 5.4 | 4.5 | MERCADO MEJOR (z=4.5) |
+| 2023-24 (V3) | 1238 | 14.22 | 13.78 | 12.2 ± 5.8 | 4.2 | MERCADO MEJOR (z=4.2) |
+| 2024-25 (V3) | 1243 | 14.22 | 13.76 | 12.7 ± 5.8 | 4.4 | MERCADO MEJOR (z=4.4) |
+| 2025-26 (V3) | 1243 | 14.63 | 14.04 | 17.0 ± 5.9 | 5.8 | MERCADO MEJOR (z=5.8) |
+
+### 2) ¿Agrega algo el modelo que el mercado no sepa?
+margen real = a + b·(margen del mercado) + c·(modelo − mercado). **c** es cuanto vale la opinion del modelo encima de la linea (0 = nada, 1 = todo, 0.2 = un poco).
+
+| Modelo | b (mercado) | c (modelo extra) | z de c |
+|---|---|---|---|
+| V0 app actual (v3.2) | 1.023 ± 0.047 | -0.013 ± 0.093 | -0.3 |
+| V1 reajustada | 1.024 ± 0.048 | -0.007 ± 0.097 | -0.1 |
+| V2 + descanso (3 en 4, dias) | 1.025 ± 0.047 | -0.000 ± 0.094 | -0.0 |
+| V3 + forma reciente | 1.025 ± 0.047 | -0.000 ± 0.094 | -0.0 |
+
+### 3) Mezcla mercado + modelo (se ajusta en una temporada y se prueba en la otra)
+Predictor = mercado + λ·(modelo − mercado). Cuadrados: negativo = la mezcla le gana a la linea sola.
+
+| Modelo | λ ajustado por temporada | dif vs mercado ± 2·se | z |
+|---|---|---|---|
+| V0 app actual (v3.2) | 2020:0.00 2021:0.00 2022:0.00 2023:0.00 2024:0.00 2025:0.00 | 0.000 ± 0.000 | 0.0 |
+| V1 reajustada | 2020:0.00 2021:0.00 2022:0.00 2023:0.00 2024:0.00 2025:0.00 | 0.000 ± 0.000 | 0.0 |
+| V2 + descanso (3 en 4, dias) | 2020:0.00 2021:0.00 2022:0.00 2023:0.00 2024:0.00 2025:0.00 | 0.000 ± 0.000 | 0.0 |
+| V3 + forma reciente | 2020:0.00 2021:0.00 2022:0.00 2023:0.00 2024:0.00 2025:0.00 | 0.000 ± 0.000 | 0.0 |
+
+### 4) Apostar contra el spread cuando el modelo difiere de la linea (a -110; hay que ganar 52.4% para empatar)
+
+| Diferencia | V3 apuestas | G-P-Push | % ganadas | ROI ± 2·se | V0 apuestas | V0 % gan. | V0 ROI |
+|---|---|---|---|---|---|---|---|
+| 1+ pts | 5619 | 2760-2800-59 | 49.6% | -5.2% ± 2.5% | 5630 | 49.7% | -5.0% ± 2.5% |
+| 2+ pts | 4064 | 1996-2020-48 | 49.7% | -5.1% ± 3.0% | 4074 | 49.3% | -5.9% ± 3.0% |
+| 3+ pts | 2814 | 1371-1409-34 | 49.3% | -5.8% ± 3.6% | 2792 | 49.1% | -6.3% ± 3.6% |
+| 4+ pts | 1864 | 891-951-22 | 48.4% | -7.6% ± 4.4% | 1810 | 48.2% | -7.9% ± 4.5% |
+| 5+ pts | 1145 | 534-596-15 | 47.3% | -9.7% ± 5.6% | 1152 | 48.5% | -7.3% ± 5.6% |
+
+### 5) Totales (Más/Menos) contra la linea de cierre
+
+| Modelo | Juegos | RMSE modelo | RMSE mercado | z (positivo = mercado mejor) | Mezcla fuera de muestra |
+|---|---|---|---|---|---|
+| V0 app actual (v3.2) | 7293 | 18.57 | 17.95 | 11.7 | λ 0.00/0.00/0.00/0.00/0.00/0.00 → z 0.0 |
+| V1 reajustada | 7293 | 18.57 | 17.95 | 11.7 | λ 0.00/0.00/0.00/0.00/0.00/0.00 → z 0.0 |
+| V2 + descanso (3 en 4, dias) | 7293 | 18.57 | 17.95 | 11.7 | λ 0.00/0.00/0.00/0.00/0.00/0.00 → z 0.0 |
+| V3 + forma reciente | 7293 | 18.57 | 17.95 | 11.7 | λ 0.00/0.00/0.00/0.00/0.00/0.00 → z 0.0 |
+
+| Total: dif. modelo vs linea | Apuestas | G-P-Push | % ganadas | ROI ± 2·se |
+|---|---|---|---|---|
+| 2+ pts | 4715 | 2297-2380-38 | 49.1% | -6.2% ± 2.8% |
+| 3+ pts | 3625 | 1761-1837-27 | 48.9% | -6.5% ± 3.2% |
+| 4+ pts | 2694 | 1302-1373-19 | 48.7% | -7.0% ± 3.7% |
+| 6+ pts | 1353 | 638-709-6 | 47.4% | -9.5% ± 5.2% |
+
+### 6) Probabilidad de ganar (moneyline sin vig) — pérdida log
+
+| Modelo | Juegos | Pérdida modelo | Pérdida mercado | dif | z | Veredicto |
+|---|---|---|---|---|---|---|
+| V0 app actual (v3.2) | 7293 | 0.6203 | 0.5958 | 0.0245 | 10.0 | MERCADO MEJOR (z=10.0) |
+| V1 reajustada | 7293 | 0.6196 | 0.5958 | 0.0237 | 9.8 | MERCADO MEJOR (z=9.8) |
+| V2 + descanso (3 en 4, dias) | 7293 | 0.6203 | 0.5958 | 0.0245 | 9.9 | MERCADO MEJOR (z=9.9) |
+| V3 + forma reciente | 7293 | 0.6203 | 0.5958 | 0.0245 | 9.9 | MERCADO MEJOR (z=9.9) |
+
+### Resumen para decidir
+```
+Parametros V1 (reajustados): {"kM":0.05,"kT":0.05,"carry":0.65,"H":2.4,"R":3,"R3":0,"Rd":0,"wF":0,"aF":0.1,"Z":1}
+Parametros V3 (con descanso y forma): {"kM":0.05,"kT":0.05,"carry":0.65,"H":2.4,"R":3,"R3":1,"Rd":0,"wF":0,"aF":0.1,"Z":1}
+kT totales recomendado: 0.05
+λ del margen (peso del modelo sobre la linea) en toda la muestra: V0=-0.03  V1=-0.03  V2=-0.02  V3=-0.02
+Mezcla fuera de muestra, mejor modelo: V0 (z 0.0)
+```
