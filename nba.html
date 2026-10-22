@@ -775,7 +775,8 @@ function pintarCuerpo(body,g){
   body.querySelector('[data-a="adj"]').onclick=()=>{ g.adjA=parseFloat(q('adjA').value)||0; g.adjH=parseFloat(q('adjH').value)||0; pintarCuerpo(body,g); };
   body.querySelector('[data-a="ml"]').onclick=()=>{
     const oA=normCuota(q('mlA').value), oH=normCuota(q('mlH').value);
-    valorHtml(g,'ML','win',[{sel:A.ab+' gana',side:'A',odd:oA,prob:1-pr.pH},{sel:H.ab+' gana',side:'H',odd:oH,prob:pr.pH}],body.querySelector('[data-o="ml"]'));
+    const pM=pinPH(g), pW=(pM!==null?pM:pr.pH);   /* mismo número que Veredicto: Pinnacle sin margen si hay precio */
+    valorHtml(g,'ML','win',[{sel:A.ab+' gana',side:'A',odd:oA,prob:1-pW},{sel:H.ab+' gana',side:'H',odd:oH,prob:pW}],body.querySelector('[data-o="ml"]'));
   };
   body.querySelector('[data-a="sp"]').onclick=()=>{
     const L=parseFloat(q('spL').value); if(!isFinite(L)){ body.querySelector('[data-o="sp"]').textContent='Mete la línea del local (ej. -5.5).'; return; }
