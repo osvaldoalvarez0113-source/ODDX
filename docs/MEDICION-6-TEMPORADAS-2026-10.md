@@ -150,6 +150,38 @@ sin ella el resultado es el mismo de antes (1.0033 contra 1.0028). Quien ya cali
 **Sigue sin ganarle al mercado**: queda 0.029 por detrás en pérdida log. La ganancia es que el número del modelo es más honesto
 cuando no hay precio de Pinnacle. Scripts: `scripts/medicion/fut_real.js` y `fut_grid.js`.
 
+**Cómo se le quita el margen a las cuotas (devig), fútbol 1X2, 9,880 partidos con Pinnacle de cierre:**
+
+| Método | Pérdida log | Diferencia contra el multiplicativo |
+|---|---|---|
+| Multiplicativo (el que había) | 0.96802 | — |
+| Potencia | 0.96778 | -0.00024 (z -1.3) |
+| Shin | 0.96780 | -0.00022 (z -1.7) |
+| Aditivo | 0.96776 | -0.00026 (z -1.5) |
+
+Ninguno pasa z ≥ 2: la mejora es **chica** y no es prueba. Shin mejora en las últimas 4 temporadas y empeora un poco en las 2 primeras.
+Lo que sí se ve: el método multiplicativo **sobreestima la probabilidad de los perros** (0-15%: dice 10.9%, ocurre 9.7%) y por eso
+inventa «valor» en cuotas largas. Con Shin hay casi la mitad de apuestas con EV > 10% (553 contra 1,032) y los perros con EV>0
+rinden -0.6% en vez de -3.4% (con error de ±11%). **Aplicado solo a `scripts/valor2.js` (1X2 de fútbol, Pinnacle)**; Más/Menos y
+las líneas de dos lados siguen igual, y `index.html`/`nba.html` no cambian. Es la misma dirección que dice la literatura
+(sesgo favorito-perro), pero con esta muestra no se puede decir que gane dinero.
+
+**Descartado en la segunda ronda de búsqueda (más sitios, mismas conclusiones):**
+
+| Idea / fuente | Qué dice | Decisión |
+|---|---|---|
+| Elo hecho con cuotas en vez de resultados (ELO-Odds, ~15,000 partidos, 4 ligas + Europa) | Mejor que Elo con resultados o goles, pero **las cuotas siguen ganando**; no captura lesiones ni motivación | No sirve: la app ya usa las cuotas |
+| Benchmark de LLMs en el Mundial 2026 (104 partidos, 7 modelos, forecasts con fecha) | Mejor Brier 0.497 contra 0.498 del cierre sin margen; ningún modelo se separa del resto (p ≥ 0.055); con búsqueda web mejora 0.023 | Empate con el mercado, no ventaja; sin costos de apuesta |
+| Lesiones en la línea (Action Network) | La línea se mueve en segundos tras la noticia; el margen es solo antes de que se ajuste | Confirma que el edge es información rápida, no un modelo |
+| Mercados de predicción (Kalshi / Polymarket, estudios con 300,000+ contratos) | Sesgo favorito-perro: contratos de menos de 30¢ ganan 4%; la mayoría de los usuarios pierde | Es el mismo sesgo que cubre Shin; no hay un modelo nuevo que copiar |
+| Dixon-Coles / tiros a puerta / Elo en Serie A y fútbol | Peso 0.000 contra el cierre | Ya medido aquí con 10,732 partidos |
+| Revisiones de aprendizaje automático en apuestas | Resultados buenos casi siempre sin costos, sin cierre de Pinnacle o con pocas apuestas | No se toman como prueba |
+| Mezcla / Platt / Marcel / descanso / forma (propio) | Ver tabla de arriba | Sin mejora; **no se agregan** |
+
+**Auditoría de las apps (v70 / v21 / NBA v4.0):** los textos de NBA decían «2,486 juegos» y «peso 0.00-0.06» (2 temporadas); ahora dicen
+7,293 juegos y 6 temporadas. `index.html` y `futbol.html` ya estaban al día. Quedan 513 pruebas pasando. No se tocó ningún cálculo de
+NBA (95% mercado, 5% modelo ya era lo medido). `diseno.js` dice «ESPN (3 temporadas)» y es lo que la app baja en el teléfono, no una cifra de medición.
+
 **Lo que NO se pudo probar** (y es donde está la información que el mercado todavía no tiene): lesiones y alineaciones confirmadas
 en NBA y fútbol, y movimiento de la línea desde la apertura. Haría falta guardar las cuotas de apertura y las bajas de cada día.
 

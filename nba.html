@@ -522,8 +522,8 @@ function ultimoDia(id,ts){
   PEND.forEach(g=>{ if(g.ts<ts&&(g.h===id||g.a===id)){ const k=dayKey(g.ts); if(d===undefined||k>d) d=k; } });
   return d;
 }
-// Peso del modelo cuando hay linea de ESPN. Medido en 2,486 juegos reales (2024-25 y 2025-26): el modelo no agrega informacion
-// sobre la linea (peso ajustado 0.00-0.06), asi que la linea manda y el modelo pesa 5%. Los ajustes manuales (lesiones) se suman despues.
+// Peso del modelo cuando hay linea de ESPN. Medido en 7,293 juegos reales (6 temporadas, 2020-21 a 2025-26): el modelo no agrega informacion
+// sobre la linea (peso optimo 0.00 en las 6 temporadas), asi que la linea manda y el modelo pesa 5%. Los ajustes manuales (lesiones) se suman despues.
 const LAM_M=0.05, LAM_T=0.05, ESC_SIG=0.96;   // ESC_SIG: la linea se equivoca ~4% menos que el modelo (13.9 vs 14.4 pts)
 const logitP=p=>Math.log(p/(1-p)), sigP=z=>1/(1+Math.exp(-z));
 function prediccion(g){
@@ -713,7 +713,7 @@ function pintarCuerpo(body,g){
    <div class="nota">Resta puntos al equipo al que le falta el jugador (ejemplo: −4 si es titular clave).</div></details>
    <details class="comoLee"><summary>¿Cómo se lee y qué tan confiable es?</summary><div class="nota">
     <b>Los dos porcentajes de arriba</b> son la probabilidad de que gane cada equipo. <b>Margen esperado</b> es por cuántos puntos se espera que gane el favorito. <b>Hándicap justo</b> y <b>Total justo</b> son las líneas que pondría el modelo: si la casa pone otra muy distinta, desconfía del modelo, no de la casa. <b>Cuota justa</b> es lo que tendría que pagar la casa para que apostar ahí no gane ni pierda a la larga: si paga más, hay valor; si paga menos, no.<br><br>
-    <b>Qué tan confiable es:</b> en 2,486 juegos medidos la línea del mercado acertó más que el modelo, por eso la app se apoya en la línea cuando existe. Es una referencia, no una ventaja. No sabe de lesiones: usa el ajuste manual de abajo.<br><br>
+    <b>Qué tan confiable es:</b> en 7,293 juegos medidos (6 temporadas) la línea del mercado acertó más que el modelo, por eso la app se apoya en la línea cuando existe. Es una referencia, no una ventaja. No sabe de lesiones: usa el ajuste manual de abajo.<br><br>
     <b>Detalles técnicos:</b> Ratings en puntos con arrastre entre temporadas (parámetros ${PARAMS.calibrado?'calibrados con datos reales':'de arranque, sin calibrar: ve a Ajustes → Avanzado → Backtest'}). Ventaja de local ${PARAMS.H} pts; back-to-back ${PARAMS.R} pts.${(PARAMS.Z!==undefined&&PARAMS.Z<1)?' Confianza en la diferencia de ratings ×'+PARAMS.Z.toFixed(2)+' (medida en el backtest).':''} Desviación típica del margen ${pr.sM.toFixed(1)} pts, del total ${pr.sT.toFixed(1)}. ${pr.conLinea?'Base: línea de ESPN (el modelo pesa '+Math.round(LAM_M*100)+'%'+(pr.conML?', ganador desde el moneyline':'')+'); tus ajustes de lesiones se suman encima.':'Sin línea de ESPN todavía: aquí es el modelo solo (referencia; cuando salga la línea, ella manda).'}</div></details>`;
 
   g._rank={};
@@ -818,7 +818,7 @@ function mercadoHtml(g,pr,H,A){
   return `<div class="rv"><h4>Línea del mercado</h4>
   <div class="pick${okM&&okT?'':' no'}"><b>${tit}</b>${av.join(' ')}</div>
   <table class="tabla-bt"><tr><th></th><th>Mercado (ESPN)</th><th>Modelo solo</th><th>La app usa</th></tr>${filas}</table>
-  <div class="nota">«La app usa» es ${Math.round((1-LAM_M)*100)}% mercado y ${Math.round(LAM_M*100)}% modelo: en 2,486 juegos medidos la línea acertó más que el modelo.</div></div>`;
+  <div class="nota">«La app usa» es ${Math.round((1-LAM_M)*100)}% mercado y ${Math.round(LAM_M*100)}% modelo: en 7,293 juegos medidos (6 temporadas) la línea acertó más que el modelo.</div></div>`;
 }
 function formaHtml(id,Tm){
   const js=GAMES.filter(x=>x.h===id||x.a===id).sort((a,b)=>b.ts-a.ts).slice(0,10);
@@ -870,7 +870,7 @@ function pintarRankNba(body,g){
     const etq=ok?'valor':(f.conf===false&&f.diff>=3?'no confiable':'sin valor');
     h+=`<div class="pick${ok?'':' no'}"><div class="filaCuota"><div class="txt"><b>${ok?(medal[n]||(n+1)+'.'):'·'} ${esc(f.sel)} ${fa(Math.round(+f.odd))}</b>${etq} · modelo ${pct1(f.prob)} contra ${pct1(f.ref)} del mercado · ${(f.diff>=0?'+':'')+f.diff.toFixed(1)} puntos · EV ${(f.ev>=0?'+':'')+(f.ev*100).toFixed(1)}% por dólar</div><button class="btnChico" data-rg="${i}">💾</button></div></div>`;
   });
-  h+='<div class="nota">Ordenado por puntos de ventaja, no por EV: el EV por dólar sale más grande con cuotas largas aunque la ventaja sea la misma. En 2,486 juegos medidos la línea del mercado acertó más que el modelo, así que toma estos puntos como pista y no como garantía.</div>';
+  h+='<div class="nota">Ordenado por puntos de ventaja, no por EV: el EV por dólar sale más grande con cuotas largas aunque la ventaja sea la misma. En 7,293 juegos medidos (6 temporadas) la línea del mercado acertó más que el modelo, así que toma estos puntos como pista y no como garantía.</div>';
   box.innerHTML=h;
   box.querySelectorAll('[data-rg]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const f=lista[+b.dataset.rg]; guardarPick({hId:g.h,aId:g.a,hN:T(g.h).n,aN:T(g.a).n,ts:g.ts,mercado:f.mercado,side:f.side,linea:f.linea,seleccion:f.sel,cuota:f.odd,prob:f.prob}); b.textContent='✓'; b.disabled=true; });
 }

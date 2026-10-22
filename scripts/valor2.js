@@ -30,6 +30,15 @@ async function op(path,params,gasta){
 }
 function dec(x){ x=+x; if(!isFinite(x)) return NaN; if(x>=100) return 1+x/100; if(x<=-100) return 1+100/(-x); return x; }
 function noVig(ds){ const a=ds.map(d=>1/d), s=a.reduce((x,y)=>x+y,0); return a.map(x=>x/s); }
+/* Shin: quita el margen cargando mas a los perros (el sesgo favorito-perro del futbol). Medido con 9,880 partidos de 5 ligas y 6 temporadas contra
+   el cierre de Pinnacle: el 'justo' multiplicativo le daba 10.9% a lo que ocurre 9.7%; Shin 10.6% contra 10.0%. Pierde menos en log-loss
+   (-0.00022, z -1.7) y borra ~40% de los 'perros con valor' que no existian (docs/MEDICION-6-TEMPORADAS-2026-10.md). Solo para el 1X2. */
+function shin(ds){
+  const q=ds.map(d=>1/d), B=q.reduce((x,y)=>x+y,0); if(!(B>1)) return q.map(x=>x/B);
+  const pz=z=>q.map(v=>(Math.sqrt(z*z+4*(1-z)*v*v/B)-z)/(2*(1-z)));
+  let lo=0, hi=0.4; for(let i=0;i<60;i++){ const z=(lo+hi)/2, s=pz(z).reduce((x,y)=>x+y,0); if(s>1) lo=z; else hi=z; }
+  const p=pz((lo+hi)/2), t=p.reduce((x,y)=>x+y,0); return p.map(x=>x/t);
+}
 function precio(book,mk,oc){
   const m=book&&book.markets&&book.markets[mk]; if(!m||m.marketActive===false) return null;
   const o=m.outcomes&&m.outcomes[oc]; if(!o) return null;
@@ -83,7 +92,7 @@ async function mercadoNba(){
       const pin=f.bookmakerOdds&&f.bookmakerOdds.pinnacle; if(!pin){razon.sinPin++;return;}
       const a=precio(pin,'101','101'), x=precio(pin,'101','102'), b=precio(pin,'101','103');
       if(!a||!x||!b){razon.sinPrecio++;return;}
-      const fair=noVig([a,x,b]);
+      const fair=shin([a,x,b]);
       const o=precio(pin,'1010','1010'), u=precio(pin,'1010','1011');
       const fila={t:new Date(t).toISOString(),liga:LIGAS[f.tournamentId]||String(f.tournamentId||''),n:[nm(f,1),nm(f,2)],
         r:fair.map(v=>+v.toFixed(4))};

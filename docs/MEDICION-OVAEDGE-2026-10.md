@@ -25,7 +25,7 @@ Sin `ovaedge.js` el titular es el de antes.
 
 Con cuotas parejas (-110/-110) la ventaja sobrevive a la mezcla desde ~60% (≈10 puntos sobre el mercado); con un favorito
 -150/+130, desde ~65%. Por debajo de eso, «dudoso». Si algún día el backtest sube el peso del modelo (en 2026 salió 0.54, pero el
-promedio de tres temporadas es 0.24 ± 0.28), se cambia `W_MODELO` en `index.html` y el titular se mueve solo.
+promedio de tres temporadas era 0.24 ± 0.28 y con 6 temporadas bajó a ≈0.04; hoy `W_MODELO`=0.05), se cambia `W_MODELO` en `index.html` y el titular se mueve solo.
 
 > **Actualización v69 (6 temporadas, `MEDICION-6-TEMPORADAS-2026-10.md`):** con 12,311 juegos de 2021 a 2026 el peso óptimo del modelo es ≈0.04
 > (por temporada de -0.13 a +0.23), y la mezcla al 24% dejó picks con stake que perdieron en 5 de 6 temporadas. `W_MODELO` bajó de 0.24 a **0.05**:
