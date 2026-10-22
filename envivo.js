@@ -149,7 +149,9 @@ function resumenTiros(tiros,tid){
  return {fg:m.length,att:t.length,pct:t.length?Math.round(m.length/t.length*100):0,tres:m.filter(function(p){ return p.val===3; }).length};
 }
 /* NBA.com (cdn.nba.com): fuente principal de la NBA. Si no responde, la app usa ESPN. */
-var NBACDN='https://cdn.nba.com/static/json/liveData/';
+/* Dirección de tu Worker de NBA.com (worker/nba-proxy.js). Vacía = NBA.com no se puede leer desde la app (solo deja a nba.com) y se usa ESPN. */
+var NBA_PROXY='';
+var NBACDN=NBA_PROXY?NBA_PROXY.replace(/\/$/,'')+'/nba/':'https://cdn.nba.com/static/json/liveData/';
 function isoClock(c){
  var m=String(c||'').match(/^PT(\d+)M(\d+)(?:\.\d+)?S$/); if(!m) return '';
  return parseInt(m[1],10)+':'+pad2(parseInt(m[2],10));
@@ -386,7 +388,7 @@ var CSS=[
 ].join('\n');
 
 /* ---------- carga ---------- */
-var NBA_ERR='', NBA_OFF=false;   /* cdn.nba.com solo contesta a páginas de nba.com (CORS): si falla una vez, se usa ESPN sin volver a intentarlo */
+var NBA_OFF=!NBA_PROXY, NBA_ERR=NBA_OFF?'sin Worker':'';   /* cdn.nba.com solo contesta a páginas de nba.com (CORS): si falla una vez, se usa ESPN sin volver a intentarlo */
 function cargarLista(){
  var hoy=new Date(), ayer=new Date(hoy.getTime()-864e5), ps=[];
  if(APP==='nba'){
@@ -639,7 +641,7 @@ function lineaScore(ls,away,home){
 }
 function nota(fuente,app){
  var t=S.upd?new Date(S.upd).toLocaleTimeString([], {hour:'numeric',minute:'2-digit',second:'2-digit'}):'';
- return '<div class="evNota">Datos: '+(fuente==='MLB'?'MLB Stats API':(fuente==='NBA'?'NBA.com':'ESPN'))+' · se actualiza solo'+(t?' · '+esc(t):'')+(app==='nba'&&fuente==='ESPN'&&NBA_ERR?'<br>NBA.com no deja que otras páginas lean sus datos, por eso se usa ESPN.':'')+(app==='fut'?'<br>La cancha se arma con las jugadas que reporta ESPN (pases, tiros, faltas) y llega con unos segundos de atraso; no es el seguimiento de cada jugador moviéndose (ese es de pago).':'')+'</div>';
+ return '<div class="evNota">Datos: '+(fuente==='MLB'?'MLB Stats API':(fuente==='NBA'?'NBA.com':'ESPN'))+' · se actualiza solo'+(t?' · '+esc(t):'')+(app==='nba'&&fuente==='ESPN'&&NBA_ERR?'<br>NBA.com no deja que otras páginas lean sus datos, por eso se usa ESPN (llega ~20 s después). Para NBA.com hace falta el Worker nba-proxy.':'')+(app==='fut'?'<br>La cancha se arma con las jugadas que reporta ESPN (pases, tiros, faltas) y llega con unos segundos de atraso; no es el seguimiento de cada jugador moviéndose (ese es de pago).':'')+'</div>';
 }
 
 /* ---------- lista ---------- */
