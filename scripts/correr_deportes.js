@@ -423,6 +423,7 @@ function leerPartidos(filas, t, lg) {
     const m = { t, lg, d, day: Math.floor(d / 864e5), h, a, gh, ga, y: gh > ga ? 0 : (gh === ga ? 1 : 2) };
     for (const [p, nombre] of FUENTES_1X2) { const o = trio(r, p + 'H', p + 'D', p + 'A'); if (o) { m.mk = devig(o); m.mkSrc = nombre; m.mkO = o; break; } }
     for (const [p1, p2, nombre] of FUENTES_OU) { const o = par(r, p1, p2); if (o) { m.ou = devig(o)[0]; m.ouSrc = nombre; m.ouO = o; break; } }
+    m.hst = nm(r.HST); m.ast = nm(r.AST); m.hs = nm(r.HS); m.as = nm(r.AS);
     m.ps = trio(r, 'PSCH', 'PSCD', 'PSCA') || trio(r, 'PSH', 'PSD', 'PSA');
     m.avg = trio(r, 'AvgCH', 'AvgCD', 'AvgCA') || trio(r, 'AvgH', 'AvgD', 'AvgA') || trio(r, 'B365CH', 'B365CD', 'B365CA');
     m.mx = trio(r, 'MaxCH', 'MaxCD', 'MaxCA') || trio(r, 'MaxH', 'MaxD', 'MaxA');
@@ -473,7 +474,7 @@ function modeloApp(ms, cfg, cb) {
       const l2 = lam(aL, aV, lp, cfg.Kt, cfg.h), g = dist(l2[0] * cfg.ct, l2[1] * cfg.ct, cfg.rho), g0 = dist(lp * cfg.ct * cfg.h, lp * cfg.ct / cfg.h, cfg.rho);
       cb(m, { p: d.p, o25: mezcla(g.o25, g0.o25, cfg.wt), bt: mezcla(g.bt, g0.bt, cfg.wt), lam: l1 });
     });
-    grp.ms.forEach(m => { [[m.h, m.gh, m.ga], [m.a, m.ga, m.gh]].forEach(z => { const e = T[z[0]] || (T[z[0]] = { pj: 0, gf: 0, gc: 0 }); e.pj++; e.gf += z[1]; e.gc += z[2]; }); });
+    grp.ms.forEach(m => { const ef = (cfg.a && m.hst != null && m.ast != null) ? [(1 - cfg.a) * m.gh + cfg.a * cfg.cv * m.hst, (1 - cfg.a) * m.ga + cfg.a * cfg.cv * m.ast] : [m.gh, m.ga]; [[m.h, ef[0], ef[1]], [m.a, ef[1], ef[0]]].forEach(z => { const e = T[z[0]] || (T[z[0]] = { pj: 0, gf: 0, gc: 0 }); e.pj++; e.gf += z[1]; e.gc += z[2]; }); });
   });
 }
 
@@ -593,6 +594,10 @@ async function main() {
   log('```\nParametros app reajustados: ' + JSON.stringify(cApp) + '\nParametros Dixon-Coles: ' + JSON.stringify(cDC) + '\n```');
   const store = new Map();
   correrTodo(porLiga, modeloApp, CFG_APP, 'F0', store); correrTodo(porLiga, modeloApp, cApp, 'F1', store); correrTodo(porLiga, modeloDC, cDC, 'F2', store);
+  if (process.env.TIROS) {   // experimento: goles mezclados con tiros a puerta (idea del estudio de Serie A: los tiros a puerta traen informacion que los goles no)
+    let sg = 0, ss = 0; Object.values(porLiga).forEach(l => l.forEach(m => { if (m.hst != null && m.ast != null) { sg += m.gh + m.ga; ss += m.hst + m.ast; } })); const cv = sg / Math.max(ss, 1); log('Goles por tiro a puerta (cv): ' + cv.toFixed(3));
+    [['F4', 0.35], ['F5', 0.6], ['F6', 1]].forEach(([k, a]) => correrTodo(porLiga, modeloApp, Object.assign({}, cApp, { a, cv }), k, store));
+  }
   // calibracion (tau y empates) del Dixon-Coles con la temporada de ajuste
   let bc = { tau: 1, dD: 0, l: Infinity };
   [0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.05, 1.1, 1.15].forEach(tau => [-0.15, -0.1, -0.05, 0, 0.05, 0.1, 0.15].forEach(dD => {
@@ -600,11 +605,11 @@ async function main() {
   }));
   store.forEach(v => { if (v.F2) v.F3 = { p: calib(v.F2.p, bc.tau, bc.dD), o25: v.F2.o25, bt: v.F2.bt, lam: v.F2.lam }; });
   log('Calibración del Dixon-Coles (solo 2022-23): potencia ' + bc.tau + ', empates ' + (bc.dD >= 0 ? '+' : '') + bc.dD);
-  const NOM = { F0: 'F0 app actual', F1: 'F1 app reajustado', F2: 'F2 Dixon-Coles (antigüedad)', F3: 'F3 Dixon-Coles calibrado' };
-  const KEYS = ['F0', 'F1', 'F2', 'F3'];
+  const NOM = { F0: 'F0 app actual', F1: 'F1 app reajustado', F2: 'F2 Dixon-Coles (antigüedad)', F3: 'F3 Dixon-Coles calibrado', F4: 'F4 F1 + 35% tiros a puerta', F5: 'F5 F1 + 60% tiros a puerta', F6: 'F6 F1 + solo tiros a puerta' };
+  const KEYS = process.env.TIROS ? ['F0', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6'] : ['F0', 'F1', 'F2', 'F3'];
   const rows = []; store.forEach((v, m) => { if (testTemps.includes(m.t) && m.mk && KEYS.every(k => v[k])) rows.push({ m, v }); });
   const temps = [...new Set(rows.map(r => r.m.t))].sort();
-  if (process.env.VOLCAR_PARTIDOS) fs.writeFileSync('partidos_futbol.json', JSON.stringify(rows.map(r => ({ t: r.m.t, lg: r.m.lg, d: r.m.d, h: r.m.h, a: r.m.a, gh: r.m.gh, ga: r.m.ga, y: r.m.y, mk: r.m.mk, src: r.m.mkSrc, ps: r.m.ps, avg: r.m.avg, mx: r.m.mx, F0: r.v.F0.p, F1: r.v.F1.p, F3: r.v.F3.p, o0: r.v.F0.o25, o3: r.v.F3.o25, ou: r.m.ou, ouPs: r.m.ouPs, ouAvg: r.m.ouAvg }))));
+  if (process.env.VOLCAR_PARTIDOS) fs.writeFileSync('partidos_futbol.json', JSON.stringify(rows.map(r => ({ t: r.m.t, lg: r.m.lg, d: r.m.d, h: r.m.h, a: r.m.a, gh: r.m.gh, ga: r.m.ga, y: r.m.y, mk: r.m.mk, src: r.m.mkSrc, ps: r.m.ps, avg: r.m.avg, mx: r.m.mx, F0: r.v.F0.p, F1: r.v.F1.p, F3: r.v.F3.p, F4: r.v.F4 && r.v.F4.p, F5: r.v.F5 && r.v.F5.p, F6: r.v.F6 && r.v.F6.p, o0: r.v.F0.o25, o3: r.v.F3.o25, ou: r.m.ou, ouPs: r.m.ouPs, ouAvg: r.m.ouAvg }))));
   log('Partidos medidos (con cuota de mercado y modelo listo): ' + rows.length + ' (' + temps.map(t => t + ': ' + rows.filter(r => r.m.t === t).length).join(', ') + ')');
   if (rows.length < 300) { log('NO TERMINO: pocos partidos con cuotas (' + rows.length + ').'); return fin(out, true); }
 
@@ -628,7 +633,7 @@ async function main() {
   // 3) mezcla fuera de muestra
   const W = []; for (let w = 0; w <= 1.0001; w += 0.05) W.push(Math.round(w * 100) / 100);
   let t4 = [], pool3 = {};
-  ['F0', 'F3'].forEach(k => {
+  ['F0', 'F3'].concat(process.env.TIROS ? ['F1', 'F4', 'F5', 'F6'] : []).forEach(k => {
     const d = [], lams = [];
     temps.forEach(t => {
       const tr = rows.filter(r => r.m.t !== t), te = rows.filter(r => r.m.t === t); if (tr.length < 300) return;

@@ -626,7 +626,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL <span class="ver">v20</span></h1>
+  <h1>⚽ FÚTBOL <span class="ver">v21</span></h1>
   <select id="ligaSel">
    <optgroup label="Ligas">
     <option value="pl">Premier League</option>
@@ -717,7 +717,11 @@ var MUESTRAS = {pend:[], term:[]};
 // K = cuanto se encogen las estadisticas de un equipo hacia el promedio de la liga.
 // rho = correccion de Dixon-Coles para marcadores bajos (0-0, 1-0, 0-1, 1-1). Negativo = mas empates.
 // w = encogimiento de confianza: 1 = probabilidades tal cual; 0.8 = 80% modelo + 20% "partido promedio de la liga".
-var PARAMS_DEFECTO = {K:6, h:1.13, rho:-0.08, w:1, S:0, Kt:16, wt:0.5, ct:1, A:1, At:1};
+/* v21: K 6->8, S 0->20, wt 0.5->0.8, ct 1->0.97. Medido corriendo ESTE motor (walkForward) en 5 ligas y 6 temporadas (10,732 partidos,
+   docs/MEDICION-6-TEMPORADAS-2026-10.md): se ajustó con 2021-22 y 2022-23 y se probó fuera de muestra en 2023-24 a 2025-26:
+   pérdida 1X2 1.0028 -> 0.9921 y Más/Menos 0.6832 -> 0.6800. S=20 solo actúa si el historial de la temporada pasada está bajado
+   (Calibrar/Backtest lo baja una vez); sin historial el resultado es igual que antes (1.0033 contra 1.0028). Sigue sin ganarle al mercado. */
+var PARAMS_DEFECTO = {K:8, h:1.13, rho:-0.08, w:1, S:20, Kt:16, wt:0.8, ct:0.97, A:1, At:1};
 // Modelo de GOLES (Mas/Menos y Ambos anotan): en la medicion real el modelo comun salia PEOR que la frecuencia
 // de la liga en Mas/Menos 2.5, por ruido (con 6-10 partidos por equipo el promedio de goles casi no dice nada).
 // Por eso tiene su propio encogimiento fuerte (Kt), su propia confianza (wt) y un ajuste de nivel (ct).

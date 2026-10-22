@@ -990,6 +990,7 @@ sec('ovaedge.js: vig, Kelly, CLV, calibración y Monte Carlo, y su chequeo en el
    ok('El aviso de «precio imposible» trae el dato de 6 temporadas (1,713 juegos, −5.6%, perdió en 5 de 6)',/1,713 juegos/.test(V(70,'-110','-110'))&&/-5\.6%/.test(V(70,'-110','-110'))&&/5 de las 6 temporadas/.test(V(70,'-110','-110')));
    ok('Veredicto: trae la línea «Si prefieres el favorito» con el EV si el mercado acierta (la comisión) cuando el favorito no es el pick',(()=>{const h=txt(V(40,'+150','-170'));return /Si prefieres el favorito: Local \(-170\)/.test(h)&&/si el mercado acierta, -\d+\.\d%/.test(h);})());
    ok('Veredicto: no repite la línea del favorito cuando el favorito YA es el pick con valor',!/Si prefieres el favorito/.test(txt(V(62,'-110','-110'))));
+   ok('Fútbol v21: PARAMS_DEFECTO trae los parámetros medidos en 6 temporadas (K 8, S 20, wt 0.8, ct 0.97)',(()=>{const f=rd('futbol.html');const m=/var PARAMS_DEFECTO = \{K:8, h:1\.13, rho:-0\.08, w:1, S:20, Kt:16, wt:0\.8, ct:0\.97, A:1, At:1\};/.test(f);return m&&/<span class="ver">v21<\/span>/.test(f);})());
    {  // con el peso REAL de index.html (medido en 6 temporadas): 0.05, no el 0.24 de las pruebas de mecánica de arriba
     const wReal=+((/var W_MODELO=([\d.]+);/.exec(ix)||[])[1]);
     ok('W_MODELO = 0.05: el peso medido en 6 temporadas (óptimo junto ≈0.04; ajustado en 5 y probado en la sexta, 0.01 a 0.08)',wReal===0.05);

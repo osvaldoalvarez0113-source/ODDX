@@ -119,6 +119,40 @@ Cómo se hizo: `scripts/correr_deportes.js nba` con `TEMPS_NBA=2020…2025`, `NB
 - **La app (95% mercado, 5% modelo, `LAM_M`):** con esa mezcla, 0 apuestas llegan a los 3 pts de «valor» contra el mismo
   mercado; el 5% cuesta apenas 0.00013 de pérdida log. No se cambió.
 
+## Modelos de otros: qué se buscó, qué se probó y qué se cambió
+
+**Lo que dice lo público** (todo lo de abajo está en la literatura; no son pruebas mías):
+- Estudio de Serie A, 19 temporadas, Dixon-Coles con decaimiento por antigüedad contra el cierre: el mercado gana en las 7 temporadas
+  de prueba y el peso óptimo del modelo al mezclarlo es **0.000**. Una variante con tiros a puerta trae información que los goles no
+  traen (peso 0.35 contra el modelo de goles), pero 0.000 contra el mercado. Es lo mismo que salió aquí con 10,732 partidos.
+- MLB: el trabajo que simula los playoffs de 2024 con modelos bateador-lanzador (Statcast) no demuestra ventaja: en las 28 apuestas
+  de ventaja cero rindió -15.5%, y los cortes con ganancia tienen 16 apuestas o menos. FiveThirtyEight (Elo con ajuste por abridor)
+  ya no está disponible para consultar.
+- NBA: un trabajo con redes recurrentes y mapas de tiros dice agregar algo en moneyline, pero lo simula sin costos de apuesta y
+  reconoce que en spread y total casi no hay margen. No lo tomo como prueba.
+- Conclusión de la literatura: los modelos públicos de equipo no le ganan al cierre. Lo que cambia el resultado es información que
+  el mercado todavía no tiene (lesiones, alineaciones, cambios de abridor) y los precios de casas «sharp».
+
+**Lo que se probó con tus datos:**
+
+| Idea | Dónde | Resultado |
+|---|---|---|
+| Promediar las 7 variantes del modelo de MLB, o usar el historial de 3 años (Marcel) | MLB, 12,311 juegos | Ninguna agrega nada sobre el mercado: peso óptimo 0.03 a 0.07 fuera de muestra, mezcla sin mejora (t ≤ 1.8, y no le gana al mercado) |
+| Recalibrar la probabilidad del modelo (Platt) | MLB | Casi igual (pendiente 1.1): +0.00003 por juego |
+| Mezclar goles con tiros a puerta (35%, 60%, 100%) | Fútbol, réplica | Mejora el modelo (1.0123 → 0.9949) pero el peso sobre el mercado sigue en 0 |
+| Descanso, 3 juegos en 4 noches, forma reciente | NBA | Sin mejora (RMSE 14.07 → 14.06) |
+| Reajustar parámetros con el **motor real** de `futbol.html` | Fútbol, 5 ligas | Pérdida 1X2 fuera de muestra 1.0028 → **0.9921**; Más/Menos 0.6832 → **0.6800**. **Aplicado en v21** |
+
+**Cambio aplicado en fútbol v21:** `PARAMS_DEFECTO` pasa de `K 6, S 0, wt 0.5, ct 1` a `K 8, S 20, wt 0.8, ct 0.97` (h y rho igual).
+Se ajustó solo con 2021-22 y 2022-23 y se probó en 2023-24 a 2025-26 (5,200 partidos, fuera de muestra). Mejora en cada una
+de esas temporadas. `S = 20` solo actúa si la temporada pasada ya está bajada en el teléfono (Calibrar/Backtest la baja una vez);
+sin ella el resultado es el mismo de antes (1.0033 contra 1.0028). Quien ya calibró sus parámetros en la app no se ve afectado.
+**Sigue sin ganarle al mercado**: queda 0.029 por detrás en pérdida log. La ganancia es que el número del modelo es más honesto
+cuando no hay precio de Pinnacle. Scripts: `scripts/medicion/fut_real.js` y `fut_grid.js`.
+
+**Lo que NO se pudo probar** (y es donde está la información que el mercado todavía no tiene): lesiones y alineaciones confirmadas
+en NBA y fútbol, y movimiento de la línea desde la apertura. Haría falta guardar las cuotas de apertura y las bajas de cada día.
+
 ## Límites (léelos antes de creer cualquier cifra)
 
 1. **Cierre, no apertura.** El cierre es el precio más difícil de ganar. Si tomas cuota temprano o en casas lentas, hay un
