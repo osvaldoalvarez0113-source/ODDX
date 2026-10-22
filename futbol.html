@@ -1708,7 +1708,7 @@ function dcAjustar(lista, hoyDia, cfg){
     c = sg/Math.max(eg, 1e-9);
   }
   var sw=0, sh=0, sa=0; for(j=0;j<L;j++){ sw += W[j]; sh += W[j]*tr[j].gh; sa += W[j]*tr[j].ga; }
-  var eq = {}; for(i=0;i<n;i++) eq[nombres[i]] = {att:att[i], def:def[i]};
+  var eq = {}; for(i=0;i<n;i++) eq[nombres[i]] = {att:att[i], def:def[i], n:cnt[i]};
   return {eq:eq, c:c, gam:gam, hAvg:sh/sw, aAvg:sa/sw, n:L, elo:eloAjustar(tr)};
 }
 // ---------- Elo opcional (Ajustes → Mezcla con Elo; apagada por defecto) ----------
@@ -2026,6 +2026,11 @@ function resumenVeredictoF(p, base, id){
     var gan = veredictoDe(v.ou).t==='✓ le gana' && veredictoDe(v.bt).t==='✓ le gana';
     li.push(gan ? L('ok','Más/Menos y Ambos anotan le ganan a la frecuencia de la liga.') : L('w','Más/Menos y Ambos anotan no le ganan a la frecuencia de la liga: solo referencia.'));
   } else li.push(L('w','Más/Menos y Ambos anotan: no medidos en este teléfono (en tu backtest no le ganaron a la frecuencia de la liga). Solo referencia.'));
+  try{
+    var pocos = [];
+    if(DCFIT && DCFIT.eq && !LIGA_ES_COPA) [p.local, p.visita].forEach(function(nm){ var e = DCFIT.eq[claveEq(nm)]; if(e && e.n < 20) pocos.push(nm+' ('+e.n+' partidos)'); });
+    if(pocos.length) li.push(L('w', escR(pocos.join(' y '))+(pocos.length>1?' tienen':' tiene')+' pocos partidos en esta liga (recién ascendido o sin historial): el modelo lo estima poco y se equivoca más. Créele al mercado.'));
+  }catch(e){}
   li.push(L('x','No sabe de lesiones ni alineaciones: mira Forma y noticias.'));
   var conf = '<div class="rvLs">'+li.join('')+'</div>';
 
