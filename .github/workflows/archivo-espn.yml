@@ -1,0 +1,48 @@
+name: Archivo de partidos (ESPN)
+
+# Cada 6 horas guarda los partidos terminados de fútbol y NBA (jugadas con posición) en la rama "historial-espn".
+# Es un archivo propio y gratis para pruebas y calibración; no se muestra en la app y no toca main.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 1,7,13,19 * * *"
+  push:
+    branches: [main]
+    paths:
+      - scripts/archivar_espn.js
+      - .github/workflows/archivo-espn.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: archivo-espn
+  cancel-in-progress: false
+
+jobs:
+  archivar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Traer el archivo (o crearlo la primera vez)
+        run: |
+          if git ls-remote --exit-code --heads origin historial-espn >/dev/null 2>&1; then
+            git fetch --depth=1 origin historial-espn
+            git worktree add archivo FETCH_HEAD
+          else
+            git worktree add --detach archivo
+            ( cd archivo && git checkout -q --orphan historial-espn && git rm -rfq . && printf '# Archivo de partidos (ESPN)\n\nUn .json.gz por partido: datos/futbol/<liga>/<id>.json.gz y datos/nba/<id>.json.gz\n' > LEEME.md )
+          fi
+      - name: Guardar partidos nuevos
+        run: ARCH_DIR=archivo/datos node scripts/archivar_espn.js 3
+      - name: Subir
+        run: |
+          cd archivo
+          git add -A
+          if git diff --cached --quiet; then echo "Nada nuevo."; exit 0; fi
+          git -c user.name=archivo-ova -c user.email=archivo-ova@users.noreply.github.com commit -qm "partidos nuevos $(date -u +%F' '%H:%M)"
+          git push -q origin HEAD:historial-espn
