@@ -3208,7 +3208,8 @@ document.getElementById('ligaSel').addEventListener('change', function(){
    row(escT(p.local)+' o '+escT(p.visita)+' (12, sin empate)',d.x12)+
    row('Empate no apuesta · '+escT(p.local),d.dnbL)+row('Empate no apuesta · '+escT(p.visita),d.dnbV)+'</div>'+
    '<div class="nota">1X = gana o empata el local, X2 = gana o empata la visita, 12 = no habrá empate. Salen del mismo ganador/empate de arriba. La cifra de la derecha es la cuota justa: solo hay valor si la casa paga <b>más</b>. En empate no apuesta, si empatan te devuelven el dinero.</div>';
-  var pc=$q('.pane[id$="cuo"]',bodyEl)||pane; var rk=$q('.rankbox',pc); if(rk&&rk.nextSibling) pc.insertBefore(box,rk.nextSibling); else pc.insertBefore(box,pc.firstChild);
+  var pn=$q('.pane[id$="num"]',bodyEl)||pane, th=null; [].slice.call(pn.querySelectorAll('h3')).forEach(function(h){ if(/^Tabla de posiciones/.test(h.textContent)) th=h; });
+  if(th) pn.insertBefore(box,th); else pn.appendChild(box);
  }
  if(typeof pintarGameBody==='function'){
   var _pg=pintarGameBody;
