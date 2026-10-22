@@ -1915,18 +1915,19 @@ function pintarFilasValor(filas, out, p){
     // con TODAS las cuotas del mercado se le quita el margen de la casa antes de comparar
     var ref = completo ? imp/sumaImp : imp;
     var diff = (f.modelo - ref)*100;
-    if(panelR) panelR._rank[f.mercado].push({mercado:f.mercado, sel:f.sel, odd:f.odd, modelo:f.modelo, imp:imp, ref:ref, diff:diff, ev:f.modelo/imp-1, conf:confiable});
-    var hayValor = diff >= 3;
+    if(panelR) panelR._rank[f.mercado].push({mercado:f.mercado, sel:f.sel, odd:f.odd, modelo:f.modelo, imp:imp, ref:ref, diff:diff, ev:f.modelo/imp-1, conf:f.mk?null:confiable, mk:!!f.mk});
+    var hayValor = f.mk ? (f.modelo/imp-1) > 0 : diff >= 3;
     // medido en 5,256 partidos contra Pinnacle: apostar donde el modelo difiere del mercado perdio (ROI -14% con 2+ pts), asi que ya no se pinta como "valor"
-    var etiquetaValor = hayValor ? '<span class="no">el modelo ve +'+diff.toFixed(1)+' (no es valor: apostar así perdió en la medición)</span>' :
+    var etiquetaValor = f.mk ? (hayValor ? '<span style="color:var(--good)">✓ paga más que la cuota justa: ganancia esperada +'+(f.modelo/imp*100-100).toFixed(1)+'% por cada $1</span>' : '<span class="no">✗ sin valor: paga igual o menos que la cuota justa ('+(f.modelo/imp*100-100).toFixed(1)+'% por cada $1)</span>') :
+      hayValor ? '<span class="no">el modelo ve +'+diff.toFixed(1)+' (no es valor: apostar así perdió en la medición)</span>' :
       '<span class="no">sin diferencia '+diff.toFixed(1)+'</span>';
-    html += '<div class="filaCuota"><span class="txt">'+f.sel+': modelo '+(f.modelo*100).toFixed(1)+'% vs '+
+    html += '<div class="filaCuota"><span class="txt">'+f.sel+': '+(f.mk?'Pinnacle ':'modelo ')+(f.modelo*100).toFixed(1)+'% vs '+
       (completo?'mercado sin margen ':'cuota ')+(ref*100).toFixed(1)+'% — '+etiquetaValor+
       '</span>'+
       '<button class="btnChico guardarPick" data-mercado="'+f.mercado+'" data-sel="'+f.sel+'" data-odd="'+f.odd+'" data-prob="'+f.modelo+'">💾</button>'+
       '</div>';
   });
-  html += '<div class="nota" style="margin-top:6px">Medido en 5,256 partidos de 5 ligas contra Pinnacle: cuando el modelo difería del mercado por 2+ puntos y se apostaba, el resultado fue −14% (±5%) con cuota Pinnacle y −16% con cuota promedio; con 8+ puntos, −17%. Una diferencia grande suele ser error del modelo (lesiones, rotaciones), no una oportunidad.</div>';
+  if(!filas[0].mk) html += '<div class="nota" style="margin-top:6px">Medido en 5,256 partidos de 5 ligas contra Pinnacle: cuando el modelo difería del mercado por 2+ puntos y se apostaba, el resultado fue −14% (±5%) con cuota Pinnacle y −16% con cuota promedio; con 8+ puntos, −17%. Una diferencia grande suele ser error del modelo (lesiones, rotaciones), no una oportunidad.</div>';
   if(completo){
     html += '<div class="nota" style="margin-top:6px">Margen de la casa ≈ '+((sumaImp-1)*100).toFixed(1)+'%; la comparación ya lo descuenta.</div>';
   } else if(filas.length>1){
@@ -1962,7 +1963,7 @@ function pintarRankingFutbol(panel, p){
     '<div class="pick no"><b>Ninguna es valor comprobado</b>Está ordenado por cuánto se separa el modelo del mercado, de mayor a menor. En 5,256 partidos medidos contra Pinnacle, apostar donde el modelo difería del mercado perdió, así que aquí no hay medallas.</div>';
   lista.forEach(function(f,i){
     h += '<div class="pick no"><div class="filaCuota"><div class="txt"><b>'+(i+1)+'. '+f.sel+' '+fa(f.odd)+'</b>' +
-      'modelo '+(f.modelo*100).toFixed(1)+'% contra '+(f.ref*100).toFixed(1)+'% del mercado · '+(f.diff>=0?'+':'')+f.diff.toFixed(1)+' puntos · EV '+(f.ev>=0?'+':'')+(f.ev*100).toFixed(1)+'% por dólar<br><span style="color:var(--mut2);font-size:11.5px">'+tag(f.conf)+'</span></div>' +
+      (f.mk?'Pinnacle ':'modelo ')+(f.modelo*100).toFixed(1)+'% contra '+(f.ref*100).toFixed(1)+'% del mercado · '+(f.diff>=0?'+':'')+f.diff.toFixed(1)+' puntos · EV '+(f.ev>=0?'+':'')+(f.ev*100).toFixed(1)+'% por dólar<br><span style="color:var(--mut2);font-size:11.5px">'+tag(f.conf)+'</span></div>' +
       '<button class="btnChico" data-rg="'+i+'">💾</button></div></div>';
   });
   h += '<div class="nota">El EV por dólar crece con las cuotas largas aunque la diferencia sea la misma; por eso el orden va por puntos y no por EV. Una diferencia grande suele ser error del modelo (lesiones, rotaciones), no una oportunidad.</div>';
@@ -2157,19 +2158,23 @@ function pintarGameBody(bodyEl, p, eL, eV){
     var oL=normalizarEntradaCuota(document.getElementById(id+'oddL').value);
     var oD=normalizarEntradaCuota(document.getElementById(id+'oddD').value);
     var oV=normalizarEntradaCuota(document.getElementById(id+'oddV').value);
+    var mk1=null; try{ mk1=buscarPinF(p); }catch(e){}   /* mismo número que Veredicto: Pinnacle sin margen si hay precio */
+    var f1=mk1?(mk1.inv?[mk1.g.r[2],mk1.g.r[1],mk1.g.r[0]]:mk1.g.r.slice()):[base.r.pL,base.r.pD,base.r.pV];
     pintarFilasValor([
-      {mercado:'1X2', sel:p.local, odd:oL, modelo:base.r.pL},
-      {mercado:'1X2', sel:'Empate', odd:oD, modelo:base.r.pD},
-      {mercado:'1X2', sel:p.visita, odd:oV, modelo:base.r.pV}
+      {mercado:'1X2', sel:p.local, odd:oL, modelo:f1[0], mk:!!mk1},
+      {mercado:'1X2', sel:'Empate', odd:oD, modelo:f1[1], mk:!!mk1},
+      {mercado:'1X2', sel:p.visita, odd:oV, modelo:f1[2], mk:!!mk1}
     ], document.getElementById(id+'verC'), p);
   });
 
   document.getElementById(id+'btnOU').addEventListener('click', function(){
     var oOver=normalizarEntradaCuota(document.getElementById(id+'oddOver').value);
     var oUnder=normalizarEntradaCuota(document.getElementById(id+'oddUnder').value);
+    var mk2=null; try{ mk2=buscarPinF(p); }catch(e){}
+    var pOv=(mk2&&mk2.g.ou25)?mk2.g.ou25[0]:base.r.overLin[2.5];
     pintarFilasValor([
-      {mercado:'OU2.5', sel:'Más de 2.5', odd:oOver, modelo:base.r.overLin[2.5]},
-      {mercado:'OU2.5', sel:'Menos de 2.5', odd:oUnder, modelo:1-base.r.overLin[2.5]}
+      {mercado:'OU2.5', sel:'Más de 2.5', odd:oOver, modelo:pOv, mk:!!(mk2&&mk2.g.ou25)},
+      {mercado:'OU2.5', sel:'Menos de 2.5', odd:oUnder, modelo:1-pOv, mk:!!(mk2&&mk2.g.ou25)}
     ], document.getElementById(id+'verOU'), p);
   });
 
