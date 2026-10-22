@@ -688,7 +688,7 @@ function resumenN(g,pr,H,A){
   else li.push(L('w','Sin precio de Pinnacle para este juego.'));
   li.push(pr.bH||pr.bA?L('ok','Back-to-back: '+[pr.bA?A.n:'',pr.bH?H.n:''].filter(Boolean).map(esc).join(' y ')+' jugó ayer (ya descontado).'):L('ok','Sin back-to-back.'));
   if(g.pre) li.push(L('w','Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
-  li.push(L('x','No sabe de lesiones: mira Forma y usa el ajuste manual de abajo.'));
+  li.push(`<div data-inj><i class="w">!</i><span>Buscando lesionados…</span></div>`);
   return `<div class="rv"><h4>Pronóstico y pick</h4>${main}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
 }
 function pintarCuerpo(body,g){
@@ -706,10 +706,11 @@ function pintarCuerpo(body,g){
    ${resumenN(g,pr,H,A)}
    ${g.odds?mercadoHtml(g,pr,H,A):''}
    ${g.pre?'<div class="aviso">🧪 Pretemporada: los equipos rotan jugadores y no cuentan para los ratings; toma estos números con mucha cautela.</div>':''}
-   <h3>Ajuste manual (lesiones)</h3>
+   <details class="comoLee"><summary>Ajuste manual por lesiones (opcional)</summary>
+   <div class="nota" style="margin-top:8px">Si hay línea del mercado, <b>ya trae las lesiones incluidas</b> (95% del número final): normalmente no hace falta tocar nada. Úsalo solo si falta una estrella y no hay línea, o si la noticia es de última hora.</div>
    <div class="ajuste"><div><label>${esc(A.ab)} (pts, ej. −4)</label><input type="number" step="0.5" data-k="adjA" value="${g.adjA||0}"></div><div><label>${esc(H.ab)} (pts, ej. −4)</label><input type="number" step="0.5" data-k="adjH" value="${g.adjH||0}"></div></div>
    <button class="btnAncho sec" data-a="adj" style="margin-top:0">Aplicar ajuste</button>
-   <div class="nota">Si falta una estrella, resta puntos a su equipo (ejemplo: −4 si es titular clave). El modelo NO sabe de lesiones por sí solo: mira la pestaña Forma.</div>
+   <div class="nota">Resta puntos al equipo al que le falta el jugador (ejemplo: −4 si es titular clave).</div></details>
    <details class="comoLee"><summary>¿Cómo se lee y qué tan confiable es?</summary><div class="nota">
     <b>Los dos porcentajes de arriba</b> son la probabilidad de que gane cada equipo. <b>Margen esperado</b> es por cuántos puntos se espera que gane el favorito. <b>Hándicap justo</b> y <b>Total justo</b> son las líneas que pondría el modelo: si la casa pone otra muy distinta, desconfía del modelo, no de la casa. <b>Cuota justa</b> es lo que tendría que pagar la casa para que apostar ahí no gane ni pierda a la larga: si paga más, hay valor; si paga menos, no.<br><br>
     <b>Qué tan confiable es:</b> en 2,486 juegos medidos la línea del mercado acertó más que el modelo, por eso la app se apoya en la línea cuando existe. Es una referencia, no una ventaja. No sabe de lesiones: usa el ajuste manual de abajo.<br><br>
@@ -787,6 +788,12 @@ function pintarCuerpo(body,g){
     valorHtml(g,'TOT','tot',[{sel:'Más de '+L,side:'O',odd:normCuota(q('toO').value),prob:po,linea:L},{sel:'Menos de '+L,side:'U',odd:normCuota(q('toU').value),prob:1-po,linea:L}],body.querySelector('[data-o="to"]'));
   };
   lesiones().then(m=>{
+    const w=body.querySelector('[data-inj]'); if(w){
+      const key=id=>{ const t=T(id); return (m[id]||m[(t.n||'').toLowerCase()]||[]).filter(x=>/out|doubt/i.test(x.s)); };
+      const kA=key(g.a), kH=key(g.h), f=(Tm,k)=>esc(Tm.ab)+': '+(k.length?k.slice(0,4).map(x=>esc(x.n)).join(', ')+(k.length>4?' y '+(k.length-4)+' más':''):'ninguno');
+      const hay=kA.length||kH.length;
+      w.innerHTML='<i class="'+(hay?'w':'ok')+'">'+(hay?'!':'✓')+'</i><span>Baja/duda (ESPN) · '+f(A,kA)+' · '+f(H,kH)+'.'+(hay?' El mercado ya lo descuenta; el modelo solo no.':'')+'</span>';
+    }
     const el=q('les'); if(!el) return;
     const f=id=>{ const t=T(id); return m[id]||m[(t.n||'').toLowerCase()]||[]; };
     const fila=(id)=>{ const l=f(id).filter(x=>/out|doubt|quest|day/i.test(x.s)||!x.s).slice(0,6); return `<div class="observ"><b>${esc(T(id).n)}</b>: ${l.length?l.map(x=>esc(x.n)+(x.s?' ('+esc(x.s)+')':'')).join(', '):'sin lesionados listados'}</div>`; };
