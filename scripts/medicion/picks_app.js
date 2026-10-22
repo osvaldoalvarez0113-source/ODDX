@@ -1,13 +1,13 @@
-// Qué habría dicho la app (MLB, ganador) en cada juego de 2024-2026 y cuánto habría rendido.
+// Qué habría dicho la app (MLB, ganador) en cada juego de 2021-2026 y cuánto habría rendido.
 // Corre el veredictoEV() REAL de index.html sobre cada juego, con la cuota de cierre de DraftKings (ESPN),
 // y calcula ROI por titular y la banca de $1,000 con los stakes que imprime la app (día por día, ¼ Kelly).
-// Datos: las ramas var-S2024, var-S2025 y var-S2026 del repo (las escribe scripts/correr_variantes.js).
-//   for s in S2024 S2025 S2026; do git clone --depth 1 --branch var-$s https://github.com/osvaldoalvarez0113-source/ODDX datos/var-$s; done
+// Datos: las ramas var-S2021 … var-S2026 del repo (las escribe scripts/correr_variantes.js).
+//   for s in S2021 S2022 S2023 S2024 S2025 S2026; do git clone --depth 1 --branch var-$s https://github.com/osvaldoalvarez0113-source/ODDX datos/var-$s; done
 // Uso:  node scripts/medicion/picks_app.js datos
 'use strict';
 const fs = require('fs'), vm = require('vm'), path = require('path');
 const DATOS = process.argv[2];
-if (!DATOS) { console.log('Uso: node scripts/medicion/picks_app.js <carpeta con var-S2024, var-S2025, var-S2026>'); process.exit(1); }
+if (!DATOS) { console.log('Uso: node scripts/medicion/picks_app.js <carpeta con var-S2021 … var-S2026>'); process.exit(1); }
 const R = path.join(__dirname, '..', '..');
 const ix = fs.readFileSync(path.join(R, 'index.html'), 'utf8'), E = require(path.join(R, 'ovaedge.js'));
 const a = ix.indexOf('function devig(amA,amH)'), b = ix.indexOf('function contexto('), iI = ix.indexOf('function implied(v)');
@@ -18,7 +18,8 @@ const base = "var PLATA='book',EV_IMPOSIBLE=0.20,CORTE_GRIS=0.50,KFEE=0.07,W_MOD
 const c = { esc: s => String(s), KFEE: 0.07, OVAEdge: E }; vm.createContext(c); vm.runInContext(base, c);
 const am = d => d >= 2 ? '+' + Math.round((d - 1) * 100) : '-' + Math.round(100 / (d - 1));
 const filas = [];
-for (const s of ['S2024', 'S2025', 'S2026']) {
+const SEAS = (process.env.TEMPS_MLB || 'S2021,S2022,S2023,S2024,S2025,S2026').split(',');
+for (const s of SEAS) {
   for (const g of JSON.parse(fs.readFileSync(path.join(DATOS, 'var-' + s, 'variantes_' + s + '.json'), 'utf8'))) {
     const p = g.v && g.v.P40; if (p == null) continue;
     c.pA = (1 - p) * 100; c.pH = p * 100; c.aA = am(g.dA); c.aH = am(g.dH);
@@ -42,10 +43,10 @@ for (const t of ['Valor fuerte', 'Valor moderado', 'Valor dudoso', 'Margen míni
 }
 const valor3 = filas.filter(x => /^Valor (fuerte|moderado|dudoso)/.test(x.tit)), e3 = est(valor3.map(x => x.r));
 console.log('\nTodo lo que decía «valor» (fuerte+moderado+dudoso): n=' + e3.n + '  ROI ' + (e3.m * 100).toFixed(1) + '% ±' + (e3.se * 100).toFixed(1) + '%');
-for (const s of ['S2024', 'S2025', 'S2026']) { const e = est(valor3.filter(x => x.s === s).map(x => x.r)); console.log('   ' + s + ': n=' + e.n + '  ROI ' + (e.m * 100).toFixed(1) + '% ±' + (e.se * 100).toFixed(1) + '%'); }
+for (const s of SEAS) { const e = est(valor3.filter(x => x.s === s).map(x => x.r)); console.log('   ' + s + ': n=' + e.n + '  ROI ' + (e.m * 100).toFixed(1) + '% ±' + (e.se * 100).toFixed(1) + '%'); }
 // banca de $1,000 con los stakes impresos por la app (se decide con la banca al inicio del día)
 const porDia = {}; filas.filter(x => x.fr > 0).forEach(x => (porDia[x.f] = porDia[x.f] || []).push(x));
 let bk = 1000, pico = bk, dd = 0, mn = bk, np = 0;
 Object.keys(porDia).sort().forEach(f => { const b0 = bk; porDia[f].forEach(x => { bk += b0 * x.fr * x.r; np++; }); pico = Math.max(pico, bk); dd = Math.max(dd, (pico - bk) / pico); mn = Math.min(mn, bk); });
 console.log('\nBanca de $1,000 con los stakes que imprime la app (' + np + ' picks): termina en $' + Math.round(bk) + ' | peor caída ' + (dd * 100).toFixed(0) + '% | mínimo $' + Math.round(mn));
-console.log('(v67, con el ¼ Kelly sobre tu número crudo: $524, caída 64%, mínimo $413)');
+console.log('(referencia, 2021-2026: ¼ Kelly sobre el número crudo $10; sobre una mezcla al 24% $914 con caída de 12%)');

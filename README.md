@@ -60,12 +60,12 @@ Revisa sintaxis de todas las páginas, nombres usados sin existir, el service wo
 |---|---|---|
 | `MULT` | 6 | backtests de 2025 y 2026 (ganó al 13 y al 17) |
 | `BONO_LOCAL` | 0.59 | backtest contra el mercado, temporada 2025 completa (`backtests/backtestmercado.html`) |
-| `PRIOR_ERA` | 40 innings | medido contra el mercado en 2024-2026: 20 a 120 no cambia nada (`docs/MEDICION-MERCADO-MLB-2026-10.md`) |
+| `PRIOR_ERA` | 40 innings | medido contra el mercado en 2021-2026: 20 a 120 no cambia nada (±0.001 de pérdida log) (`docs/MEDICION-MERCADO-MLB-2026-10.md`) |
 | `DISP` | 2.3 | `backtests/backtestforma.html` (razón varianza/media de 2.32 y 2.37) |
 | `ENCOGE` | 0.45 | backtest del total (pendiente medida 0.45 en 2026 y 0.44 en 2025) |
 | `F5_FRAC` | 0.56 | `backtests/backtestequipo.html` (0.558 y 0.562) |
 | Tope de probabilidad | 22 % - 78 % | |
-| `W_MODELO` | 0.24 | peso del modelo al mezclarlo con el mercado: Chequeo del Veredicto y **stake** (`valor()`). Medido: 0.24 ± 0.28 (`docs/MEDICION-MERCADO-MLB-2026-10.md`); 3 temporadas juntas 0.09, por temporada -0.12 / 0.21 / 0.23 (`docs/MEDICION-PICKS-APP-2026-10.md`) |
+| `W_MODELO` | 0.05 | peso del modelo al mezclarlo con el mercado: Chequeo del Veredicto y **stake** (`valor()`). Medido en 6 temporadas (12,311 juegos): óptimo junto ≈0.04, por temporada de -0.13 a +0.23 (`docs/MEDICION-6-TEMPORADAS-2026-10.md`); con 3 temporadas se había puesto 0.24 |
 
 Las páginas de `backtests/` y `scripts/ova_formula.py` **replican** estas constantes. Si cambias una en `index.html`, cámbiala allí también o los números dejarán de coincidir.
 

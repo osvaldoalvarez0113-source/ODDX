@@ -987,7 +987,19 @@ sec('ovaedge.js: vig, Kelly, CLV, calibración y Monte Carlo, y su chequeo en el
    ok('Stake: con un solo precio (totales, F5…) el ancla es el precio entre 1.045 y el stake queda por debajo del crudo',(()=>{const a=val(cE,62,'-110',0,undefined);return a.stake>0&&a.stake<a.stakeCrudo;})());
    ok('Stake: una línea entera con push (Over 8, 13% de empate) mezcla sobre la probabilidad condicionada y no truena',(()=>{const a=val(cE,52,'-110',.13,undefined);return a&&(a.stake===null||a.stake>0)&&isFinite(a.ev);})());
    ok('El ranking pasa el sin-vig del par al stake del ganador y avisa cuando la mezcla no deja valor',/valor\(m\.p,m\.am,m\.push,undefined,m\.fair\)/.test(ix)&&/devig\(b\.querySelector\('\.ca'\)\.value,b\.querySelector\('\.ch'\)\.value\)/.test(ix)&&/sin stake sugerido/.test(ix));
-   ok('El aviso de «precio imposible» trae el dato de 3 temporadas (732 juegos, −8.9%)',/732 juegos/.test(V(70,'-110','-110'))&&/-8\.9%/.test(V(70,'-110','-110')));
+   ok('El aviso de «precio imposible» trae el dato de 6 temporadas (1,713 juegos, −5.6%, perdió en 5 de 6)',/1,713 juegos/.test(V(70,'-110','-110'))&&/-5\.6%/.test(V(70,'-110','-110'))&&/5 de las 6 temporadas/.test(V(70,'-110','-110')));
+   {  // con el peso REAL de index.html (medido en 6 temporadas): 0.05, no el 0.24 de las pruebas de mecánica de arriba
+    const wReal=+((/var W_MODELO=([\d.]+);/.exec(ix)||[])[1]);
+    ok('W_MODELO = 0.05: el peso medido en 6 temporadas (óptimo junto ≈0.04; ajustado en 5 y probado en la sexta, 0.01 a 0.08)',wReal===0.05);
+    const baseR=base.replace('W_MODELO=0.24','W_MODELO='+wReal);
+    const cR=(()=>{const c={esc:s=>String(s),KFEE:0.07,OVAEdge:E};vm.createContext(c);vm.runInContext(baseR,c);return c;})();
+    const VR=(pA,aA,aH)=>vm.runInContext('veredictoEV('+pA+','+(100-pA)+',"'+aA+'","'+aH+'","Visita","Local",1.3)',cR);
+    const valR=(p,am,fair)=>vm.runInContext('valor('+p+',"'+am+'",0,undefined,'+fair+')',cR);
+    ok('Con el peso real, 57%, 62% y 70% contra un mercado 50/50 salen «Valor dudoso» y SIN stake (la mezcla al 5% no deja valor)',[57,62].every(p=>/Valor dudoso/.test(VR(p,'-110','-110'))&&!/¼ Kelly \$/.test(txt(VR(p,'-110','-110'))))&&/Ese precio no puede ser/.test(VR(70,'-110','-110')));
+    ok('Con el peso real, la mezcla de 62% con 50% es ≈50.6% y el ¼ Kelly del número crudo sigue calculándose aparte (stakeCrudo > 0, stake null)',(()=>{const a=valR(62,'-110',50);return a.stake===null&&a.sinStake===true&&a.stakeCrudo>20;})());
+    ok('Con el peso real, un número extremo (99% contra 50/50) sí deja valor tras la mezcla y da un stake chico',(()=>{const a=valR(99,'-110',50);return a.stake>0&&a.stake<a.stakeCrudo/10;})());
+    ok('Con el peso real el titular «Valor moderado/fuerte» no sale en picks normales de MLB (50-70%)',[52,55,58,60,62,65].every(p=>!/Valor (moderado|fuerte)/.test(VR(p,'-110','-110'))));
+   }
   }
  }
  ok('Mis picks: el CLV positivo con t < 2 se dice "dentro del ruido" y la calibración muestra Brier',/todavía dentro del ruido/.test(ix)&&/OVAEdge\.brierSkill/.test(ix)&&/OVAEdge\.summarizeCLV/.test(ix));

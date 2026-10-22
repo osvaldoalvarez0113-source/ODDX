@@ -998,7 +998,7 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v68</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v69</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -1145,7 +1145,8 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
   <b>3)</b> Los puntos de ventaja son tu número menos el del mercado. Menos de 2 es ruido.
   <b>4)</b> El problema es que tu propia medición dice que el número casi nunca le gana al mercado.
   Por eso existe el <b>Chequeo contra el mercado</b>: mezcla los dos y pregunta si todavía queda
-  valor. Si no queda, el titular dice «Valor dudoso». No te lo prohíbe: te avisa que apuestas contra
+  valor. Si no queda, el titular dice «Valor dudoso». Con el peso que midió tu backtest (5% tu número,
+  95% el mercado) eso pasa en casi todos los picks. No te lo prohíbe: te avisa que apuestas contra
   un mercado que casi siempre tiene razón.
   <b>5)</b> La única prueba de que le ganas al mercado es el <b>CLV</b> en Mis picks: si la cuota que
   tomaste es mejor que la de cierre, de forma sostenida y con t de 2 o más, hay ventaja de verdad.
@@ -1153,18 +1154,22 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
   <b>6)</b> El <b>stake</b> (¼ Kelly) sale de la mezcla con el mercado, no de tu número crudo: tu número
   dice más de lo que después pasa, y apostar sobre él te hace apostar de más (abajo está la prueba).
 
-  <b>Qué habría dicho la app en 3 temporadas</b> (2024-2026, 6,171 juegos, contra la cuota de cierre de
-  DraftKings; el informe completo está en <code>docs/MEDICION-PICKS-APP-2026-10.md</code>).
-  <b>Los picks de «valor»</b> (2,544): rindieron -0.3% por dólar (±2.2). Ni ganaron ni perdieron de forma
-  medible; sin criterio se esperaba -4.0% por la comisión de la casa. Por temporada: -6.4%, +3.8% y +1.2%.
-  <b>Tu número vs la realidad:</b> en esos picks decía 50.5% de ganar y ganaron 45.8% (el mercado decía 44.0%).
-  <b>«Precio imposible»</b> (732 juegos): rindieron -8.9% y perdieron en las tres temporadas. Cuando la app se
+  <b>Qué habría dicho la app en 6 temporadas</b> (2021-2026, 12,311 juegos, contra el precio de DraftKings que guarda
+  ESPN: en 2024-2026 es la cuota de cierre y en 2021-2023 el último precio registrado; el informe completo está en
+  <code>docs/MEDICION-6-TEMPORADAS-2026-10.md</code>).
+  <b>Los picks de «valor»</b> (5,176): rindieron -1.9% por dólar (±1.6). Sin criterio se esperaba -3.9% por la comisión de
+  la casa; la diferencia (+2.0 pts) no se distingue de la suerte. Por temporada: -4.5%, -2.7%, -3.3%, -6.4%, +3.8% y +1.2%.
+  <b>Tu número vs la realidad:</b> en esos picks decía 49.7% de ganar y ganaron 44.2% (el mercado decía 43.3%).
+  <b>«Precio imposible»</b> (1,713 juegos): rindieron -5.6% y perdieron en 5 de las 6 temporadas. Cuando la app se
   separa mucho del mercado, casi siempre le falta un dato.
-  <b>Modo «Al gane»:</b> está bien calibrado (cuando decía 57% ganaba 57%), pero acertar no es ganar dinero: a
-  la cuota de cierre ese grupo rindió entre -3% y -4%, porque la casa ya sabe lo mismo.
-  <b>Stake:</b> el ¼ Kelly con tu número crudo habría convertido $1,000 en $524 (con una caída de 64% en el camino);
-  sobre la mezcla con el mercado termina en $981 con una caída máxima de 6%. Por eso el stake ya sale de la mezcla.
-  <b>Cuántos picks hacen falta:</b> para distinguir de la suerte un ROI verdadero de +3% hacen falta unos 5,500
+  <b>Peso de tu número:</b> mezclado con el mercado, lo que mejor funciona es ≈0.04 (por temporada va de -0.13 a +0.23, con
+  un error de ±0.2). Por eso la mezcla usa 5% de tu número y 95% del mercado.
+  <b>Modo «Al gane»:</b> está bien calibrado (cuando decía 63% ganaba 63%), pero acertar no es ganar dinero: a la cuota
+  de cierre esos grupos rindieron entre -5% y 0%, porque la casa ya sabe lo mismo.
+  <b>Stake:</b> el ¼ Kelly con tu número crudo habría convertido $1,000 en $10 (la banca se acaba). Sobre una mezcla con el
+  mercado al 24% terminaba en $914 con una caída de 12%, y aun así perdió en 5 de 6 temporadas. Con la mezcla al 5% casi
+  nunca queda valor, y entonces la app no te sugiere stake.
+  <b>Cuántos picks hacen falta:</b> para distinguir de la suerte un ROI verdadero de +3% hacen falta unos 5,700
   picks (unas 6 temporadas completas con este ritmo). Por eso mira el CLV, que se mueve mucho más rápido.
   <b>Límites:</b> es la cuota de cierre (la más difícil de ganar) y el abridor que de verdad lanzó, no el probable;
   los cortes por tamaño de ventaja se miraron después de ver los datos, así que son pistas y no pruebas.
@@ -1396,11 +1401,13 @@ var BONO_LOCAL=0.59;
    Por eso se puede mover desde Ajustes y por eso el valor por defecto no se
    toca hasta que haya un backtest que diga cual es. */
 var PRIOR_ERA=40;
-/* Peso de TU número cuando se mezcla con el mercado (logit). Sale de tu medición contra el cierre de DraftKings:
-   0.24 ± 0.28 en ~6,200 juegos (docs/MEDICION-MERCADO-MLB-2026-10.md); la regresión de 3 temporadas juntas da 0.09
-   y por temporada -0.12 / 0.21 / 0.23 (docs/MEDICION-PICKS-APP-2026-10.md). Lo usan el Chequeo del Veredicto y el STAKE:
-   el ¼ Kelly se calcula sobre esta mezcla y no sobre tu número crudo, que en 2,544 picks decía 50.5% y ganó 45.8%. */
-var W_MODELO=0.24;
+/* Peso de TU número cuando se mezcla con el mercado (logit). Sale de tu medición contra DraftKings en 6 temporadas
+   (2021-2026, 12,311 juegos, docs/MEDICION-6-TEMPORADAS-2026-10.md): el mejor peso junto es 0.04; por temporada va de
+   -0.13 a +0.23 (error ≈ ±0.2); ajustándolo en 5 temporadas y probándolo en la sexta sale entre 0.01 y 0.08. En fútbol
+   (10,732 partidos, Pinnacle) y NBA (7,293 juegos) el mejor peso es 0. Con 3 temporadas se había puesto 0.24; con 6 los
+   picks que ese peso dejaba con stake perdieron en 5 de 6 temporadas. Lo usan el Chequeo del Veredicto y el STAKE:
+   el ¼ Kelly se calcula sobre esta mezcla y no sobre tu número crudo, que en 5,176 picks decía 49.7% y ganó 44.2%. */
+var W_MODELO=0.05;
 var EXTRAS=0.18;
 /* Encogimiento del total. La pendiente medida entre lo proyectado y lo real fue
    0.45 en 2026 y 0.44 en 2025 sobre 3,887 juegos: la proyeccion se movia mas del
@@ -1572,9 +1579,9 @@ function valor(pPct,amStr,pushPct,plat,fairPct){
      el empate es 0 y esto no cambia nada. */
   var pcond = (push<1) ? p/(1-push) : p;
   /* STAKE. Se calcula sobre la mezcla de tu número con el mercado, no sobre tu número crudo.
-     Con 6,171 juegos de 2024 a 2026: el ¼ Kelly del número crudo convirtió $1,000 en $524 (cayó 64% en el camino)
-     aun con un ROI plano de -0.4%, porque tu número decía 50.5% y los picks ganaron 45.8%. El mismo Kelly sobre la mezcla
-     terminó en $981 y nunca cayó más de 6%. El ancla es el "sin vig" del par de cuotas cuando se conoce (fairPct); si
+     Con 12,311 juegos de 2021 a 2026: el ¼ Kelly del número crudo convirtió $1,000 en $10 (la banca se acabó) aun con un
+     ROI de -1.9%, porque tu número decía 49.7% y los picks ganaron 44.2%. El mismo Kelly sobre una mezcla al 24% terminó
+     en $914 (caída máxima 12%); al peso medido (5%) casi nunca queda valor. El ancla es el "sin vig" del par de cuotas cuando se conoce (fairPct); si
      solo hay un precio se usa el precio sobre 1.045, el overround típico. Kalshi no cobra vig: el precio es el ancla.
      Sin ovaedge.js (no cargó) se queda el cálculo de siempre. */
   var stake=(bk&&f>0)? bk*f*0.25 : null, stakeCrudo=stake, sinStake=false;
@@ -3072,8 +3079,8 @@ function actualizarRanking(root){
 /* ---------- chequeo contra el mercado (ovaedge.js) ----------
    No cambia el veredicto de arriba: lo contrasta. Mezcla tu número con el del mercado
    (el mismo "sin vig" que muestra la tabla de arriba) con el peso que midió tu propio backtest contra el cierre de
-   DraftKings: el modelo pesa 0.24 ± 0.28 sobre ~6,200 juegos y no le gana al mercado
-   (docs/MEDICION-MERCADO-MLB-2026-10.md). Si todavía hay valor con la mezcla, es creíble. */
+   DraftKings: el modelo pesa ≈0.04 (±0.2) sobre 12,311 juegos de 6 temporadas y no le gana al mercado
+   (docs/MEDICION-6-TEMPORADAS-2026-10.md). Si todavía hay valor con la mezcla, es creíble. */
 function mezclaMercado(lados,amA,amH){
   if(PLATA==='kalshi'||typeof OVAEdge==='undefined') return null;
   var nums=[numOdds(amA),numOdds(amH)];
@@ -3105,9 +3112,9 @@ function chequeoMercado(lados,amA,amH){  /* lados[i].stakeCrudo = el ¼ Kelly co
       '% por dólar. Eso se cree más que el número de arriba'+
       '.'+(best.stake?' El ¼ Kelly de arriba ya sale de esta mezcla ($'+best.stake.toFixed(2)+')':'')+
       (best.stake&&lados[cs.indexOf(best)].stakeCrudo?'; con tu número sin mezclar saldría $'+lados[cs.indexOf(best)].stakeCrudo.toFixed(2)+
-        ', y ese tamaño en 2024-2026 habría convertido $1,000 en $524 aunque el ROI fue casi plano':'')+
+        ', y ese tamaño en 2021-2026 habría convertido $1,000 en $10 aunque el ROI fue de -1.9%':'')+
       (best.stake?'.':'')+'</div>'
-    : '<div class="flag">Tu propia medición (≈6,200 juegos de 2024 a 2026) dice que el modelo casi no agrega nada al precio de cierre. '+
+    : '<div class="flag">Tu propia medición (12,311 juegos de 2021 a 2026) dice que el modelo casi no agrega nada al precio de cierre. '+
       'Mezclado con el mercado en esa proporción, ningún lado paga lo suficiente: la ventaja de arriba probablemente es ruido. '+
       'Antes de apostar, busca algo que el mercado no sepa (lineup, lesión, cambio de abridor).</div>';
   return o+'</details>';
@@ -3143,8 +3150,8 @@ function veredictoEV(pA,pH,amA,amH,nomA,nomH,vc){
     cls='alerta'; tit='Ese precio no puede ser';
     det='Sale un EV de +'+(best.ev*100).toFixed(0)+'% por dólar en '+best.n+', y eso no existe en '+
         'un moneyline de MLB. Revisa que no hayas puesto el precio de un equipo en la casilla del otro. '+
-        'Si el precio es real, ojo: en 2024-2026 los 732 juegos que la app marcaba así rindieron -8.9% por dólar y '+
-        'perdieron en las tres temporadas; casi siempre al modelo le falta un dato que el mercado ya tiene.';
+        'Si el precio es real, ojo: en 2021-2026 los 1,713 juegos que la app marcaba así rindieron -5.6% por dólar y '+
+        'perdieron en 5 de las 6 temporadas; casi siempre al modelo le falta un dato que el mercado ya tiene.';
   }else if(best.ev<=0){
     cls='no'; tit='Sin apuesta';
     det='Ningún lado paga lo suficiente. El mejor es '+best.n+' con EV de '+
@@ -3161,7 +3168,7 @@ function veredictoEV(pA,pH,amA,amH,nomA,nomH,vc){
         '%), pero tu propia medición dice que el modelo casi no le agrega nada al precio de cierre. '+
         'Mezclado con el mercado ya no queda valor (EV '+(mzBest.ev*100).toFixed(1)+'%). '+
         'Juégalo solo si ves algo que el mercado no sabe. La app no te sugiere stake aquí: el que saldría con tu número sin '+
-        'mezclar es justo el que en 3 temporadas hundió la banca.';
+        'mezclar es justo el que en 6 temporadas dejó la banca en $10.';
   }else if(best.edge<5){
     cls=''; tit='Valor moderado en '+best.n;
     det=best.edge.toFixed(1)+' puntos sobre la cuota · EV +'+(best.ev*100).toFixed(1)+

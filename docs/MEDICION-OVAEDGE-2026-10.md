@@ -27,6 +27,10 @@ Con cuotas parejas (-110/-110) la ventaja sobrevive a la mezcla desde ~60% (≈1
 -150/+130, desde ~65%. Por debajo de eso, «dudoso». Si algún día el backtest sube el peso del modelo (en 2026 salió 0.54, pero el
 promedio de tres temporadas es 0.24 ± 0.28), se cambia `W_MODELO` en `index.html` y el titular se mueve solo.
 
+> **Actualización v69 (6 temporadas, `MEDICION-6-TEMPORADAS-2026-10.md`):** con 12,311 juegos de 2021 a 2026 el peso óptimo del modelo es ≈0.04
+> (por temporada de -0.13 a +0.23), y la mezcla al 24% dejó picks con stake que perdieron en 5 de 6 temporadas. `W_MODELO` bajó de 0.24 a **0.05**:
+> los picks de valor de MLB salen casi siempre como «Valor dudoso» y sin stake. Los valores 0.24 y los cruces de ~60% / ~65% de arriba eran los de v67-v68.
+
 ## Qué NO se conectó: el Monte Carlo
 
 Se comparó contra `matriz()` (binomial negativa con DISP 2.3, equipos independientes) con los mismos promedios de carreras,

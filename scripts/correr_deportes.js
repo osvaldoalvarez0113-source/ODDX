@@ -296,7 +296,7 @@ const DIAG = { errores: [], rango: 0, dia: 0 };
 async function main() {
   const arg = /^\d{4}(,\d{4})*$/.test(process.argv[2] || '') ? process.argv[2] : (process.env.TEMPS_NBA || '2024,2025');
   const evalSk = arg.split(',').map(s => parseInt(s, 10)).filter(isFinite);
-  const skMin = 2021, skMax = Math.max(...evalSk), skTune = 2023;
+  const skMin = process.env.NBA_SKMIN ? parseInt(process.env.NBA_SKMIN, 10) : 2021, skMax = Math.max(...evalSk), skTune = 2023;
   let out = '## NBA contra el mercado — temporadas evaluadas: ' + evalSk.map(s => s + '-' + String(s + 1).slice(2)).join(', ') + '\n\n';
   const log = t => { out += t + '\n\n'; console.log(t); };
   console.log('Bajando resultados...');
@@ -331,10 +331,11 @@ async function main() {
   const rows = [];
   objetivo.forEach(g => {
     const l = g.linea; if (!l || l.spread == null) return;
-    const r = { id: g.id, sk: seasonOf(g.ts), ty: g.ty, mar: g.hs - g.as, tot: g.hs + g.as, spread: l.spread, total: l.total, mlH: l.mlH, mlA: l.mlA, v: {} };
+    const r = { id: g.id, ts: g.ts, prov: l.prov, sk: seasonOf(g.ts), ty: g.ty, mar: g.hs - g.as, tot: g.hs + g.as, spread: l.spread, total: l.total, mlH: l.mlH, mlA: l.mlA, v: {} };
     let ok = true; Object.keys(V).forEach(k => { const x = pred[k].get(g.id); if (!x) ok = false; else r.v[k] = x; });
     if (ok) rows.push(r);
   });
+  if (process.env.VOLCAR_PARTIDOS) fs.writeFileSync('filas_nba.json', JSON.stringify(rows.map(r => ({ id: r.id, ts: r.ts, prov: r.prov, sk: r.sk, ty: r.ty, mar: r.mar, tot: r.tot, spread: r.spread, total: r.total, mlH: r.mlH, mlA: r.mlA, V0: r.v.V0, V3: r.v.V3 }))));
   const sks = [...new Set(rows.map(r => r.sk))].sort();
   log('Juegos con linea y con modelo listo (>=5 juegos previos de cada equipo): ' + rows.length + ' (' + sks.map(s => s + ': ' + rows.filter(r => r.sk === s).length).join(', ') + ')');
 
@@ -389,7 +390,8 @@ const require = n => require_real(n);
 const fs = require('fs');
 const LIGAS = [['E0', 'Premier League'], ['SP1', 'La Liga'], ['I1', 'Serie A'], ['D1', 'Bundesliga'], ['F1', 'Ligue 1']];
 const TEMPS = (process.env.TEMPS_FUTBOL || '2122,2223,2324,2425,2526').split(',');
-const TUNE = '2223';                       // temporada donde se ajustan los parametros (sin mirar el mercado)
+const TUNE = process.env.TUNE_FUTBOL || '2223';
+const PRE = process.env.PRE_FUTBOL || '2122';                       // temporada donde se ajustan los parametros (sin mirar el mercado)
 const urlCsv = (t, code) => 'https://www.football-data.co.uk/mmz4281/' + t + '/' + code + '.csv';
 const MAXG = 8;
 
@@ -538,7 +540,7 @@ function perdidaTrain(store, key, que) {   // pérdida media en la temporada de 
   return n ? s / n : Infinity;
 }
 function ajusteApp(porLiga, log) {
-  const sub = {}; Object.keys(porLiga).forEach(lg => { sub[lg] = porLiga[lg].filter(m => m.t === '2122' || m.t === TUNE); });
+  const sub = {}; Object.keys(porLiga).forEach(lg => { sub[lg] = porLiga[lg].filter(m => m.t === PRE || m.t === TUNE); });
   let best = { cfg: Object.assign({}, CFG_APP), l: null };
   const ev = c => { const st = new Map(); correrTodo(sub, modeloApp, c, 'x', st); return perdidaTrain(st, 'x', '1x2'); };
   const l0 = ev(CFG_APP); best.l = l0;
@@ -602,6 +604,7 @@ async function main() {
   const KEYS = ['F0', 'F1', 'F2', 'F3'];
   const rows = []; store.forEach((v, m) => { if (testTemps.includes(m.t) && m.mk && KEYS.every(k => v[k])) rows.push({ m, v }); });
   const temps = [...new Set(rows.map(r => r.m.t))].sort();
+  if (process.env.VOLCAR_PARTIDOS) fs.writeFileSync('partidos_futbol.json', JSON.stringify(rows.map(r => ({ t: r.m.t, lg: r.m.lg, d: r.m.d, h: r.m.h, a: r.m.a, gh: r.m.gh, ga: r.m.ga, y: r.m.y, mk: r.m.mk, src: r.m.mkSrc, ps: r.m.ps, avg: r.m.avg, mx: r.m.mx, F0: r.v.F0.p, F1: r.v.F1.p, F3: r.v.F3.p, o0: r.v.F0.o25, o3: r.v.F3.o25, ou: r.m.ou, ouPs: r.m.ouPs, ouAvg: r.m.ouAvg }))));
   log('Partidos medidos (con cuota de mercado y modelo listo): ' + rows.length + ' (' + temps.map(t => t + ': ' + rows.filter(r => r.m.t === t).length).join(', ') + ')');
   if (rows.length < 300) { log('NO TERMINO: pocos partidos con cuotas (' + rows.length + ').'); return fin(out, true); }
 

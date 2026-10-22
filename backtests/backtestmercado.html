@@ -346,7 +346,7 @@ function pintar(e,info){
 async function medir(dias){
   PARAR=false; CACHE={}; $('res').innerHTML=''; $('b4').style.display='none';
   var hoy=new Date(), fin, ini;
-  var TEMPS={S2024:['2024-03-20','2024-09-30'], S2025:['2025-03-20','2025-09-30'], S2026:['2026-03-20','2026-09-30']};
+  var TEMPS={S2021:['2021-03-20','2021-10-04'], S2022:['2022-03-20','2022-10-06'], S2023:['2023-03-20','2023-10-02'], S2024:['2024-03-20','2024-09-30'], S2025:['2025-03-20','2025-09-30'], S2026:['2026-03-20','2026-09-30']};
   if(TEMPS[dias]){ ini=TEMPS[dias][0]; fin=TEMPS[dias][1]; var ayer=sumaDias(hoy.toISOString().slice(0,10),-1); if(fin>ayer) fin=ayer; }
   else { dias=+dias; fin=sumaDias(hoy.toISOString().slice(0,10),-1); ini=sumaDias(fin,-(dias-1)); }
   progreso('Buscando juegos terminados de MLB…',0.02);
