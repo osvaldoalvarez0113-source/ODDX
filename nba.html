@@ -682,7 +682,6 @@ function resumenN(g,pr,H,A){
   const row=(n,m,k)=>`<div class="nm">${esc(n)} gana</div><div class="n md">${pct1(m)}</div><div class="n mk">${k===null?'—':pct1(k)}</div><div class="n">${amTxt(k===null?m:k)}</div>`;
   const tab=`<div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n,1-pr.pH,hit===null?null:1-hit)}${row(H.n,pr.pH,hit)}</div>
    <div class="nota" style="margin-top:6px">Mercado = Pinnacle sin su margen.</div>`;
-  const chips=`<div class="rvChips"><div>${esc(favH?H.ab:A.ab)}<small>por ${pmAbs.toFixed(1)} pts</small></div><div>Hándicap justo<small>${esc(favH?H.ab:A.ab)} ${fmtL(-Math.round(pmAbs*2)/2)}</small></div><div>Total justo<small>${(Math.round(pr.pt*2)/2).toFixed(1)}</small></div></div>`;
   const L=(c,t)=>`<div><i class="${c}">${c==='ok'?'✓':(c==='w'?'!':'✗')}</i><span>${t}</span></div>`;
   const li=[];
   if(hit!==null){ const mn=Math.max(0,Math.round((Date.now()-Date.parse(PIN_N.generado))/60000)); li.push(L('ok',`Precio de Pinnacle de hace ${mn<90?mn+' min':Math.round(mn/60)+' h'}.`)); }
@@ -690,7 +689,7 @@ function resumenN(g,pr,H,A){
   li.push(pr.bH||pr.bA?L('ok','Back-to-back: '+[pr.bA?A.n:'',pr.bH?H.n:''].filter(Boolean).map(esc).join(' y ')+' jugó ayer (ya descontado).'):L('ok','Sin back-to-back.'));
   if(g.pre) li.push(L('w','Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
   li.push(L('x','No sabe de lesiones: mira Forma y usa el ajuste manual de abajo.'));
-  return `<div class="rv"><h4>Pronóstico y pick</h4>${main}<h4>Modelo contra mercado</h4>${tab}<h4>Margen y líneas justas</h4>${chips}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
+  return `<div class="rv"><h4>Pronóstico y pick</h4>${main}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
 }
 function pintarCuerpo(body,g){
   const pr=prediccion(g), H=T(g.h), A=T(g.a);
@@ -699,7 +698,7 @@ function pintarCuerpo(body,g){
   const ver=`
    <div class="hero">
     <div class="side${favH?'':' fav'}"><img src="${esc(A.logo)}" alt="" onerror="this.style.display='none'"><span class="ab">${esc(A.ab)}</span><span class="pc">${pct1(1-pS)}</span></div>
-    <div class="mid"><div class="gz">${ringSvg(1-pS,pS)}<div class="cx"><small>margen del modelo</small><b>${esc(pr.pH>=0.5?H.ab:A.ab)} −${pmAbs.toFixed(1)}</b><small>total ${pr.pt.toFixed(1)}</small></div></div></div>
+    <div class="mid"><div class="gz">${ringSvg(1-pS,pS)}<div class="cx"><b>${esc(pr.pH>=0.5?H.ab:A.ab)} −${pmAbs.toFixed(1)}</b><small>total ${pr.pt.toFixed(1)}</small></div></div></div>
     <div class="side${favH?' fav':''}"><img src="${esc(H.logo)}" alt="" onerror="this.style.display='none'"><span class="ab">${esc(H.ab)}</span><span class="pc">${pct1(pS)}</span></div>
    </div>
    <div class="bar"><span class="a" style="flex-grow:${Math.max(1-pS,0.08)}">${pct1(1-pS)}</span><span class="h" style="flex-grow:${Math.max(pS,0.08)}">${pct1(pS)}</span></div>
@@ -804,19 +803,14 @@ function mercadoHtml(g,pr,H,A){
     filas+=`<tr><td>Quién gana</td><td class="n">${quien(mer)}</td><td class="n">${quien(pr.pmMod)}</td><td class="n usa">${quien(pr.pm)}</td></tr>`; }
   if(hayT){ dt=pr.ptMod-o.total;
     filas+=`<tr><td>Total de puntos</td><td class="n">${o.total.toFixed(1)}</td><td class="n">${pr.ptMod.toFixed(1)}</td><td class="n usa">${pr.pt.toFixed(1)}</td></tr>`; }
-  if(hayS){
-    if(Math.abs(dm)<3) av.push('En quién gana, el modelo y el mercado <strong>coinciden</strong> (dif. '+sig(dm)+' pts). No hay nada raro.');
-    else av.push('En quién gana, el modelo se separa <strong>'+Math.abs(dm).toFixed(1)+' pts</strong> del mercado. En las pruebas, apostar contra la línea en estos casos perdió: tómalo como <strong>aviso de que el modelo anda dudoso</strong>, no como ventaja.');
-  }
-  if(hayT){
-    if(Math.abs(dt)<4) av.push('En el total, también coinciden (dif. '+sig(dt)+' pts).');
-    else av.push('En el total, el modelo se separa <strong>'+Math.abs(dt).toFixed(1)+' pts</strong>. Es mucho: al inicio de temporada el modelo todavía usa ratings viejos, así que <strong>no apuestes Over/Under por eso</strong>.');
-  }
-  const malo=Math.abs(dm)>=3||Math.abs(dt)>=4;
-  return `<h3>Línea del mercado</h3>
-  <div class="pick${malo?' no':''}"><b>${malo?'🟡 El modelo y el mercado no coinciden':'🟢 El modelo y el mercado coinciden'}</b>${av.join(' ')}</div>
+  const okM=!hayS||Math.abs(dm)<3, okT=!hayT||Math.abs(dt)<4;
+  if(hayS) av.push(okM?'En quién gana coinciden (dif. '+sig(dm)+' pts).':'En quién gana, el modelo se separa <strong>'+Math.abs(dm).toFixed(1)+' pts</strong> del mercado: tómalo como aviso de que el modelo anda dudoso, no como ventaja.');
+  if(hayT) av.push(okT?'En el total también (dif. '+sig(dt)+' pts).':'En el total se separa <strong>'+Math.abs(dt).toFixed(1)+' pts</strong>: al inicio de temporada el modelo usa ratings viejos, así que <strong>no apuestes Over/Under por eso</strong>.');
+  const tit=okM&&okT?'🟢 El modelo y el mercado coinciden':(okM?'🟡 Coinciden en quién gana, no en el total':'🟡 El modelo y el mercado no coinciden');
+  return `<div class="rv"><h4>Línea del mercado</h4>
+  <div class="pick${okM&&okT?'':' no'}"><b>${tit}</b>${av.join(' ')}</div>
   <table class="tabla-bt"><tr><th></th><th>Mercado (ESPN)</th><th>Modelo solo</th><th>La app usa</th></tr>${filas}</table>
-  <div class="nota">«La app usa» es casi todo mercado (95%) y un poco de modelo (${Math.round(LAM_M*100)}%). Razón: en 2,486 juegos medidos (2024-25 y 2025-26) la línea acertó más que el modelo (error de margen 13.9 vs 14.4 pts). Apostar contra la línea cuando el modelo difiere perdió: 3+ pts de diferencia → 50.6% de acierto (−3.5%); 5+ pts → 47.5% (−9.4%).</div>`;
+  <div class="nota">«La app usa» es ${Math.round((1-LAM_M)*100)}% mercado y ${Math.round(LAM_M*100)}% modelo: en 2,486 juegos medidos la línea acertó más que el modelo.</div></div>`;
 }
 function formaHtml(id,Tm){
   const js=GAMES.filter(x=>x.h===id||x.a===id).sort((a,b)=>b.ts-a.ts).slice(0,10);
