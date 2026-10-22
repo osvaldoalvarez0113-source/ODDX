@@ -1,0 +1,34 @@
+name: Sonda 6 temporadas
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [sonda-6t]
+
+permissions:
+  contents: write
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr la sonda
+        run: node scripts/sonda_6t.js 2>&1 | tee salida_sonda_6t.txt
+      - name: Guardar el resultado en la rama resultados-sonda-6t
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_sonda_6t.txt resultado_sonda_6t.txt /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-sonda-6t
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado de la sonda de 6 temporadas" || true
+          git push -f origin resultados-sonda-6t
