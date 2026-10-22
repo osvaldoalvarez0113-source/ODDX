@@ -637,6 +637,12 @@ function confiable(k){ const v=LS.get('ova_nba_ver_v1'); return v&&v[k]?verdTxt(
 let PIN_N=null;
 try{ fetch('pinnacle-nba.json?v='+Date.now()).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.juegos) PIN_N=j; }).catch(()=>{}); }catch(e){}
 function nickN(n){ const w=String(n||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').split(/\s+/).filter(Boolean); return w[w.length-1]||''; }
+function pinPH(g){
+  if(!PIN_N) return null;
+  const H=T(g.h), A=T(g.a), kh=nickN(H.n), ka=nickN(A.n); let r=null;
+  PIN_N.juegos.forEach(x=>{ if(r!==null||Math.abs(Date.parse(x.t)-g.ts)>20*3600e3) return; const a=nickN(x.n[0]), b=nickN(x.n[1]); if(a===kh&&b===ka) r=x.ml[0]; else if(a===ka&&b===kh) r=x.ml[1]; });
+  return r;
+}
 function pinNba(g,pr){
   if(!PIN_N) return '';
   const H=T(g.h), A=T(g.a), kh=nickN(H.n), ka=nickN(A.n);
@@ -680,41 +686,39 @@ function resumenN(g,pr,H,A){
     (gap<=3&&favH===favM?'<span class="rvSig ok">✓ Modelo y mercado coinciden</span>':
     (gap<=7&&favH===favM?`<span class="rvSig mid">≈ Diferencia de ${gap.toFixed(0)} pts · confía más en el mercado</span>`:
     `<span class="rvSig bad">✗ Discrepan ${gap.toFixed(0)} pts · créele al mercado</span>`))+
-    (favH!==favM?`<div class="rvP" style="margin-top:7px">El modelo ve favorito a <b>${esc(favH?H.n:A.n)}</b> y el mercado a <b>${esc(nf)}</b>. Si no coinciden, el modelo casi siempre es el que falla: no sabe de lesiones.</div>`:'');
+    (favH!==favM?`<div class="rvP" style="margin-top:7px">Modelo: <b>${esc(favH?H.n:A.n)}</b>. Mercado: <b>${esc(nf)}</b>.</div>`:'');
   const main=`<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf>=0.6?esc(nf)+' gana · '+Math.round(pf*100)+'%':'Juego parejo'}</div>
    <div class="rvP">${pf>=0.6?'Es el favorito'+(hit!==null?' según el mercado (Pinnacle, sin margen).':' según el modelo.'):'Ninguno pasa del 60%. Lo más probable: '+esc(nf)+' '+Math.round(pf*100)+'%.'}</div>${sig}
-   <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si una casa paga más que la cuota justa: para <b>${esc(nf)}</b> es <b>${amTxt(pf)}</b>${hit!==null?' (precio justo del mercado)':' (del modelo, menos confiable)'}. Si paga menos, no hay valor. Pon aquí la que te pagan para comprobarlo:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(nf)}</label><input type="number" inputmode="decimal" data-vl="o" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${hit!==null?1:0}"><div class="rvVal" data-vl="r"></div></div></div>`;
+   <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amTxt(pf)}</b> por ${esc(nf)}${hit!==null?'':' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(nf)}</label><input type="number" inputmode="decimal" data-vl="o" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${hit!==null?1:0}"><div class="rvVal" data-vl="r"></div></div></div>`;
   const row=(n,m,k)=>`<div class="nm">${esc(n)} gana</div><div class="n">${pct1(m)}</div><div class="n mk">${k===null?'—':pct1(k)}</div><div class="n">${amTxt(k===null?m:k)}</div>`;
   const tab=`<div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n,1-pr.pH,hit===null?null:1-hit)}${row(H.n,pr.pH,hit)}</div>
-   <div class="nota" style="margin-top:6px">Mercado = Pinnacle sin su margen. Cuota justa: la del mercado si hay, si no la del modelo.</div>`;
-  const chips=`<div class="rvChips"><div>${esc(favH?H.ab:A.ab)}<small>por ${pmAbs.toFixed(1)} pts</small></div><div>Hándicap justo<small>${esc(favH?H.ab:A.ab)} ${fmtL(-Math.round(pmAbs*2)/2)}</small></div><div>Total justo<small>${(Math.round(pr.pt*2)/2).toFixed(1)}</small></div></div>
-   <div class="nota" style="margin-top:6px">Margen esperado del favorito del modelo y las líneas que pondría el modelo. Si la casa pone otra muy distinta, desconfía del modelo.</div>`;
+   <div class="nota" style="margin-top:6px">Mercado = Pinnacle sin su margen.</div>`;
+  const chips=`<div class="rvChips"><div>${esc(favH?H.ab:A.ab)}<small>por ${pmAbs.toFixed(1)} pts</small></div><div>Hándicap justo<small>${esc(favH?H.ab:A.ab)} ${fmtL(-Math.round(pmAbs*2)/2)}</small></div><div>Total justo<small>${(Math.round(pr.pt*2)/2).toFixed(1)}</small></div></div>`;
   const L=(c,t)=>`<div><i class="${c}">${c==='ok'?'✓':(c==='w'?'!':'✗')}</i><span>${t}</span></div>`;
   const li=[];
-  li.push(L('w','En 2,486 juegos medidos, la línea del mercado acertó más que el modelo. Por eso el mercado va primero y el modelo queda de referencia.'));
+  li.push(L('w','Medido en 2,486 juegos: el mercado acierta más que el modelo.'));
   if(hit!==null){ const mn=Math.max(0,Math.round((Date.now()-Date.parse(PIN_N.generado))/60000)); li.push(L('ok',`Precio de Pinnacle de hace ${mn<90?mn+' min':Math.round(mn/60)+' h'}.`)); }
-  else li.push(L('w','No hay precio de Pinnacle para este juego (puede que aún no lo publique).'));
-  li.push(pr.bH||pr.bA?L('ok','Back-to-back ya descontado en el modelo.'):L('ok','Ningún equipo juega en back-to-back.'));
+  else li.push(L('w','Sin precio de Pinnacle para este juego.'));
+  li.push(pr.bH||pr.bA?L('ok','Back-to-back: '+[pr.bA?A.n:'',pr.bH?H.n:''].filter(Boolean).map(esc).join(' y ')+' jugó ayer (ya descontado).'):L('ok','Sin back-to-back.'));
   if(g.pre) li.push(L('w','Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
-  li.push(L('x','El modelo no sabe de lesiones. Revisa la pestaña Forma y usa el ajuste manual de abajo si falta una estrella.'));
+  li.push(L('x','No sabe de lesiones: mira Forma y usa el ajuste manual de abajo.'));
   const go='<div class="rvGo"><div role="button" data-go="cuo">Cuotas ›</div><div role="button" data-go="num">Números ›</div><div role="button" data-go="for">Forma y lesiones ›</div></div>';
   return `<div class="rv"><h4>Pronóstico y pick</h4>${main}<h4>Modelo contra mercado</h4>${tab}<h4>Margen y líneas justas</h4>${chips}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div><h4>Cómo vienen los equipos</h4>${formaMini(g.a,A)}${formaMini(g.h,H)}${go}</div>`;
 }
 function pintarCuerpo(body,g){
   const pr=prediccion(g), H=T(g.h), A=T(g.a);
-  const favH=pr.pH>=0.5, pmAbs=Math.abs(pr.pm);
+  const pmk=pinPH(g), pS=(pmk!==null?pmk:pr.pH);      /* el héroe muestra el mercado cuando hay precio */
+  const favH=pS>=0.5, pmAbs=Math.abs(pr.pm);
   const ver=`
    <div class="hero">
-    <div class="side${favH?'':' fav'}"><img src="${esc(A.logo)}" alt="" onerror="this.style.display='none'"><span class="ab">${esc(A.ab)}</span><span class="pc">${pct1(1-pr.pH)}</span></div>
-    <div class="mid"><div class="gz">${ringSvg(1-pr.pH,pr.pH)}<div class="cx"><small>margen esperado</small><b>${esc(favH?H.ab:A.ab)} −${pmAbs.toFixed(1)}</b><small>total ${pr.pt.toFixed(1)}</small></div></div></div>
-    <div class="side${favH?' fav':''}"><img src="${esc(H.logo)}" alt="" onerror="this.style.display='none'"><span class="ab">${esc(H.ab)}</span><span class="pc">${pct1(pr.pH)}</span></div>
+    <div class="side${favH?'':' fav'}"><img src="${esc(A.logo)}" alt="" onerror="this.style.display='none'"><span class="ab">${esc(A.ab)}</span><span class="pc">${pct1(1-pS)}</span></div>
+    <div class="mid"><div class="gz">${ringSvg(1-pS,pS)}<div class="cx"><small>margen del modelo</small><b>${esc(pr.pH>=0.5?H.ab:A.ab)} −${pmAbs.toFixed(1)}</b><small>total ${pr.pt.toFixed(1)}</small></div></div></div>
+    <div class="side${favH?' fav':''}"><img src="${esc(H.logo)}" alt="" onerror="this.style.display='none'"><span class="ab">${esc(H.ab)}</span><span class="pc">${pct1(pS)}</span></div>
    </div>
-   <div class="bar"><span class="a" style="flex-grow:${Math.max(1-pr.pH,0.08)}">${pct1(1-pr.pH)}</span><span class="h" style="flex-grow:${Math.max(pr.pH,0.08)}">${pct1(pr.pH)}</span></div>
-   ${Math.max(pr.pH,1-pr.pH)>=0.6?`<div class="pick"><b>Según el modelo, favorito: ${esc(favH?H.n:A.n)}</b>${pct1(Math.max(pr.pH,1-pr.pH))} de ganar, por ${pmAbs.toFixed(1)} puntos de margen esperado.</div>`:`<div class="pick no"><b>Según el modelo: muy parejo</b>Ninguno pasa del 60% de probabilidad.</div>`}
-   <div class="kpi"><div><b>${esc(favH?H.ab:A.ab)} ${fmtL(-Math.round(pmAbs*2)/2)}</b><small>Hándicap justo</small></div><div><b>${(Math.round(pr.pt*2)/2).toFixed(1)}</b><small>Total justo</small></div><div><b>${amTxt(favH?pr.pH:1-pr.pH)}</b><small>Cuota justa fav.</small></div></div>
+   <div class="bar"><span class="a" style="flex-grow:${Math.max(1-pS,0.08)}">${pct1(1-pS)}</span><span class="h" style="flex-grow:${Math.max(pS,0.08)}">${pct1(pS)}</span></div>
+   <div class="nota" style="margin:6px 0 0;text-align:center">${pmk!==null?'Probabilidades del mercado (Pinnacle)':'Probabilidades del modelo (sin precio de mercado)'}</div>
    ${resumenN(g,pr,H,A)}
    ${g.odds?mercadoHtml(g,pr,H,A):''}
-   ${(pr.bH||pr.bA)?`<div class="aviso">⏱ Back-to-back: ${[pr.bA?A.n:'',pr.bH?H.n:''].filter(Boolean).map(esc).join(' y ')} jugó ayer (el modelo ya lo descuenta).</div>`:''}
    ${g.pre?'<div class="aviso">🧪 Pretemporada: los equipos rotan jugadores y no cuentan para los ratings; toma estos números con mucha cautela.</div>':''}
    <h3>Ajuste manual (lesiones)</h3>
    <div class="ajuste"><div><label>${esc(A.ab)} (pts, ej. −4)</label><input type="number" step="0.5" data-k="adjA" value="${g.adjA||0}"></div><div><label>${esc(H.ab)} (pts, ej. −4)</label><input type="number" step="0.5" data-k="adjH" value="${g.adjH||0}"></div></div>
@@ -728,7 +732,6 @@ function pintarCuerpo(body,g){
   g._rank={};
   const cuo=`
    <div class="rankbox" data-k="rank"></div>
-   ${pinNba(g,pr)}
    <h3>Moneyline</h3>${confTxt('win')}
    <div class="cuotasbox"><div class="fila">
      <div><label>Cuota ${esc(A.ab)}</label><input type="number" data-k="mlA" value="${g.odds&&g.odds.mlA||''}" placeholder="+150"></div>
