@@ -25,6 +25,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="interior.js"></script>
 <script src="interior2.js"></script>
+<script src="ovaedge.js"></script>
 <style>
 /* Tema Papel. Lo que cambia frente a la v22 son los dos grises de texto y la
    separacion entre el fondo y las tarjetas. Medido con la formula de contraste
@@ -997,7 +998,7 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v65</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v66</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -2646,8 +2647,13 @@ function pintarRegistro(){
   o+='<div class="'+(R.roi==null?'':(R.roi>0?'g':'p'))+'"><b>'+
       (R.roi==null?'—':(R.roi>0?'+':'')+R.roi.toFixed(1)+'%')+'</b><span>ROI en '+R.jugados+' resueltos</span></div>';
   o+='</div>';
+  var TCLV=(typeof OVAEdge!=='undefined'&&R.clvN>1)?
+    OVAEdge.summarizeCLV(a.map(clvPts).filter(function(x){ return x!=null; })):null;
   if(R.clvN>0&&R.clvN<25)
     o+='<div class="flag">Con '+R.clvN+' picks el CLV todavía no dice nada firme. A partir de 30 o 40 empieza a tener lectura.</div>';
+  else if(R.clvProm!=null&&R.clvProm>0&&TCLV&&TCLV.t<2)
+    o+='<div class="flag">CLV positivo (+'+R.clvProm.toFixed(1)+' pts) pero todavía dentro del ruido: t = '+TCLV.t.toFixed(1)+
+       ' y hace falta 2 para separarlo de la suerte. Sigue anotando los cierres.</div>';
   else if(R.clvProm!=null&&R.clvProm>0)
     o+='<div class="flag">CLV positivo: tu número le está ganando al mercado. Eso vale más que el resultado de la semana — sigue aunque estés perdiendo.</div>';
   else if(R.clvProm!=null&&R.clvProm<=0)
@@ -2702,6 +2708,16 @@ function pintarRegistro(){
          c.real.toFixed(0)+'%</td><td class="n">'+c.n+'</td></tr>';
     });
     o+='</table><div class="flag">Si lo que dices queda muy por encima de lo que pasa, tu modelo viene inflado.</div>';
+    if(typeof OVAEdge!=='undefined'){
+      var prB=[], ouB=[];
+      a.forEach(function(p){ if(p.res==='G'||p.res==='P'){ prB.push(p.p/100); ouB.push(p.res==='G'?1:0); } });
+      if(prB.length>=10){
+        var bsB=OVAEdge.brier(prB,ouB), skB=OVAEdge.brierSkill(prB,ouB);
+        o+='<div class="flag">Brier '+bsB.toFixed(3)+' en '+prB.length+' resueltos (0.250 es tirar una moneda; más bajo es mejor). '+
+           (skB>0?'Mejor':'Peor')+' que decir siempre la frecuencia con que ganan tus picks: '+(skB>0?'+':'')+(skB*100).toFixed(1)+'%.'+
+           (prB.length<100?' Con menos de 100 resueltos no concluye nada.':'')+'</div>';
+      }
+    }
   }
   res.innerHTML=o;
 
@@ -3000,6 +3016,43 @@ function actualizarRanking(root){
   });
 }
 
+/* ---------- chequeo contra el mercado (ovaedge.js) ----------
+   No cambia el veredicto de arriba: lo contrasta. Mezcla tu número con el del mercado
+   (el mismo "sin vig" que muestra la tabla de arriba) con el peso que midió tu propio backtest contra el cierre de
+   DraftKings: el modelo pesa 0.24 ± 0.28 sobre ~6,200 juegos y no le gana al mercado
+   (docs/MEDICION-MERCADO-MLB-2026-10.md). Si todavía hay valor con la mezcla, es creíble. */
+var W_MODELO=0.24;
+function chequeoMercado(lados,amA,amH){
+  if(PLATA==='kalshi'||typeof OVAEdge==='undefined') return '';
+  var nums=[numOdds(amA),numOdds(amH)];
+  if(!isFinite(nums[0])||!isFinite(nums[1])) return '';
+  var bk=banca(), cs=[];
+  for(var i=0;i<2;i++){
+    var pm=lados[i].fair/100, mix=OVAEdge.blend(lados[i].p,pm,W_MODELO);
+    var k=OVAEdge.kelly({p:mix, american:nums[i], se:0, cap:1});
+    cs.push({n:lados[i].n, pm:pm*100, pt:lados[i].p*100, mix:mix*100, ev:k.ev,
+             stake:(bk&&k.stake>0)?bk*k.stake:null});
+  }
+  var best=(cs[0].ev>=cs[1].ev)?cs[0]:cs[1];
+  var sigue=best.ev>0;
+  var o='<details class="comoLee"><summary>Chequeo contra el mercado · '+
+        (sigue?'con la mezcla sigue habiendo valor':'con la mezcla ya no hay valor')+'</summary>';
+  o+='<table><tr><th></th><th>'+esc(cs[0].n)+'</th><th>'+esc(cs[1].n)+'</th></tr>'+
+     '<tr><td>El mercado cree (sin vig)</td><td class="n">'+cs[0].pm.toFixed(1)+'%</td><td class="n">'+cs[1].pm.toFixed(1)+'%</td></tr>'+
+     '<tr><td>Tu número</td><td class="n">'+cs[0].pt.toFixed(1)+'%</td><td class="n">'+cs[1].pt.toFixed(1)+'%</td></tr>'+
+     '<tr class="usa"><td>Mezcla ('+Math.round(W_MODELO*100)+'% tu número)</td><td class="n">'+cs[0].mix.toFixed(1)+'%</td><td class="n">'+cs[1].mix.toFixed(1)+'%</td></tr>'+
+     '<tr><td>EV con la mezcla</td><td class="n">'+(cs[0].ev>=0?'+':'')+(cs[0].ev*100).toFixed(1)+'%</td><td class="n">'+(cs[1].ev>=0?'+':'')+(cs[1].ev*100).toFixed(1)+'%</td></tr>'+
+     '</table>';
+  o+= sigue
+    ? '<div class="flag">Aun mezclado con el mercado, '+esc(best.n)+' sale con EV de +'+(best.ev*100).toFixed(1)+
+      '% por dólar. Eso se cree más que el número de arriba'+
+      (best.stake?' · ¼ Kelly con la mezcla $'+best.stake.toFixed(2)+' (el de arriba usa tu número sin mezclar)':'')+'.</div>'
+    : '<div class="flag">Tu propia medición (≈6,200 juegos de 2024 a 2026) dice que el modelo casi no agrega nada al precio de cierre. '+
+      'Mezclado con el mercado en esa proporción, ningún lado paga lo suficiente: la ventaja de arriba probablemente es ruido. '+
+      'Antes de apostar, busca algo que el mercado no sepa (lineup, lesión, cambio de abridor).</div>';
+  return o+'</details>';
+}
+
 /* ---------- veredicto por EV ---------- */
 function veredictoEV(pA,pH,amA,amH,nomA,nomH,vc){
   var dv=devig(amA,amH);
@@ -3067,6 +3120,7 @@ function veredictoEV(pA,pH,amA,amH,nomA,nomH,vc){
   if(vc!=null&&vc<CORTE_GRIS&&best.ev>0) o+='<div class="flag">Ojo: la ventaja en carreras es de solo '+
      vc.toFixed(2)+', por debajo de tu corte de '+CORTE_GRIS.toFixed(2)+'. Hay valor contra la cuota pero el modelo está '+
      'partiendo de un margen muy fino.</div>';
+  if(best.ev<=EV_IMPOSIBLE) o+=chequeoMercado(lados,amA,amH);
   return o;
 }
 

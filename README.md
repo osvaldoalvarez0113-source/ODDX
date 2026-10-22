@@ -15,6 +15,7 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 | `nba.html` | App de **NBA**: rating tipo Elo de margen, márgenes y totales. |
 | `panel.html` | Panel de respaldo y resumen del día. No está enlazado desde el hub a propósito. |
 | `sw.js`, `manifest.json`, `icon-*.png` | Service worker (red primero, sin internet usa copia), manifest e iconos de la app instalada. |
+| `ovaedge.js` | Matemática de apuestas en un solo archivo, sin dependencias (`window.OVAEdge`): quitar el vig (Shin, power, multiplicativo), Kelly fraccional con margen de error, CLV contra el cierre sin vig y su prueba t, calibración (Brier, Platt, isotónica) y Monte Carlo del juego (ML, hándicap, totales, carreras por equipo y F5 de una sola simulación). En MLB lo usan el **Chequeo contra el mercado** del Veredicto (plegado) y, en Mis picks, la prueba t del CLV y el Brier. El Monte Carlo **no** está conectado a ningún cálculo: coincide con `matriz()` (ver `docs/MEDICION-OVAEDGE-2026-10.md`). |
 | `ovaextra.js` | Respaldo de picks en IndexedDB, exportar/importar y resumen «Hoy». Lo cargan las cinco páginas. |
 | `interior2.js` | Diez diseños con cabecera propia: **Historias** (un juego por pantalla, se desliza de lado), **Duelo** (cartelera de pelea en diagonal), **Bento** (recuadros de colores y resumen), **Agenda** (línea de tiempo con AHORA), **Radar de valor** (mapa del día de burbujas), **Cromos** (carta coleccionable con borde holográfico), **Campo** (el juego sobre el diamante), **Telemetría** (aguja de probabilidad y letra de máquina), **Marcador** (fichas que giran, ámbar sobre negro) y **Recibo** (recibo de caja con sello y código de barras). Leen las tarjetas con `OVALeerJuego` (`diseno.js`), no calculan nada. |
 | `ajustes.js` | **Ajustes de MLB como menú**: Apariencia, Modelo y apuestas, Cálculo a mano y Cómo funciona, cada uno en su ventana con «‹ Ajustes» para volver. Mueve los bloques que ya existen (no los recrea), así que ningún ajuste ni cálculo cambia. En fútbol y NBA, Ajustes → Apariencia abre la hoja 🎨. Dentro de Apariencia hay dos pestañas: **Diseño de adentro** (18 diseños en 3 categorías) y **Tema de color**. |
@@ -63,6 +64,7 @@ Revisa sintaxis de todas las páginas, nombres usados sin existir, el service wo
 | `ENCOGE` | 0.45 | backtest del total (pendiente medida 0.45 en 2026 y 0.44 en 2025) |
 | `F5_FRAC` | 0.56 | `backtests/backtestequipo.html` (0.558 y 0.562) |
 | Tope de probabilidad | 22 % - 78 % | |
+| `W_MODELO` | 0.24 | peso del modelo al mezclarlo con el mercado en el Chequeo del Veredicto (`docs/MEDICION-MERCADO-MLB-2026-10.md`: 0.24 ± 0.28, ~6,200 juegos) |
 
 Las páginas de `backtests/` y `scripts/ova_formula.py` **replican** estas constantes. Si cambias una en `index.html`, cámbiala allí también o los números dejarán de coincidir.
 

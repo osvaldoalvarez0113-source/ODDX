@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html'];
-const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','sw.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','sw.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -52,7 +52,7 @@ else{
   const tops=new Set(),res=[];
   src.forEach(([l,s])=>{const r=analizar(s);res.push([l,r]);r.top.forEach(t=>tops.add(t));r.sets.forEach(t=>tops.add(t));});
   const ids=new Set();let m;const rid=/\bid="([^"]+)"/g;while((m=rid.exec(h)))ids.add(m[1]);
-  const FALSOS=new Set(['OVASkins','OVAHoy','OVARespaldo','OVACLV']);   /* se crean con window.X y están protegidos con typeof */
+  const FALSOS=new Set(['OVASkins','OVAHoy','OVARespaldo','OVACLV','OVAEdge']);   /* se crean con window.X y están protegidos con typeof */
   const mal=new Map();
   res.forEach(([l,r])=>r.refs.forEach(([n,line,sc])=>{if(sc.has(n)||tops.has(n)||BROWSER.has(n)||ids.has(n)||FALSOS.has(n))return;if(!mal.has(n))mal.set(n,l+':'+line);}));
   ok(app+' sin nombres inexistentes',mal.size===0,[...mal].map(([n,w])=>n+' ('+w+')').join(', '));
@@ -918,6 +918,51 @@ sec('Cierre automático (cierre.js): CLV sin escribir la cuota a mano');
  ok('MLB: la ofensiva de 14 días suma los cinco tipos de juego (la API de equipos pide uno a la vez), recalcula el OPS y se amplía a 28 días si hay menos de 5 juegos',/function ofensivaVentana/.test(ix)&&/TIPOS_LISTA\.map/.test(ix)&&/ventana\(28\)/.test(ix)&&/function dias14\(x\)/.test(ix));
  globalThis.fetch=guardaF; if(guardaL===undefined) delete globalThis.localStorage; else globalThis.localStorage=guardaL;
 };
+
+sec('ovaedge.js: vig, Kelly, CLV, calibración y Monte Carlo, y su chequeo en el Veredicto de MLB');
+{
+ const E=require(path.join(__dirname,'ovaedge.js')), cl=(a,b,t)=>Math.abs(a-b)<=t;
+ ['mult','power','shin'].forEach(m=>{const r=E.devig([-150,130],m);ok('devig '+m+': los dos lados suman 1 y el favorito queda cerca de 58%',cl(r.probs[0]+r.probs[1],1,1e-9)&&r.probs[0]>0.57&&r.probs[0]<0.59);});
+ ok('devig -110/-110 da 50/50 con los tres métodos',['mult','power','shin'].every(m=>cl(E.devig([-110,-110],m).probs[0],0.5,1e-9)));
+ ok('devig de tres lados (1X2) suma 1',cl(E.devig([-200,150,900],'shin').probs.reduce((a,b)=>a+b,0),1,1e-9));
+ ok('Kelly: p 55% a +100 sin margen = 10%; con margen de 3.5 pts y ¼ queda 0.75%',cl(E.kelly({p:.55,american:100,se:0,fraction:1,cap:1}).stake,.10,1e-9)&&cl(E.kelly({p:.55,american:100}).stake,.0075,1e-4));
+ ok('Kelly no apuesta cuando la ventaja cabe dentro del margen de error',E.kelly({p:.52,american:-110}).stake===0);
+ ok('Kelly con push coincide con el máximo de crecimiento calculado a mano',(()=>{const b=E.amToDec(-110)-1,pw=.5,pp=.1,q=.4;let best=0,bg=-1e9;for(let f=0;f<.9;f+=.00001){const g=pw*Math.log(1+f*b)+q*Math.log(1-f);if(g>bg){bg=g;best=f;}}return cl(E.kelly({p:pw,american:-110,pPush:pp,se:0,fraction:1,cap:1}).stake,best,1e-4);})());
+ ok('CLV: +110 que cierra +100/-120 vale más que el cierre; -130 que cierra -110/-110 vale menos',E.evVsClose(110,100,-120).evVsClose>0&&E.evVsClose(-130,-110,-110).evVsClose<0);
+ ok('summarizeCLV: media, t y aviso de muestra chica',(()=>{const s=E.summarizeCLV([.02,.01,-.01,.03,0,.02]);return s.n===6&&cl(s.mean,.0116667,1e-6)&&s.lectura==='muy pocos picks';})());
+ {
+  let a=7;const r=()=>(a=(a*1664525+1013904223)%4294967296)/4294967296,pr=[],ou=[];
+  for(let i=0;i<4000;i++){const t=.35+.3*r();pr.push(Math.min(.95,Math.max(.05,.5+(t-.5)*2.2)));ou.push(r()<t?1:0);}
+  const pl=E.plattFit(pr,ou),iso=E.isotonicFit(pr,ou),b0=E.brier(pr,ou);
+  ok('Platt e isotónica mejoran el Brier de un modelo sobreconfiado y la isotónica nunca baja',E.brier(pr.map(pl.apply),ou)<b0&&E.brier(pr.map(iso.apply),ou)<b0&&iso.ys.every((y,i)=>i===0||y>=iso.ys[i-1]-1e-12));
+ }
+ {
+  const s=E.simulateGame({muHome:4.5,muAway:4.5,n:100000,seed:1}), s2=E.simulateGame({muHome:4.5,muAway:4.5,n:100000,seed:1}), g=E.simulateGame({muHome:4.8,muAway:4.2,n:60000,seed:5});
+  ok('Monte Carlo: equipos iguales dan ~50%, la media de carreras cae en mu y la misma semilla repite el resultado',cl(s.pHome,.5,.01)&&cl(s.meanHome,4.5,.08)&&s.pHome===s2.pHome);
+  ok('Monte Carlo: run line −1.5 y +1.5 suman 1, el total 8.5 no tiene push y F5 suma 1 con 3 lados',cl(g.spread('home',-1.5).win+g.spread('away',1.5).win,1,1e-9)&&g.total(8.5).push===0&&cl(g.f5().home+g.f5().away+g.f5().tie,1,1e-9));
+  ok('Monte Carlo cerca de Pythagenpat (5.0 vs 4.0)',cl(E.simulateGame({muHome:5,muAway:4,n:100000,seed:3}).pHome,E.pythagenpat(5,4),.02));
+ }
+ ok('Monte Carlo (equipos independientes, 9 entradas) coincide con la binomial negativa de la app dentro de 1 punto: Over 9.5 y «gana por 2+»',(()=>{
+  const DISP=2.3,pm=(k,l)=>{const r=l/(DISP-1),q=l/(r+l);let b=Math.pow(r/(r+l),r);for(let j=1;j<=k;j++)b=b*(j-1+r)/j*q;return b;};
+  const mh=4.8,ma=4.2,A=[],H=[];for(let i=0;i<=25;i++){A[i]=pm(i,ma);H[i]=pm(i,mh);}
+  let over=0,dos=0;for(let x=0;x<=25;x++)for(let y=0;y<=25;y++){if(x+y>9.5)over+=A[x]*H[y];if(y-x>=2)dos+=A[x]*H[y];}
+  const m=E.simulateGame({muHome:mh,muAway:ma,n:200000,seed:1,kc:1e7,kt:4.5/(DISP-1),meanFix:1,noExtras:true});
+  return cl(m.total(9.5).over,over,.01)&&cl(m.spread('home',-1.5).win,dos,.01);
+ })());
+ const ix=rd('index.html');
+ ok('index.html carga ovaedge.js en la cabecera (antes del <style>) y el service worker lo guarda',ix.indexOf('src="ovaedge.js"')>0&&ix.indexOf('src="ovaedge.js"')<ix.indexOf('<style>')&&/'ovaedge\.js'/.test(rd('sw.js')));
+ {
+  const nI=ix.indexOf('function numOdds'), nF=ix.indexOf('function precioK'), cI=ix.indexOf('var W_MODELO='), cF=ix.indexOf('/* ---------- veredicto por EV');
+  ok('el código del chequeo se encontró en index.html',nI>0&&nF>nI&&cI>0&&cF>cI);
+  const mk=(plata,conE)=>{const c={PLATA:plata,banca:()=>1000,esc:s=>String(s)};if(conE)c.OVAEdge=E;vm.createContext(c);vm.runInContext(ix.slice(nI,nF)+ix.slice(cI,cF),c);return c;};
+  const L=p=>[{n:'Visita',p:p,fair:50},{n:'Local',p:1-p,fair:50}];
+  const bajo=mk('book',true).chequeoMercado(L(.55),'-110','-110'), alto=mk('book',true).chequeoMercado(L(.70),'-110','-110');
+  ok('Veredicto: con 55% contra un mercado 50/50 la mezcla borra la ventaja ("ya no hay valor")',/Chequeo contra el mercado/.test(bajo)&&/ya no hay valor/.test(bajo)&&!/sigue habiendo valor/.test(bajo));
+  ok('Veredicto: con 70% la mezcla queda en 55.1%, sigue habiendo valor y da ¼ Kelly en dólares',/sigue habiendo valor/.test(alto)&&/55\.1%/.test(alto)&&/¼ Kelly con la mezcla \$/.test(alto));
+  ok('Veredicto: va plegado (details) y no se muestra en Kalshi, sin ovaedge.js ni con cuotas inválidas',/^<details class="comoLee">/.test(alto)&&mk('kalshi',true).chequeoMercado(L(.7),'64','40')===''&&mk('book',false).chequeoMercado(L(.7),'-110','-110')===''&&mk('book',true).chequeoMercado(L(.7),'abc','-110')==='');
+ }
+ ok('Mis picks: el CLV positivo con t < 2 se dice "dentro del ruido" y la calibración muestra Brier',/todavía dentro del ruido/.test(ix)&&/OVAEdge\.brierSkill/.test(ix)&&/OVAEdge\.summarizeCLV/.test(ix));
+}
 
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
