@@ -128,6 +128,12 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 .rvFm b{flex:0 0 auto;max-width:42%;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rvFm .forma{margin:0}
 .rvGo{display:flex;gap:7px;margin-top:14px}
+.rvIn{margin-top:10px}
+.rvIn label{display:block;font-size:11.5px;color:var(--mut);font-weight:700;margin-bottom:4px}
+.rvIn input{width:100%;padding:10px 12px;font-size:16px;border-radius:var(--r);border:1px solid var(--line2);background:var(--bg1);color:var(--txt)}
+.rvVal{margin-top:8px;font-size:13px;line-height:1.45;border-radius:var(--r);padding:0}
+.rvVal b{font-weight:800}
+.rvVal.ok{color:var(--good)}.rvVal.no{color:var(--bad)}
 .rvGo div{flex:1;text-align:center;border:1px solid var(--line2);border-radius:var(--r);padding:9px 4px;font-size:12.5px;font-weight:700;color:var(--mut);cursor:pointer}
 
 /* tabla de posiciones mini */
@@ -2004,7 +2010,8 @@ function resumenVeredictoF(p, base, id){
     else sig = '<span class="rvSig bad">✗ Discrepan '+mx.toFixed(0)+' pts en «'+txtRes(mi)+'» · créele al mercado</span>';
     if(!mismo) sig += '<div class="rvP" style="margin-top:7px">El modelo ve favorito a <b>'+txtRes(bm)+'</b> ('+pc0(mod[bm])+') y el mercado a <b>'+txtRes(best)+'</b> ('+pc0(f[best])+'). Si no coinciden, el modelo casi siempre es el que falla: no sabe de lesiones ni de alineaciones.</div>';
   } else sig = '<span class="rvSig mid">! Sin precios del mercado para este partido: pronóstico solo del modelo</span>';
-  var pick = '<div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si una casa paga más que la cuota justa: para <b>'+txtRes(best)+'</b> es <b>'+cj(fuente[best])+'</b>'+(f?' (precio justo del mercado)':' (del modelo, menos confiable)')+'. Si paga menos, no hay valor. Mete la cuota en la pestaña Cuotas para comprobarlo.</div>';
+  var pick = '<div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si una casa paga más que la cuota justa: para <b>'+txtRes(best)+'</b> es <b>'+cj(fuente[best])+'</b>'+(f?' (precio justo del mercado)':' (del modelo, menos confiable)')+'. Si paga menos, no hay valor. Pon aquí la que te pagan para comprobarlo:</div>'+
+    '<div class="rvIn"><label>Cuota que te pagan por '+escR(txtRes(best))+'</label><input type="number" inputmode="decimal" id="'+id+'vlO" placeholder="-150 ó 37¢" data-p="'+fuente[best]+'" data-m="'+(f?'1':'0')+'"><div class="rvVal" id="'+id+'vlR"></div></div>';
   var main = '<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">'+escR(h)+'</div><div class="rvP">'+escR(sub)+'</div>'+sig+pick+'</div>';
 
   var cell = function(v){ return v===null||v===undefined ? '<div class="n">—</div>' : '<div class="n">'+pc(v)+'</div>'; };
@@ -2186,6 +2193,17 @@ function pintarGameBody(bodyEl, p, eL, eV){
 
   pintarForma(id+'rfL', p.local);
   pintarForma(id+'rfV', p.visita);
+  (function(){
+    var vi = document.getElementById(id+'vlO'), vr = document.getElementById(id+'vlR'); if(!vi||!vr) return;
+    vi.addEventListener('input', function(){
+      var odd = normalizarEntradaCuota(vi.value), p = parseFloat(vi.getAttribute('data-p')), fm = vi.getAttribute('data-m')==='1';
+      if(odd===null){ vr.textContent=''; vr.className='rvVal'; return; }
+      var dec = odd>0 ? odd/100+1 : 100/(-odd)+1, ev = p*dec-1, imp = impProb(odd), dif = (p-imp)*100;
+      var just = cuotaJustaAmericana(p), jt = just===null?'—':(just>0?'+':'')+just;
+      if(ev>0){ vr.className='rvVal ok'; vr.innerHTML='✓ <b>Hay valor:</b> te pagan más que la cuota justa ('+jt+'). Ganancia esperada: +'+(ev*100).toFixed(1)+'% por cada $1 ('+dif.toFixed(1)+' pts de ventaja).'+(fm?'':' Ojo: sale del modelo, que no le gana al mercado; desconfía.'); }
+      else { vr.className='rvVal no'; vr.innerHTML='✗ <b>No hay valor:</b> la cuota justa es '+jt+' y esta paga menos. Pérdida esperada: '+(ev*100).toFixed(1)+'% por cada $1.'; }
+    });
+  })();
   bodyEl.querySelectorAll('.rvGo div').forEach(function(b){
     b.addEventListener('click', function(e){ e.stopPropagation(); var t = bodyEl.querySelector('#'+id+'tabs .tb[data-t="'+b.getAttribute('data-go')+'"]'); if(t) t.click(); });
   });
