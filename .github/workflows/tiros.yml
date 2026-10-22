@@ -1,0 +1,40 @@
+name: Futbol tiros a puerta
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [experimento-tiros]
+
+permissions:
+  contents: write
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      TEMPS_FUTBOL: "1819,1920,2021,2122,2223,2324,2425,2526"
+      TUNE_FUTBOL: "1920"
+      PRE_FUTBOL: "1819"
+      VOLCAR_PARTIDOS: "1"
+      TIROS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr el backtest de futbol (6 temporadas de prueba)
+        run: node scripts/correr_deportes.js futbol 2>&1 | tee resultado_tiros.txt
+      - name: Guardar el resultado en la rama resultados-tiros
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f resultado_tiros.txt resultado_futbol.json partidos_futbol.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-tiros
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado futbol 6 temporadas" || true
+          git push -f origin resultados-tiros
