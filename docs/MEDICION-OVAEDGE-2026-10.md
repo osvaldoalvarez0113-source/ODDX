@@ -19,6 +19,10 @@ Si el EV de tu número es positivo pero **desaparece al mezclarlo con el mercado
 («Si lo juegas igual: ¼ Kelly…») y la decisión es tuya. «Margen mínimo», «Sin apuesta» y el aviso de «precio imposible» no cambian.
 Sin `ovaedge.js` el titular es el de antes.
 
+> **Actualización v68:** la prueba de 3 temporadas (`MEDICION-PICKS-APP-2026-10.md`) mostró que «Valor dudoso» **no** rinde peor que «Valor fuerte/moderado»
+> (-0.2% contra -0.4%): la etiqueta es honesta pero no predice mejor resultado. Lo que sí quedó demostrado es que el stake sobre el número crudo hundía la banca,
+> así que en v68 el ¼ Kelly sale de esta mezcla en todos los mercados y «Valor dudoso» ya no sugiere stake.
+
 Con cuotas parejas (-110/-110) la ventaja sobrevive a la mezcla desde ~60% (≈10 puntos sobre el mercado); con un favorito
 -150/+130, desde ~65%. Por debajo de eso, «dudoso». Si algún día el backtest sube el peso del modelo (en 2026 salió 0.54, pero el
 promedio de tres temporadas es 0.24 ± 0.28), se cambia `W_MODELO` en `index.html` y el titular se mueve solo.

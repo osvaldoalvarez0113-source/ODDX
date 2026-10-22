@@ -952,28 +952,43 @@ sec('ovaedge.js: vig, Kelly, CLV, calibración y Monte Carlo, y su chequeo en el
  const ix=rd('index.html');
  ok('index.html carga ovaedge.js en la cabecera (antes del <style>) y el service worker lo guarda',ix.indexOf('src="ovaedge.js"')>0&&ix.indexOf('src="ovaedge.js"')<ix.indexOf('<style>')&&/'ovaedge\.js'/.test(rd('sw.js')));
  {
-  const nI=ix.indexOf('function numOdds'), nF=ix.indexOf('function precioK'), cI=ix.indexOf('var W_MODELO='), cF=ix.indexOf('/* ---------- veredicto por EV');
+  const nI=ix.indexOf('function numOdds'), nF=ix.indexOf('function precioK'), cI=ix.indexOf('function mezclaMercado'), cF=ix.indexOf('/* ---------- veredicto por EV');
   ok('el código del chequeo se encontró en index.html',nI>0&&nF>nI&&cI>0&&cF>cI);
-  const mk=(plata,conE)=>{const c={PLATA:plata,banca:()=>1000,esc:s=>String(s)};if(conE)c.OVAEdge=E;vm.createContext(c);vm.runInContext(ix.slice(nI,nF)+ix.slice(cI,cF),c);return c;};
-  const L=p=>[{n:'Visita',p:p,fair:50},{n:'Local',p:1-p,fair:50}];
+  const mk=(plata,conE)=>{const c={PLATA:plata,W_MODELO:0.24,banca:()=>1000,esc:s=>String(s)};if(conE)c.OVAEdge=E;vm.createContext(c);vm.runInContext(ix.slice(nI,nF)+ix.slice(cI,cF),c);return c;};
+  const L=p=>[{n:'Visita',p:p,fair:50,stakeCrudo:25},{n:'Local',p:1-p,fair:50,stakeCrudo:0}];
   const bajo=mk('book',true).chequeoMercado(L(.55),'-110','-110'), alto=mk('book',true).chequeoMercado(L(.70),'-110','-110');
   ok('Veredicto: con 55% contra un mercado 50/50 la mezcla borra la ventaja ("ya no hay valor")',/Chequeo contra el mercado/.test(bajo)&&/ya no hay valor/.test(bajo)&&!/sigue habiendo valor/.test(bajo));
-  ok('Veredicto: con 70% la mezcla queda en 55.1%, sigue habiendo valor y da ¼ Kelly en dólares',/sigue habiendo valor/.test(alto)&&/55\.1%/.test(alto)&&/¼ Kelly con la mezcla \$/.test(alto));
+  ok('Veredicto: con 70% la mezcla queda en 55.1%, sigue habiendo valor y da ¼ Kelly en dólares',/sigue habiendo valor/.test(alto)&&/55\.1%/.test(alto)&&/El ¼ Kelly de arriba ya sale de esta mezcla \(\$/.test(alto)&&/con tu número sin mezclar saldría \$25\.00/.test(alto));
   ok('Veredicto: va plegado (details) y no se muestra en Kalshi, sin ovaedge.js ni con cuotas inválidas',/^<details class="comoLee">/.test(alto)&&mk('kalshi',true).chequeoMercado(L(.7),'64','40')===''&&mk('book',false).chequeoMercado(L(.7),'-110','-110')===''&&mk('book',true).chequeoMercado(L(.7),'abc','-110')==='');
  }
  {
   const a=ix.indexOf('function devig(amA,amH)'), b=ix.indexOf('function contexto('), iI=ix.indexOf('function implied(v)'), iF=ix.indexOf('\n}\n',iI)+3;
-  const base="var PLATA='book',EV_IMPOSIBLE=0.20,CORTE_GRIS=0.50;\nfunction banca(){return 1000;}\nfunction decimal(am){ return am>0 ? am/100 : 100/(-am); }\n"+ix.slice(iI,iF)+ix.slice(a,b);
+  const vI=ix.indexOf('function valor('), vF=ix.indexOf('function txtValor(');
+  const base="var PLATA='book',EV_IMPOSIBLE=0.20,CORTE_GRIS=0.50,KFEE=0.07,W_MODELO=0.24;\nfunction banca(){return 1000;}\nfunction decimal(am){ return am>0 ? am/100 : 100/(-am); }\n"+ix.slice(iI,iF)+ix.slice(vI,vF)+ix.slice(a,b);
   const mkV=conE=>{const c={esc:s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'),KFEE:0.07};if(conE)c.OVAEdge=E;vm.createContext(c);vm.runInContext(base,c);return (pA,aA,aH)=>vm.runInContext('veredictoEV('+pA+','+(100-pA)+',"'+aA+'","'+aH+'","Visita","Local",1.3)',c);};
   const V=mkV(true), V0=mkV(false), txt=h=>h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ');
   const dud=V(57,'-110','-110'), fuerte=V(62,'-110','-110'), minimo=V(54,'-110','-110'), sinE=V0(57,'-110','-110');
-  ok('Veredicto: 57% contra un mercado 50/50 (+4.6 pts) pasa de «moderado» a «Valor dudoso», en gris, con ¼ Kelly de tu número a la vista (no se veta)',/Valor dudoso en Visita/.test(dud)&&/class="pick no"/.test(dud)&&/Si lo juegas igual: ¼ Kelly con tu número \$/.test(txt(dud))&&!/Valor moderado/.test(dud));
+  ok('Veredicto: 57% contra un mercado 50/50 (+4.6 pts) pasa de «moderado» a «Valor dudoso», en gris, SIN stake sugerido (no se veta: sigue siendo tu decisión)',/Valor dudoso en Visita/.test(dud)&&/class="pick no"/.test(dud)&&/no te sugiere stake/.test(txt(dud))&&!/¼ Kelly \$/.test(txt(dud).split('Chequeo')[0])&&!/Valor moderado/.test(dud));
   ok('Veredicto: 62% (+9.6 pts) aguanta la mezcla y se queda en «Valor fuerte» con su Chequeo plegado',/Valor fuerte en Visita/.test(fuerte)&&!/Valor dudoso/.test(fuerte)&&/sigue habiendo valor/.test(fuerte));
   ok('Veredicto: el margen mínimo (<2 pts) y el EV negativo no cambian',/Margen mínimo/.test(minimo)&&/Sin apuesta/.test(V(50,'-110','-110')));
   ok('Veredicto: si ovaedge.js no cargó, el titular es el de siempre («Valor moderado») y no truena',/Valor moderado en Visita/.test(sinE)&&!/Chequeo contra el mercado/.test(sinE));
   ok('Veredicto: el precio imposible (EV > 20%) sigue siendo alerta, sin chequeo',/Ese precio no puede ser/.test(V(70,'-110','-110'))&&!/Chequeo contra el mercado/.test(V(70,'-110','-110')));
   ok('Veredicto: las etiquetas HTML quedan balanceadas (details y tablas) en todos los casos',[dud,fuerte,minimo,sinE].every(h=>(h.match(/<details/g)||[]).length===(h.match(/<\/details>/g)||[]).length&&(h.match(/<table>/g)||[]).length===(h.match(/<\/table>/g)||[]).length));
   ok('La nota «Cómo funciona» trae la guía de 30 segundos del Veredicto',/Cómo leer el Veredicto en 30 segundos/.test(ix)&&/Valor dudoso/.test(ix.slice(ix.indexOf('Cómo leer el Veredicto en 30 segundos'),ix.indexOf('Datos: MLB Stats API')+50)));
+  {
+   const mkC=conE=>{const c={esc:s=>String(s),KFEE:0.07};if(conE)c.OVAEdge=E;vm.createContext(c);vm.runInContext(base,c);return c;};
+   const cE=mkC(true), cN=mkC(false);
+   const val=(c,p,am,push,fair)=>vm.runInContext('valor('+p+',"'+am+'",'+push+',undefined,'+(fair==null?'undefined':fair)+')',c);
+   const v70=val(cE,70,'-110',0,50), v56=val(cE,56,'-110',0,50), vN=val(cN,70,'-110',0,50);
+   ok('Stake: con 70% a -110 el ¼ Kelly sobre la mezcla con el mercado es ≈$14.6, no los ≈$92.5 de tu número crudo',cl(v70.stake,14.6,.6)&&cl(v70.stakeCrudo,92.5,.8)&&v70.stake<v70.stakeCrudo/5);
+   ok('Stake: con 56% a -110 hay ventaja de tu número pero la mezcla la borra: no hay stake y avisa (sinStake)',v56.ev>0&&v56.stake===null&&v56.sinStake===true&&v56.stakeCrudo>15);
+   ok('Stake: si ovaedge.js no cargó se queda el cálculo de siempre (sin tocar nada)',cl(vN.stake,vN.stakeCrudo,1e-9)&&vN.sinStake===false);
+   ok('Stake: el ranking (valor con el sin-vig del par) y el Veredicto dan el MISMO ¼ Kelly para el mismo pick',(()=>{const h=V(62,'-110','-110'),m=/¼ Kelly \$(\d+\.\d\d)/.exec(h);return m&&cl(+m[1],val(cE,62,'-110',0,50).stake,.006);})());
+   ok('Stake: con un solo precio (totales, F5…) el ancla es el precio entre 1.045 y el stake queda por debajo del crudo',(()=>{const a=val(cE,62,'-110',0,undefined);return a.stake>0&&a.stake<a.stakeCrudo;})());
+   ok('Stake: una línea entera con push (Over 8, 13% de empate) mezcla sobre la probabilidad condicionada y no truena',(()=>{const a=val(cE,52,'-110',.13,undefined);return a&&(a.stake===null||a.stake>0)&&isFinite(a.ev);})());
+   ok('El ranking pasa el sin-vig del par al stake del ganador y avisa cuando la mezcla no deja valor',/valor\(m\.p,m\.am,m\.push,undefined,m\.fair\)/.test(ix)&&/devig\(b\.querySelector\('\.ca'\)\.value,b\.querySelector\('\.ch'\)\.value\)/.test(ix)&&/sin stake sugerido/.test(ix));
+   ok('El aviso de «precio imposible» trae el dato de 3 temporadas (732 juegos, −8.9%)',/732 juegos/.test(V(70,'-110','-110'))&&/-8\.9%/.test(V(70,'-110','-110')));
+  }
  }
  ok('Mis picks: el CLV positivo con t < 2 se dice "dentro del ruido" y la calibración muestra Brier',/todavía dentro del ruido/.test(ix)&&/OVAEdge\.brierSkill/.test(ix)&&/OVAEdge\.summarizeCLV/.test(ix));
 }

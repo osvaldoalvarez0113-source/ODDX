@@ -998,7 +998,7 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v67</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v68</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -1150,6 +1150,24 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
   <b>5)</b> La única prueba de que le ganas al mercado es el <b>CLV</b> en Mis picks: si la cuota que
   tomaste es mejor que la de cierre, de forma sostenida y con t de 2 o más, hay ventaja de verdad.
   Los resultados de una semana no dicen nada.
+  <b>6)</b> El <b>stake</b> (¼ Kelly) sale de la mezcla con el mercado, no de tu número crudo: tu número
+  dice más de lo que después pasa, y apostar sobre él te hace apostar de más (abajo está la prueba).
+
+  <b>Qué habría dicho la app en 3 temporadas</b> (2024-2026, 6,171 juegos, contra la cuota de cierre de
+  DraftKings; el informe completo está en <code>docs/MEDICION-PICKS-APP-2026-10.md</code>).
+  <b>Los picks de «valor»</b> (2,544): rindieron -0.3% por dólar (±2.2). Ni ganaron ni perdieron de forma
+  medible; sin criterio se esperaba -4.0% por la comisión de la casa. Por temporada: -6.4%, +3.8% y +1.2%.
+  <b>Tu número vs la realidad:</b> en esos picks decía 50.5% de ganar y ganaron 45.8% (el mercado decía 44.0%).
+  <b>«Precio imposible»</b> (732 juegos): rindieron -8.9% y perdieron en las tres temporadas. Cuando la app se
+  separa mucho del mercado, casi siempre le falta un dato.
+  <b>Modo «Al gane»:</b> está bien calibrado (cuando decía 57% ganaba 57%), pero acertar no es ganar dinero: a
+  la cuota de cierre ese grupo rindió entre -3% y -4%, porque la casa ya sabe lo mismo.
+  <b>Stake:</b> el ¼ Kelly con tu número crudo habría convertido $1,000 en $524 (con una caída de 64% en el camino);
+  sobre la mezcla con el mercado termina en $981 con una caída máxima de 6%. Por eso el stake ya sale de la mezcla.
+  <b>Cuántos picks hacen falta:</b> para distinguir de la suerte un ROI verdadero de +3% hacen falta unos 5,500
+  picks (unas 6 temporadas completas con este ritmo). Por eso mira el CLV, que se mueve mucho más rápido.
+  <b>Límites:</b> es la cuota de cierre (la más difícil de ganar) y el abridor que de verdad lanzó, no el probable;
+  los cortes por tamaño de ventaja se miraron después de ver los datos, así que son pistas y no pruebas.
 
   Datos: MLB Stats API. Los escudos de los equipos y las caras de los abridores tambi&eacute;n salen de la
   MLB, por URL directa seg&uacute;n el id que ya usa la app para pedir las estad&iacute;sticas; si alguna
@@ -1378,6 +1396,11 @@ var BONO_LOCAL=0.59;
    Por eso se puede mover desde Ajustes y por eso el valor por defecto no se
    toca hasta que haya un backtest que diga cual es. */
 var PRIOR_ERA=40;
+/* Peso de TU número cuando se mezcla con el mercado (logit). Sale de tu medición contra el cierre de DraftKings:
+   0.24 ± 0.28 en ~6,200 juegos (docs/MEDICION-MERCADO-MLB-2026-10.md); la regresión de 3 temporadas juntas da 0.09
+   y por temporada -0.12 / 0.21 / 0.23 (docs/MEDICION-PICKS-APP-2026-10.md). Lo usan el Chequeo del Veredicto y el STAKE:
+   el ¼ Kelly se calcula sobre esta mezcla y no sobre tu número crudo, que en 2,544 picks decía 50.5% y ganó 45.8%. */
+var W_MODELO=0.24;
 var EXTRAS=0.18;
 /* Encogimiento del total. La pendiente medida entre lo proyectado y lo real fue
    0.45 en 2026 y 0.44 en 2025 sobre 3,887 juegos: la proyeccion se movia mas del
@@ -1530,7 +1553,7 @@ function american(p){
 }
 function banca(){ var v=parseFloat(($('banca')||{}).value); return isFinite(v)&&v>0?v:null; }
 function decimal(am){ return am>0 ? am/100 : 100/(-am); }
-function valor(pPct,amStr,pushPct,plat){
+function valor(pPct,amStr,pushPct,plat,fairPct){
   var imp=impMod(amStr,plat); if(imp==null) return null;
   var pg=pagoMod(amStr,plat); if(!pg) return null;
   var p=pPct/100, push=(pushPct||0)/100;
@@ -1548,9 +1571,24 @@ function valor(pPct,amStr,pushPct,plat){
      asi que ahora se comparan dos numeros de la misma clase. En lineas de .5
      el empate es 0 y esto no cambia nada. */
   var pcond = (push<1) ? p/(1-push) : p;
+  /* STAKE. Se calcula sobre la mezcla de tu número con el mercado, no sobre tu número crudo.
+     Con 6,171 juegos de 2024 a 2026: el ¼ Kelly del número crudo convirtió $1,000 en $524 (cayó 64% en el camino)
+     aun con un ROI plano de -0.4%, porque tu número decía 50.5% y los picks ganaron 45.8%. El mismo Kelly sobre la mezcla
+     terminó en $981 y nunca cayó más de 6%. El ancla es el "sin vig" del par de cuotas cuando se conoce (fairPct); si
+     solo hay un precio se usa el precio sobre 1.045, el overround típico. Kalshi no cobra vig: el precio es el ancla.
+     Sin ovaedge.js (no cargó) se queda el cálculo de siempre. */
+  var stake=(bk&&f>0)? bk*f*0.25 : null, stakeCrudo=stake, sinStake=false;
+  if(f>0&&typeof OVAEdge!=='undefined'){
+    var anc=(fairPct!=null)?fairPct/100:(((plat||PLATA)==='kalshi')?imp/100:imp/100/1.045);
+    var mixc=OVAEdge.blend(pcond,Math.min(0.97,Math.max(0.03,anc)),W_MODELO);
+    var pw=mixc*(1-push), ql=Math.max(0,1-pw-push);
+    var fm=bn>0?(pw*bn-ql*ln)/bn:0;
+    stake=(bk&&fm>0)? bk*fm*0.25 : null;
+    sinStake=!!(bk&&fm<=0);
+  }
   return {imp:imp, ventaja:(pcond-imp/100)*100, ev:ev, push:push*100, fee:pg.fee*100,
           cruda:(p-imp/100)*100,
-          stake: (bk&&f>0)? bk*f*0.25 : null};
+          stake: stake, stakeCrudo: stakeCrudo, sinStake: sinStake};
 }
 function txtValor(etiqueta,pPct,amStr,pushPct){
   var v=valor(pPct,amStr,pushPct);
@@ -2799,15 +2837,16 @@ function recolectar(root){
      moneyline y el handicap se quedaba, con sello verde. */
   var capado=false;
   root.querySelectorAll('.cmp').forEach(function(b){ if(b.dataset.cap==='1') capado=true; });
-  var meter=function(m,p,push,am,med){
+  var meter=function(m,p,push,am,med,fair){
     if(am==null||String(am).trim()==='') return;
     if(!isFinite(p)) return;
-    out.push({m:m, p:p, push:push||0, am:am, med:med||'flojo'});
+    out.push({m:m, p:p, push:push||0, am:am, med:med||'flojo', fair:fair});
   };
   root.querySelectorAll('.cmp').forEach(function(b){
     if(b.dataset.cap==='1') return;
-    meter((b.dataset.na||'Visita')+' gana', +b.dataset.pa, 0, b.querySelector('.ca').value, 'ok');
-    meter((b.dataset.nh||'Local')+' gana',  +b.dataset.ph, 0, b.querySelector('.ch').value, 'ok');
+    var dvG=devig(b.querySelector('.ca').value,b.querySelector('.ch').value);
+    meter((b.dataset.na||'Visita')+' gana', +b.dataset.pa, 0, b.querySelector('.ca').value, 'ok', dvG?dvG.fairA:undefined);
+    meter((b.dataset.nh||'Local')+' gana',  +b.dataset.ph, 0, b.querySelector('.ch').value, 'ok', dvG?dvG.fairH:undefined);
   });
   root.querySelectorAll('.row[data-hc]').forEach(function(b){
     if(capado||b.dataset.malo==='1') return;
@@ -2874,7 +2913,7 @@ function actualizarRanking(root){
   var caja=cajas[0];
   var lista=[];
   recolectar(root).forEach(function(m){
-    var v=valor(m.p,m.am,m.push);
+    var v=valor(m.p,m.am,m.push,undefined,m.fair);
     if(v){ m.v=v; lista.push(m); }
   });
   if(!lista.length){ cajas.forEach(function(c){ c.innerHTML=''; }); return; }
@@ -2927,7 +2966,7 @@ function actualizarRanking(root){
        (PLATA==='kalshi'?'% del contrato · ':'% del book · ')+
        '+'+m.v.ventaja.toFixed(1)+' puntos · EV +'+(m.v.ev*100).toFixed(1)+'% por dólar'+
        (m.v.fee>0.05?' (ya con '+m.v.fee.toFixed(1)+'% de comisión)':'')+
-       (m.v.stake?' · ¼ Kelly $'+m.v.stake.toFixed(2):'')+
+       (m.v.stake?' · ¼ Kelly $'+m.v.stake.toFixed(2):(m.v.sinStake?' · sin stake sugerido: mezclado con el mercado ya no queda valor':''))+
        (m.push>0.5?' · empata en la línea '+m.push.toFixed(1)+'% de las veces, y ahí te '+
          'devuelven el dinero — por eso la ventaja va contada sobre lo que de verdad arriesgas'+
          (m.v.cruda!=null&&Math.abs(m.v.ventaja-m.v.cruda)>=1
@@ -3035,7 +3074,6 @@ function actualizarRanking(root){
    (el mismo "sin vig" que muestra la tabla de arriba) con el peso que midió tu propio backtest contra el cierre de
    DraftKings: el modelo pesa 0.24 ± 0.28 sobre ~6,200 juegos y no le gana al mercado
    (docs/MEDICION-MERCADO-MLB-2026-10.md). Si todavía hay valor con la mezcla, es creíble. */
-var W_MODELO=0.24;
 function mezclaMercado(lados,amA,amH){
   if(PLATA==='kalshi'||typeof OVAEdge==='undefined') return null;
   var nums=[numOdds(amA),numOdds(amH)];
@@ -3049,7 +3087,7 @@ function mezclaMercado(lados,amA,amH){
   }
   return cs;
 }
-function chequeoMercado(lados,amA,amH){
+function chequeoMercado(lados,amA,amH){  /* lados[i].stakeCrudo = el ¼ Kelly con tu número sin mezclar */
   var cs=mezclaMercado(lados,amA,amH);
   if(!cs) return '';
   var best=(cs[0].ev>=cs[1].ev)?cs[0]:cs[1];
@@ -3065,7 +3103,10 @@ function chequeoMercado(lados,amA,amH){
   o+= sigue
     ? '<div class="flag">Aun mezclado con el mercado, '+esc(best.n)+' sale con EV de +'+(best.ev*100).toFixed(1)+
       '% por dólar. Eso se cree más que el número de arriba'+
-      (best.stake?' · ¼ Kelly con la mezcla $'+best.stake.toFixed(2)+' (el de arriba usa tu número sin mezclar)':'')+'.</div>'
+      '.'+(best.stake?' El ¼ Kelly de arriba ya sale de esta mezcla ($'+best.stake.toFixed(2)+')':'')+
+      (best.stake&&lados[cs.indexOf(best)].stakeCrudo?'; con tu número sin mezclar saldría $'+lados[cs.indexOf(best)].stakeCrudo.toFixed(2)+
+        ', y ese tamaño en 2024-2026 habría convertido $1,000 en $524 aunque el ROI fue casi plano':'')+
+      (best.stake?'.':'')+'</div>'
     : '<div class="flag">Tu propia medición (≈6,200 juegos de 2024 a 2026) dice que el modelo casi no agrega nada al precio de cierre. '+
       'Mezclado con el mercado en esa proporción, ningún lado paga lo suficiente: la ventaja de arriba probablemente es ruido. '+
       'Antes de apostar, busca algo que el mercado no sepa (lineup, lesión, cambio de abridor).</div>';
@@ -3089,7 +3130,9 @@ function veredictoEV(pA,pH,amA,amH,nomA,nomH,vc){
     L.dif =L.p*100-L.fair;
     var bn=pg.b-pg.fee;
     L.kelly=bn>0?(L.p*bn-(1-L.p)*(1+pg.fee))/bn:0;
-    L.stake=(bk&&L.kelly>0)?bk*L.kelly*0.25:null;
+    /* mismo cálculo que el ranking: ¼ Kelly sobre la mezcla con el mercado (valor() lo explica) */
+    var vv=valor(L.p*100,L.raw,0,undefined,L.fair);
+    L.stake=vv?vv.stake:null; L.stakeCrudo=vv?vv.stakeCrudo:null; L.sinStake=vv?vv.sinStake:false;
   });
   if(!okPago) return null;
   var best=(lados[0].ev>=lados[1].ev)?lados[0]:lados[1];
@@ -3099,7 +3142,9 @@ function veredictoEV(pA,pH,amA,amH,nomA,nomH,vc){
   if(best.ev>EV_IMPOSIBLE){
     cls='alerta'; tit='Ese precio no puede ser';
     det='Sale un EV de +'+(best.ev*100).toFixed(0)+'% por dólar en '+best.n+', y eso no existe en '+
-        'un moneyline de MLB. Revisa que no hayas puesto el precio de un equipo en la casilla del otro.';
+        'un moneyline de MLB. Revisa que no hayas puesto el precio de un equipo en la casilla del otro. '+
+        'Si el precio es real, ojo: en 2024-2026 los 732 juegos que la app marcaba así rindieron -8.9% por dólar y '+
+        'perdieron en las tres temporadas; casi siempre al modelo le falta un dato que el mercado ya tiene.';
   }else if(best.ev<=0){
     cls='no'; tit='Sin apuesta';
     det='Ningún lado paga lo suficiente. El mejor es '+best.n+' con EV de '+
@@ -3115,8 +3160,8 @@ function veredictoEV(pA,pH,amA,amH,nomA,nomH,vc){
     det='Tu número ve '+best.edge.toFixed(1)+' puntos sobre la cuota (EV +'+(best.ev*100).toFixed(1)+
         '%), pero tu propia medición dice que el modelo casi no le agrega nada al precio de cierre. '+
         'Mezclado con el mercado ya no queda valor (EV '+(mzBest.ev*100).toFixed(1)+'%). '+
-        'Juégalo solo si ves algo que el mercado no sabe.'+
-        (best.stake?' Si lo juegas igual: ¼ Kelly con tu número $'+best.stake.toFixed(2)+'.':'');
+        'Juégalo solo si ves algo que el mercado no sabe. La app no te sugiere stake aquí: el que saldría con tu número sin '+
+        'mezclar es justo el que en 3 temporadas hundió la banca.';
   }else if(best.edge<5){
     cls=''; tit='Valor moderado en '+best.n;
     det=best.edge.toFixed(1)+' puntos sobre la cuota · EV +'+(best.ev*100).toFixed(1)+
