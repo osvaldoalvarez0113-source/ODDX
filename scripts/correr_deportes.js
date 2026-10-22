@@ -389,7 +389,8 @@ const require = n => require_real(n);
 const fs = require('fs');
 const LIGAS = [['E0', 'Premier League'], ['SP1', 'La Liga'], ['I1', 'Serie A'], ['D1', 'Bundesliga'], ['F1', 'Ligue 1']];
 const TEMPS = (process.env.TEMPS_FUTBOL || '2122,2223,2324,2425,2526').split(',');
-const TUNE = '2223';                       // temporada donde se ajustan los parametros (sin mirar el mercado)
+const TUNE = process.env.TUNE_FUTBOL || '2223';
+const PRE = process.env.PRE_FUTBOL || '2122';                       // temporada donde se ajustan los parametros (sin mirar el mercado)
 const urlCsv = (t, code) => 'https://www.football-data.co.uk/mmz4281/' + t + '/' + code + '.csv';
 const MAXG = 8;
 
@@ -538,7 +539,7 @@ function perdidaTrain(store, key, que) {   // pérdida media en la temporada de 
   return n ? s / n : Infinity;
 }
 function ajusteApp(porLiga, log) {
-  const sub = {}; Object.keys(porLiga).forEach(lg => { sub[lg] = porLiga[lg].filter(m => m.t === '2122' || m.t === TUNE); });
+  const sub = {}; Object.keys(porLiga).forEach(lg => { sub[lg] = porLiga[lg].filter(m => m.t === PRE || m.t === TUNE); });
   let best = { cfg: Object.assign({}, CFG_APP), l: null };
   const ev = c => { const st = new Map(); correrTodo(sub, modeloApp, c, 'x', st); return perdidaTrain(st, 'x', '1x2'); };
   const l0 = ev(CFG_APP); best.l = l0;
@@ -602,6 +603,7 @@ async function main() {
   const KEYS = ['F0', 'F1', 'F2', 'F3'];
   const rows = []; store.forEach((v, m) => { if (testTemps.includes(m.t) && m.mk && KEYS.every(k => v[k])) rows.push({ m, v }); });
   const temps = [...new Set(rows.map(r => r.m.t))].sort();
+  if (process.env.VOLCAR_PARTIDOS) fs.writeFileSync('partidos_futbol.json', JSON.stringify(rows.map(r => ({ t: r.m.t, lg: r.m.lg, d: r.m.d, h: r.m.h, a: r.m.a, gh: r.m.gh, ga: r.m.ga, y: r.m.y, mk: r.m.mk, src: r.m.mkSrc, ps: r.m.ps, avg: r.m.avg, mx: r.m.mx, F0: r.v.F0.p, F1: r.v.F1.p, F3: r.v.F3.p, o0: r.v.F0.o25, o3: r.v.F3.o25, ou: r.m.ou, ouPs: r.m.ouPs, ouAvg: r.m.ouAvg }))));
   log('Partidos medidos (con cuota de mercado y modelo listo): ' + rows.length + ' (' + temps.map(t => t + ': ' + rows.filter(r => r.m.t === t).length).join(', ') + ')');
   if (rows.length < 300) { log('NO TERMINO: pocos partidos con cuotas (' + rows.length + ').'); return fin(out, true); }
 

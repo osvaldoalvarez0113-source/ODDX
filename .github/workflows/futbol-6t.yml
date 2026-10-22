@@ -1,0 +1,39 @@
+name: Futbol 6 temporadas
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [futbol-6t]
+
+permissions:
+  contents: write
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      TEMPS_FUTBOL: "1819,1920,2021,2122,2223,2324,2425,2526"
+      TUNE_FUTBOL: "1920"
+      PRE_FUTBOL: "1819"
+      VOLCAR_PARTIDOS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr el backtest de futbol (6 temporadas de prueba)
+        run: node scripts/correr_deportes.js futbol 2>&1 | tee resultado_futbol_6t.txt
+      - name: Guardar el resultado en la rama resultados-futbol-6t
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f resultado_futbol_6t.txt resultado_futbol.json partidos_futbol.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-futbol-6t
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado futbol 6 temporadas" || true
+          git push -f origin resultados-futbol-6t
