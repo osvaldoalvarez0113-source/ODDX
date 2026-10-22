@@ -115,6 +115,7 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 .rvTab>div{padding:8px 9px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
 .rvTab>div:nth-last-child(-n+4){border-bottom:0}
 .rvTab .th{font-size:10.5px;color:var(--mut2);font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:var(--bg2)}
+.rvTab .md{color:var(--mut2)}
 .rvTab .n{text-align:right}.rvTab .nm{font-weight:600;color:var(--txt)}.rvTab .mk{color:var(--hot);font-weight:700}
 .rvTab .best{background:rgba(251,191,36,.08)}
 .rvChips{display:flex;gap:7px;flex-wrap:wrap}
@@ -124,9 +125,6 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 .rvLs div{display:flex;gap:9px;font-size:12.5px;line-height:1.45;color:var(--mut)}
 .rvLs i{font-style:normal;font-weight:800;flex:0 0 18px;text-align:center}
 .rvLs i.ok{color:var(--good)}.rvLs i.w{color:var(--hot)}.rvLs i.x{color:var(--bad)}
-.rvFm{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12.5px;color:var(--mut)}
-.rvFm b{flex:0 0 auto;max-width:42%;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rvFm .forma{margin:0}
 .rvIn{margin-top:10px}
 .rvIn label{display:block;font-size:11.5px;color:var(--mut);font-weight:700;margin-bottom:4px}
 .rvIn input{width:100%;padding:10px 12px;font-size:16px;border-radius:var(--r);border:1px solid var(--line2);background:var(--bg1);color:var(--txt)}
@@ -2006,7 +2004,7 @@ function resumenVeredictoF(p, base, id){
   var main = '<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">'+escR(h)+'</div><div class="rvP">'+escR(sub)+'</div>'+sig+pick+'</div>';
 
   var cell = function(v){ return v===null||v===undefined ? '<div class="n">—</div>' : '<div class="n">'+pc(v)+'</div>'; };
-  var fila = function(t, vm, vk){ var ref = (vk!==null&&vk!==undefined)?vk:vm; return '<div class="nm">'+escR(t)+'</div>'+cell(vm)+'<div class="n mk">'+((vk===null||vk===undefined)?'—':pc(vk))+'</div><div class="n">'+(ref===null||ref===undefined?'—':cj(ref))+'</div>'; };
+  var fila = function(t, vm, vk){ var ref = (vk!==null&&vk!==undefined)?vk:vm; return '<div class="nm">'+escR(t)+'</div>'+cell(vm).replace('class="n"','class="n md"')+'<div class="n mk">'+((vk===null||vk===undefined)?'—':pc(vk))+'</div><div class="n">'+(ref===null||ref===undefined?'—':cj(ref))+'</div>'; };
   var tab = '<div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>'+
     fila(p.local+' gana', r.pL, f?f[0]:null)+fila('Empate', r.pD, f?f[1]:null)+fila(p.visita+' gana', r.pV, f?f[2]:null)+
     fila('Más de 2.5', r.overLin[2.5], ou?ou[0]:null)+fila('Menos de 2.5', 1-r.overLin[2.5], ou?ou[1]:null)+
@@ -2019,7 +2017,7 @@ function resumenVeredictoF(p, base, id){
 
   var v = leerVeredictos(LIGA_ACTUAL), li = [];
   var L = function(c, t){ return '<div><i class="'+c+'">'+(c==='ok'?'✓':(c==='w'?'!':'✗'))+'</i><span>'+t+'</span></div>'; };
-  li.push(r.dc ? L('w','Medido en 5,256 partidos: el mercado acierta más que el modelo (0.964 contra 0.989).') : L('w','Modelo básico (copas o ligas menores): sin medir contra el mercado.'));
+  if(!r.dc) li.push(L('w','Modelo básico (copas o ligas menores): sin medir contra el mercado.'));
   if(f){ var mn = Math.max(0, Math.round((Date.now()-Date.parse(PIN_F.generado))/60000)); li.push(L(mn>180?'w':'ok','Precios de Pinnacle de hace '+(mn<90?mn+' min':Math.round(mn/60)+' h')+'.')); }
   else li.push(L('w','Sin precios de Pinnacle para este partido.'));
   if(v && v.ou!==undefined && v.bt!==undefined){
@@ -2029,13 +2027,12 @@ function resumenVeredictoF(p, base, id){
   try{
     var pocos = [];
     if(DCFIT && DCFIT.eq && !LIGA_ES_COPA) [p.local, p.visita].forEach(function(nm){ var e = DCFIT.eq[claveEq(nm)]; if(e && e.n < 20) pocos.push(nm+' ('+e.n+' partidos)'); });
-    if(pocos.length) li.push(L('w', escR(pocos.join(' y '))+(pocos.length>1?' tienen':' tiene')+' pocos partidos en esta liga (recién ascendido o sin historial): el modelo lo estima poco y se equivoca más. Créele al mercado.'));
+    if(pocos.length) li.push(L('w', escR(pocos.join(' y '))+(pocos.length>1?' tienen':' tiene')+' pocos partidos en esta liga (recién ascendido o sin historial): el modelo lo estima poco y se equivoca más.'));
   }catch(e){}
   li.push(L('x','No sabe de lesiones ni alineaciones: mira Forma y noticias.'));
   var conf = '<div class="rvLs">'+li.join('')+'</div>';
 
-  var forma = '<div class="rvFm"><b>'+escR(p.local)+'</b><div class="forma" id="'+id+'rfL"></div></div><div class="rvFm"><b>'+escR(p.visita)+'</b><div class="forma" id="'+id+'rfV"></div></div>';
-  return '<div class="rv"><h4>Pronóstico y pick</h4>'+main+'<h4>Modelo contra mercado</h4>'+tab+'<h4>Goles y marcadores</h4>'+chips+'<h4>Qué tan confiable es</h4>'+conf+'<h4>Cómo vienen los equipos</h4>'+forma+'</div>';
+  return '<div class="rv"><h4>Pronóstico y pick</h4>'+main+'<h4>Modelo contra mercado</h4>'+tab+'<h4>Goles y marcadores</h4>'+chips+'<h4>Qué tan confiable es</h4>'+conf+'</div>';
 }
 function pintarGameBody(bodyEl, p, eL, eV){
   var base = bloqueBase(eL, eV, p.local, p.visita);
@@ -2185,8 +2182,6 @@ function pintarGameBody(bodyEl, p, eL, eV){
     ], document.getElementById(id+'verBtts'), p);
   });
 
-  pintarForma(id+'rfL', p.local);
-  pintarForma(id+'rfV', p.visita);
   (function(){
     var vi = document.getElementById(id+'vlO'), vr = document.getElementById(id+'vlR'); if(!vi||!vr) return;
     vi.addEventListener('input', function(){

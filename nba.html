@@ -177,6 +177,7 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 .rvTab>div{padding:8px 9px;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
 .rvTab>div:nth-last-child(-n+4){border-bottom:0}
 .rvTab .th{font-size:10.5px;color:var(--mut2);font-weight:800;text-transform:uppercase;letter-spacing:.05em;background:var(--bg2)}
+.rvTab .md{color:var(--mut2)}
 .rvTab .n{text-align:right}.rvTab .nm{font-weight:600;color:var(--txt)}.rvTab .mk{color:var(--hot);font-weight:700}
 .rvTab .best{background:rgba(251,191,36,.08)}
 .rvChips{display:flex;gap:7px;flex-wrap:wrap}
@@ -186,9 +187,6 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 .rvLs div{display:flex;gap:9px;font-size:12.5px;line-height:1.45;color:var(--mut)}
 .rvLs i{font-style:normal;font-weight:800;flex:0 0 18px;text-align:center}
 .rvLs i.ok{color:var(--good)}.rvLs i.w{color:var(--hot)}.rvLs i.x{color:var(--bad)}
-.rvFm{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:12.5px;color:var(--mut)}
-.rvFm b{flex:0 0 auto;max-width:42%;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rvFm .forma{margin:0}
 .rvIn{margin-top:10px}
 .rvIn label{display:block;font-size:11.5px;color:var(--mut);font-weight:700;margin-bottom:4px}
 .rvIn input{width:100%;padding:10px 12px;font-size:16px;border-radius:var(--r);border:1px solid var(--line2);background:var(--bg1);color:var(--txt)}
@@ -660,13 +658,6 @@ function pinNba(g,pr){
 }
 
 /* ---- Resumen completo del Veredicto: pronóstico, modelo contra mercado, líneas justas, qué tan confiable es y forma ---- */
-function formaMini(id,Tm){
-  const js=GAMES.filter(x=>x.h===id||x.a===id).sort((a,b)=>b.ts-a.ts).slice(0,10);
-  if(!js.length) return `<div class="rvFm"><b>${esc(Tm.n)}</b><span>sin partidos medidos</span></div>`;
-  let w=0,df=0,sp='';
-  js.forEach((x,i)=>{ const loc=x.h===id, f=loc?x.hs:x.as, c=loc?x.as:x.hs, res=f>c?'V':'D'; if(f>c) w++; df+=f-c; if(i<5) sp+=`<span class="${res}">${res}</span>`; });
-  return `<div class="rvFm"><b>${esc(Tm.n)}</b><div class="forma">${sp}</div><span>${w}-${js.length-w} · ${(df/js.length>=0?'+':'')+(df/js.length).toFixed(1)}</span></div>`;
-}
 function resumenN(g,pr,H,A){
   const favH=pr.pH>=0.5, pmAbs=Math.abs(pr.pm);
   let hit=null;
@@ -688,19 +679,18 @@ function resumenN(g,pr,H,A){
   const main=`<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf>=0.6?esc(nf)+' gana · '+Math.round(pf*100)+'%':'Juego parejo'}</div>
    <div class="rvP">${pf>=0.6?'Es el favorito'+(hit!==null?' según el mercado (Pinnacle, sin margen).':' según el modelo.'):'Ninguno pasa del 60%. Lo más probable: '+esc(nf)+' '+Math.round(pf*100)+'%.'}</div>${sig}
    <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amTxt(pf)}</b> por ${esc(nf)}${hit!==null?'':' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(nf)}</label><input type="number" inputmode="decimal" data-vl="o" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${hit!==null?1:0}"><div class="rvVal" data-vl="r"></div></div></div>`;
-  const row=(n,m,k)=>`<div class="nm">${esc(n)} gana</div><div class="n">${pct1(m)}</div><div class="n mk">${k===null?'—':pct1(k)}</div><div class="n">${amTxt(k===null?m:k)}</div>`;
+  const row=(n,m,k)=>`<div class="nm">${esc(n)} gana</div><div class="n md">${pct1(m)}</div><div class="n mk">${k===null?'—':pct1(k)}</div><div class="n">${amTxt(k===null?m:k)}</div>`;
   const tab=`<div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n,1-pr.pH,hit===null?null:1-hit)}${row(H.n,pr.pH,hit)}</div>
    <div class="nota" style="margin-top:6px">Mercado = Pinnacle sin su margen.</div>`;
   const chips=`<div class="rvChips"><div>${esc(favH?H.ab:A.ab)}<small>por ${pmAbs.toFixed(1)} pts</small></div><div>Hándicap justo<small>${esc(favH?H.ab:A.ab)} ${fmtL(-Math.round(pmAbs*2)/2)}</small></div><div>Total justo<small>${(Math.round(pr.pt*2)/2).toFixed(1)}</small></div></div>`;
   const L=(c,t)=>`<div><i class="${c}">${c==='ok'?'✓':(c==='w'?'!':'✗')}</i><span>${t}</span></div>`;
   const li=[];
-  li.push(L('w','Medido en 2,486 juegos: el mercado acierta más que el modelo.'));
   if(hit!==null){ const mn=Math.max(0,Math.round((Date.now()-Date.parse(PIN_N.generado))/60000)); li.push(L('ok',`Precio de Pinnacle de hace ${mn<90?mn+' min':Math.round(mn/60)+' h'}.`)); }
   else li.push(L('w','Sin precio de Pinnacle para este juego.'));
   li.push(pr.bH||pr.bA?L('ok','Back-to-back: '+[pr.bA?A.n:'',pr.bH?H.n:''].filter(Boolean).map(esc).join(' y ')+' jugó ayer (ya descontado).'):L('ok','Sin back-to-back.'));
   if(g.pre) li.push(L('w','Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
   li.push(L('x','No sabe de lesiones: mira Forma y usa el ajuste manual de abajo.'));
-  return `<div class="rv"><h4>Pronóstico y pick</h4>${main}<h4>Modelo contra mercado</h4>${tab}<h4>Margen y líneas justas</h4>${chips}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div><h4>Cómo vienen los equipos</h4>${formaMini(g.a,A)}${formaMini(g.h,H)}</div>`;
+  return `<div class="rv"><h4>Pronóstico y pick</h4>${main}<h4>Modelo contra mercado</h4>${tab}<h4>Margen y líneas justas</h4>${chips}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
 }
 function pintarCuerpo(body,g){
   const pr=prediccion(g), H=T(g.h), A=T(g.a);
