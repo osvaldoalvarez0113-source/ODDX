@@ -1,0 +1,172 @@
+### Datos
+```
+Premier League 1819: 380 partidos, con cuotas 380, con Más/Menos 0
+Premier League 1920: 380 partidos, con cuotas 380, con Más/Menos 380
+Premier League 2021: 380 partidos, con cuotas 380, con Más/Menos 380
+Premier League 2122: 380 partidos, con cuotas 380, con Más/Menos 380
+Premier League 2223: 380 partidos, con cuotas 380, con Más/Menos 380
+Premier League 2324: 380 partidos, con cuotas 380, con Más/Menos 380
+Premier League 2425: 380 partidos, con cuotas 380, con Más/Menos 380
+Premier League 2526: 380 partidos, con cuotas 380, con Más/Menos 380
+La Liga 1819: 380 partidos, con cuotas 380, con Más/Menos 0
+La Liga 1920: 380 partidos, con cuotas 380, con Más/Menos 380
+La Liga 2021: 380 partidos, con cuotas 380, con Más/Menos 380
+La Liga 2122: 380 partidos, con cuotas 380, con Más/Menos 380
+La Liga 2223: 380 partidos, con cuotas 380, con Más/Menos 380
+La Liga 2324: 380 partidos, con cuotas 380, con Más/Menos 380
+La Liga 2425: 380 partidos, con cuotas 380, con Más/Menos 380
+La Liga 2526: 380 partidos, con cuotas 380, con Más/Menos 380
+Serie A 1819: 380 partidos, con cuotas 380, con Más/Menos 0
+Serie A 1920: 380 partidos, con cuotas 380, con Más/Menos 380
+Serie A 2021: 380 partidos, con cuotas 380, con Más/Menos 380
+Serie A 2122: 380 partidos, con cuotas 380, con Más/Menos 380
+Serie A 2223: 380 partidos, con cuotas 380, con Más/Menos 380
+Serie A 2324: 380 partidos, con cuotas 380, con Más/Menos 380
+Serie A 2425: 380 partidos, con cuotas 380, con Más/Menos 380
+Serie A 2526: 380 partidos, con cuotas 380, con Más/Menos 380
+Bundesliga 1819: 306 partidos, con cuotas 306, con Más/Menos 0
+Bundesliga 1920: 306 partidos, con cuotas 306, con Más/Menos 306
+Bundesliga 2021: 306 partidos, con cuotas 306, con Más/Menos 306
+Bundesliga 2122: 306 partidos, con cuotas 306, con Más/Menos 306
+Bundesliga 2223: 306 partidos, con cuotas 306, con Más/Menos 306
+Bundesliga 2324: 306 partidos, con cuotas 306, con Más/Menos 306
+Bundesliga 2425: 306 partidos, con cuotas 306, con Más/Menos 306
+Bundesliga 2526: 306 partidos, con cuotas 306, con Más/Menos 306
+Ligue 1 1819: 380 partidos, con cuotas 380, con Más/Menos 0
+Ligue 1 1920: 279 partidos, con cuotas 279, con Más/Menos 279
+Ligue 1 2021: 380 partidos, con cuotas 380, con Más/Menos 380
+Ligue 1 2122: 380 partidos, con cuotas 380, con Más/Menos 380
+Ligue 1 2223: 380 partidos, con cuotas 380, con Más/Menos 380
+Ligue 1 2324: 306 partidos, con cuotas 306, con Más/Menos 306
+Ligue 1 2425: 306 partidos, con cuotas 306, con Más/Menos 306
+Ligue 1 2526: 306 partidos, con cuotas 306, con Más/Menos 306
+
+Fuente de la cuota usada como "mercado" (partidos):
+  1819 Bet365 previo: 1
+  1819 Pinnacle cierre: 1825
+  1920 Pinnacle cierre: 1725
+  2021 Pinnacle cierre: 1826
+  2122 Pinnacle cierre: 1826
+  2223 Pinnacle cierre: 1826
+  2324 Pinnacle cierre: 1752
+  2425 Pinnacle cierre: 1752
+  2526 Pinnacle cierre: 898
+  2526 Promedio cierre: 854
+```
+Modelo del app, ajustado solo con 2022-23 (sin mirar el mercado): 1X2 1.0109 -> 0.9896 | Más/Menos 2.5 0.6761 -> 0.6733
+Dixon-Coles con peso por antigüedad, ajustado solo con 2022-23: 1X2 0.9899 -> 0.9877 | Más/Menos 2.5 0.6731
+```
+Parametros app reajustados: {"K":4,"h":1.13,"rho":0,"S":20,"Kt":8,"wt":0.8,"ct":1.05}
+Parametros Dixon-Coles: {"xi":0.3,"Kp":5,"rho":-0.06,"promo":1,"win":1100,"wt":0.75}
+```
+Goles por tiro a puerta (cv): 0.315
+Calibración del Dixon-Coles (solo 2022-23): potencia 1.1, empates +0
+Partidos medidos (con cuota de mercado y modelo listo): 10734 (2021: 1826, 2122: 1826, 2223: 1826, 2324: 1752, 2425: 1752, 2526: 1752)
+### 1) Resultado 1X2 (local/empate/visita): modelo contra la cuota de cierre
+Pérdida log y RPS: menor = mejor. "dif" = modelo − mercado (positivo = el mercado acierta más).
+
+| Modelo | Pérdida log | RPS | dif ± 2·se | z | Veredicto |
+|---|---|---|---|---|---|
+| F0 app actual | — | — | — ± — | 0.0 | no se distingue (z=0.0) |
+| F1 app reajustado | — | — | — ± — | 0.0 | no se distingue (z=0.0) |
+| F2 Dixon-Coles (antigüedad) | 0.9917 | 0.2019 | 0.0217 ± 0.0034 | 12.7 | MERCADO MEJOR (z=12.7) |
+| F3 Dixon-Coles calibrado | 0.9921 | 0.2019 | 0.0221 ± 0.0036 | 12.4 | MERCADO MEJOR (z=12.4) |
+| F4 F1 + 35% tiros a puerta | 0.9949 | 0.2025 | 0.0249 ± 0.0034 | 14.8 | MERCADO MEJOR (z=14.8) |
+| F5 F1 + 60% tiros a puerta | 0.9955 | 0.2028 | 0.0255 ± 0.0034 | 14.9 | MERCADO MEJOR (z=14.9) |
+| F6 F1 + solo tiros a puerta | 1.0012 | 0.2047 | 0.0312 ± 0.0039 | 15.8 | MERCADO MEJOR (z=15.8) |
+| MERCADO (sin vig) | 0.9700 | 0.1951 | — | — | — |
+| Solo frecuencias de la liga | 1.0757 | 0.2308 | — | — | — |
+
+F3 (Dixon-Coles calibrado) contra el mercado, por partes
+
+| Grupo | Partidos | dif pérdida | z | Veredicto |
+|---|---|---|---|---|
+| Temporada 2021 | 1826 | 0.0280 | 6.0 | MERCADO MEJOR (z=6.0) |
+| Temporada 2122 | 1826 | 0.0151 | 3.5 | MERCADO MEJOR (z=3.5) |
+| Temporada 2223 | 1826 | 0.0241 | 5.3 | MERCADO MEJOR (z=5.3) |
+| Temporada 2324 | 1752 | 0.0240 | 5.7 | MERCADO MEJOR (z=5.7) |
+| Temporada 2425 | 1752 | 0.0245 | 5.7 | MERCADO MEJOR (z=5.7) |
+| Temporada 2526 | 1752 | 0.0169 | 4.1 | MERCADO MEJOR (z=4.1) |
+| Premier League | 2280 | 0.0244 | 5.9 | MERCADO MEJOR (z=5.9) |
+| La Liga | 2280 | 0.0183 | 4.9 | MERCADO MEJOR (z=4.9) |
+| Serie A | 2280 | 0.0203 | 5.7 | MERCADO MEJOR (z=5.7) |
+| Bundesliga | 1836 | 0.0256 | 5.9 | MERCADO MEJOR (z=5.9) |
+| Ligue 1 | 2058 | 0.0227 | 5.4 | MERCADO MEJOR (z=5.4) |
+| Solo donde el mercado es Pinnacle cierre | 9880 | 0.0225 | 12.1 | MERCADO MEJOR (z=12.1) |
+
+### 2) Promedio de lo que dice cada uno vs lo que pasó (sesgo)
+
+|  | Local | Empate | Visita |
+|---|---|---|---|
+| F0 app actual | — | — | — |
+| F1 app reajustado | — | — | — |
+| F2 Dixon-Coles (antigüedad) | 43.1% | 24.9% | 32.0% |
+| F3 Dixon-Coles calibrado | 44.0% | 24.0% | 32.0% |
+| F4 F1 + 35% tiros a puerta | 45.0% | 23.6% | 31.3% |
+| F5 F1 + 60% tiros a puerta | 45.0% | 23.8% | 31.1% |
+| F6 F1 + solo tiros a puerta | 44.9% | 24.2% | 30.9% |
+| Mercado | 43.6% | 25.1% | 31.4% |
+| REAL | 42.9% | 25.4% | 31.7% |
+
+### 3) Mezcla mercado + modelo (se ajusta en las otras temporadas, se prueba en una)
+Probabilidad = mercado^(1−w) · modelo^w, normalizada. w=0 es el mercado solo. Dif negativa = la mezcla le gana al mercado.
+
+| Modelo | peso w por temporada | dif vs mercado ± 2·se | z |
+|---|---|---|---|
+| F0 app actual | 2021:0.00 2122:0.00 2223:0.00 2324:0.00 2425:0.00 2526:0.00 | -0.00000 ± 0.00000 | -20.9 |
+| F3 Dixon-Coles calibrado | 2021:0.00 2122:0.00 2223:0.00 2324:0.00 2425:0.00 2526:0.00 | -0.00000 ± 0.00000 | -20.9 |
+| F1 app reajustado | 2021:0.00 2122:0.00 2223:0.00 2324:0.00 2425:0.00 2526:0.00 | -0.00000 ± 0.00000 | -20.9 |
+| F4 F1 + 35% tiros a puerta | 2021:0.00 2122:0.00 2223:0.00 2324:0.00 2425:0.00 2526:0.00 | -0.00000 ± 0.00000 | -20.9 |
+| F5 F1 + 60% tiros a puerta | 2021:0.00 2122:0.00 2223:0.00 2324:0.00 2425:0.00 2526:0.00 | -0.00000 ± 0.00000 | -20.9 |
+| F6 F1 + solo tiros a puerta | 2021:0.00 2122:0.00 2223:0.00 2324:0.00 2425:0.00 2526:0.00 | -0.00000 ± 0.00000 | -20.9 |
+
+### 4) Dinero: apostar 1 unidad al resultado donde el modelo ve más ventaja (con el vig real incluido)
+
+**F3 Dixon-Coles calibrado**
+
+| Ventaja del modelo vs mercado | a cuota Pinnacle | a cuota promedio | a la mejor cuota (techo optimista) |
+|---|---|---|---|
+| ≥ 2 pts de ventaja | 8226 ap. · -8.8% ± 3.5% | 8922 ap. · -11.0% ± 3.2% | 8922 ap. · -5.7% ± 3.5% |
+| ≥ 4 pts de ventaja | 5969 ap. · -9.5% ± 4.0% | 6464 ap. · -12.0% ± 3.7% | 6464 ap. · -6.7% ± 4.0% |
+| ≥ 6 pts de ventaja | 4127 ap. · -8.9% ± 4.7% | 4466 ap. · -11.7% ± 4.4% | 4466 ap. · -6.3% ± 4.7% |
+| ≥ 8 pts de ventaja | 2778 ap. · -10.4% ± 5.6% | 2995 ap. · -12.5% ± 5.2% | 2995 ap. · -7.4% ± 5.6% |
+| ≥ 10 pts de ventaja | 1744 ap. · -8.9% ± 7.0% | 1882 ap. · -11.7% ± 6.5% | 1882 ap. · -6.6% ± 7.0% |
+
+**F0 app actual**
+
+| Ventaja del modelo vs mercado | a cuota Pinnacle | a cuota promedio | a la mejor cuota (techo optimista) |
+|---|---|---|---|
+| ≥ 2 pts de ventaja | 8767 ap. · -10.0% ± 3.6% | 9480 ap. · -12.6% ± 3.3% | 9480 ap. · -6.9% ± 3.5% |
+| ≥ 4 pts de ventaja | 6912 ap. · -11.5% ± 4.0% | 7425 ap. · -14.2% ± 3.7% | 7425 ap. · -8.5% ± 4.0% |
+| ≥ 6 pts de ventaja | 5210 ap. · -13.6% ± 4.6% | 5546 ap. · -16.3% ± 4.2% | 5546 ap. · -10.7% ± 4.6% |
+| ≥ 8 pts de ventaja | 3800 ap. · -14.0% ± 5.4% | 4025 ap. · -16.7% ± 5.0% | 4025 ap. · -10.9% ± 5.4% |
+| ≥ 10 pts de ventaja | 2717 ap. · -14.2% ± 6.4% | 2843 ap. · -17.0% ± 6.0% | 2843 ap. · -11.2% ± 6.5% |
+
+### 5) Más/Menos 2.5 goles: modelo contra la cuota de cierre (10734 partidos)
+
+| Modelo | Pérdida | dif vs mercado ± 2·se | z | Veredicto |
+|---|---|---|---|---|
+| F0 app actual | — | — ± — | 0.0 | no se distingue (z=0.0) |
+| F1 app reajustado | — | — ± — | 0.0 | no se distingue (z=0.0) |
+| F2 Dixon-Coles (antigüedad) | 0.6793 | 0.0096 ± 0.0025 | 7.8 | MERCADO MEJOR (z=7.8) |
+| F3 Dixon-Coles calibrado | 0.6793 | 0.0096 ± 0.0025 | 7.8 | MERCADO MEJOR (z=7.8) |
+| F4 F1 + 35% tiros a puerta | 0.6836 | 0.0140 ± 0.0033 | 8.5 | MERCADO MEJOR (z=8.5) |
+| F5 F1 + 60% tiros a puerta | 0.6827 | 0.0130 ± 0.0031 | 8.3 | MERCADO MEJOR (z=8.3) |
+| F6 F1 + solo tiros a puerta | 0.6838 | 0.0142 ± 0.0032 | 8.8 | MERCADO MEJOR (z=8.8) |
+| MERCADO (sin vig) | 0.6697 | — | — | — |
+| Siempre la frecuencia (53.0% over) | 0.6913 | — | — | — |
+
+Mezcla Más/Menos (F3 + mercado) fuera de muestra: w 2021:0.00 2122:0.00 2223:0.00 2324:0.00 2425:0.00 2526:0.00 | dif -0.00000 ± 0.00000 (z -0.9)
+| Ventaja del modelo (Más/Menos 2.5) | a cuota Pinnacle | a cuota promedio |
+|---|---|---|
+| ≥ 3 pts | 6119 ap. · -5.2% ± 2.8% | 6697 ap. · -7.4% ± 2.7% |
+| ≥ 5 pts | 4165 ap. · -5.2% ± 3.5% | 4539 ap. · -7.5% ± 3.3% |
+| ≥ 7 pts | 2634 ap. · -2.5% ± 4.5% | 2863 ap. · -5.5% ± 4.3% |
+
+### Resumen para decidir
+```
+F0 (app actual) vs mercado: z 0.0 | F3 (Dixon-Coles calibrado) vs mercado: z 12.4 (positivo = el mercado gana)
+Mezcla fuera de muestra F3+mercado: dif -0.00000 (z -20.9)
+Parametros recomendados para el app (Dixon-Coles): {"xi":0.3,"Kp":5,"rho":-0.06,"promo":1,"win":1100,"wt":0.75} + calibración {"tau":1.1,"dD":0}
+Parametros del modelo actual reajustados: {"K":4,"h":1.13,"rho":0,"S":20,"Kt":8,"wt":0.8,"ct":1.05}
+```
