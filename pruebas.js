@@ -961,6 +961,20 @@ sec('ovaedge.js: vig, Kelly, CLV, calibración y Monte Carlo, y su chequeo en el
   ok('Veredicto: con 70% la mezcla queda en 55.1%, sigue habiendo valor y da ¼ Kelly en dólares',/sigue habiendo valor/.test(alto)&&/55\.1%/.test(alto)&&/¼ Kelly con la mezcla \$/.test(alto));
   ok('Veredicto: va plegado (details) y no se muestra en Kalshi, sin ovaedge.js ni con cuotas inválidas',/^<details class="comoLee">/.test(alto)&&mk('kalshi',true).chequeoMercado(L(.7),'64','40')===''&&mk('book',false).chequeoMercado(L(.7),'-110','-110')===''&&mk('book',true).chequeoMercado(L(.7),'abc','-110')==='');
  }
+ {
+  const a=ix.indexOf('function devig(amA,amH)'), b=ix.indexOf('function contexto('), iI=ix.indexOf('function implied(v)'), iF=ix.indexOf('\n}\n',iI)+3;
+  const base="var PLATA='book',EV_IMPOSIBLE=0.20,CORTE_GRIS=0.50;\nfunction banca(){return 1000;}\nfunction decimal(am){ return am>0 ? am/100 : 100/(-am); }\n"+ix.slice(iI,iF)+ix.slice(a,b);
+  const mkV=conE=>{const c={esc:s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'),KFEE:0.07};if(conE)c.OVAEdge=E;vm.createContext(c);vm.runInContext(base,c);return (pA,aA,aH)=>vm.runInContext('veredictoEV('+pA+','+(100-pA)+',"'+aA+'","'+aH+'","Visita","Local",1.3)',c);};
+  const V=mkV(true), V0=mkV(false), txt=h=>h.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ');
+  const dud=V(57,'-110','-110'), fuerte=V(62,'-110','-110'), minimo=V(54,'-110','-110'), sinE=V0(57,'-110','-110');
+  ok('Veredicto: 57% contra un mercado 50/50 (+4.6 pts) pasa de «moderado» a «Valor dudoso», en gris, con ¼ Kelly de tu número a la vista (no se veta)',/Valor dudoso en Visita/.test(dud)&&/class="pick no"/.test(dud)&&/Si lo juegas igual: ¼ Kelly con tu número \$/.test(txt(dud))&&!/Valor moderado/.test(dud));
+  ok('Veredicto: 62% (+9.6 pts) aguanta la mezcla y se queda en «Valor fuerte» con su Chequeo plegado',/Valor fuerte en Visita/.test(fuerte)&&!/Valor dudoso/.test(fuerte)&&/sigue habiendo valor/.test(fuerte));
+  ok('Veredicto: el margen mínimo (<2 pts) y el EV negativo no cambian',/Margen mínimo/.test(minimo)&&/Sin apuesta/.test(V(50,'-110','-110')));
+  ok('Veredicto: si ovaedge.js no cargó, el titular es el de siempre («Valor moderado») y no truena',/Valor moderado en Visita/.test(sinE)&&!/Chequeo contra el mercado/.test(sinE));
+  ok('Veredicto: el precio imposible (EV > 20%) sigue siendo alerta, sin chequeo',/Ese precio no puede ser/.test(V(70,'-110','-110'))&&!/Chequeo contra el mercado/.test(V(70,'-110','-110')));
+  ok('Veredicto: las etiquetas HTML quedan balanceadas (details y tablas) en todos los casos',[dud,fuerte,minimo,sinE].every(h=>(h.match(/<details/g)||[]).length===(h.match(/<\/details>/g)||[]).length&&(h.match(/<table>/g)||[]).length===(h.match(/<\/table>/g)||[]).length));
+  ok('La nota «Cómo funciona» trae la guía de 30 segundos del Veredicto',/Cómo leer el Veredicto en 30 segundos/.test(ix)&&/Valor dudoso/.test(ix.slice(ix.indexOf('Cómo leer el Veredicto en 30 segundos'),ix.indexOf('Datos: MLB Stats API')+50)));
+ }
  ok('Mis picks: el CLV positivo con t < 2 se dice "dentro del ruido" y la calibración muestra Brier',/todavía dentro del ruido/.test(ix)&&/OVAEdge\.brierSkill/.test(ix)&&/OVAEdge\.summarizeCLV/.test(ix));
 }
 

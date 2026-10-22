@@ -12,6 +12,17 @@ Todo es **adicional**: ningún cálculo ni veredicto existente cambió.
    mercado». Ahora, si la t es menor que 2, dice «positivo pero todavía dentro del ruido».
 3. **Brier** bajo la tabla de calibración (Mis picks), con 10 resueltos o más, y su mejora contra decir siempre la frecuencia base.
 
+## v67: el titular del Veredicto ya no promete lo que los datos no sostienen
+
+Si el EV de tu número es positivo pero **desaparece al mezclarlo con el mercado** (`W_MODELO = 0.24`), el titular pasa de
+«Valor moderado/fuerte» a **«Valor dudoso»** (tarjeta gris). No se veta: el stake con tu número crudo sigue a la vista
+(«Si lo juegas igual: ¼ Kelly…») y la decisión es tuya. «Margen mínimo», «Sin apuesta» y el aviso de «precio imposible» no cambian.
+Sin `ovaedge.js` el titular es el de antes.
+
+Con cuotas parejas (-110/-110) la ventaja sobrevive a la mezcla desde ~60% (≈10 puntos sobre el mercado); con un favorito
+-150/+130, desde ~65%. Por debajo de eso, «dudoso». Si algún día el backtest sube el peso del modelo (en 2026 salió 0.54, pero el
+promedio de tres temporadas es 0.24 ± 0.28), se cambia `W_MODELO` en `index.html` y el titular se mueve solo.
+
 ## Qué NO se conectó: el Monte Carlo
 
 Se comparó contra `matriz()` (binomial negativa con DISP 2.3, equipos independientes) con los mismos promedios de carreras,

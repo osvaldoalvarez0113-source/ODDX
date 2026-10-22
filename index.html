@@ -998,7 +998,7 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v66</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v67</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -1136,6 +1136,20 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
 
 <footer>
 <details><summary><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.5h11.5a2 2 0 0 1 2 2V20H7a2 2 0 0 1-2-2z"/><path d="M5 16.5h13.5"/></svg> C&oacute;mo funciona esta app &mdash; nota t&eacute;cnica</summary>
+
+  <b>Cómo leer el Veredicto en 30 segundos.</b>
+  <b>1)</b> «Tu número» es el porcentaje que sale de la fórmula. «El mercado cree» es lo mismo que
+  dice la cuota, ya sin la comisión de la casa (por eso las dos filas suman 100).
+  <b>2)</b> «EV» es cuánto ganas o pierdes de promedio por cada dólar apostado si tu número fuera
+  verdad: +5% quiere decir 5 centavos por dólar; negativo, que la cuota no paga lo suficiente.
+  <b>3)</b> Los puntos de ventaja son tu número menos el del mercado. Menos de 2 es ruido.
+  <b>4)</b> El problema es que tu propia medición dice que el número casi nunca le gana al mercado.
+  Por eso existe el <b>Chequeo contra el mercado</b>: mezcla los dos y pregunta si todavía queda
+  valor. Si no queda, el titular dice «Valor dudoso». No te lo prohíbe: te avisa que apuestas contra
+  un mercado que casi siempre tiene razón.
+  <b>5)</b> La única prueba de que le ganas al mercado es el <b>CLV</b> en Mis picks: si la cuota que
+  tomaste es mejor que la de cierre, de forma sostenida y con t de 2 o más, hay ventaja de verdad.
+  Los resultados de una semana no dicen nada.
 
   Datos: MLB Stats API. Los escudos de los equipos y las caras de los abridores tambi&eacute;n salen de la
   MLB, por URL directa seg&uacute;n el id que ya usa la app para pedir las estad&iacute;sticas; si alguna
@@ -3022,10 +3036,10 @@ function actualizarRanking(root){
    DraftKings: el modelo pesa 0.24 ± 0.28 sobre ~6,200 juegos y no le gana al mercado
    (docs/MEDICION-MERCADO-MLB-2026-10.md). Si todavía hay valor con la mezcla, es creíble. */
 var W_MODELO=0.24;
-function chequeoMercado(lados,amA,amH){
-  if(PLATA==='kalshi'||typeof OVAEdge==='undefined') return '';
+function mezclaMercado(lados,amA,amH){
+  if(PLATA==='kalshi'||typeof OVAEdge==='undefined') return null;
   var nums=[numOdds(amA),numOdds(amH)];
-  if(!isFinite(nums[0])||!isFinite(nums[1])) return '';
+  if(!isFinite(nums[0])||!isFinite(nums[1])) return null;
   var bk=banca(), cs=[];
   for(var i=0;i<2;i++){
     var pm=lados[i].fair/100, mix=OVAEdge.blend(lados[i].p,pm,W_MODELO);
@@ -3033,6 +3047,11 @@ function chequeoMercado(lados,amA,amH){
     cs.push({n:lados[i].n, pm:pm*100, pt:lados[i].p*100, mix:mix*100, ev:k.ev,
              stake:(bk&&k.stake>0)?bk*k.stake:null});
   }
+  return cs;
+}
+function chequeoMercado(lados,amA,amH){
+  var cs=mezclaMercado(lados,amA,amH);
+  if(!cs) return '';
   var best=(cs[0].ev>=cs[1].ev)?cs[0]:cs[1];
   var sigue=best.ev>0;
   var o='<details class="comoLee"><summary>Chequeo contra el mercado · '+
@@ -3074,6 +3093,8 @@ function veredictoEV(pA,pH,amA,amH,nomA,nomH,vc){
   });
   if(!okPago) return null;
   var best=(lados[0].ev>=lados[1].ev)?lados[0]:lados[1];
+  var mz=(best.ev>0&&best.ev<=EV_IMPOSIBLE)?mezclaMercado(lados,amA,amH):null;
+  var mzBest=mz?mz[lados.indexOf(best)]:null;
   var cls, tit, det;
   if(best.ev>EV_IMPOSIBLE){
     cls='alerta'; tit='Ese precio no puede ser';
@@ -3087,6 +3108,15 @@ function veredictoEV(pA,pH,amA,amH,nomA,nomH,vc){
     cls='no'; tit='Margen mínimo';
     det=best.n+' sale con solo '+best.edge.toFixed(1)+' puntos de ventaja. '+
         'Eso cabe dentro del error del modelo. Déjalo pasar.';
+  }else if(mzBest&&mzBest.ev<=0){
+    /* La ventaja de tu número no sobrevive a mezclarlo con el mercado (W_MODELO, medido). No se veta:
+       sigue siendo tu decisión, y el stake con tu número crudo queda a la vista. */
+    cls='no'; tit='Valor dudoso en '+best.n;
+    det='Tu número ve '+best.edge.toFixed(1)+' puntos sobre la cuota (EV +'+(best.ev*100).toFixed(1)+
+        '%), pero tu propia medición dice que el modelo casi no le agrega nada al precio de cierre. '+
+        'Mezclado con el mercado ya no queda valor (EV '+(mzBest.ev*100).toFixed(1)+'%). '+
+        'Juégalo solo si ves algo que el mercado no sabe.'+
+        (best.stake?' Si lo juegas igual: ¼ Kelly con tu número $'+best.stake.toFixed(2)+'.':'');
   }else if(best.edge<5){
     cls=''; tit='Valor moderado en '+best.n;
     det=best.edge.toFixed(1)+' puntos sobre la cuota · EV +'+(best.ev*100).toFixed(1)+
