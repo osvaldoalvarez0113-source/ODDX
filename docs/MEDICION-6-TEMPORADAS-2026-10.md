@@ -202,5 +202,5 @@ en NBA y fútbol, y movimiento de la línea desde la apertura. Haría falta guar
 ## Cómo repetirlo
 
 Las ramas `variantes-6t`, `futbol-6t` y `nba-6t` traen cada una un workflow que se dispara al hacer push y guarda el
-resultado en `var-S20XX`, `resultados-futbol-6t` y `resultados-nba-6t`. La sonda que mostró de dónde hay cuotas de cierre
-está en la rama `sonda-6t` / `sonda-6t2` (`scripts/sonda_6t.js`, `sonda_6t2.js`).
+resultado en `var-S20XX`, `resultados-futbol-6t` y `resultados-nba-6t` (esas ramas se conservan: son los datos de este informe). Las ramas de sonda
+(`sonda-6t`, `sonda-6t2`) y la del experimento de tiros se borraron al cerrar; lo que mostraron está resumido arriba.
