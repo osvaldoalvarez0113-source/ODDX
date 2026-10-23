@@ -1,4 +1,4 @@
-name: Experimento NBA total (seguimiento: talento ausente vs total de la linea)
+name: "Experimento NBA total - seguimiento del talento ausente vs total de la linea"
 
 on:
   workflow_dispatch:
