@@ -1,0 +1,46 @@
+Premier League: 1900 partidos
+La Liga: 1900 partidos
+Serie A: 1900 partidos
+Bundesliga: 1530 partidos
+Ligue 1: 1678 partidos
+Partidos con tiros (HS, AS, HST, AST): 8906 de 8908
+
+Conversión tiros → goles esperados (ajustada con 2122+2223, 7302 equipos-partido):
+  goles ≈ 0.341·(tiros a puerta) + -0.018·(tiros fuera)
+  goles ≈ 0.354·(tiros a puerta) + -0.002·(tiros fuera) + -0.040·(corners)
+
+=== 1X2 · 5256 partidos de prueba (2324, 2425, 2526) · log loss, menos es mejor ===
+Mercado (Pinnacle cierre): 0.9637 · Modelo actual (goles, xi 1.6): 0.9888 · brecha total: 25.1 milésimas
+xi = qué tan rápido pierde peso el partido viejo (el actual usa 1.6). "Elegida" = la xi con mejor pérdida en 2022-23, sin mirar la prueba.
+
+A. Goles reales (modelo actual)          xi 0.8           pérdida 0.9858 · vs actual -2.98 (z -3.5) · cierra 11.9% de la brecha · por temporada 2324:-2.4 2425:-2.7 2526:-3.9
+A. Goles reales (modelo actual)          xi 1.2           pérdida 0.9870 · vs actual -1.82 (z -4.6) · cierra 7.2% de la brecha · por temporada 2324:-1.6 2425:-1.7 2526:-2.1
+A. Goles reales (modelo actual)          xi 1.6 (elegida) pérdida 0.9888 · vs actual 0.00 (z 0.0) · cierra 0.0% de la brecha · por temporada 2324:0.0 2425:0.0 2526:0.0
+B. xG aprox. (tiros a puerta + fuera)    xi 0.8           pérdida 0.9954 · vs actual 6.68 (z 2.9) · cierra -26.6% de la brecha · por temporada 2324:12.3 2425:8.3 2526:-0.6
+B. xG aprox. (tiros a puerta + fuera)    xi 1.2 (elegida) pérdida 0.9961 · vs actual 7.30 (z 3.2) · cierra -29.1% de la brecha · por temporada 2324:13.5 2425:8.3 2526:0.1
+B. xG aprox. (tiros a puerta + fuera)    xi 1.6           pérdida 0.9973 · vs actual 8.51 (z 3.6) · cierra -33.9% de la brecha · por temporada 2324:15.1 2425:9.0 2526:1.4
+B2. xG aprox. (+ corners)                xi 0.8           pérdida 0.9960 · vs actual 7.23 (z 3.1) · cierra -28.8% de la brecha · por temporada 2324:13.1 2425:8.4 2526:0.3
+B2. xG aprox. (+ corners)                xi 1.2 (elegida) pérdida 0.9967 · vs actual 7.91 (z 3.4) · cierra -31.5% de la brecha · por temporada 2324:14.2 2425:8.3 2526:1.2
+B2. xG aprox. (+ corners)                xi 1.6           pérdida 0.9979 · vs actual 9.18 (z 3.9) · cierra -36.6% de la brecha · por temporada 2324:15.9 2425:9.1 2526:2.6
+C. Mitad goles, mitad xG aprox.          xi 0.8           pérdida 0.9871 · vs actual -1.64 (z -1.2) · cierra 6.5% de la brecha · por temporada 2324:1.2 2425:-0.6 2526:-5.5
+C. Mitad goles, mitad xG aprox.          xi 1.2           pérdida 0.9878 · vs actual -1.01 (z -0.8) · cierra 4.0% de la brecha · por temporada 2324:1.9 2425:-0.5 2526:-4.5
+C. Mitad goles, mitad xG aprox.          xi 1.6 (elegida) pérdida 0.9890 · vs actual 0.25 (z 0.2) · cierra -1.0% de la brecha · por temporada 2324:3.2 2425:0.5 2526:-3.0
+C2. 25% goles, 75% xG aprox.             xi 0.8           pérdida 0.9904 · vs actual 1.61 (z 0.9) · cierra -6.4% de la brecha · por temporada 2324:5.8 2425:2.9 2526:-3.9
+C2. 25% goles, 75% xG aprox.             xi 1.2 (elegida) pérdida 0.9909 · vs actual 2.16 (z 1.2) · cierra -8.6% de la brecha · por temporada 2324:6.6 2425:2.9 2526:-3.1
+C2. 25% goles, 75% xG aprox.             xi 1.6           pérdida 0.9921 · vs actual 3.33 (z 1.9) · cierra -13.3% de la brecha · por temporada 2324:8.0 2425:3.7 2526:-1.8
+
+Mejor variante (entre las elegidas): A. Goles reales (modelo actual)|1.6 · pérdida 0.9888
+=== Mezcla de esa variante con la cuota del mercado: ¿le gana al mercado solo? (negativo = sí, en milésimas) ===
+peso del modelo 100%: diferencia con el mercado 25.10 (z 10.8)
+peso del modelo 70%: diferencia con el mercado 14.23 (z 8.8)
+peso del modelo 50%: diferencia con el mercado 8.60 (z 7.5)
+peso del modelo 30%: diferencia con el mercado 4.24 (z 6.2)
+peso del modelo 20%: diferencia con el mercado 2.52 (z 5.5)
+peso del modelo 10%: diferencia con el mercado 1.11 (z 4.9)
+peso del modelo 5%: diferencia con el mercado 0.52 (z 4.5)
+--- referencia: lo mismo con el modelo actual (goles) ---
+peso del modelo 30%: diferencia con el mercado 4.24 (z 6.2)
+peso del modelo 10%: diferencia con el mercado 1.11 (z 4.9)
+peso del modelo 5%: diferencia con el mercado 0.52 (z 4.5)
+
+Hecho. Nada de esto cambia la app: solo mide.
