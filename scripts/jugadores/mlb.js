@@ -17,6 +17,7 @@ const ALIAS = { AZ: 'ARI', OAK: 'ATH', CHW: 'CWS', WAS: 'WSH', TBR: 'TB', SDP: '
 const norm = c => { c = String(c || '').toUpperCase(); return ALIAS[c] || c; };
 const sumaDias = (fch, n) => { const d = new Date(fch + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const log = t => console.log(t);
+const DIAG = [];
 let out = '## MLB · ¿el lineup real del dia le agrega algo a la linea de cierre?\n\n';
 const say = t => { out += t + '\n\n'; log(t); };
 
@@ -115,17 +116,24 @@ async function temporada(Y) {
   const conLinea = []; cruz.forEach((c, i) => { const o = odds[i] ? parseOdds(odds[i]) : null; if (o) { c.o = o; conLinea.push(c); } });
   log('  con linea de cierre: ' + conLinea.length);
   const boxes = await pool(conLinea.map(c => () => pedir(MLB + '/game/' + c.g.pk + '/boxscore')), 8, (h, t) => { if (h % 500 === 0) log('  boxscores ' + h + '/' + t); });
-  const res = [];
+  const res = []; let coincide = 0, difiere = 0; const muestraDiag = [];
   conLinea.forEach((c, i) => {
     const b = boxes[i]; if (!b || !b.teams) return;
     const lin = {};
     for (const lado of ['home', 'away']) {
-      const T = b.teams[lado], orden = (T && T.battingOrder) || [];
-      if (orden.length < 9) return;
-      lin[lado] = orden.slice(0, 9).map(id => { const p = (T.players && T.players['ID' + id]) || {}; const pos = (p.allPositions && p.allPositions[0] && p.allPositions[0].abbreviation) || (p.position && p.position.abbreviation) || null; return { id, pos }; });
+      const T = b.teams[lado], players = (T && T.players) || {};
+      // TITULARES = los que tienen codigo de orden al bate xx00 (100, 200 ... 900). Los suplentes llevan 101, 102, etc.
+      // (la lista teams.X.battingOrder puede traer el lineup FINAL con los suplentes, y eso filtraria el resultado del juego)
+      const starters = Object.keys(players).map(k => players[k]).filter(p => p && p.person && /^[1-9]00$/.test(String(p.battingOrder))).sort((x, y) => +x.battingOrder - +y.battingOrder);
+      if (starters.length !== 9) return;
+      lin[lado] = starters.map(p => ({ id: p.person.id, pos: (p.allPositions && p.allPositions[0] && p.allPositions[0].abbreviation) || (p.position && p.position.abbreviation) || null }));
+      const arr = ((T && T.battingOrder) || []).slice(0, 9).join(','), mine = lin[lado].map(p => p.id).join(',');
+      if (arr === mine) coincide++; else { difiere++; if (muestraDiag.length < 4) muestraDiag.push(c.g.pk + ' ' + lado + ' arreglo=[' + arr + '] titulares=[' + mine + ']'); }
     }
-    res.push({ Y, g: c.g, o: c.o, lin });
+    if (lin.home && lin.away) res.push({ Y, g: c.g, o: c.o, lin });
   });
+  log('  DIAGNOSTICO lineup: la lista battingOrder de la MLB coincide con los titulares reales en ' + coincide + ' casos y difiere en ' + difiere + (muestraDiag.length ? ' · ejemplos: ' + muestraDiag.join(' || ') : ''));
+  DIAG.push({ Y, coincide, difiere, muestraDiag });
   log('  con lineup completo de los dos equipos: ' + res.length);
   return { Y, juegos: juegos.length, cruz: cruz.length, conLinea: conLinea.length, lista: res };
 }
@@ -133,6 +141,7 @@ async function temporada(Y) {
 async function main() {
   const todos = []; const resumen = [];
   for (const Y of SEASONS) { const t = await temporada(Y); resumen.push(t); todos.push(...t.lista); }
+  say('### Diagnostico del lineup (titulares por codigo xx00 vs lista battingOrder de la MLB)\n```\n' + DIAG.map(d => d.Y + ': coincide ' + d.coincide + ' · difiere ' + d.difiere + (d.muestraDiag.length ? '\n   ' + d.muestraDiag.join('\n   ') : '')).join('\n') + '\n```');
   say('### Datos\n```\n' + resumen.map(t => t.Y + ': juegos ' + t.juegos + ' · cruzados ESPN ' + t.cruz + ' · con linea ' + t.conLinea + ' · con lineup completo ' + t.lista.length).join('\n') + '\nerrores de descarga: ' + errores.length + (errores.length ? ' (primeros: ' + errores.slice(0, 3).join(' | ') + ')' : '') + '\n```');
   if (todos.length < 800) { say('NO TERMINO: muy pocos juegos con linea y lineup.'); fs.writeFileSync('resultado_mlb.txt', out); return; }
   // jugadores unicos y sus datos

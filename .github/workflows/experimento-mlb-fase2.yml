@@ -17,20 +17,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Correr MLB base (con los titulares reales)
+        run: node scripts/jugadores/mlb.js 2>&1 | tee salida_mlb.txt
+      - name: Guardar la base para que la fase 2 no la pise
+        run: cp -f resultado_mlb.txt resultado_mlb_base.txt; cp -f resultado_mlb.json resultado_mlb_base.json 2>/dev/null || true
       - name: Correr MLB fase 2
         env:
           FASE: "2"
         run: node scripts/jugadores/mlb.js 2>&1 | tee salida_mlb2.txt
-      - name: Guardar en la rama resultados-jugadores-mlb2
+      - name: Guardar en la rama resultados-jugadores-mlb3
         if: always()
         run: |
           mkdir -p /tmp/res
-          cp -f salida_mlb2.txt resultado_mlb2.txt resultado_mlb.txt filas_mlb2.json /tmp/res/ 2>/dev/null || true
+          cp -f salida_mlb.txt salida_mlb2.txt resultado_mlb2.txt resultado_mlb_base.txt resultado_mlb_base.json filas_mlb2.json /tmp/res/ 2>/dev/null || true
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan resultados-jugadores-mlb2
+          git checkout --orphan resultados-jugadores-mlb3
           git rm -rf . >/dev/null 2>&1 || true
           cp -f /tmp/res/* . 2>/dev/null || true
           git add -A
-          git commit -m "Resultado MLB fase 2" || true
-          git push -f origin resultados-jugadores-mlb2
+          git commit -m "Resultado MLB titulares reales" || true
+          git push -f origin resultados-jugadores-mlb3
