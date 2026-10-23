@@ -1,0 +1,144 @@
+temporada 2024: 2432 juegos terminados en la MLB
+  calendario ESPN 60/185
+  calendario ESPN 120/185
+  calendario ESPN 180/185
+  cruzados con ESPN: 2425 (sin par 5, marcador distinto 2)
+  lineas 500/2425
+  lineas 1000/2425
+  lineas 1500/2425
+  lineas 2000/2425
+  con linea de cierre: 2416 (con total: 2412)
+  boxscores 500/2432
+  boxscores 1000/2432
+  boxscores 1500/2432
+  boxscores 2000/2432
+  juegos sin datos de lanzamientos: 0 · otros sin boxscore: 0
+temporada 2025: 2434 juegos terminados en la MLB
+  calendario ESPN 60/184
+  calendario ESPN 120/184
+  calendario ESPN 180/184
+  cruzados con ESPN: 2428 (sin par 4, marcador distinto 2)
+  lineas 500/2428
+  lineas 1000/2428
+  lineas 1500/2428
+  lineas 2000/2428
+  con linea de cierre: 2428 (con total: 2426)
+  boxscores 500/2434
+  boxscores 1000/2434
+  boxscores 1500/2434
+  boxscores 2000/2434
+  juegos sin datos de lanzamientos: 0 · otros sin boxscore: 0
+temporada 2026: 2430 juegos terminados en la MLB
+  calendario ESPN 60/184
+  calendario ESPN 120/184
+  calendario ESPN 180/184
+  cruzados con ESPN: 2429 (sin par 1, marcador distinto 0)
+  lineas 500/2429
+  lineas 1000/2429
+  lineas 1500/2429
+  lineas 2000/2429
+  con linea de cierre: 2429 (con total: 2428)
+  boxscores 500/2430
+  boxscores 1000/2430
+  boxscores 1500/2430
+  boxscores 2000/2430
+  juegos sin datos de lanzamientos: 0 · otros sin boxscore: 0
+### Datos
+```
+2024: juegos terminados 2432
+2025: juegos terminados 2434
+2026: juegos terminados 2430
+juegos con lanzamientos: 7296 de 7296 · con linea: 7273
+estructura del boxscore: {"pitching":["flyOuts","groundOuts","airOuts","runs","doubles","triples","homeRuns","strikeOuts","baseOnBalls","intentionalWalks","hits","hitByPitch","atBats","obp","caughtStealing","stolenBases","stolenBasePercentage","caughtStealingPercentage","numberOfPitches","era","inningsPitched","saveOpportunities","earnedRuns","whip","battersFaced","outs","completeGames","shutouts","pitchesThrown","balls","strikes","strikePercentage","hitBatsmen","balks","wildPitches","pickoffs","groundOutsToAirouts","rbi","pitchesPerInning","runsScoredPer9","homeRunsPer9","inheritedRunners","inheritedRunnersScored","catchersInterference","sacBunts","sacFlies","passedBall","popOuts","lineOuts"],"batting":["flyOuts","groundOuts","airOuts","runs","doubles","triples","homeRuns","strikeOuts","baseOnBalls","intentionalWalks","hits","hitByPitch","avg","atBats","obp","slg","ops","caughtStealing","stolenBases","stolenBasePercentage","groundIntoDoublePlay","groundIntoTriplePlay","plateAppearances","totalBases","rbi","leftOnBase","sacBunts","sacFlies","catchersInterference","pickoffs","atBatsPerHomeRun","popOuts","lineOuts"],"pitchers":[506433,676680,660853]}
+errores de descarga: 0
+```
+Juegos medibles (ambos equipos con >= 10 juegos previos, ventana 20): 6667 · con total de la linea: 6660. Las variables se miden en desviaciones tipicas (c = efecto de subir 1 desviacion tipica, en logit para quien gana y en carreras para el total).
+### 0) Sanidad: ¿estas variables predicen quien gana por si solas (sin mirar la linea)?
+| Variable (local − visita) | c ± 2·se | z |
+|---|---|---|
+| Carreras por 100 lanzamientos recibidos (ataque) | -0.3044 ± 0.3017 | -2.0 |
+| Hits por 100 lanzamientos recibidos (ataque) | 0.0124 ± 0.0856 | 0.3 |
+| Carreras permitidas por 100 lanzamientos (pitcheo; mas = peor) | 0.3227 ± 0.3362 | 1.9 |
+| Hits permitidos por 100 lanzamientos (pitcheo) | -0.0763 ± 0.0903 | -1.7 |
+| Lanzamientos por turno que recibe el ataque (paciencia) | -0.0026 ± 0.0911 | -0.1 |
+| Lanzamientos por turno del pitcheo (eficiencia) | -0.0019 ± 0.0830 | -0.0 |
+| Lanzamientos del bullpen en los ultimos 3 dias (cansancio) | 0.0300 ± 0.0510 | 1.2 |
+| CONTROL: diferencia de carreras por juego (ultimos 20) | 0.6032 ± 0.4804 | 2.5 |
+
+### 1) Encima de la linea de cierre (quien gana): logit p = logit(mercado) + a + c·variable. c = 0 → el mercado ya lo sabia.
+| Variable (local − visita), una a la vez | c ± 2·se | z |
+|---|---|---|
+| Carreras por 100 lanzamientos recibidos (ataque) | 0.0031 ± 0.0500 | 0.1 |
+| Hits por 100 lanzamientos recibidos (ataque) | 0.0159 ± 0.0499 | 0.6 |
+| Carreras permitidas por 100 lanzamientos (pitcheo; mas = peor) | -0.0127 ± 0.0503 | -0.5 |
+| Hits permitidos por 100 lanzamientos (pitcheo) | -0.0184 ± 0.0503 | -0.7 |
+| Lanzamientos por turno que recibe el ataque (paciencia) | -0.0147 ± 0.0499 | -0.6 |
+| Lanzamientos por turno del pitcheo (eficiencia) | -0.0263 ± 0.0499 | -1.1 |
+| Lanzamientos del bullpen en los ultimos 3 dias (cansancio) | 0.0195 ± 0.0500 | 0.8 |
+| CONTROL: diferencia de carreras por juego (ultimos 20) | 0.0142 ± 0.0504 | 0.6 |
+Son 8 pruebas a la vez: con 8 pruebas, algo "significativo" (|z| ≥ 2) sale por azar cerca de 1 de cada 3 veces. Pide |z| ≥ 3 y que se repita por temporada.
+### 2) Todas juntas (con el control de carreras por juego)
+| Variable | c ± 2·se | z |
+|---|---|---|
+| Carreras por 100 lanzamientos recibidos (ataque) | -0.0696 ± 0.3051 | -0.5 |
+| Hits por 100 lanzamientos recibidos (ataque) | 0.0144 ± 0.0867 | 0.3 |
+| Carreras permitidas por 100 lanzamientos (pitcheo; mas = peor) | 0.0746 ± 0.3399 | 0.4 |
+| Hits permitidos por 100 lanzamientos (pitcheo) | -0.0580 ± 0.0914 | -1.3 |
+| Lanzamientos por turno que recibe el ataque (paciencia) | -0.0197 ± 0.0921 | -0.4 |
+| Lanzamientos por turno del pitcheo (eficiencia) | -0.0482 ± 0.0840 | -1.1 |
+| Lanzamientos del bullpen en los ultimos 3 dias (cansancio) | 0.0287 ± 0.0517 | 1.1 |
+| CONTROL: diferencia de carreras por juego (ultimos 20) | 0.0925 ± 0.4859 | 0.4 |
+
+### 3) ¿Se repite por temporada? (las 7 variables de lanzamientos juntas, en este orden: RppOff, HppOff, RppDef, HppDef, PpaOff, PpaDef, Bp3)
+| Temporada | Juegos | c (por variable) | z (por variable) |
+|---|---|---|---|
+| 2024 | 2116 | -0.026 / 0.128 / 0.025 / -0.029 / 0.077 / -0.041 / 0.064 | -0.4 / 1.8 / 0.3 / -0.4 / 1.5 / -0.8 / 1.4 |
+| 2025 | 2274 | 0.010 / -0.034 / -0.017 / -0.040 / -0.087 / -0.012 / -0.016 | 0.2 / -0.5 / -0.3 / -0.5 / -1.5 / -0.2 / -0.4 |
+| 2026 | 2277 | -0.010 / -0.076 / 0.056 / -0.151 / -0.049 / -0.127 / 0.036 | -0.2 / -1.0 / 0.8 / -1.9 / -0.8 / -2.3 / 0.8 |
+
+### 4) Fuera de muestra: se ajusta en las otras temporadas y se apuesta en la que queda (moneyline a la cuota de cierre de DraftKings)
+| Regla | Resultado |
+|---|---|
+| ventaja ≥ 0 pts | 1781 apuestas · ROI -2.3% ± 4.9 |
+| ventaja ≥ 2 pts | 255 apuestas · ROI -0.3% ± 13.7 |
+| ventaja ≥ 4 pts | 24 apuestas · ROI -0.3% ± 46.6 |
+Pérdida (log loss) del modelo con lanzamientos menos la del mercado: 0.95 milésimas ± 0.94 (negativo = mejora al mercado; positivo = peor).
+### 5) Total de carreras: total real = a + b·(total de la linea) + c·variable. c = 0 → la linea ya lo sabia. (6660 juegos)
+| Variable (suma de los dos equipos), una a la vez | c ± 2·se (carreras por 1 desviacion tipica) | z |
+|---|---|---|
+| Carreras por 100 lanzamientos recibidos (los dos ataques) | 0.070 ± 0.109 | 1.3 |
+| Carreras permitidas por 100 lanzamientos (los dos pitcheos) | 0.128 ± 0.113 | 2.3 |
+| Lanzamientos por turno recibidos (paciencia, los dos) | -0.025 ± 0.108 | -0.5 |
+| Lanzamientos por turno del pitcheo (los dos) | -0.008 ± 0.108 | -0.1 |
+| Lanzamientos del bullpen en 3 dias (los dos, cansancio) | -0.028 ± 0.108 | -0.5 |
+| CONTROL: carreras por juego recientes de los dos equipos | 0.144 ± 0.113 | 2.5 |
+
+### 5b) Todas juntas en el total
+| Variable | c ± 2·se | z |
+|---|---|---|
+| Carreras por 100 lanzamientos recibidos (los dos ataques) | -0.115 ± 0.505 | -0.5 |
+| Carreras permitidas por 100 lanzamientos (los dos pitcheos) | -0.061 ± 0.536 | -0.2 |
+| Lanzamientos por turno recibidos (paciencia, los dos) | -0.035 ± 0.145 | -0.5 |
+| Lanzamientos por turno del pitcheo (los dos) | -0.007 ± 0.136 | -0.1 |
+| Lanzamientos del bullpen en 3 dias (los dos, cansancio) | -0.051 ± 0.110 | -0.9 |
+| CONTROL: carreras por juego recientes de los dos equipos | 0.274 ± 0.730 | 0.8 |
+
+### 5c) ¿Se repite por temporada en el total? (RppOff, RppDef, PpaOff, PpaDef, Bp3)
+| Temporada | Juegos | c por variable |
+|---|---|---|
+| 2024 | 2112 | 0.21 (z 2.2) · 0.17 (z 1.6) · 0.01 (z 0.1) · -0.09 (z -0.9) · 0.12 (z 1.2) |
+| 2025 | 2272 | 0.06 (z 0.6) · 0.11 (z 1.1) · -0.05 (z -0.5) · 0.11 (z 1.1) · -0.19 (z -1.9) |
+| 2026 | 2276 | -0.07 (z -0.7) · 0.15 (z 1.4) · 0.02 (z 0.2) · 0.03 (z 0.3) · -0.05 (z -0.6) |
+
+### 5d) Fuera de muestra en el total (Over si el modelo espera mas carreras que la linea, Under si menos; se asume pagar −110 porque ESPN no da el precio del total)
+| Regla | Resultado |
+|---|---|
+| diferencia esperada ≥ 0.3 carreras | 5281 apuestas · ROI -5.2% ± 2.6 |
+| diferencia esperada ≥ 0.5 carreras | 3153 apuestas · ROI -4.2% ± 3.4 |
+| diferencia esperada ≥ 0.75 carreras | 719 apuestas · ROI -3.6% ± 7.1 |
+A −110 hay que ganar 52.4% para empatar.
+### Resumen
+```
+c de cada variable encima de la linea (quien gana): ver seccion 1; encima de la linea del total: seccion 5.
+Si todos los intervalos incluyen 0 y la apuesta fuera de muestra no da ROI positivo claro, la linea ya cobra los lanzamientos.
+```
