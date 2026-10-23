@@ -1,0 +1,64 @@
+## Fútbol · titulares ausentes contra la linea de cierre de Pinnacle
+
+Partidos con cuota de cierre de Pinnacle: 9884
+
+Cruzados con ESPN: 9879 de 9884 (sin par 5, ambiguos/nombres distintos 0)
+
+### Datos
+```
+con alineacion completa (11 titulares por lado): 9878 · sin alineacion 0 · sin 11 titulares 1 · con datos de goles/asistencias 9878
+errores de descarga: 0
+muestra de la estructura de ESPN: {"claves":["boxscore","format","gameInfo","lastFiveGames","leaders","broadcasts","pickcenter","odds","hasOdds","rosters","news","seasonseries","header","article","videos","keyEvents","commentary","wallclockAvailable","meta","standings"],"roster0":[{"active":true,"starter":true,"jersey":"1","athlete":{"id":"141438","uid":"s:600~a:141438","guid":"9dd554fd-0c04-b61c-5077-8e63031fd294","lastName":"Ryan","fullName":"Mathew Ryan","displayName":"Mathew Ryan","shortName":"M. Ryan","links":[{"language":"en-US","rel":["playercard","desktop","athlete"],"href":"https://www.espn.com/soccer/player/_/id/141438/mathew-ryan","text":"Player Card","shortText":"Player Card","isExternal":false,"isPremium":false}],"headshot":{"href":"https://a.espncdn.com/i/headshots/soccer/players/full/141438.png","alt":"Mathew Ryan"},"jerseyImages":[{"href":"https://stitcher.espn.com/sports/soccer/leagues/eng.1/events/578651/athletes/141438/jersey.png?darkMode=false","rel":["full","default"],"width":1440,"height":1440},{"href":"https://stitcher.espn.com/sports/soccer/leagues/eng.1/events/578651/athletes/141438/jersey.png?darkMode=true","rel":["full","dark"],"width":1440,"height":1440}]},"position":{"name":"Goalkeeper","displayName":"Goalkeeper","abbreviation":"G"},"subbedIn":false,"subbedOut":false,"formationPlace":"1","media":{},"stats":[{"name":"appearances","displayName":"Appearances","shortDisplayName":"APP","description":"The number of times a player has made an appearance in a match.","abbreviation":"APP","value":1,"displayValue":"1"},{"name":"foulsCommitted","displayName":"Fouls Committed","shortDisplayName":"FC","description":"The number of fouls comitted by a player or team.","abbreviation":"FC","value":1,"displayValue":"1"},{"name":"foulsSuffered","displayName":"Fouls Suffered","shortDisplayName":"FA","description":"The number of fouls suffered by a player or team.","abbreviation":"FA","value":0,"displayValue":"0"},{"name":"ownGoals","displayName":"Own Goals","shortDisplayName":"OG","description":"The number of own goals conceded.","abbreviation":"OG","value":0,"displayValue":"0"},{"name":"redCards","displayName":"Red Cards","shortDisplayName":"RC","description":"The number of red cards that have been issued.","abbreviation":"RC","value":0,"displayValue":"0"},{"name":"subIns","displayName":"Substitute Appearances","shortDisplayName":"SUBIN","description":"The number of times a player has come on a sub in a match.","abbreviation":"SUB","value":0,"displayValue":"0"},{"name":"yellowCar
+```
+
+Partidos medibles (ambos equipos con >=8 partidos previos en la temporada): 7534. Titulares habituales ausentes por equipo: media 3.33 de 11.
+
+### 0) Sanidad: ¿importan los titulares ausentes por si solos? (puntos del local = a + c·(ausentes local − visita), SIN mirar la linea)
+c = -0.040 ± 0.015 puntos por titular habitual que falta (negativo = perjudica al que le faltan).
+
+### 1) Encima de la linea de cierre: puntos reales del local − puntos que esperaba el mercado = a + c·(variable)
+c = 0 → el mercado ya lo sabia.
+
+| Variable (local − visita) | c ± 2·se | z |
+|---|---|---|
+| Titulares habituales ausentes (cantidad) | -0.009 ± 0.014 | -1.3 |
+| % de goles+asistencias recientes que se ausenta (por cada punto %) | -0.000 ± 0.001 | -0.0 |
+| Cambio de portero (0/1) | -0.024 ± 0.053 | -0.9 |
+| Cambios respecto al partido anterior (cantidad) | -0.003 ± 0.012 | -0.5 |
+
+
+### 2) ¿Se repite por temporada? (titulares habituales ausentes)
+| Temporada | Partidos | c ± 2·se | z |
+|---|---|---|---|
+| 2021 | 1425 | 0.004 ± 0.031 | 0.3 |
+| 2122 | 1431 | -0.006 ± 0.031 | -0.4 |
+| 2223 | 1427 | -0.015 ± 0.032 | -0.9 |
+| 2324 | 1366 | 0.001 ± 0.031 | 0.1 |
+| 2425 | 1367 | -0.034 ± 0.033 | -2.1 |
+| 2526 | 518 | 0.008 ± 0.056 | 0.3 |
+
+
+### 3) Por liga (titulares habituales ausentes)
+| Liga | Partidos | c ± 2·se | z |
+|---|---|---|---|
+| F1 | 1446 | 0.005 ± 0.033 | 0.3 |
+| SP1 | 1596 | 0.003 ± 0.028 | 0.2 |
+| E0 | 1626 | -0.039 ± 0.029 | -2.7 |
+| D1 | 1248 | -0.031 ± 0.036 | -1.7 |
+| I1 | 1618 | 0.012 ± 0.028 | 0.8 |
+
+
+### 4) Apostar por el equipo con el once mas completo (a la cuota de cierre de Pinnacle)
+| Diferencia de titulares ausentes | Apuestas | % ganadas | ROI ± 2·se |
+|---|---|---|---|
+| 1+ | 5991 | 40.2% | -2.7% ± 4.0% |
+| 2+ | 3372 | 40.6% | -2.9% ± 5.2% |
+| 3+ | 1568 | 42.0% | -0.8% ± 7.7% |
+
+
+### Resumen
+```
+c (titulares habituales ausentes, encima de la linea) = -0.009 ± 0.014 puntos por titular (z -1.3)
+Si el intervalo incluye 0, el mercado ya descuenta las alineaciones y no hay ventaja en usarlas.
+```
+
