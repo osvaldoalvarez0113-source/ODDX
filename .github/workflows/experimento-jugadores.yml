@@ -1,0 +1,89 @@
+name: Experimento jugadores (MLB lineups, NBA, futbol vs linea de cierre)
+
+# ¿El nivel de los jugadores (lineup real, ausencias, posiciones) le agrega algo a la linea de cierre?
+# Corre al subir a la rama experimento-jugadores o a mano. No toca main ni las apps.
+on:
+  workflow_dispatch:
+  push:
+    branches: [experimento-jugadores]
+
+permissions:
+  contents: write
+
+jobs:
+  mlb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr MLB (lineup real)
+        run: node scripts/jugadores/mlb.js 2>&1 | tee salida_mlb.txt
+      - name: Guardar en la rama resultados-jugadores-mlb
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_mlb.txt resultado_mlb.txt resultado_mlb.json filas_mlb.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-jugadores-mlb
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado jugadores MLB" || true
+          git push -f origin resultados-jugadores-mlb
+
+  nba:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr NBA (jugadores, posiciones, estrellas)
+        run: node scripts/jugadores/nba.js 2>&1 | tee salida_nba.txt
+      - name: Guardar en la rama resultados-jugadores-nba
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_nba.txt resultado_nba.txt resultado_nba.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-jugadores-nba
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado jugadores NBA" || true
+          git push -f origin resultados-jugadores-nba
+
+  futbol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Traer los partidos con cuota de cierre de Pinnacle
+        run: |
+          git fetch --depth=1 origin resultados-futbol-6t
+          git show FETCH_HEAD:partidos_futbol.json > datos_futbol.json
+          ls -la datos_futbol.json
+      - name: Correr futbol (titulares ausentes)
+        run: node scripts/jugadores/futbol.js 2>&1 | tee salida_futbol.txt
+      - name: Guardar en la rama resultados-jugadores-futbol
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_futbol.txt resultado_futbol.txt resultado_futbol.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-jugadores-futbol
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado jugadores futbol" || true
+          git push -f origin resultados-jugadores-futbol
