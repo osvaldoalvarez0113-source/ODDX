@@ -1,0 +1,34 @@
+name: Experimento NBA total (seguimiento: talento ausente vs total de la linea)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [experimento-nba-total]
+
+permissions:
+  contents: write
+
+jobs:
+  nba:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr NBA con seguimiento del total
+        run: node scripts/jugadores/nba.js 2>&1 | tee salida_nba.txt
+      - name: Guardar en la rama resultados-jugadores-nba-total
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_nba.txt resultado_nba.txt resultado_nba.json filas_nba.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-jugadores-nba-total
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado NBA total" || true
+          git push -f origin resultados-jugadores-nba-total
