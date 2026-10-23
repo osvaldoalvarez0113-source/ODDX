@@ -1,0 +1,36 @@
+name: "Experimento MLB lanzamientos vs linea de cierre"
+
+# ¿Los lanzamientos (carreras/hits por lanzamiento, paciencia, bullpen) le agregan algo a la linea de cierre?
+# Corre al subir a la rama experimento-lanzamientos o a mano. No toca main ni las apps.
+on:
+  workflow_dispatch:
+  push:
+    branches: [experimento-lanzamientos]
+
+permissions:
+  contents: write
+
+jobs:
+  mlb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr MLB lanzamientos
+        run: node scripts/jugadores/mlb_lanzamientos.js 2>&1 | tee salida_lanz.txt
+      - name: Guardar en la rama resultados-mlb-lanzamientos
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_lanz.txt resultado_lanz.txt resultado_lanz.json filas_lanz.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-mlb-lanzamientos
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado MLB lanzamientos" || true
+          git push -f origin resultados-mlb-lanzamientos
