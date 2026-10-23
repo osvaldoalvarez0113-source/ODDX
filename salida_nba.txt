@@ -1,0 +1,107 @@
+temporada 2020: 1159 juegos
+temporada 2021: 1324 juegos
+temporada 2022: 1321 juegos
+temporada 2023: 1319 juegos
+temporada 2024: 1324 juegos
+temporada 2025: 1326 juegos
+Bajando boxscores y lineas de 7773 juegos...
+  500/7773
+  1000/7773
+  1500/7773
+  2000/7773
+  2500/7773
+  3000/7773
+  3500/7773
+  4000/7773
+  4500/7773
+  5000/7773
+  5500/7773
+  6000/7773
+  6500/7773
+  7000/7773
+  7500/7773
+### Datos
+```
+juegos: 7773 · con boxscore: 7769 · con boxscore y spread: 7763
+errores de descarga: 4 (primeros: box 401869402 HTTP 404 https://site.api.espn.com/apis/site/v2/sports/baske | box 401871334 HTTP 404 https://site.api.espn.com/apis/site/v2/sports/baske | box 401871337 HTTP 404 https://site.api.espn.com/apis/site/v2/sports/baske)
+ejemplo de jugadores leidos: [{"id":"3202","pos":"F","min":25,"prod":27.6,"jugo":true},{"id":"2528794","pos":"SF","min":21,"prod":16.299999999999997,"jugo":true},{"id":"3442","pos":"C","min":17,"prod":12.399999999999999,"jugo":true}]
+```
+Juegos medibles (ambos equipos con >=10 juegos previos en la temporada): 6823. Talento = produccion por juego (PTS + 0.7·REB + 0.7·AST) de los habituales del top 8 por minutos.
+### 1) Ausencias encima del spread: margen real = a + b·(linea) + c·(talento que falta, local − visita)
+c = 0 → la linea ya lo sabe.
+
+| Muestra | Juegos | b (linea) | c ± 2·se | z de c |
+|---|---|---|---|---|
+| Todas las temporadas | 6823 | 1.007 ± 0.052 | -0.009 ± 0.010 | -1.9 |
+| 2020-21 | 1002 | 1.054 ± 0.145 | -0.009 ± 0.025 | -0.7 |
+| 2021-22 | 1166 | 0.995 ± 0.131 | -0.023 ± 0.026 | -1.8 |
+| 2022-23 | 1163 | 0.877 ± 0.135 | -0.007 ± 0.022 | -0.6 |
+| 2023-24 | 1163 | 1.028 ± 0.128 | -0.003 ± 0.026 | -0.2 |
+| 2024-25 | 1166 | 1.068 ± 0.122 | -0.000 ± 0.026 | -0.0 |
+| 2025-26 | 1163 | 0.994 ± 0.112 | -0.018 ± 0.024 | -1.5 |
+
+### 2) Cara a cara por posicion: talento presente de los habituales en cada grupo (local − visita), encima del spread
+| Posicion | c ± 2·se | z |
+|---|---|---|
+| Guardias (PG SG G) | 0.003 ± 0.013 | 0.4 |
+| Aleros (SF PF F) | 0.006 ± 0.013 | 1.0 |
+| Pivots (C) | 0.014 ± 0.019 | 1.4 |
+Tres pruebas a la vez: si una sale "significativa" hay que ver que se repita por temporada.
+### 3) Estrellas: cuantos de los 2 mejores del equipo no juegan (local − visita), encima del spread
+| Variable | c ± 2·se (puntos de margen por estrella) | z |
+|---|---|---|
+| Estrellas ausentes (local − visita) | -0.124 ± 0.442 | -0.6 |
+
+### 4) Total de puntos: total real = a + b·(total de la linea) + c·(talento que falta, los dos equipos juntos)
+| Variable | c ± 2·se | z |
+|---|---|---|
+| Talento ausente total | 0.017 ± 0.010 | 3.4 |
+Juegos con total: 6823
+### 4b) Total: ¿se repite por temporada? (c = puntos extra de total por cada punto de produccion ausente, encima de la linea)
+| Temporada | Juegos | c ± 2·se | z |
+|---|---|---|---|
+| 2020-21 | 1002 | 0.000 ± 0.026 | 0.0 |
+| 2021-22 | 1166 | 0.049 ± 0.025 | 3.9 |
+| 2022-23 | 1163 | 0.019 ± 0.025 | 1.5 |
+| 2023-24 | 1163 | 0.003 ± 0.027 | 0.2 |
+| 2024-25 | 1166 | 0.003 ± 0.023 | 0.3 |
+| 2025-26 | 1163 | 0.029 ± 0.025 | 2.4 |
+
+### 4c) Total: separando talento ausente y talento presente (los dos equipos juntos)
+| Variable | c ± 2·se | z |
+|---|---|---|
+| Talento ausente | 0.018 ± 0.010 | 3.6 |
+| Talento total habitual (ausente + presente) | -0.033 ± 0.025 | -2.6 |
+Desviacion tipica del talento ausente total: 43.3 · promedio 62.3
+### 4d) Total por quintiles de talento ausente (apostando SIEMPRE al Over a −110; hay que ganar 52.4%)
+| Talento ausente (los dos equipos) | Juegos | Total real − linea (pts) | Over gana | ROI del Over ± 2·se |
+|---|---|---|---|---|
+| 0 a 25 | 1364 | -1.06 ± 0.97 | 46.9% | -10.4% ± 5.2% |
+| 25 a 45 | 1365 | 1.52 ± 1.00 | 52.2% | -0.4% ± 5.2% |
+| 45 a 67 | 1364 | 0.46 ± 0.96 | 51.1% | -2.4% ± 5.2% |
+| 67 a 95 | 1365 | 0.35 ± 0.95 | 50.7% | -3.3% ± 5.2% |
+| 95 a 327 | 1365 | 1.16 ± 0.99 | 52.2% | -0.4% ± 5.2% |
+
+### 4e) Fuera de muestra: se ajusta en las otras temporadas y se apuesta en la que queda (Over si el modelo espera total real > linea, Under si <)
+| Apostar si la diferencia esperada es ≥ | Apuestas | % ganadas | ROI ± 2·se |
+|---|---|---|---|
+| 0.5 pts | 3326 | 51.9% | -1.0% ± 3.3% |
+| 1 pts | 1434 | 51.6% | -1.5% ± 5.0% |
+| 1.5 pts | 627 | 54.7% | 4.4% ± 7.6% |
+| 2 pts | 251 | 59.0% | 12.6% ± 11.9% |
+Con "hay que ganar 52.4%" a −110. Si el ROI no es positivo con intervalo claro de 0, no hay ventaja aprovechable.
+### 5) Efecto crudo (sin mirar la linea): margen real = a + c·(talento que falta)
+c = -0.104 ± 0.010 puntos de margen por cada punto de produccion que falta. Prueba que las ausencias importan; las secciones de arriba dicen si la linea ya las cobra.
+### 6) Apostar por el equipo SANO contra el spread (a −110; hay que ganar 52.4%)
+| Diferencia de talento | Apuestas | G-P | % ganadas | ROI ± 2·se |
+|---|---|---|---|---|
+| 8+ | 5353 | 2712-2641 | 50.7% | -3.3% ± 2.6% |
+| 12+ | 4802 | 2428-2374 | 50.6% | -3.5% ± 2.8% |
+| 16+ | 4222 | 2110-2112 | 50.0% | -4.6% ± 2.9% |
+| 20+ | 3667 | 1822-1845 | 49.7% | -5.1% ± 3.2% |
+
+### Resumen
+```
+c (ausencias encima de la linea) = -0.009 ± 0.010  (z -1.9)
+Si el intervalo incluye 0, la linea de cierre ya descuenta los jugadores y no hay ventaja en usarlos.
+```
