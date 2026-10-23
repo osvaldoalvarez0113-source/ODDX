@@ -88,10 +88,10 @@ async function main() {
   say('Cruzados con ESPN: ' + cruz.length + ' de ' + datos.length + ' (sin par ' + sinPar + ', ambiguos/nombres distintos ' + ambiguo + ')');
   // 3) alineaciones
   console.log('Bajando alineaciones de ' + cruz.length + ' partidos...');
-  const sums = await pool(cruz.map(c => () => pedir(ESPN + c.ev.lg + '/summary?event=' + c.ev.id)), 8, (h, t) => { if (h % 500 === 0) console.log('  alineaciones ' + h + '/' + t); });
+  const sums = await pool(cruz.map(c => async () => leerAlineacion(await pedir(ESPN + c.ev.lg + '/summary?event=' + c.ev.id))), 8, (h, t) => { if (h % 500 === 0) console.log('  alineaciones ' + h + '/' + t); });
   const P = []; let sinAl = 0, sinOnce = 0, conGA = 0;
   cruz.forEach((c, i) => {
-    const al = sums[i] ? leerAlineacion(sums[i]) : null; if (!al) { sinAl++; return; }
+    const al = sums[i]; sums[i] = null; if (!al) { sinAl++; return; }
     const ok = ['home', 'away'].every(l => al[l].filter(p => p.starter).length === 11); if (!ok) { sinOnce++; return; }
     if (['home', 'away'].some(l => al[l].some(p => p.hasGA))) conGA++;
     P.push({ x: c.x, ev: c.ev, al });

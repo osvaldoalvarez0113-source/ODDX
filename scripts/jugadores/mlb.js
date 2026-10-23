@@ -11,7 +11,7 @@ const MLB = 'https://statsapi.mlb.com/api/v1';
 const ESPN_SB = 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard?limit=300&dates=';
 const espnOdds = id => 'https://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/' + id + '/competitions/' + id + '/odds';
 const SEASONS = (process.env.TEMPS_MLB || '2024,2025,2026').split(',').map(s => parseInt(s, 10));
-const LG = 0.315, KREG = 300, WP = 350;               // constantes fijadas ANTES de mirar resultados (no se ajustan)
+const LG = 0.315; let KREG = 300, WP = 350;           // constantes fijadas ANTES de mirar resultados (no se ajustan); en la seccion de robustez se prueban otras
 const SW = [4.65, 4.55, 4.45, 4.35, 4.25, 4.13, 4.0, 3.9, 3.8], SS = SW.reduce((a, b) => a + b, 0), SLOT = SW.map(x => x / SS);
 const ALIAS = { AZ: 'ARI', OAK: 'ATH', CHW: 'CWS', WAS: 'WSH', TBR: 'TB', SDP: 'SD', SFG: 'SF', KCR: 'KC' };
 const norm = c => { c = String(c || '').toUpperCase(); return ALIAS[c] || c; };
@@ -144,22 +144,34 @@ async function main() {
   await pool(unicos.map(k => () => { const [id, Y] = k.split('_'); return cargarLog(id, +Y); }), 8, (h, t) => { if (h % 500 === 0) log('  juego a juego ' + h + '/' + t); });
   const conHist = [...ids].filter(id => HIT_Y[id] && Object.keys(HIT_Y[id]).length).length;
   say('Bateadores distintos: ' + ids.size + ' · con algun historial anual: ' + conHist + ' · errores de descarga acumulados: ' + errores.length);
+  // lineup del juego anterior del mismo equipo (para el placebo)
+  const porEq = {};
+  todos.slice().sort((a, b) => a.g.ini - b.g.ini).forEach(r => ['home', 'away'].forEach(l => {
+    const k = r.Y + '|' + (l === 'home' ? r.g.hC : r.g.aC), arr = porEq[k] || (porEq[k] = []);
+    r.prev = r.prev || {}; r.prev[l] = arr.length ? arr[arr.length - 1] : null; arr.push(r.lin[l]);
+  }));
   // filas
-  const rows = [];
-  todos.forEach(r => {
-    const side = lado => {
-      const o = { proj: 0, rat: 0, dev: 0, g: { C: 0, IF: 0, OF: 0, DH: 0 }, sinHist: 0 };
-      r.lin[lado].forEach((p, i) => {
-        const q = ratingEn(p.id, r.Y, r.g.fecha); o.proj += SLOT[i] * (q.proj - LG); o.rat += SLOT[i] * (q.rat - LG); o.dev += SLOT[i] * q.dev;
-        const gr = GRUPO(p.pos); if (gr) o.g[gr] += SLOT[i] * (q.rat - LG); if (q.hist === 0) o.sinHist++;
-      });
-      return o;
-    };
-    const H = side('home'), A = side('away'), iH = impAm(r.o.h), iA = impAm(r.o.a);
-    rows.push({ s: r.Y, f: r.g.fecha, y: r.g.y, pK: iH / (iH + iA), iH, iA, dH: decAm(r.o.h), dA: decAm(r.o.a),
-      xProj: (H.proj - A.proj) * 1000, xRat: (H.rat - A.rat) * 1000, xDev: (H.dev - A.dev) * 1000,
-      gC: (H.g.C - A.g.C) * 1000, gIF: (H.g.IF - A.g.IF) * 1000, gOF: (H.g.OF - A.g.OF) * 1000, gDH: (H.g.DH - A.g.DH) * 1000, sh: H.sinHist + A.sinHist });
-  });
+  const construir = (K, W, placebo) => {
+    KREG = K; WP = W; const res = [];
+    todos.forEach(r => {
+      const side = lado => {
+        const lineup = placebo ? r.prev[lado] : r.lin[lado]; if (!lineup) return null;
+        const o = { proj: 0, rat: 0, dev: 0, g: { C: 0, IF: 0, OF: 0, DH: 0 }, sinHist: 0 };
+        lineup.forEach((p, i) => {
+          const q = ratingEn(p.id, r.Y, r.g.fecha); o.proj += SLOT[i] * (q.proj - LG); o.rat += SLOT[i] * (q.rat - LG); o.dev += SLOT[i] * q.dev;
+          const gr = GRUPO(p.pos); if (gr) o.g[gr] += SLOT[i] * (q.rat - LG); if (q.hist === 0) o.sinHist++;
+        });
+        return o;
+      };
+      const H = side('home'), A = side('away'); if (!H || !A) return;
+      const iH = impAm(r.o.h), iA = impAm(r.o.a);
+      res.push({ s: r.Y, f: r.g.fecha, y: r.g.y, pK: iH / (iH + iA), iH, iA, dH: decAm(r.o.h), dA: decAm(r.o.a),
+        xProj: (H.proj - A.proj) * 1000, xRat: (H.rat - A.rat) * 1000, xDev: (H.dev - A.dev) * 1000,
+        gC: (H.g.C - A.g.C) * 1000, gIF: (H.g.IF - A.g.IF) * 1000, gOF: (H.g.OF - A.g.OF) * 1000, gDH: (H.g.DH - A.g.DH) * 1000, sh: H.sinHist + A.sinHist });
+    });
+    KREG = 300; WP = 350; return res;
+  };
+  const rows = construir(300, 350, false);
   const sd = a => Math.sqrt(a.reduce((s, x) => s + x * x, 0) / a.length);
   say('Juegos medidos: ' + rows.length + '. Diferencia de nivel entre lineups (puntos de wOBA, local − visita): desviacion tipica ' + f(sd(rows.map(r => r.xRat)), 1) + ' (proyeccion sola ' + f(sd(rows.map(r => r.xProj)), 1) + '). Jugadores sin historial por juego: ' + f(rows.reduce((a, r) => a + r.sh, 0) / rows.length, 2) + ' de 18.');
   const ys = rows.map(r => r.y);
@@ -198,6 +210,27 @@ async function main() {
   const q = ms(dif);
   say('### 5) Fuera de muestra: se ajusta en las otras temporadas y se mide en la que queda\nMejora de la perdida log contra la linea sola: **' + f(q.m, 5) + '** por juego (z ' + f(q.z, 2) + '). Positivo = el lineup le gana a la linea; cerca de 0 o negativo = no.\n\n' +
     tabla(['Apostar si la ventaja del modelo con lineup es', 'Apuestas', 'ROI ± 2·se (cuota de cierre con vig)'], [0, 2, 4].map(t => { const v = ms(apuestas[t]); return ['≥ ' + t + ' puntos', v.n, f(100 * v.m, 1) + '% ± ' + f(200 * v.se, 1) + '%']; })));
+  // ---- 6) Robustez: ¿el resultado depende de como se armo el nivel de cada bateador, o de un sesgo del metodo? ----
+  const fitFull = (rr, col) => logistica(rr.map(r => [1, logit(r.pK), r[col] / 10]), rr.map(r => r.y), rr.map(() => 0));
+  const fitOff = (rr, col) => logistica(rr.map(r => [1, r[col] / 10]), rr.map(r => r.y), rr.map(r => logit(r.pK)));
+  const filaRob = (nom, rr) => { const a = fitOff(rr, 'xRat'), b = fitFull(rr, 'xRat'); return [nom, rr.length, a ? f(a.b[1], 4) + ' ± ' + f(2 * a.se[1], 4) : '—', b ? f(b.b[1], 3) + ' ± ' + f(2 * b.se[1], 3) : '—', b ? f(b.b[2], 4) + ' ± ' + f(2 * b.se[2], 4) : '—']; };
+  const cfgs = [[300, 350, 'Base (regresion 300 PA, peso previo 350)'], [1000, 350, 'Regresion fuerte (1000 PA)'], [3000, 350, 'Regresion muy fuerte (3000 PA)'], [300, 1000, 'Mas peso a la proyeccion en la temporada (1000)']];
+  const filasRob = cfgs.map(([K, W, nom]) => filaRob(nom, K === 300 && W === 350 ? rows : construir(K, W, false)));
+  const rowsPl = construir(300, 350, true);
+  filasRob.push(filaRob('PLACEBO: lineup del juego ANTERIOR del mismo equipo', rowsPl));
+  say('### 6) Robustez del resultado\n"offset fijo" = el mercado entra con peso 1 (lo de arriba). "b libre" = se deja que el mercado tenga su propio peso b (si b<1 el mercado se pasa de confiado y eso puede fabricar un c negativo falso).\nEl PLACEBO usa el lineup que ese equipo puso en su juego anterior: si c sigue igual de negativo, el efecto NO viene del lineup de hoy sino del tipo de equipo.\n\n' +
+    tabla(['Version', 'Juegos', 'c (offset fijo) ± 2·se', 'b (peso del mercado) ± 2·se', 'c (b libre) ± 2·se'], filasRob));
+  const medianaF = rows.map(r => r.f).sort()[Math.floor(rows.length / 2)];
+  const mitades = []; SEASONS.forEach(s => { const rr = rows.filter(r => r.s === s), fs2 = rr.map(r => r.f).sort(), med = fs2[Math.floor(fs2.length / 2)]; mitades.push([s + ' primera mitad', rr.filter(r => r.f < med)], [s + ' segunda mitad', rr.filter(r => r.f >= med)]); });
+  say('### 6b) c (b libre) por mitad de temporada\n' + tabla(['Periodo', 'Juegos', 'c (b libre) ± 2·se', 'z'], mitades.map(([nom, rr]) => { const g = rr.length > 200 ? fitFull(rr, 'xRat') : null; return [nom, rr.length, g ? f(g.b[2], 4) + ' ± ' + f(2 * g.se[2], 4) : '—', g ? f(g.b[2] / (g.se[2] || 1), 1) : '—']; })));
+  const dif2 = [], ap3 = { 0: [], 2: [], 4: [] };
+  SEASONS.forEach(s => { const tr = rows.filter(r => r.s !== s), te = rows.filter(r => r.s === s); if (tr.length < 500 || te.length < 100) return;
+    const g = fitFull(tr, 'xRat'); if (!g) return;
+    te.forEach(r => { const p = sig(g.b[0] + g.b[1] * logit(r.pK) + g.b[2] * r.xRat / 10); dif2.push(ll(r.pK, r.y) - ll(p, r.y));
+      const eH = p * r.dH - 1, eA = (1 - p) * r.dA - 1, lado = eH >= eA ? 'H' : 'A', edge = lado === 'H' ? (p - r.iH) * 100 : ((1 - p) - r.iA) * 100;
+      const gano = lado === 'H' ? r.y === 1 : r.y === 0, ret = gano ? (lado === 'H' ? r.dH : r.dA) - 1 : -1; [0, 2, 4].forEach(t => { if (edge >= t) ap3[t].push(ret); }); }); });
+  const q2 = ms(dif2);
+  say('### 6c) Fuera de muestra con b libre (a, b y c ajustados en las otras temporadas)\nMejora de la perdida log: **' + f(q2.m, 5) + '** por juego (z ' + f(q2.z, 2) + ').\n\n' + tabla(['Apostar si la ventaja es', 'Apuestas', 'ROI ± 2·se'], [0, 2, 4].map(t => { const v = ms(ap3[t]); return ['≥ ' + t + ' puntos', v.n, f(100 * v.m, 1) + '% ± ' + f(200 * v.se, 1) + '%']; })));
   const cc = gR ? f(gR.b[1], 4) + ' ± ' + f(2 * gR.se[1], 4) : '—';
   say('### Resumen\n```\nc del lineup encima de la linea = ' + cc + ' (por cada 10 puntos de wOBA de diferencia)\nmejora fuera de muestra = ' + f(q.m, 5) + ' por juego (z ' + f(q.z, 2) + ')\nSi el intervalo de c incluye 0 y z < 2, la linea de cierre ya descuenta el lineup.\n```');
   fs.writeFileSync('resultado_mlb.txt', out);
