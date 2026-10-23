@@ -1,0 +1,73 @@
+## MLB · ¿el lineup real del dia le agrega algo a la linea de cierre?
+
+### Diagnostico del lineup (titulares por codigo xx00 vs lista battingOrder de la MLB)
+```
+2024: coincide 1328 · difiere 3504
+   745444 home arreglo=[593428,665487,630105,592518,673490,688363,669134,642180,701538] titulares=[593428,665487,630105,592518,673490,595777,669134,642180,701538]
+   745444 away arreglo=[605141,660271,518692,669257,571970,606192,681546,571771,666158] titulares=[605141,660271,518692,669257,571970,606192,681546,518792,666158]
+   746175 away arreglo=[593428,665487,630105,592518,673490,640492,669134,666703,701538] titulares=[593428,665487,630105,592518,673490,595777,669134,642180,701538]
+   747060 home arreglo=[683002,668939,663624,681297,669720,656811,656775,602104,622761] titulares=[683002,668939,663624,623993,669720,676059,656775,602104,622761]
+2025: coincide 1234 · difiere 3622
+   778563 home arreglo=[664023,673548,663656,457759,807713,621020,691718,665804,542932] titulares=[664023,673548,663656,683737,807713,621020,691718,665804,542932]
+   778564 home arreglo=[664023,673548,663656,660644,807713,621020,691718,608348,542932] titulares=[664023,673548,663656,683737,807713,621020,691718,608348,542932]
+   778557 home arreglo=[669224,592450,641355,502671,665862,663757,683011,700250,665828] titulares=[669224,592450,641355,502671,665862,691176,683011,700250,665828]
+   778557 away arreglo=[694192,592885,661388,656555,686217,687401,686555,641343,668930] titulares=[694192,592885,661388,656555,686217,687401,669003,681962,668930]
+2026: coincide 1002 · difiere 3856
+   823812 home arreglo=[668930,661388,592885,663604,641343,686217,666152,663368,650859] titulares=[668930,661388,592885,683734,641343,686217,666152,669003,687401]
+   823812 away arreglo=[805367,695657,678246,672820,669720,808959,671976,624512,656537] titulares=[805367,695657,678246,643217,669720,808959,677592,700337,682668]
+   824704 home arreglo=[683737,608324,664023,691718,663538,608348,694208,621020,624424] titulares=[683737,608324,664023,691718,663538,608348,694208,621020,807713]
+   824704 away arreglo=[695578,671277,691781,695734,686894,682928,683083,660688,696285] titulares=[695578,665953,691781,695734,686894,682928,683083,660688,696285]
+```
+
+### Datos
+```
+2024: juegos 2432 · cruzados ESPN 2425 · con linea 2416 · con lineup completo 2416
+2025: juegos 2434 · cruzados ESPN 2428 · con linea 2428 · con lineup completo 2428
+2026: juegos 2430 · cruzados ESPN 2429 · con linea 2429 · con lineup completo 2429
+errores de descarga: 0
+```
+
+Bateadores distintos: 888 · con algun historial anual: 888 · errores de descarga acumulados: 0
+
+Fase 2. Juegos con al menos 3 lineups previos de cada equipo: 7134. Desviacion tipica (puntos de wOBA): lineup habitual local−visita 15.4 · desviacion de HOY respecto a lo habitual (local−visita) 6.3. Juegos con |desviacion| ≥ 5: 2783, ≥ 10: 789.
+
+### 7) El efecto: ¿viene del lineup HABITUAL o de la DESVIACION de hoy? (b libre; por cada 10 puntos de wOBA)
+| Variable | c ± 2·se | z |
+|---|---|---|
+| Lineup habitual (local − visita, promedio de sus ultimos 5) | -0.0352 ± 0.0448 | -1.6 |
+| Desviacion de hoy respecto a lo habitual (local − visita) | 0.0042 ± 0.0784 | 0.1 |
+Si el efecto esta solo en la desviacion: el mercado se pasa cuando un equipo pone hoy un lineup mas fuerte (o mas debil) que el de siempre.
+
+### 7b) Cada lado por separado (si el mercado se pasa, devH debe dar negativo y devA positivo)
+| Variable | c ± 2·se | z |
+|---|---|---|
+| Desviacion del lineup LOCAL hoy | 0.0326 ± 0.1082 | 0.6 |
+| Desviacion del lineup VISITA hoy | -0.0010 ± 0.1066 | -0.0 |
+
+
+### 7c) ¿Se pasa mas cuando el lineup de hoy es MAS FUERTE o MAS DEBIL que el habitual?
+| Variable | c ± 2·se | z |
+|---|---|---|
+| Desviacion hacia lineup relativamente mas fuerte del local (≥ 0) | -0.0353 ± 0.0448 | -1.6 |
+| Desviacion hacia lineup relativamente mas debil del local (≤ 0) | 0.0152 ± 0.1401 | 0.2 |
+
+
+### 8) Regla sin ajustar nada: apostar CONTRA el equipo cuyo lineup de hoy esta por encima de su nivel habitual (cuota de cierre con vig)
+| Desviacion minima (local − visita) | Apuestas | Todas ROI ± 2·se | 2024 | 2025 | 2026 |
+|---|---|---|---|---|---|
+| ≥ 3 | 4249 | -5.1% ± 3.1% | 1461: -6.0% ± 5.3 | 1406: -5.6% ± 5.4 | 1382: -3.7% ± 5.4 |
+| ≥ 5 | 2783 | -5.5% ± 3.8% | 1003: -8.8% ± 6.4 | 898: -6.0% ± 6.8 | 882: -1.4% ± 6.8 |
+| ≥ 8 | 1363 | -6.3% ± 5.6% | 506: -14.0% ± 9.0 | 411: -1.6% ± 10.3 | 446: -1.8% ± 9.7 |
+| ≥ 12 | 442 | -6.9% ± 9.9% | 178: -15.7% ± 15.1 | 120: 0.0% ± 19.7 | 144: -1.7% ± 17.3 |
+
+
+### 9) Hacia adelante (se ajusta SOLO con temporadas anteriores y se apuesta en la siguiente)
+Mejora de la perdida log: **-0.00044** por juego (z -1.10).
+
+| Apostar si la ventaja es | Apuestas | ROI ± 2·se | 2025 | 2026 |
+|---|---|---|---|---|
+| ≥ 0 puntos | 583 | -1.2% ± 8.6% | 373: -2.5% ± 10.5 | 210: 1.2% ± 14.9 |
+| ≥ 2 puntos | 33 | -19.2% ± 34.5% | 28: -25.2% ± 37.2 | 5: 14.4% ± 95.8 |
+| ≥ 4 puntos | 0 | 0.0% ± 0.0% | 0: 0.0% ± 0.0 | 0: 0.0% ± 0.0 |
+
+
