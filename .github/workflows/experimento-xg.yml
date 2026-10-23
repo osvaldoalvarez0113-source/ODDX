@@ -1,0 +1,36 @@
+name: "Experimento xG aproximado (tiros) vs mercado en futbol"
+
+# ¿Cierra la brecha con Pinnacle si el modelo usa un xG aproximado (tiros de football-data) en vez de goles?
+# Corre al subir a la rama experimento-xg o a mano. No toca main ni las apps.
+on:
+  workflow_dispatch:
+  push:
+    branches: [experimento-xg]
+
+permissions:
+  contents: write
+
+jobs:
+  xg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr experimento xG
+        run: node scripts/experimento_xg.js 2>&1 | tee salida_xg.txt
+      - name: Guardar en la rama resultados-futbol-xg
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_xg.txt resultado_xg.txt resultado_xg.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-futbol-xg
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado experimento xG futbol" || true
+          git push -f origin resultados-futbol-xg
