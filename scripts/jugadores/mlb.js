@@ -171,6 +171,47 @@ async function main() {
     });
     KREG = 300; WP = 350; return res;
   };
+  if (process.env.FASE === '2') {
+    // ===== FASE 2: ¿de donde sale el efecto? Se separa "lineup habitual del equipo" de "cuanto se desvia HOY de lo habitual" =====
+    const hist5 = {};
+    todos.slice().sort((a, b) => a.g.ini - b.g.ini).forEach(r => ['home', 'away'].forEach(l => {
+      const k = r.Y + '|' + (l === 'home' ? r.g.hC : r.g.aC), arr = hist5[k] || (hist5[k] = []); r['p5_' + l] = arr.slice(-5); arr.push(r.lin[l]);
+    }));
+    const ratL = (lineup, Y, fecha) => { let t = 0; lineup.forEach((p, i) => { t += SLOT[i] * (ratingEn(p.id, Y, fecha).rat - LG); }); return t * 1000; };
+    const F2 = [];
+    todos.forEach(r => {
+      const lado = l => { const prev = r['p5_' + l]; if (prev.length < 3) return null; const hoy = ratL(r.lin[l], r.Y, r.g.fecha), pr = prev.map(L2 => ratL(L2, r.Y, r.g.fecha)), us = pr.reduce((a, b) => a + b, 0) / pr.length; return { hoy, us, dev: hoy - us }; };
+      const H = lado('home'), A = lado('away'); if (!H || !A) return;
+      const iH = impAm(r.o.h), iA = impAm(r.o.a);
+      F2.push({ s: r.Y, f: r.g.fecha, y: r.g.y, pK: iH / (iH + iA), iH, iA, dH: decAm(r.o.h), dA: decAm(r.o.a), devH: H.dev, devA: A.dev, dDev: H.dev - A.dev, dUs: H.us - A.us, dHoy: H.hoy - A.hoy });
+    });
+    const sdv = a => { const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length); };
+    say('Fase 2. Juegos con al menos 3 lineups previos de cada equipo: ' + F2.length + '. Desviacion tipica (puntos de wOBA): lineup habitual local−visita ' + f(sdv(F2.map(r => r.dUs)), 1) + ' · desviacion de HOY respecto a lo habitual (local−visita) ' + f(sdv(F2.map(r => r.dDev)), 1) + '. Juegos con |desviacion| ≥ 5: ' + F2.filter(r => Math.abs(r.dDev) >= 5).length + ', ≥ 10: ' + F2.filter(r => Math.abs(r.dDev) >= 10).length + '.');
+    const fitX = (rr, cols) => logistica(rr.map(r => [1, logit(r.pK)].concat(cols.map(c => r[c] / 10))), rr.map(r => r.y), rr.map(() => 0));
+    const Lc = (g, i) => g ? f(g.b[i], 4) + ' ± ' + f(2 * g.se[i], 4) : '—', Zc = (g, i) => g ? f(g.b[i] / (g.se[i] || 1), 1) : '—';
+    const gA = fitX(F2, ['dUs', 'dDev']);
+    say('### 7) El efecto: ¿viene del lineup HABITUAL o de la DESVIACION de hoy? (b libre; por cada 10 puntos de wOBA)\n' + tabla(['Variable', 'c ± 2·se', 'z'], [['Lineup habitual (local − visita, promedio de sus ultimos 5)', Lc(gA, 2), Zc(gA, 2)], ['Desviacion de hoy respecto a lo habitual (local − visita)', Lc(gA, 3), Zc(gA, 3)]]) + 'Si el efecto esta solo en la desviacion: el mercado se pasa cuando un equipo pone hoy un lineup mas fuerte (o mas debil) que el de siempre.');
+    const gB = fitX(F2, ['devH', 'devA']);
+    say('### 7b) Cada lado por separado (si el mercado se pasa, devH debe dar negativo y devA positivo)\n' + tabla(['Variable', 'c ± 2·se', 'z'], [['Desviacion del lineup LOCAL hoy', Lc(gB, 2), Zc(gB, 2)], ['Desviacion del lineup VISITA hoy', Lc(gB, 3), Zc(gB, 3)]]));
+    F2.forEach(r => { r.dPos = Math.max(r.dDev, 0); r.dNeg = Math.min(r.dDev, 0); });
+    const gC = fitX(F2, ['dUs', 'dPos', 'dNeg']);
+    say('### 7c) ¿Se pasa mas cuando el lineup de hoy es MAS FUERTE o MAS DEBIL que el habitual?\n' + tabla(['Variable', 'c ± 2·se', 'z'], [['Desviacion hacia lineup relativamente mas fuerte del local (≥ 0)', Lc(gC, 2), Zc(gC, 2)], ['Desviacion hacia lineup relativamente mas debil del local (≤ 0)', Lc(gC, 3), Zc(gC, 3)]]));
+    // regla simple SIN parametros ajustados: apostar contra el lado cuyo lineup de hoy esta por encima de lo habitual
+    const regla = T => { const v = []; F2.forEach(r => { if (r.dDev >= T) v.push({ s: r.s, ret: r.y === 0 ? r.dA - 1 : -1 }); else if (r.dDev <= -T) v.push({ s: r.s, ret: r.y === 1 ? r.dH - 1 : -1 }); }); return v; };
+    const SEAS = [...new Set(F2.map(r => r.s))].sort();
+    say('### 8) Regla sin ajustar nada: apostar CONTRA el equipo cuyo lineup de hoy esta por encima de su nivel habitual (cuota de cierre con vig)\n' + tabla(['Desviacion minima (local − visita)'].concat(['Apuestas', 'Todas ROI ± 2·se']).concat(SEAS.map(s => String(s))), [3, 5, 8, 12].map(T => { const v = regla(T), q = ms(v.map(x => x.ret)); return ['≥ ' + T].concat([q.n, f(100 * q.m, 1) + '% ± ' + f(200 * q.se, 1) + '%']).concat(SEAS.map(s => { const qq = ms(v.filter(x => x.s === s).map(x => x.ret)); return qq.n + ': ' + f(100 * qq.m, 1) + '% ± ' + f(200 * qq.se, 1); })); })));
+    // hacia adelante: ajustar solo con temporadas ANTERIORES
+    const wf = {}, dif3 = [], ap4 = { 0: [], 2: [], 4: [] };
+    SEAS.forEach((s, i) => { if (i === 0) return; const tr = F2.filter(r => r.s < s), te = F2.filter(r => r.s === s), g = fitX(tr, ['dUs', 'dDev']); if (!g) return;
+      const dd = []; te.forEach(r => { const p = sig(g.b[0] + g.b[1] * logit(r.pK) + g.b[2] * r.dUs / 10 + g.b[3] * r.dDev / 10); dd.push(ll(r.pK, r.y) - ll(p, r.y));
+        const eH = p * r.dH - 1, eA = (1 - p) * r.dA - 1, lado = eH >= eA ? 'H' : 'A', edge = lado === 'H' ? (p - r.iH) * 100 : ((1 - p) - r.iA) * 100, gano = lado === 'H' ? r.y === 1 : r.y === 0, ret = gano ? (lado === 'H' ? r.dH : r.dA) - 1 : -1;
+        [0, 2, 4].forEach(t => { if (edge >= t) { ap4[t].push(ret); (wf[s + '|' + t] = wf[s + '|' + t] || []).push(ret); } }); });
+      dif3.push(...dd); });
+    const q3 = ms(dif3);
+    say('### 9) Hacia adelante (se ajusta SOLO con temporadas anteriores y se apuesta en la siguiente)\nMejora de la perdida log: **' + f(q3.m, 5) + '** por juego (z ' + f(q3.z, 2) + ').\n\n' + tabla(['Apostar si la ventaja es'].concat(['Apuestas', 'ROI ± 2·se']).concat(SEAS.slice(1).map(s => String(s))), [0, 2, 4].map(t => { const v = ms(ap4[t]); return ['≥ ' + t + ' puntos', v.n, f(100 * v.m, 1) + '% ± ' + f(200 * v.se, 1) + '%'].concat(SEAS.slice(1).map(s => { const qq = ms(wf[s + '|' + t] || []); return qq.n + ': ' + f(100 * qq.m, 1) + '% ± ' + f(200 * qq.se, 1); })); })));
+    fs.writeFileSync('resultado_mlb2.txt', out); fs.writeFileSync('filas_mlb2.json', JSON.stringify(F2));
+    return;
+  }
   const rows = construir(300, 350, false);
   const sd = a => Math.sqrt(a.reduce((s, x) => s + x * x, 0) / a.length);
   say('Juegos medidos: ' + rows.length + '. Diferencia de nivel entre lineups (puntos de wOBA, local − visita): desviacion tipica ' + f(sd(rows.map(r => r.xRat)), 1) + ' (proyeccion sola ' + f(sd(rows.map(r => r.xProj)), 1) + '). Jugadores sin historial por juego: ' + f(rows.reduce((a, r) => a + r.sh, 0) / rows.length, 2) + ' de 18.');

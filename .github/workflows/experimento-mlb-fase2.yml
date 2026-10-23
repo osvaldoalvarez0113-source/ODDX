@@ -1,0 +1,36 @@
+name: "Experimento MLB fase 2 - de donde sale el efecto del lineup"
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [experimento-mlb-fase2]
+
+permissions:
+  contents: write
+
+jobs:
+  mlb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr MLB fase 2
+        env:
+          FASE: "2"
+        run: node scripts/jugadores/mlb.js 2>&1 | tee salida_mlb2.txt
+      - name: Guardar en la rama resultados-jugadores-mlb2
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_mlb2.txt resultado_mlb2.txt resultado_mlb.txt filas_mlb2.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-jugadores-mlb2
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado MLB fase 2" || true
+          git push -f origin resultados-jugadores-mlb2
