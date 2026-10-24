@@ -1,0 +1,9 @@
+Futbol: OddsPapi devolvio 88 partidos
+Futbol usable: 43 · descartados {"lejos":45,"empezado":0,"sinPin":0,"sinPrecio":0}
+Muestra nombres: Premier League: Aston Villa vs Manchester City 0.1863/0.213/0.6007 | La Liga: Rayo Vallecano vs Elche CF 0.5478/0.2473/0.2049 | Serie A: Cagliari Calcio vs Bologna FC 0.3244/0.3126/0.363 | Serie A: Como 1907 vs Sassuolo Calcio 0.6521/0.1967/0.1512 | Bundesliga: RB Leipzig vs SV 07 Elversberg 0.6775/0.1814/0.1411 | Bundesliga: FC Augsburg vs Union Berlin 0.5296/0.2304/0.24 | Bundesliga: FSV Mainz vs Werder Bremen 0.5606/0.2333/0.206 | Bundesliga: 1. FC Cologne vs Schalke 04 0.4616/0.256/0.2824 | Bundesliga: SC Paderborn 07 vs Hamburger SV 0.4209/0.2655/0.3136 | Premier League: Arsenal FC vs Everton FC 0.66/0.2253/0.1147 | Premier League: Coventry City vs Fulham FC 0.3007/0.2727/0.4267 | La Liga: Racing Santander vs Espanyol Barcelona 0.4048/0.2582/0.3371
+Campos de un partido: fixtureId,participant1Id,participant2Id,sportId,tournamentId,seasonId,statusId,hasOdds,startTime,trueStartTime,trueEndTime,updatedAt,bookmakerOdds
+Mercado NBA: {"id":"111","a":"111","b":"112","nombre":"Winner (incl. overtime)","orden":["112=2","111=1"]}
+NBA: OddsPapi devolvio 5 partidos
+NBA usable: 5 · descartados {"lejos":0,"empezado":0,"sinPin":0,"sinPrecio":0}
+Muestra NBA: San Antonio Spurs vs Houston Rockets 0.6377/0.3623 | Utah Jazz vs New Orleans Pelicans 0.5129/0.4871 | Golden State Warriors vs Memphis Grizzlies 0.6047/0.3953 | Los Angeles Lakers vs LA Clippers 0.7516/0.2484 | Sacramento Kings vs Portland Trail Blazers 0.2126/0.7874
+Llamadas este mes (este escaner): 71 de 130
