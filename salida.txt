@@ -1,0 +1,211 @@
+01:10:36 Sonda de atraso iniciada, duración (min): 200
+01:10:37 cabeceras espn-scoreboard-fut 200 {"age":null,"cc":"max-age=4","date":"Sat, 24 Oct 2026 01:10:37 GMT","lm":null,"cors":"*","srv":null}
+01:10:37 cabeceras espn-scoreboard-nba 200 {"age":null,"cc":"max-age=9","date":"Sat, 24 Oct 2026 01:10:37 GMT","lm":null,"cors":"*","srv":null}
+01:10:37 cabeceras nbacom-scoreboard 200 {"age":null,"cc":null,"date":"Sat, 24 Oct 2026 01:10:37 GMT","lm":"Sat, 24 Oct 2026 01:10:30 GMT","cors":"https://www.nba.com","srv":null}
+01:10:37 cabeceras nbacom-pbp 200 {"age":null,"cc":null,"date":"Sat, 24 Oct 2026 01:10:37 GMT","lm":"Sat, 24 Oct 2026 00:46:41 GMT","cors":"https://www.nba.com","srv":null}
+01:10:38 cabeceras nbacom-box 200 {"age":null,"cc":null,"date":"Sat, 24 Oct 2026 01:10:38 GMT","lm":"Sat, 24 Oct 2026 01:10:08 GMT","cors":"https://www.nba.com","srv":null}
+01:10:38 cabeceras mlb-schedule 200 {"age":"18","cc":"max-age=20, public, stale-while-revalidate=30, stale-if-error=86400","date":"Sat, 24 Oct 2026 01:10:38 GMT","lm":null,"cors":"*","srv":"HIT, HIT"}
+01:10:38 cabeceras mlb-feed-live 200 {"age":"8","cc":"max-age=10, public, stale-while-revalidate=30, stale-if-error=86400","date":"Sat, 24 Oct 2026 01:10:38 GMT","lm":null,"cors":"*","srv":"HIT, HIT"}
+01:10:38 cabeceras mlb-diffpatch 200 {"age":"0","cc":"max-age=10, public, stale-while-revalidate=30, stale-if-error=86400","date":"Sat, 24 Oct 2026 01:10:38 GMT","lm":null,"cors":"*","srv":"MISS, MISS"}
+01:10:38 cabeceras mlb-timestamps 200 {"age":"0","cc":"max-age=10, public, stale-while-revalidate=30, stale-if-error=86400","date":"Sat, 24 Oct 2026 01:10:38 GMT","lm":null,"cors":"*","srv":"MISS, MISS"}
+01:10:38 cabeceras savant-gf 200 {"age":null,"cc":"public, max-age=5","date":"Sat, 24 Oct 2026 01:10:38 GMT","lm":"Sat, 24 Oct 2026 01:10:38 GMT","cors":"*","srv":"cloudflare"}
+01:10:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:11:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:12:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:13:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:14:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:15:40 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:16:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:17:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:18:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:19:40 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:20:40 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:21:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:22:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:23:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:24:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:25:40 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:26:40 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:27:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:28:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:29:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:30:40 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba ATL@CHA | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:31:40 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:32:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:33:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:34:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:35:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:36:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:37:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:38:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:39:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba MIN@ORL | nba TOR@WAS | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:40:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:41:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:42:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:43:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:44:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:45:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:46:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:47:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:48:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:49:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:50:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba NYK@BOS | nba DAL@IND | nba DET@MIA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:51:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:52:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:53:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:54:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:55:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:56:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:57:42 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:58:41 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+01:59:47 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:00:57 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | mlb Tampa Bay Rays@Milwaukee Brewers
+02:01:51 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:02:51 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:03:51 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:04:51 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:05:51 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:06:55 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:07:56 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:08:55 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:09:55 EN VIVO: fut JUA @ NCX | fut CAT @ TIG | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:10:56 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:11:55 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:12:56 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:13:55 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:14:56 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:15:56 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:16:56 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:17:56 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:18:56 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:19:56 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | mlb Tampa Bay Rays@Milwaukee Brewers
+02:20:56 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:21:56 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:22:56 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:24:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:25:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:26:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:27:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:28:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:29:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:30:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:31:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:32:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:33:02 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:34:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:35:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:36:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:37:02 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:38:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:39:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:40:01 EN VIVO: fut JUA @ NCX | nba DET@MIA | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:41:02 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:42:01 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:43:01 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:44:01 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:45:01 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:46:02 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:47:01 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:48:01 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:49:01 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:50:01 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:51:01 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:52:01 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:53:00 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:54:00 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:55:01 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:56:06 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:57:05 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:58:06 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+02:59:06 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:00:06 EN VIVO: fut JUA @ NCX | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:01:06 EN VIVO: fut JUA @ NCX | fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:02:06 EN VIVO: fut JUA @ NCX | fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:03:06 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:04:06 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:05:06 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:06:05 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:07:05 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:08:11 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:09:11 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:10:11 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:11:16 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:12:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:13:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:14:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:15:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:16:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:17:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:18:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:19:20 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:20:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:21:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:22:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:23:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:24:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:25:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:26:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC | mlb Tampa Bay Rays@Milwaukee Brewers
+03:27:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:28:20 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:29:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:30:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:31:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:32:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:33:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:34:20 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:35:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:36:20 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:37:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:38:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:39:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:40:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:41:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:42:20 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:43:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:44:20 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:45:22 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:46:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:47:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:48:21 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:49:26 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:50:26 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:51:26 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:52:26 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:53:26 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:54:27 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:55:26 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:56:26 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:57:26 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:58:26 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+03:59:26 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:00:26 EN VIVO: fut ASL @ ATL | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:01:32 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:02:31 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:03:32 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:04:37 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:05:41 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:06:47 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:07:46 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:08:46 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:09:46 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba NOP@UTA | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:10:46 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:11:52 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:12:56 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:13:57 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:14:56 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:15:56 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:16:56 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:17:57 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:18:56 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:19:56 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:20:55 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:21:56 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:22:55 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:23:56 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:25:01 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:26:01 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:27:01 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:28:01 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:29:02 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:30:08 EN VIVO: fut ASL @ ATL | fut MAC @ NEW | nba HOU@SAS | nba MEM@GSW | nba LAC@LAL | nba POR@SAC
+04:30:39 Sonda terminada.
