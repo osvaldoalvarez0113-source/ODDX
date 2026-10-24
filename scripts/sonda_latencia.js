@@ -59,7 +59,7 @@ async function vivosNba(){
  return out;
 }
 async function vivosMlb(){
- const r=await get('https://statsapi.mlb.com/api/v1/schedule?sportId=1&date='+new Date().toISOString().slice(0,10)); const out=[];
+ const f=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10); const r=await get('https://statsapi.mlb.com/api/v1/schedule?sportId=1&startDate='+f(1)+'&endDate='+f(0)); const out=[];   /* fecha de MLB = hora de EEUU: de noche en UTC el juego sigue en el día anterior */
  ((r.j&&r.j.dates||[]).forEach(d=>d.games.forEach(g=>{ if(g.status&&g.status.abstractGameState==='Live') out.push({dep:'mlb',id:g.gamePk,nombre:g.teams.away.team.name+'@'+g.teams.home.team.name}); })));
  return out;
 }
