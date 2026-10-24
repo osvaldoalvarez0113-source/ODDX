@@ -19,14 +19,15 @@
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);
- padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+ padding-bottom:calc(120px + env(safe-area-inset-bottom))}
 header{padding:16px 14px 12px;position:sticky;top:0;background:var(--bg);z-index:9;
  border-bottom:1px solid var(--line)}
 header .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 header h1{font-size:20px;margin:0;font-weight:800;letter-spacing:2px}
 .ver{font-size:10px;color:var(--mut);font-weight:400;margin-left:2px}
 select#ligaSel{background:var(--bg2);border:1px solid var(--line2);color:var(--txt);
- border-radius:20px;padding:7px 12px;font-size:12.5px;flex:1;min-width:130px;-webkit-appearance:none}
+ border-radius:20px;padding:7px 12px;font-size:12.5px;flex:1;min-width:130px;-webkit-appearance:none;
+ text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
 /* barra inferior fija, como la navegacion nativa de iOS */
 .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--bg1);
  border-top:1px solid var(--line2);z-index:20;padding-bottom:env(safe-area-inset-bottom)}
@@ -160,6 +161,42 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 /* noticias */
 .noticia{font-size:12px;color:var(--mut);padding:7px 0;border-bottom:1px solid var(--line)}
 .noticia:last-child{border-bottom:0}
+.noticia a{color:var(--txt);text-decoration:none;font-weight:600;line-height:1.4}
+.noticia small{display:block;color:var(--mut2);font-size:11px;margin-top:2px}
+
+/* pestaña Forma: tarjetas, chips tocables, barras, cara a cara */
+.fcard{background:var(--bg1);border:1px solid var(--line2);border-radius:var(--r2);padding:12px 12px 10px;margin:8px 0}
+.fcard .ft{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.fcard .ft b{font-size:14px}
+.fcard .ft small{color:var(--mut);font-size:11.5px;font-variant-numeric:tabular-nums;text-align:right}
+.forma span{cursor:pointer;transition:transform .12s,box-shadow .12s}
+.forma span.sel{box-shadow:0 0 0 2px var(--hot);transform:translateY(-1px)}
+.mini .forma span{cursor:default}
+.fdet{font-size:12px;color:var(--mut);min-height:16px;margin:-4px 0 8px;line-height:1.4}
+.fdet b{color:var(--txt)}
+.fsub{font-size:11.5px;color:var(--mut);margin:2px 0 0;line-height:1.5}
+.fsub b{color:var(--txt)}
+.mini{display:flex;gap:8px;align-items:center;margin:4px 0 2px}
+.mini .ml{flex:0 0 66px;font-size:11.5px;color:var(--mut)}
+.mini .forma{margin:0}
+.fbar{margin:8px 0}
+.fbar .fl{display:flex;justify-content:space-between;font-size:12px;color:var(--mut);margin-bottom:3px}
+.fbar .fl b{color:var(--txt);font-variant-numeric:tabular-nums}
+.fbar .ftr{height:7px;border-radius:99px;background:var(--bg3);overflow:hidden}
+.fbar .ftr i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.fbar.oro .ftr i{background:linear-gradient(90deg,#D89626,var(--hot))}
+.h2hr{display:flex;gap:6px;margin:0 0 8px}
+.h2hr div{flex:1;text-align:center;background:var(--bg2);border-radius:var(--r);padding:8px 4px}
+.h2hr b{display:block;font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.h2hr small{color:var(--mut);font-size:11px;line-height:1.2;display:block}
+.h2hl{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:12.5px}
+.h2hl .fe{flex:0 0 62px;color:var(--mut2);font-size:11px}
+.h2hl .en{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h2hl .en b{font-variant-numeric:tabular-nums;padding:0 3px}
+.h2hl .cmp{flex:0 0 auto;font-size:10.5px;color:var(--mut2)}
+.fvac{font-size:12px;color:var(--mut2);padding:4px 0;line-height:1.5}
+.lcrow{font-size:12.5px;line-height:1.5;margin:3px 0;color:var(--mut)}
+.lcrow b{color:var(--txt)}
 
 /* cuotas manuales */
 .cuotasbox{background:var(--bg2);border-radius:var(--r);padding:12px;margin:6px 0}
@@ -574,11 +611,13 @@ html[data-app=hub] .ovaApar{padding-top:0}
 .ovaHome:active{opacity:.6}
 html[data-app=fut] .ovaHome{width:36px;height:36px;padding:0;font-size:24px;line-height:1;padding-bottom:3px}
 html[data-app=fut] header .top select{min-width:0}
-html[data-app=fut] header .top{flex-wrap:nowrap;gap:8px}
-html[data-app=fut] header h1{font-size:18px;letter-spacing:1px;white-space:nowrap}
-html[data-app=fut] header h1 .ver{margin-left:4px}
+html[data-app=fut] header .top{flex-wrap:nowrap;gap:6px}
+html[data-app=fut] header h1{font-size:15px;letter-spacing:0;white-space:nowrap}
+html[data-app=fut] header h1 .ver{display:none}
+html[data-app=fut] header .top select#ligaSel{flex:1 1 auto;font-size:12px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;padding-right:6px}
+html[data-app=fut] main{padding-bottom:36px}
 html[data-app=fut] .ovaHome{width:34px;height:34px}
-html[data-app=fut] header .top select{padding:7px 10px}
+html[data-app=fut] header .top select{padding:7px 6px}
 html[data-app=fut][data-skin] header h1{letter-spacing:1px}
 html[data-app=fut] select#ligaSel{min-width:0;width:0}
 
@@ -1492,20 +1531,84 @@ function resumenTendencia(nombre){
   });
   return {n:js.length, o:o, b:b, cs:cs, fs:fs, gf:gf/js.length, gc:gc/js.length};
 }
-function pintarTendencias(elId, nombreL, nombreV){
+function barraTend(etiqueta, num, den, cls){
+  var pct = den ? num/den : 0;
+  return '<div class="fbar '+(cls||'')+'"><div class="fl"><span>'+etiqueta+'</span><b>'+num+'/'+den+' · '+Math.round(pct*100)+'%</b></div>'+
+    '<div class="ftr"><i style="width:'+Math.round(pct*100)+'%"></i></div></div>';
+}
+// modelo (opcional) = el resultado de calcular() de este partido, para poner al lado lo que dice el modelo
+function pintarTendencias(elId, nombreL, nombreV, modelo){
   var el = document.getElementById(elId);
   if(!el) return;
   var tl = resumenTendencia(nombreL), tv = resumenTendencia(nombreV);
-  if(!tl || !tv){ el.innerHTML = '<div class="nota" style="margin:0">Todavía no hay partidos terminados suficientes.</div>'; return; }
-  function bloque(nombre, t){
-    return '<div class="observ"><b>'+nombre+'</b> ('+t.n+' partidos)<br>'+
-      'Más de 2.5: <b>'+t.o+'/'+t.n+'</b> · Ambos anotan: <b>'+t.b+'/'+t.n+'</b><br>'+
-      'Goles por partido: <b>'+t.gf.toFixed(1)+'</b> a favor, <b>'+t.gc.toFixed(1)+'</b> en contra · Portería en cero: <b>'+t.cs+'/'+t.n+'</b> · Sin marcar: <b>'+t.fs+'/'+t.n+'</b></div>';
+  if(!tl || !tv){ el.innerHTML = '<div class="fcard"><div class="fvac">Todavía no hay partidos terminados suficientes.</div></div>'; return; }
+  function bloque(nombre, t, cls){
+    return '<div class="fcard"><div class="ft"><b>'+escT(nombre)+'</b><small>últimos '+t.n+' partidos</small></div>'+
+      barraTend('Más de 2.5 goles', t.o, t.n, cls)+
+      barraTend('Ambos anotan', t.b, t.n, cls)+
+      barraTend('Portería en cero', t.cs, t.n, cls)+
+      '<div class="fsub"><b>'+t.gf.toFixed(1)+'</b> goles a favor y <b>'+t.gc.toFixed(1)+'</b> en contra por partido · se quedó sin marcar en <b>'+t.fs+'</b></div></div>';
   }
   var pO = (tl.o/tl.n + tv.o/tv.n)/2, pB = (tl.b/tl.n + tv.b/tv.n)/2;
-  el.innerHTML = bloque(nombreL, tl) + bloque(nombreV, tv) +
-    '<div class="observ">Cruzando los dos: Más de 2.5 en <b>'+(pO*100).toFixed(0)+'%</b> de sus partidos · Ambos anotan en <b>'+(pB*100).toFixed(0)+'%</b></div>'+
-    '<div class="nota" style="margin-top:6px">Son estadísticas descriptivas (lo que pasó), no una predicción. Con 10 partidos hay mucho ruido; por eso el modelo de goles las usa muy encogidas.</div>';
+  var mod = '';
+  try{
+    if(modelo && modelo.overLin && modelo.pBtts!==undefined){
+      mod = ' · el modelo da <b>'+(modelo.overLin[2.5]*100).toFixed(0)+'%</b> y <b>'+(modelo.pBtts*100).toFixed(0)+'%</b>';
+    }
+  }catch(e){}
+  el.innerHTML = bloque(nombreL, tl, '') + bloque(nombreV, tv, 'oro') +
+    '<div class="fcard"><div class="fsub">Promediando los dos: Más de 2.5 en <b>'+(pO*100).toFixed(0)+'%</b> · Ambos anotan en <b>'+(pB*100).toFixed(0)+'%</b>'+mod+'.</div>'+
+    '<div class="fvac" style="margin-top:4px">Muestra chica (10 partidos): sirve de contexto, no de predicción.</div></div>';
+}
+// ---------- cara a cara: esta temporada + las temporadas pasadas que ya estan guardadas en el telefono ----------
+function h2hLocal(nombreL, nombreV){
+  var esPar = function(p){
+    return (mismoEquipo(p.local,nombreL) && mismoEquipo(p.visita,nombreV)) || (mismoEquipo(p.local,nombreV) && mismoEquipo(p.visita,nombreL));
+  };
+  var todos = TERMINADOS.filter(esPar), temporadas = 1;
+  [1,2,3].forEach(function(a){
+    try{
+      var g = JSON.parse(localStorage.getItem('ova_futbol_pasada_'+LIGA_ACTUAL+'_'+inicioTemporada(a).getFullYear())||'null');
+      if(g && g.length){ temporadas++; todos = todos.concat(g.filter(esPar)); }
+    }catch(e){}
+  });
+  var vistos = {}, out = [];
+  todos.forEach(function(p){
+    var k = (p.id ? 'i'+p.id : claveEq(p.local)+'|'+claveEq(p.visita)+'|'+Math.floor(tsPartido(p)/86400000));
+    if(vistos[k]) return; vistos[k] = true; out.push(p);
+  });
+  out.sort(function(a,b){ return tsPartido(b)-tsPartido(a); });
+  return {partidos:out, temporadas:temporadas};
+}
+function pintarH2HLista(el, nombreL, nombreV, partidos, nota){
+  if(!el) return;
+  if(!partidos.length){
+    el.innerHTML = '<div class="fvac">'+(nota||'Sin enfrentamientos guardados entre estos dos equipos.')+'</div>';
+    return;
+  }
+  var vL=0,vV=0,e=0,gol=0,o=0,b=0;
+  partidos.forEach(function(m){
+    var lEsL = mismoEquipo(m.local, nombreL);
+    var gA = lEsL?m.golesLocal:m.golesVisita, gB = lEsL?m.golesVisita:m.golesLocal;
+    if(gA>gB) vL++; else if(gA<gB) vV++; else e++;
+    gol += gA+gB; if(gA+gB>2.5) o++; if(gA>=1 && gB>=1) b++;
+  });
+  var n = partidos.length;
+  var html = '<div class="h2hr"><div><b>'+vL+'</b><small>'+escT(nombreL)+'</small></div><div><b>'+e+'</b><small>Empates</small></div><div><b>'+vV+'</b><small>'+escT(nombreV)+'</small></div></div>'+
+    '<div class="fsub" style="margin-bottom:6px">'+n+' '+plural(n,'partido','partidos')+' · <b>'+(gol/n).toFixed(1)+'</b> goles por partido · Más de 2.5 en <b>'+o+'/'+n+'</b> · Ambos anotan en <b>'+b+'/'+n+'</b></div>';
+  partidos.slice(0,6).forEach(function(m){
+    var ts = tsPartido(m);
+    html += '<div class="h2hl"><span class="fe">'+fechaCorta(ts, true)+'</span><span class="en">'+escT(m.local)+' <b>'+m.golesLocal+'-'+m.golesVisita+'</b> '+escT(m.visita)+'</span>'+(m.comp?'<span class="cmp">'+escT(m.comp)+'</span>':'')+'</div>';
+  });
+  if(nota) html += '<div class="fvac" style="margin-top:4px">'+nota+'</div>';
+  el.innerHTML = html;
+}
+function pintarH2H(elId, nombreL, nombreV, textoVacio){
+  var el = document.getElementById(elId);
+  if(!el) return;
+  var r = h2hLocal(nombreL, nombreV);
+  pintarH2HLista(el, nombreL, nombreV, r.partidos,
+    r.partidos.length ? (r.temporadas>1 ? 'Incluye esta temporada y '+(r.temporadas-1)+' '+plural(r.temporadas-1,'temporada guardada','temporadas guardadas')+' en el teléfono.' : 'Solo esta temporada.') : (textoVacio||'Todavía no se han enfrentado en lo que hay guardado.'));
 }
 function calcularH2H(nombreL, nombreV){
   var juegos = TERMINADOS.filter(function(p){
@@ -1838,17 +1941,94 @@ function bloqueBase(eL, eV, nombreLmostrar, nombreVmostrar){
   };
 }
 
+function escT(s){ return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fechaCorta(ts, conAnio){
+  if(!ts) return '';
+  var d = new Date(ts);
+  return d.getDate()+' '+MESES[d.getMonth()]+(conAnio ? ' '+String(d.getFullYear()).slice(2) : '');
+}
+// ultimos 5 partidos del equipo con el detalle (rival, marcador, casa o visita) para poder tocarlos
+function detalleForma(nombreEquipo){
+  var juegos = partidosDe(nombreEquipo).sort(function(a,b){ return tsPartido(b)-tsPartido(a); }).slice(0,5);
+  return juegos.map(function(p){
+    var esLocal = mismoEquipo(p.local, nombreEquipo);
+    var gf = esLocal?p.golesLocal:p.golesVisita, gc = esLocal?p.golesVisita:p.golesLocal;
+    return {r: gf>gc?'V':(gf<gc?'D':'E'), gf:gf, gc:gc, rival: esLocal?p.visita:p.local, casa:esLocal, ts:tsPartido(p)};
+  });
+}
 function pintarForma(elId, nombreEquipo){
   var el = document.getElementById(elId);
   if(!el) return;
-  var forma = calcularForma(nombreEquipo);
-  if(!forma.length){
-    el.innerHTML = '<div class="nota" style="margin:0">Sin partidos terminados medidos todavía esta temporada.</div>';
+  var det = detalleForma(nombreEquipo);
+  if(!det.length){
+    el.innerHTML = '<div class="fvac">Sin partidos terminados medidos todavía esta temporada.</div>';
     return;
   }
   var dias = diasDesdeUltimo(nombreEquipo);
-  el.innerHTML = forma.map(function(r){ return '<span class="'+r+'">'+r+'</span>'; }).join('') +
+  el.innerHTML = det.map(function(x,i){ return '<span class="'+x.r+(i===0?' sel':'')+'" data-i="'+i+'">'+x.r+'</span>'; }).join('') +
     (dias!==null ? '<div class="nota" style="margin:0 0 0 6px;align-self:center">último partido hace '+dias+' '+plural(dias,'día','días')+'</div>' : '');
+  // linea de detalle debajo: por defecto el partido mas reciente; tocar un cuadro muestra ese partido
+  var detEl = el.nextElementSibling;
+  if(!detEl || !detEl.classList.contains('fdet')){
+    detEl = document.createElement('div'); detEl.className = 'fdet';
+    el.parentNode.insertBefore(detEl, el.nextSibling);
+  }
+  function mostrar(i){
+    var x = det[i]; if(!x) return;
+    detEl.innerHTML = '<b>'+x.r+' '+x.gf+'-'+x.gc+'</b> contra '+escT(x.rival)+' ('+(x.casa?'en casa':'de visita')+')'+(x.ts?' · '+fechaCorta(x.ts):'')+
+      (i===0 ? ' <span style="color:var(--mut2)">· el más reciente va primero; toca un cuadro</span>' : '');
+    el.querySelectorAll('span[data-i]').forEach(function(s){ s.classList.toggle('sel', +s.getAttribute('data-i')===i); });
+  }
+  el.onclick = function(ev){
+    var t = ev.target;
+    if(!t || t.tagName!=='SPAN' || t.getAttribute('data-i')===null) return;
+    ev.stopPropagation();
+    mostrar(+t.getAttribute('data-i'));
+  };
+  mostrar(0);
+}
+// posicion y puntos del equipo (de la tabla de la liga + los partidos terminados)
+function resumenTabla(nombre){
+  var b = (typeof buscarEquipo==='function') ? buscarEquipo(nombre) : null;
+  var js = partidosDe(nombre), pts = 0;
+  js.forEach(function(p){
+    var esL = mismoEquipo(p.local, nombre);
+    var f = esL?p.golesLocal:p.golesVisita, c = esL?p.golesVisita:p.golesLocal;
+    pts += f>c ? 3 : (f===c ? 1 : 0);
+  });
+  if(!b) return js.length ? (pts+' pts en '+js.length+' PJ') : '';
+  var e = b.eq, dg = e.gf - e.gc;
+  var p = (e.pts!==undefined ? e.pts : (js.length ? pts : null));
+  return '#'+e.pos+(p!==null?' · '+p+' pts':'')+' · DG '+(dg>0?'+':'')+dg+' · '+e.pj+' PJ';
+}
+// forma solo en casa (equipo local) o solo de visita (equipo visitante)
+function formaSede(nombre, enCasa){
+  var js = partidosDe(nombre).filter(function(p){ return enCasa ? mismoEquipo(p.local,nombre) : mismoEquipo(p.visita,nombre); })
+    .sort(function(a,b){ return tsPartido(b)-tsPartido(a); }).slice(0,5);
+  var v=0,e=0,d=0,gf=0,gc=0;
+  var chips = js.map(function(p){
+    var f = enCasa?p.golesLocal:p.golesVisita, c = enCasa?p.golesVisita:p.golesLocal;
+    gf+=f; gc+=c;
+    var r = f>c?'V':(f<c?'D':'E');
+    if(r==='V') v++; else if(r==='E') e++; else d++;
+    return r;
+  });
+  return {n:js.length, v:v, e:e, d:d, gf:gf, gc:gc, chips:chips};
+}
+function pintarCasaVisita(elId, nombre, enCasa){
+  var el = document.getElementById(elId);
+  if(!el) return;
+  var s = formaSede(nombre, enCasa);
+  if(!s.n){ el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="mini"><span class="ml">'+(enCasa?'En casa':'De visita')+'</span><div class="forma">'+
+    s.chips.map(function(r){ return '<span class="'+r+'">'+r+'</span>'; }).join('')+'</div></div>'+
+    '<div class="fsub"><b>'+s.v+'V '+s.e+'E '+s.d+'D</b> '+(enCasa?'jugando en casa':'jugando de visita')+' · '+s.gf+' goles a favor, '+s.gc+' en contra'+(s.n<3?' (muestra muy chica)':'')+'</div>';
+}
+function pintarEquipoForma(id, sufijo, nombre, enCasa){
+  var ft = document.getElementById(id+'ft'+sufijo);
+  if(ft) ft.innerHTML = '<b>'+escT(nombre)+'</b><small>'+escT(resumenTabla(nombre))+'</small>';
+  pintarForma(id+'forma'+sufijo, nombre);
+  pintarCasaVisita(id+'cv'+sufijo, nombre, enCasa);
 }
 
 // ---------- veredicto por mercado (segun el backtest) ----------
@@ -2106,15 +2286,12 @@ function pintarGameBody(bodyEl, p, eL, eV){
     '</div>' +
     '<div class="pane" id="'+id+'for">' +
       '<h3>Forma reciente</h3>' +
-      '<div class="observ"><b>'+p.local+'</b></div>' +
-      '<div class="forma" id="'+id+'formaL"></div>' +
-      '<div class="observ"><b>'+p.visita+'</b></div>' +
-      '<div class="forma" id="'+id+'formaV"></div>' +
-      '<div id="'+id+'perfilL" class="nota">Cargando '+p.local+'...</div>' +
-      '<div id="'+id+'perfilV" class="nota">Cargando '+p.visita+'...</div>' +
-      '<h3>Cara a cara esta temporada</h3><div id="'+id+'h2h" class="nota"></div>' +
+      '<div class="fcard"><div class="ft" id="'+id+'ftL"></div><div class="forma" id="'+id+'formaL"></div><div id="'+id+'cvL"></div></div>' +
+      '<div class="fcard"><div class="ft" id="'+id+'ftV"></div><div class="forma" id="'+id+'formaV"></div><div id="'+id+'cvV"></div></div>' +
+      '<h3>Cara a cara</h3><div class="fcard" id="'+id+'h2h"><div class="fvac">Buscando enfrentamientos...</div></div>' +
       '<h3>Tendencias de goles (últimos 10)</h3><div id="'+id+'tend"></div>' +
-      '<h3>Últimas noticias</h3><div id="'+id+'noticias" class="nota">Buscando noticias...</div>' +
+      '<h3>Últimas noticias</h3><div class="fcard" id="'+id+'noticias"><div class="fvac">Buscando noticias...</div></div>' +
+      '<h3>Lesionados y clima</h3><div class="fcard" id="'+id+'lesclima"><div class="fvac">Consultando ESPN...</div></div>' +
     '</div>';
 
   bodyEl.querySelectorAll('#'+id+'tabs .tb').forEach(function(btn){
@@ -2202,37 +2379,13 @@ function pintarGameBody(bodyEl, p, eL, eV){
       else { vr.className='rvVal no'; vr.innerHTML='✗ <b>No hay valor:</b> la cuota justa es '+jt+' y esta paga menos. Pérdida esperada: '+(ev*100).toFixed(1)+'% por cada $1.'; }
     });
   })();
-  pintarForma(id+'formaL', p.local);
-  pintarForma(id+'formaV', p.visita);
-  pintarTendencias(id+'tend', p.local, p.visita);
-  var h2h = calcularH2H(p.local, p.visita);
-  var h2hEl = document.getElementById(id+'h2h');
-  if(h2hEl){
-    h2hEl.textContent = h2h ?
-      ('Esta temporada: '+h2h.juegos+' partido(s) — '+p.local+' '+h2h.vL+' · Empates '+h2h.e+' · '+p.visita+' '+h2h.vV) :
-      'Todavía no se han enfrentado esta temporada (solo se mide dentro de la misma temporada, no historial completo).';
-  }
-
-  cargarPerfil(p.local, p.hrefLocal).then(function(perf){
-    var el = document.getElementById(id+'perfilL');
-    if(!el) return;
-    if(!perf){ el.textContent = 'No se pudo cargar la información de '+p.local+'.'; return; }
-    el.innerHTML = '<b>'+p.local+'</b>' +
-      (perf.estadio ? '<div class="estadio">🏟️ <b>'+perf.estadio+'</b>'+(perf.capacidad?' · '+perf.capacidad+' asientos':'')+'</div>' : '') +
-      (perf.goleador ? '<div class="observ">Goleador del equipo: <b>'+perf.goleador+'</b></div>' : '');
-    if(perf.noticias.length){
-      var nEl = document.getElementById(id+'noticias');
-      if(nEl) nEl.innerHTML = perf.noticias.map(function(n){ return '<div class="noticia">'+n+'</div>'; }).join('');
-    }
-  });
-  cargarPerfil(p.visita, p.hrefVisita).then(function(perf){
-    var el = document.getElementById(id+'perfilV');
-    if(!el) return;
-    if(!perf){ el.textContent = 'No se pudo cargar la información de '+p.visita+'.'; return; }
-    el.innerHTML = '<b>'+p.visita+'</b>' +
-      (perf.estadio ? '<div class="estadio">🏟️ <b>'+perf.estadio+'</b>'+(perf.capacidad?' · '+perf.capacidad+' asientos':'')+'</div>' : '') +
-      (perf.goleador ? '<div class="observ">Goleador del equipo: <b>'+perf.goleador+'</b></div>' : '');
-  });
+  pintarEquipoForma(id, 'L', p.local, true);
+  pintarEquipoForma(id, 'V', p.visita, false);
+  pintarTendencias(id+'tend', p.local, p.visita, base.r);
+  // cara a cara con lo que hay guardado; mejoras.js lo completa con ESPN (4 temporadas) cuando responde
+  pintarH2H(id+'h2h', p.local, p.visita);
+  // noticias, lesionados y clima los llena mejoras.js (ESPN). Antes se leian de worldfootball.net,
+  // pero Safari no puede abrir ese sitio desde la app: salia "No se pudo cargar" y las noticias quedaban en "Buscando...".
 }
 
 var MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -2296,20 +2449,12 @@ function pintarGameBodyCopa(bodyEl, p){
   bodyEl.innerHTML =
     '<div class="aviso">🏆 Es una copa de eliminación directa: no hay tabla de temporada, así que aquí no hay porcentajes de ganar ni cuota justa. Lo que sí ves es cómo vienen los dos equipos (forma reciente) y si ya se enfrentaron en esta copa.</div>' +
     '<h3>Forma reciente</h3>' +
-    '<div class="observ"><b>'+p.local+'</b></div>' +
-    '<div class="forma" id="'+id+'formaL"></div>' +
-    '<div class="observ"><b>'+p.visita+'</b></div>' +
-    '<div class="forma" id="'+id+'formaV"></div>' +
-    '<h3>Cara a cara en esta copa</h3><div id="'+id+'h2h" class="nota"></div>';
-  pintarForma(id+'formaL', p.local);
-  pintarForma(id+'formaV', p.visita);
-  var h2h = calcularH2H(p.local, p.visita);
-  var h2hEl = document.getElementById(id+'h2h');
-  if(h2hEl){
-    h2hEl.textContent = h2h ?
-      ('Esta edición: '+h2h.juegos+' partido(s) — '+p.local+' '+h2h.vL+' · Empates '+h2h.e+' · '+p.visita+' '+h2h.vV) :
-      'No se han enfrentado todavía en esta edición de la copa.';
-  }
+    '<div class="fcard"><div class="ft" id="'+id+'ftL"></div><div class="forma" id="'+id+'formaL"></div></div>' +
+    '<div class="fcard"><div class="ft" id="'+id+'ftV"></div><div class="forma" id="'+id+'formaV"></div></div>' +
+    '<h3>Cara a cara en esta copa</h3><div class="fcard" id="'+id+'h2h"></div>';
+  pintarEquipoForma(id, 'L', p.local, true);
+  pintarEquipoForma(id, 'V', p.visita, false);
+  pintarH2H(id+'h2h', p.local, p.visita, 'No se han enfrentado todavía en esta edición de la copa.');
 }
 
 function pintarJuegos(partidos){
@@ -3472,7 +3617,8 @@ h3{display:flex;align-items:center;gap:6px}
    trofeo:"<path d=\"M8 3.4h8v5.2a4 4 0 0 1-8 0z\" fill=\"#F0B849\"/><path d=\"M8 5.4H5.4v1.5a3.1 3.1 0 0 0 2.9 3.1M16 5.4h2.6v1.5a3.1 3.1 0 0 1-2.9 3.1\" fill=\"none\" stroke=\"#F0B849\" stroke-width=\"1.5\"/><path d=\"M10.6 13.4h2.8v3.4h-2.8zM8.6 19.4h6.8v1.8H8.6z\" fill=\"#C99A3A\"/>",
    llama:"<path d=\"M12 2.2c3.1 4.5 5.3 6.6 5.3 10.1A5.3 5.3 0 0 1 12 17.6a5.3 5.3 0 0 1-5.3-5.3c0-2.1 1-3.5 2.3-4.5.2 1.3 1.1 2.6 2.2 2.6 0-3.4-1.1-5.6.8-8.2z\" fill=\"#E8763C\"/><path d=\"M12 9.8c1.4 2 2.3 3 2.3 4.4A2.3 2.3 0 0 1 12 16.5a2.3 2.3 0 0 1-2.3-2.3c0-1.1.6-2 1.3-2.6.1.6.5 1.2 1 1.2 0-1.5-.5-2.5 0-3z\" fill=\"#F5CE6B\"/>",
    libreta:"<path d=\"M5.4 3.6h11.4a2.2 2.2 0 0 1 2.2 2.2v14.6H7.6a2.2 2.2 0 0 1-2.2-2.2z\" fill=\"#E9E3D6\"/><path d=\"M5.4 16.6h13.6v3.8H7.6a2.2 2.2 0 0 1-2.2-2.2z\" fill=\"#C9C0AD\"/><path d=\"M8.4 7.4h7.6M8.4 10.4h7.6M8.4 13.4h5\" stroke=\"#8A8271\" stroke-width=\"1.3\" stroke-linecap=\"round\"/>",
-   pelota:"<circle cx=\"12\" cy=\"12\" r=\"9.1\" fill=\"#F4F1EA\"/><path d=\"M6.4 5.6c2.6 4.1 2.6 8.7 0 12.8M17.6 5.6c-2.6 4.1-2.6 8.7 0 12.8\" fill=\"none\" stroke=\"#4F8FD6\" stroke-width=\"1.5\" stroke-linecap=\"round\"/>",
+   pelota:"<circle cx=\"12\" cy=\"12\" r=\"9.1\" fill=\"#F4F1EA\"/><path d=\"M12 7.6l3.3 2.4-1.3 3.9h-4L8.7 10z\" fill=\"#22303E\"/><path d=\"M12 7.6V3.2M15.3 10l4.6-1.5M14 13.9l2.8 3.9M10 13.9l-2.8 3.9M8.7 10L4.1 8.5\" fill=\"none\" stroke=\"#22303E\" stroke-width=\"1.2\" stroke-linecap=\"round\"/>",
+   plus:"<circle cx=\"12\" cy=\"12\" r=\"9\" fill=\"#E5484D\"/><path d=\"M12 7v10M7 12h10\" stroke=\"#fff\" stroke-width=\"2.2\" stroke-linecap=\"round\"/>",
    engrane:"<circle cx=\"12\" cy=\"12\" r=\"8.4\" fill=\"#3A4D5F\"/><path d=\"M12 2.4l1.5 2.2h-3zM12 21.6l-1.5-2.2h3zM2.4 12l2.2-1.5v3zM21.6 12l-2.2 1.5v-3zM5.2 5.2l2.6.5-2.1 2.1zM18.8 18.8l-2.6-.5 2.1-2.1zM18.8 5.2l-.5 2.6-2.1-2.1zM5.2 18.8l.5-2.6 2.1 2.1z\" fill=\"#3A4D5F\"/><circle cx=\"12\" cy=\"12\" r=\"3.4\" fill=\"#0A1119\"/>"
   };
   var MAPA=[
@@ -3483,6 +3629,7 @@ h3{display:flex;align-items:center;gap:6px}
    [/cara a cara/i,"pelota"],
    [/tendencias de goles/i,"marcador"],
    [/[uú]ltimas noticias/i,"libreta"],
+   [/lesionados/i,"plus"],
    [/ganador \(1x2\)/i,"trofeo"],
    [/m[aá]s\/menos de/i,"balanza"],
    [/ambos anotan/i,"balanza"]

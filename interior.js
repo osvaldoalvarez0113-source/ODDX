@@ -557,6 +557,7 @@ CSS+='\n'+LEGIBLE+'\n/* ---- diseño Prensa ---- */\n'+PRENSA+'\n/* ---- diseño
 /* ===================================================================== iconos nuevos */
 var IC={
  ball:'<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6c3.4 3 3.4 9.8 0 12.8M18.4 5.6c-3.4 3-3.4 9.8 0 12.8"/>',
+ soccer:'<circle cx="12" cy="12" r="9"/><path d="M12 7.6l3.3 2.4-1.3 3.9h-4L8.7 10z"/><path d="M12 7.6V3.1M15.3 10l4.5-1.5M14 13.9l2.8 3.8M10 13.9l-2.8 3.8M8.7 10L4.2 8.5"/>',
  trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3M12 13v4M8.5 20h7"/>',
  layers:'<path d="M12 3 3 8l9 5 9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 17l9 5 9-5" opacity=".5"/>',
  mark:'<path d="M6 4h12v17l-6-4-6 4z"/><path d="M9.5 9h5"/>',
@@ -566,7 +567,7 @@ var IC={
 };
 function claveIcono(txt){
   var t=String(txt||'').toLowerCase().replace(/[^a-záéíóúñ ]/g,'').trim();
-  if(t==='juegos') return 'ball'; if(t==='al gane') return 'trophy'; 
+  if(t==='juegos') return (html && html.getAttribute && html.getAttribute('data-app')==='fut' ? 'soccer' : 'ball'); if(t==='al gane') return 'trophy';
   if(t==='mis picks'||t==='registro') return 'mark'; if(t==='ajustes') return 'sliders'; if(t==='ratings') return 'bars'; if(t==='backtest') return 'chart';
   return null;
 }
