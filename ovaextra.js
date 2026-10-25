@@ -9,9 +9,9 @@
 
 var REG_KEYS={mlb:'ventaja_picks_v1', fut:'ova_futbol_registro_v1', nba:'ova_nba_registro_v1'};
 var KEYS=['ventaja_picks_v1','ova_futbol_registro_v1','ova_futbol_combinada_v1','ova_futbol_params_v1',
-  'ova_futbol_veredictos_v2','ova_nba_registro_v1','ova_nba_comb_v1','ova_nba_params_v1','ova_nba_ver_v1','ova_skin'];
+  'ova_futbol_veredictos_v2','ova_nba_registro_v1','ova_nba_comb_v1','ova_nba_params_v1','ova_nba_ver_v1','ova_skin','ova_auto_v1'];
 /* estas son listas de objetos con id: se mezclan sin duplicar. Lo demas solo se pone si falta. */
-var MERGE={ventaja_picks_v1:1,ova_futbol_registro_v1:1,ova_futbol_combinada_v1:1,ova_nba_registro_v1:1,ova_nba_comb_v1:1};
+var MERGE={ventaja_picks_v1:1,ova_futbol_registro_v1:1,ova_futbol_combinada_v1:1,ova_nba_registro_v1:1,ova_nba_comb_v1:1,ova_auto_v1:1};
 
 function jparse(s){ try{ return JSON.parse(s); }catch(e){ return null; } }
 function pad2(n){ return (n<10?'0':'')+n; }

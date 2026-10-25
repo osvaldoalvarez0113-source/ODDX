@@ -3352,6 +3352,7 @@ function fila(g,year){
   var el=document.createElement('div');
   el.className='game';
   el._pk=g.gamePk;
+  el._ts=Date.parse(g.gameDate); el._nom={a:(g.teams.away.team&&g.teams.away.team.name)||'', h:(g.teams.home.team&&g.teams.home.team.name)||''};   /* los usa el registro automático (autoregistro.js) */
   el._pit={a:{id:pa?pa.id:null,n:pa?pa.fullName:''},h:{id:pih?pih.id:null,n:pih?pih.fullName:''}};   /* abridor visita / local: lo usan las fotos de interior2.js */
   el.innerHTML='<div class="head"><div class="hrow"><div class="match">'+
     eqNom(a.team.id,esc(a.team.name),26)+' <span class="vs">@</span> '+
@@ -4192,6 +4193,7 @@ function pintarAlGane(){
     return;
   }
   lista.sort(function(a,b){ return b.p-a.p; });
+  try{ if(window.OVARegAuto){ var _ra=[]; document.querySelectorAll('.game').forEach(function(el){ var c=el._calc; if(!c||!el._ts||!el._nom) return; _ra.push({ts:el._ts, local:el._nom.h, visita:el._nom.a, p:{L:c.pH/100, A:c.pA/100}, liga:'MLB', ext:el._pk}); }); if(_ra.length) OVARegAuto.registrar('mlb',_ra); } }catch(e){}
   try{ if(window.OVAHoy){ var _fe=($('fecha')&&$('fecha').value)||''; OVAHoy.publicar('mlb',lista.slice(0,10).map(function(z){ return {n:z.gana+' ('+z.juego+')',p:z.p,sub:'ventaja '+z.vc.toFixed(2)+' carr · '+_fe}; })); } }catch(e){}
   var o='';
   lista.forEach(function(m,i){
@@ -5118,6 +5120,7 @@ document.addEventListener('visibilitychange',function(){
 <script src="diseno.js"></script>
 <script src="ajustes.js"></script>
 <script src="asistente.js"></script>
+<script src="autoregistro.js"></script>
 <script src="envivo.js"></script>
 <script src="cierre.js"></script>
 </body>

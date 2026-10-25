@@ -355,15 +355,69 @@ function pantallaAvisos(cont){
     el('p',{class:'nota',text:'Cuando abres la lista de juegos y un abridor es distinto al que vio la app la última vez, la tarjeta de ese juego marca ⚠️ «Cambió el abridor» con los dos nombres.'})]));
 }
 
+/* ----- registro automático (autoregistro.js): mide si la app sirve con TODOS los juegos, sin que tengas que guardar nada ----- */
+function pantallaAuto(cont,ls){
+  limpiar(cont);
+  var A=root.OVARegAuto;
+  if(!A){ cont.appendChild(el('div',{class:'flag rojo',text:'No cargó el módulo del registro automático (autoregistro.js).'})); return; }
+  var items=[]; try{ items=JSON.parse(ls.getItem('ova_auto_v1')||'[]')||[]; }catch(e){ items=[]; }
+  function repintar(){ pantallaAuto(cont,ls); }
+  var barra=el('div',{class:'caja'},[
+    el('h3',{text:'Registro automático'}),
+    el('p',{class:'nota',text:'Cada vez que abres MLB, Fútbol o NBA, la app guarda sola cada juego antes de que empiece: lo que dijo el modelo y lo que decía el mercado (Pinnacle sin margen). Horas después baja el resultado de ESPN. Así se mide si sirve, sin que tengas que apuntar nada. No son tus picks: no tocan Mis picks ni tu CLV ni tu banca.'}),
+    el('div',{class:'pie2'},[
+      el('button',{type:'button',text:'↻ Actualizar resultados',onclick:function(){ A.resolver(true).then(repintar,repintar); }}),
+      el('button',{type:'button',text:'📋 Copiar datos',onclick:function(){
+        var txt=A.exportar(items), nav=root.navigator||{};
+        function mostrar(){ var ta=el('textarea',{rows:'6',readonly:'readonly'}); ta.value=txt; barra.appendChild(ta); try{ ta.focus(); ta.select(); }catch(e){} }
+        if(nav.clipboard&&nav.clipboard.writeText) nav.clipboard.writeText(txt).then(function(){ barra.appendChild(el('p',{class:'nota',text:'Copiado ('+items.length+' juegos). Pégalo en Notas o en el chat.'})); },mostrar); else mostrar();
+      }})])]);
+  cont.appendChild(barra);
+  if(!items.length){
+    cont.appendChild(el('div',{class:'vacio'},[el('b',{text:'Todavía no hay juegos guardados'}),
+      el('p',{text:'Abre MLB (y toca Cargar), Fútbol o NBA con juegos por jugar y se guardan solos.'})]));
+    return;
+  }
+  var hubo=false;
+  ['mlb','fut','nba'].forEach(function(a){
+    var o=A.resumir(items,a); if(!o.total) return; hubo=true;
+    var caja=el('div',{class:'caja'},[el('h3',{text:APPS[a]}),
+      el('div',{class:'kpis'},[kpi(String(o.total),'guardados'),kpi(String(o.res),'con resultado'),kpi(String(o.pend),'pendientes')]),
+      el('div',{class:'flag '+(o.conMer<30?'ambar':'')},[A.veredicto(o)])]);
+    var gr=o.grupos.filter(function(g){ return g.n>0; });
+    if(gr.length){
+      var t=el('table',{class:'tab'},[el('tr',null,['Grupo','Juegos','Acierto (mercado)','ROI techo','ROI real'].map(function(h){ return el('th',{text:h}); }))]);
+      gr.forEach(function(g){
+        t.appendChild(el('tr',null,[el('td',{text:g.nombre}),el('td',{class:'n',text:String(g.n)}),
+          el('td',{class:'n',text:g.hit.toFixed(0)+'% ('+(g.esp==null?'—':g.esp.toFixed(0)+'%')+')'}),
+          el('td',{class:'n',text:signo(g.roi0,1)+'%'}),
+          el('td',{class:'n',text:signo(g.roi3,1)+'%'+(g.se3!=null?' ±'+g.se3.toFixed(1):'')})]));
+      });
+      caja.appendChild(t);
+      caja.appendChild(el('p',{class:'nota',text:'Se apuesta 1 unidad al favorito de la mezcla 50/50 modelo + mercado, al precio del mercado. «ROI techo» es a precio justo, sin margen de casa (nadie lo cobra así). «ROI real» descuenta un margen de 3%, que es más parecido a lo que pagan. Entre paréntesis, cuánto acertaba el mercado en promedio: si el acierto no pasa de ahí, no hay ventaja.'}));
+    }
+    var c=o.choque;
+    if(c.distintoFav>0){
+      caja.appendChild(el('div',{class:'flag'},['Cuando modelo y mercado eligieron favoritos distintos ('+c.distintoFav+' juegos): acertó el modelo '+c.gM+' veces y el mercado '+c.gK+(c.gN?' (y '+c.gN+' ninguno)':'')+'. '+
+        (c.distintoFav>=20?(c.gK>c.gM?'Por ahora el mercado tiene más razón: la regla de no jugar esos juegos se sostiene.':(c.gM>c.gK?'Por ahora el modelo le gana al mercado en esos choques, pero con tan pocos juegos puede ser suerte.':'Van empatados.')):'Muy poca muestra todavía.')]));
+    }
+    var b=o.brier;
+    if(b.n>=5&&b.mod!=null) caja.appendChild(el('p',{class:'nota',text:'Calibración (Brier, más bajo es mejor) en '+b.n+' juegos: modelo '+b.mod.toFixed(3)+' · mercado '+b.mer.toFixed(3)+' · mezcla '+b.mix.toFixed(3)+'.'}));
+    if(o.sinMer.n) caja.appendChild(el('p',{class:'nota',text:o.sinMer.n+' juegos resueltos sin precio de mercado (Pinnacle no los traía): el favorito del modelo acertó '+o.sinMer.hit.toFixed(0)+'%. Sin precio no hay ROI.'}));
+    cont.appendChild(caja);
+  });
+  if(hubo) cont.appendChild(el('p',{class:'nota',text:'Con menos de 30 juegos por grupo, los números bailan por pura suerte. Para distinguir de la suerte un ROI real de +3% hacen falta miles de juegos; por eso mira la calibración y los choques primero, que se mueven más rápido. Si el mercado no trae un juego, queda sin precio y no cuenta para el ROI.'}));
+}
+
 /* ----- arranque ----- */
-var TABS=[['marcador','📊 Marcador'],['banca','💰 Banca'],['casas','🏦 Casas'],['avisos','🔔 Avisos']];
+var TABS=[['marcador','📊 Marcador'],['banca','💰 Banca'],['casas','🏦 Casas'],['auto','🤖 Auto'],['avisos','🔔 Avisos']];
 function arrancar(){
   var d=root.document, cont=d.getElementById('vista'), nav=d.getElementById('tabs'); if(!cont||!nav) return;
   var ls; try{ ls=root.localStorage; }catch(e){ ls={getItem:function(){ return null; }}; }
   function ir(k){
     if(!TABS.some(function(t){ return t[0]===k; })) k='marcador';
     Array.prototype.forEach.call(nav.children,function(b){ b.classList.toggle('on',b.getAttribute('data-k')===k); b.setAttribute('aria-selected',b.getAttribute('data-k')===k?'true':'false'); });
-    if(k==='marcador') pantallaMarcador(cont,ls); else if(k==='banca') pantallaBanca(cont); else if(k==='casas') pantallaCasas(cont); else pantallaAvisos(cont);
+    if(k==='marcador') pantallaMarcador(cont,ls); else if(k==='banca') pantallaBanca(cont); else if(k==='casas') pantallaCasas(cont); else if(k==='auto') pantallaAuto(cont,ls); else pantallaAvisos(cont);
     try{ if(root.history&&root.history.replaceState) root.history.replaceState(null,'','#'+k); }catch(e){}
   }
   TABS.forEach(function(t){ nav.appendChild(el('button',{type:'button',role:'tab','data-k':t[0],text:t[1],onclick:function(){ ir(t[0]); }})); });

@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html'];
-const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','sw.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -52,7 +52,7 @@ else{
   const tops=new Set(),res=[];
   src.forEach(([l,s])=>{const r=analizar(s);res.push([l,r]);r.top.forEach(t=>tops.add(t));r.sets.forEach(t=>tops.add(t));});
   const ids=new Set();let m;const rid=/\bid="([^"]+)"/g;while((m=rid.exec(h)))ids.add(m[1]);
-  const FALSOS=new Set(['OVASkins','OVAHoy','OVARespaldo','OVACLV','OVAEdge']);   /* se crean con window.X y están protegidos con typeof */
+  const FALSOS=new Set(['OVASkins','OVAHoy','OVARespaldo','OVACLV','OVAEdge','OVARegAuto']);   /* se crean con window.X y están protegidos con typeof */
   const mal=new Map();
   res.forEach(([l,r])=>r.refs.forEach(([n,line,sc])=>{if(sc.has(n)||tops.has(n)||BROWSER.has(n)||ids.has(n)||FALSOS.has(n))return;if(!mal.has(n))mal.set(n,l+':'+line);}));
   ok(app+' sin nombres inexistentes',mal.size===0,[...mal].map(([n,w])=>n+' ('+w+')').join(', '));
@@ -1014,6 +1014,93 @@ sec('ovaedge.js: vig, Kelly, CLV, calibración y Monte Carlo, y su chequeo en el
   }
  }
  ok('Mis picks: el CLV positivo con t < 2 se dice "dentro del ruido" y la calibración muestra Brier',/todavía dentro del ruido/.test(ix)&&/OVAEdge\.brierSkill/.test(ix)&&/OVAEdge\.summarizeCLV/.test(ix));
+}
+
+
+/* ---------------- Registro automático (autoregistro.js) ---------------- */
+sec('Registro automático: guarda ANTES del juego, resuelve solo y mide con precio de mercado');
+{
+ const RA=require(path.join(__dirname,'autoregistro.js')), sra=rd('autoregistro.js');
+ const H=3600e3, AHORA=Date.UTC(2026,9,25,15,0,0);
+ ok('el módulo se llama OVARegAuto (OVAAuto ya existe en MLB: el cierre automático) y no lo pisa',/root\.OVARegAuto=API/.test(sra)&&!/root\.OVAAuto\b/.test(sra)&&/window\.OVAAuto=\{resolver:resolver,parsear/.test(rd('index.html')));
+ ok('sin innerHTML y sin eval (todo entra como texto)',!/innerHTML|eval\(|new Function/.test(sra));
+ ok('vive aparte: nunca escribe en los registros de picks ni en el CLV',!/ventaja_picks_v1|ova_futbol_registro_v1|ova_nba_registro_v1/.test(sra)&&/KEY='ova_auto_v1'/.test(sra));
+ // 1) solo guarda juegos que no han empezado; no duplica; refresca el número hasta que empieza
+ {
+  const lista=[{ts:AHORA+2*H,local:'Boston Red Sox',visita:'New York Yankees',p:{L:0.55,A:0.45},liga:'MLB',ext:77},
+               {ts:AHORA-1*H,local:'Chicago Cubs',visita:'St. Louis Cardinals',p:{L:0.5,A:0.5}},          // ya empezó
+               {ts:AHORA+3*H,local:'X',visita:'Y',p:{L:0.2,A:0.2,D:0.2}},                                  // probabilidades que no suman nada creíble
+               {ts:AHORA+3*H,local:'Z',visita:'W',p:null}];
+  const a1=RA.aplicarRegistro([],'mlb',lista,AHORA);
+  ok('solo se guarda el juego que no ha empezado y tiene probabilidades válidas',a1.arr.length===1&&a1.arr[0].local==='Boston Red Sox'&&a1.arr[0].m0.L===0.55&&a1.arr[0].res===null,JSON.stringify(a1.arr));
+  const a2=RA.aplicarRegistro(a1.arr,'mlb',[{ts:AHORA+2*H,local:'Boston Red Sox',visita:'New York Yankees',p:{L:0.58,A:0.42}}],AHORA+H);
+  ok('el mismo juego no se duplica: se queda el primer número (m0) y se actualiza el último (m1)',a2.arr.length===1&&a2.arr[0].m0.L===0.55&&a2.arr[0].m1.L===0.58);
+  a2.arr[0].res='L';
+  const a3=RA.aplicarRegistro(a2.arr,'mlb',[{ts:AHORA+2*H,local:'Boston Red Sox',visita:'New York Yankees',p:{L:0.9,A:0.1}}],AHORA+H);
+  ok('un juego ya resuelto no se vuelve a tocar',a3.arr[0].m1.L===0.58&&a3.tocados.length===0);
+  ok('el id lleva app, fecha y los dos equipos sin acentos ni signos',RA.idDe('fut',AHORA,'Atlético Madrid','Real Sociedad').split('|')[2]==='atleticomadrid');
+  // el mercado solo cuenta si se tomó antes del inicio
+  const r={ts:AHORA+H}; ok('un precio de mercado tomado con el juego empezado se rechaza',RA.aplicarMercado(r,{L:0.5,A:0.5},'g',AHORA+2*H)===false&&!r.k1);
+  const r2={ts:AHORA+2*H}; RA.aplicarMercado(r2,{L:0.5,A:0.5},'g1',AHORA); RA.aplicarMercado(r2,{L:0.55,A:0.45},'g2',AHORA+H);
+  ok('del mercado se guardan el primer precio (k0) y el último (k1)',r2.k0.L===0.5&&r2.k1.L===0.55&&r2.kt0==='g1'&&r2.kt1==='g2');
+ }
+ // 2) cruce con pinnacle-*.json: orientación por nombre, hora y fútbol de tres lados
+ {
+  const rec=(ts,l,v)=>({ts:ts,local:l,visita:v});
+  const mlb=[{t:new Date(AHORA+2*H).toISOString(),n:['New York Yankees','Boston Red Sox'],fair:[0.47,0.53]}];
+  const k=RA.cruzar(mlb,'mlb',rec(AHORA+2*H,'Boston Red Sox','New York Yankees'));
+  ok('MLB: el archivo lista primero a la visita y el registro primero al local → se orienta por nombre (local 53%)',k&&k.L===0.53&&k.A===0.47);
+  ok('el mismo cruce de equipos otro día de la serie NO sirve (hora a más de 5 h)',RA.cruzar(mlb,'mlb',rec(AHORA+30*H,'Boston Red Sox','New York Yankees'))===null);
+  const fut=[{t:new Date(AHORA+H).toISOString(),n:['Udinese Calcio','AC Milan'],r:[0.1923,0.2666,0.5411]}];
+  const kf=RA.cruzar(fut,'fut',rec(AHORA+H,'AC Milan','Udinese'));
+  ok('fútbol: Milan local sale con 54.1%, empate 26.7%, Udinese 19.2%',kf&&kf.L===0.5411&&kf.D===0.2666&&kf.A===0.1923);
+  const nba=[{t:new Date(AHORA+H).toISOString(),n:['Utah Jazz','Los Angeles Lakers'],ml:[0.3094,0.6906]}];
+  const kn=RA.cruzar(nba,'nba',rec(AHORA+H,'Los Angeles Lakers','Utah Jazz'));
+  ok('NBA: Lakers de local salen con 69.1%',kn&&kn.L===0.6906&&kn.A===0.3094);
+  ok('un equipo que no está en el archivo no cruza',RA.cruzar(nba,'nba',rec(AHORA+H,'Boston Celtics','Chicago Bulls'))===null);
+ }
+ // 3) resultado de ESPN
+ {
+  const mk=(h,a,hs,as,fin,ts)=>({date:new Date(ts).toISOString(),status:{type:{completed:fin,state:fin?'post':'pre',description:fin?'Final':'Scheduled'}},
+   competitions:[{competitors:[{homeAway:'home',score:String(hs),team:{displayName:h}},{homeAway:'away',score:String(as),team:{displayName:a}}]}]});
+  const evs=RA.eventosDe({events:[mk('Boston Red Sox','New York Yankees',3,5,true,AHORA+2*H),mk('Boston Red Sox','New York Yankees',1,0,true,AHORA+8*H)]});
+  const rec={app:'mlb',local:'Boston Red Sox',visita:'New York Yankees',ts:AHORA+8*H};
+  const ev=RA.buscarEvento(evs,rec);
+  ok('doble cartelera: se escoge el evento de la hora más cercana',ev&&ev.hs===1&&RA.ganadorDe(rec,ev)==='L');
+  ok('visita gana → A; empate en fútbol → D; empate en NBA/MLB no existe → null',RA.ganadorDe({app:'mlb'},{fin:true,hs:3,as:5})==='A'&&RA.ganadorDe({app:'fut'},{fin:true,hs:1,as:1})==='D'&&RA.ganadorDe({app:'nba'},{fin:true,hs:1,as:1})===null);
+  ok('un juego que no terminó no se resuelve (aunque tenga marcador parcial)',RA.ganadorDe({app:'mlb'},{fin:false,hs:3,as:1})===null);
+  ok('el nombre corto de ESPN cruza con el completo («Red Sox» ≈ «Boston Red Sox») pero White Sox ≠ Red Sox',RA.esEq('Red Sox',{displayName:'Boston Red Sox'})&&!RA.esEq('Chicago White Sox',{displayName:'Boston Red Sox'}));
+ }
+ // 4) medición: números chicos hechos a mano
+ {
+  const base=(i,favL,res,m,k)=>({id:'i'+i,app:'mlb',ts:1,local:'a',visita:'b',m1:m,k1:k,res:res});
+  const it=[
+   base(1,1,'L',{L:0.60,A:0.40},{L:0.58,A:0.42}),     // coinciden, gana el local (precio justo 1/0.58)
+   base(2,1,'A',{L:0.60,A:0.40},{L:0.58,A:0.42}),     // coinciden, pierde
+   base(3,1,'A',{L:0.60,A:0.40},{L:0.40,A:0.60}),     // CHOCAN: modelo local, mercado visita; gana visita (mercado)
+   base(4,1,'L',{L:0.40,A:0.60},{L:0.62,A:0.38}),     // CHOCAN: modelo visita, mercado local; gana local (mercado)
+   base(5,1,'L',{L:0.56,A:0.44},{L:0.54,A:0.46}),     // coinciden
+   base(6,1,'L',{L:0.60,A:0.40},null),                // sin mercado
+   {id:'p',app:'mlb',ts:1,m1:{L:0.5,A:0.5},res:null}, // pendiente
+   {id:'x',app:'mlb',ts:1,m1:{L:0.5,A:0.5},res:'X'}]; // anulado
+  const o=RA.resumir(it,'mlb');
+  ok('cuenta guardados, resueltos, pendientes, anulados y sin mercado',o.total===8&&o.res===6&&o.pend===1&&o.anul===1&&o.conMer===5&&o.sinMer.n===1&&o.sinMer.w===1);
+  const g=k=>o.grupos.find(x=>x.k===k);
+  ok('grupos: 3 coinciden, 0 cerca, 2 chocan',g('todos').n===5&&g('coinc').n===3&&g('cerca').n===0&&g('choca').n===2);
+  const u1=1/0.58-1, u5=1/0.54-1;           // se apuesta al precio del mercado: 58% en los juegos 1 y 2, 54% en el 5
+  ok('ROI techo de «coinciden» = promedio de las unidades a precio justo (gana, pierde, gana)',Math.abs(g('coinc').roi0-((u1-1+u5)/3*100))<1e-6,String(g('coinc').roi0));
+  ok('ROI con margen es menor que el techo, y el aciertos cuenta 2 de 3',g('coinc').roi3<g('coinc').roi0&&g('coinc').w===2);
+  ok('cuando chocan: distintos favoritos 2, el modelo acertó 0 y el mercado 2',o.choque.distintoFav===2&&o.choque.gM===0&&o.choque.gK===2);
+  ok('seguir al mercado en los choques gana y seguir al modelo pierde',o.choque.mercado.roi3>0&&o.choque.modelo.roi3<0&&o.choque.modelo.roi3===-100);
+  ok('Brier: un juego perfecto vale 0 y uno totalmente al revés vale 2',RA.brier({L:1,A:0},'L')===0&&RA.brier({L:0,A:1},'L')===2&&Math.abs(RA.brier({L:0.5,A:0.3,D:0.2},'D')-(0.25+0.09+0.64))<1e-9);
+  ok('con menos de 30 juegos el veredicto dice que es muy pronto y no concluye',/muy pronto/.test(RA.veredicto(o)));
+  ok('fútbol: el empate cuenta como derrota de la apuesta al favorito',(()=>{const f=RA.resumir([{id:'f',app:'fut',ts:1,m1:{L:0.5,A:0.2,D:0.3},k1:{L:0.5,A:0.2,D:0.3},res:'D'}],'fut');return f.grupos[0].w===0&&f.grupos[0].roi0===-100;})());
+ }
+ ['index.html','futbol.html','nba.html'].forEach(f=>ok(f+' carga autoregistro.js después de asistente.js',rd(f).indexOf('<script src="autoregistro.js">')>rd(f).indexOf('<script src="asistente.js">')&&rd(f).indexOf('<script src="asistente.js">')>0));
+ ok('herramientas.html lo carga antes de herramientas.js y el service worker lo guarda',rd('herramientas.html').indexOf('autoregistro.js')>0&&rd('herramientas.html').indexOf('autoregistro.js')<rd('herramientas.html').indexOf('herramientas.js')&&/'autoregistro\.js'/.test(rd('sw.js')));
+ ok('las tres apps llaman al registro con try/catch y solo con juegos pendientes',/OVARegAuto\.registrar\('mlb'/.test(rd('index.html'))&&/OVARegAuto\.registrar\('fut'/.test(rd('futbol.html'))&&/OVARegAuto\.registrar\('nba'/.test(rd('nba.html')));
+ ok('el respaldo (ovaextra.js) incluye ova_auto_v1 y lo mezcla sin duplicar',/'ova_auto_v1'\]/.test(rd('ovaextra.js'))&&/ova_auto_v1:1\}/.test(rd('ovaextra.js')));
+ ok('Herramientas tiene la pestaña 🤖 Auto',/\['auto','🤖 Auto'\]/.test(rd('herramientas.js'))&&/pantallaAuto\(cont,ls\)/.test(rd('herramientas.js')));
 }
 
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
