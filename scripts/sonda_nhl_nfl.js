@@ -1,71 +1,54 @@
-/* SONDA NHL + NFL: mira como vienen los datos reales de ESPN y de OddsPapi/Pinnacle para hockey y futbol americano.
-   No cambia nada de la app: solo escribe un informe (sonda-nhl-nfl.md) para disenar los modelos con datos reales. */
+/* SONDA 2 NHL + NFL: guarda muestras CRUDAS (ESPN y OddsPapi/Pinnacle) para construir y probar las apps con datos reales.
+   No cambia la app. Escribe la carpeta muestras-nhl-nfl/ (se sube a la rama "sonda-nhl-nfl"). */
 const fs=require('fs'); const KEY=process.env.ODDSPAPI_KEY||''; const OP='https://api.oddspapi.io/v4';
+const D='muestras-nhl-nfl'; fs.mkdirSync(D,{recursive:true});
 const out=[]; const P=(...a)=>{ const s=a.join(' '); out.push(s); console.log(s); };
-const lim=(s,n)=>String(s).replace(KEY,'***').slice(0,n);
-function claves(o,pre,prof,sal){ if(prof<0||o==null||typeof o!=='object') return; 
-  if(Array.isArray(o)){ sal.push(pre+'[] x'+o.length); if(o[0]!=null) claves(o[0],pre+'[0]',prof-1,sal); return; }
-  Object.keys(o).forEach(k=>{ const v=o[k]; if(v!==null&&typeof v==='object') { sal.push(pre+'.'+k+(Array.isArray(v)?'[]':'{}')); claves(v,pre+'.'+k,prof-1,sal);} else sal.push(pre+'.'+k+'='+lim(JSON.stringify(v),50)); }); }
+const clean=s=>String(s).split(KEY||'\u0000').join('***');
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const pad=n=>(n<10?'0':'')+n; const ymd=d=>d.getUTCFullYear()+pad(d.getUTCMonth()+1)+pad(d.getUTCDate());
 async function get(url){ try{ const r=await fetch(url,{headers:{'user-agent':'Mozilla/5.0'}}); const t=await r.text(); return {s:r.status,t}; }catch(e){ return {s:0,t:String(e.message)}; } }
-async function espn(nombre,url,detalle){
-  const r=await get(url); P('\n### ESPN '+nombre+' -> HTTP '+r.s+' · '+r.t.length+' bytes\n'+url);
-  if(r.s!==200){ P(lim(r.t,200)); return null; }
-  let j; try{ j=JSON.parse(r.t); }catch(e){ P('no es JSON'); return null; }
-  if(detalle){ const s=[]; claves(j,'',detalle,s); P(s.slice(0,260).join('\n')); }
-  return j;
-}
+function guardar(nombre,t){ fs.writeFileSync(D+'/'+nombre,t); P('  guardado '+nombre+' ('+t.length+' bytes)'); }
 (async()=>{
-  const B='https://site.api.espn.com/apis/site/v2/sports/';
-  for(const [dep,ruta,fechas] of [['NHL','hockey/nhl',['20251025','20260110']],['NFL','football/nfl',['20251026','20260104']]]){
-    for(const f of fechas){
-      const j=await espn(dep+' scoreboard '+f,B+ruta+'/scoreboard?dates='+f,0);
-      if(j&&j.events&&j.events[0]){ const e=j.events[0]; P('eventos: '+j.events.length+' · season: '+JSON.stringify(j.season||e.season)+' · week: '+JSON.stringify(e.week||j.week||null));
-        const s=[]; claves(e,'',5,s); P(s.slice(0,330).join('\n')); }
+  const B='https://site.api.espn.com/apis/site/v2/sports/', C='https://sports.core.api.espn.com/v2/sports/';
+  const hoy=new Date(); const dia=k=>new Date(Date.UTC(hoy.getUTCFullYear(),hoy.getUTCMonth(),hoy.getUTCDate()+k));
+  const DEP=[['nhl','hockey/nhl','hockey/leagues/nhl','20251025'],['nfl','football/nfl','football/leagues/nfl','20251026']];
+  for(const [n,ruta,core,fpas] of DEP){
+    P('\n== '+n.toUpperCase());
+    /* proximos: hoy y los 8 dias siguientes (para ver lineas del scoreboard) */
+    let r=await get(B+ruta+'/scoreboard?dates='+ymd(dia(0))); P('scoreboard hoy '+r.s); if(r.s===200) guardar(n+'-scoreboard-hoy.json',r.t);
+    r=await get(B+ruta+'/scoreboard'); P('scoreboard sin fecha '+r.s); if(r.s===200) guardar(n+'-scoreboard-actual.json',r.t);
+    /* juego pasado: scoreboard + summary + core odds */
+    r=await get(B+ruta+'/scoreboard?dates='+fpas); let ev=null;
+    if(r.s===200){ guardar(n+'-scoreboard-pasado.json',r.t); try{ const j=JSON.parse(r.t); ev=(j.events||[]).find(e=>e.status&&e.status.type&&e.status.type.completed); }catch(e){} }
+    if(ev){
+      P('juego pasado '+ev.id+' '+ev.name);
+      r=await get(C+core+'/events/'+ev.id+'/competitions/'+ev.id+'/odds'); P('core odds '+r.s); guardar(n+'-core-odds.json',r.t);
+      r=await get(B+ruta+'/summary?event='+ev.id); P('summary '+r.s);
+      if(r.s===200){ try{ const j=JSON.parse(r.t); delete j.plays; delete j.winprobability; guardar(n+'-summary.json',JSON.stringify(j)); }catch(e){} }
     }
-    /* rango de fechas (temporada completa en una llamada) */
-    const rng=dep==='NHL'?'20251001-20251031':'20250904-20250930';
-    const j=await espn(dep+' rango '+rng,B+ruta+'/scoreboard?dates='+rng+'&limit=1000',0);
-    if(j&&j.events){ P('eventos en rango: '+j.events.length); const est={}; j.events.forEach(e=>{ const n=e.status&&e.status.type&&e.status.type.name; est[n]=(est[n]||0)+1; }); P('estados: '+JSON.stringify(est)); }
-    /* temporada: calendario */
-    await espn(dep+' calendario',B+ruta+'/scoreboard',2);
-    await espn(dep+' equipos',B+ruta+'/teams',2);
-    await espn(dep+' standings',B.replace('/v2/sports','/v2/sports')+ruta+'/standings',2);
+    /* variantes de rango de fechas (el NHL dio 400) */
+    const a=Date.UTC(2025,9,20), b=Date.UTC(2025,9,26);
+    const V=[['rango-simple','?dates=20251020-20251026'],['rango-limit300','?dates=20251020-20251026&limit=300'],['rango-limit1000','?dates=20251020-20251026&limit=1000'],['rango-mes','?dates=20251001-20251031'],['rango-mes-limit','?dates=20251001-20251031&limit=1000'],['por-temporada','?season=2026&seasontype=2&limit=1000'],['semana','?seasontype=2&week=8&dates=2025']];
+    for(const [nom,q] of V){ const rr=await get(B+ruta+'/scoreboard'+q); let c='';
+      if(rr.s===200){ try{ c=' eventos='+(JSON.parse(rr.t).events||[]).length; }catch(e){} } P('  variante '+nom+' -> '+rr.s+c+(rr.s!==200?' '+clean(rr.t).slice(0,80):'')); }
+    r=await get(B+ruta+'/teams'); if(r.s===200) guardar(n+'-teams.json',r.t);
+    r=await get(B+ruta+'/injuries'); P('injuries '+r.s); if(r.s===200) guardar(n+'-injuries.json',r.t);
+    r=await get(B.replace('/site/v2','/v2').replace('site.api','site.web.api')+ruta+'/standings'); P('standings(alt) '+r.s);
+    r=await get('https://site.api.espn.com/apis/v2/sports/'+ruta+'/standings'); P('standings(v2) '+r.s); if(r.s===200) guardar(n+'-standings.json',r.t);
   }
-  /* una partida terminada con detalle (NHL: tiros, shootout; NFL: yardas, turnovers) */
-  for(const [dep,ruta,f] of [['NHL','hockey/nhl','20251025'],['NFL','football/nfl','20251026']]){
-    const r=await get(B+ruta+'/scoreboard?dates='+f); if(r.s!==200) continue; let j; try{j=JSON.parse(r.t);}catch(e){continue;}
-    const e=(j.events||[]).find(x=>x.status&&x.status.type&&x.status.type.completed); if(!e) { P(dep+': sin juego terminado ese dia'); continue; }
-    P('\n### '+dep+' juego '+e.id+' '+e.name);
-    const s=await espn(dep+' summary',B+ruta+'/summary?event='+e.id,3);
-    if(s&&s.pickcenter) P('pickcenter: '+lim(JSON.stringify(s.pickcenter),900));
-    if(s&&s.odds) P('odds: '+lim(JSON.stringify(s.odds),900));
-    if(s&&s.header) P('header.competitions[0].status: '+lim(JSON.stringify(s.header.competitions&&s.header.competitions[0].status),400));
-    if(s&&s.boxscore&&s.boxscore.teams){ P('boxscore equipo0 stats: '+lim(JSON.stringify((s.boxscore.teams[0].statistics||[]).map(x=>x.name+'='+x.displayValue)),900)); }
-  }
-  /* OddsPapi */
-  if(!KEY){ P('\nSin ODDSPAPI_KEY'); }
+  /* OddsPapi: una llamada por liga (NHL 234, NFL 31) para ver mercados y precios reales de Pinnacle */
+  if(!KEY){ P('Sin ODDSPAPI_KEY'); }
   else{
-    const op=async(p,q)=>{ const u=new URLSearchParams(Object.assign({apiKey:KEY},q||{})); const r=await fetch(OP+p+'?'+u); const t=await r.text(); return {s:r.status,t}; };
-    let r=await op('/sports'); P('\n### OddsPapi /sports -> '+r.s); try{ const j=JSON.parse(r.t); const a=Array.isArray(j)?j:Object.values(j); P(a.map(x=>(x.sportId||x.id)+'='+(x.sportName||x.name||x.slug)).join(' | ')); }catch(e){ P(lim(r.t,500)); }
-    let sp={}; try{ const j=JSON.parse(r.t); (Array.isArray(j)?j:Object.values(j)).forEach(x=>{ sp[x.sportId||x.id]=(x.sportName||x.name||x.slug||'')+''; }); }catch(e){}
-    const ids=Object.keys(sp).filter(k=>/hockey|american|football|nfl|nhl/i.test(sp[k]));
-    P('deportes candidatos: '+ids.map(k=>k+'='+sp[k]).join(' | '));
-    for(const id of ids){
-      await new Promise(z=>setTimeout(z,1500));
-      r=await op('/tournaments',{sportId:id}); P('\n### /tournaments sportId='+id+' ('+sp[id]+') -> '+r.s);
-      try{ const j=JSON.parse(r.t); const a=Array.isArray(j)?j:Object.values(j);
-        const f=a.filter(x=>/nhl|nfl|national hockey|national football|usa|united states|north america/i.test(JSON.stringify(x)));
-        P('total '+a.length+' · USA/NHL/NFL: '+f.slice(0,25).map(x=>(x.tournamentId||x.id)+'='+(x.tournamentName||x.name)+(x.categoryName?' ['+x.categoryName+']':'')).join(' | ')); 
-        if(!f.length) P(a.slice(0,15).map(x=>JSON.stringify(x)).join('\n')); }catch(e){ P(lim(r.t,400)); }
+    for(const [n,tid] of [['nhl',234],['nfl',31]]){
+      await sleep(7000);
+      const u=new URLSearchParams({tournamentIds:String(tid),bookmaker:'pinnacle',apiKey:KEY});
+      const r=await get(OP+'/odds-by-tournaments?'+u); P('\nOddsPapi '+n+' -> '+r.s+' '+r.t.length+' bytes');
+      if(r.s===200) guardar(n+'-oddspapi.json',clean(r.t)); else P(clean(r.t).slice(0,300));
     }
-    await new Promise(z=>setTimeout(z,1500));
-    r=await op('/markets'); P('\n### /markets -> '+r.s);
-    try{ const j=JSON.parse(r.t); const a=Array.isArray(j)?j:Object.values(j);
-      for(const id of ids){
-        const m=a.filter(x=>String(x.sportId)===String(id)&&!x.playerProp);
-        P('mercados deporte '+id+': '+m.length);
-        m.filter(x=>x.marketLength<=3&&/fulltime|full_time|incl|match|regular|game/i.test(String(x.period||'')+' '+x.marketName)).slice(0,40).forEach(x=>P('  '+x.marketId+' | '+x.marketName+' | '+x.marketType+' | '+x.period+' | h='+x.handicap+' | '+(x.outcomes||[]).map(o=>o.outcomeId+'='+o.outcomeName).join(',')));
-      } }catch(e){ P(lim(r.t,400)); }
+    await sleep(2000);
+    for(const sid of [14,15]){ const u=new URLSearchParams({sportId:String(sid),apiKey:KEY}); const r=await get(OP+'/participants?'+u); P('participants '+sid+' -> '+r.s+' '+r.t.length); if(r.s===200){ guardar('participantes-'+sid+'.json',clean(r.t)); } await sleep(1500); }
+    const r=await get(OP+'/markets?'+new URLSearchParams({apiKey:KEY})); P('markets -> '+r.s);
+    if(r.s===200){ try{ const j=JSON.parse(r.t); const a=Array.isArray(j)?j:Object.values(j); guardar('mercados-14-15.json',JSON.stringify(a.filter(x=>x.sportId===14||x.sportId===15).map(x=>({marketId:x.marketId,marketName:x.marketName,marketType:x.marketType,period:x.period,handicap:x.handicap,marketLength:x.marketLength,playerProp:x.playerProp,outcomes:x.outcomes})))); }catch(e){ P('markets parse '+e.message); } }
   }
-  fs.writeFileSync('sonda-nhl-nfl.md',out.join('\n'));
+  fs.writeFileSync(D+'/informe.md',out.join('\n'));
 })();
