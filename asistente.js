@@ -228,6 +228,13 @@ function lesionesDe(les,nombre,ahora,vistas){
 }
 /* todas las claves de la lista (para guardar «ya lo vi») */
 function clavesLes(les){ var o={}; Object.keys((les&&les.equipos)||{}).forEach(function(k){ (les.equipos[k].l||[]).forEach(function(x){ o[claveLes(k,x)]=1; }); }); return o; }
+/* NHL: el juego dentro del archivo de lesionados (trae el portero titular probable y si cambió). na = visita, nh = local */
+function juegoNhl(les,na,nh){
+ var A=equipoLes(les,na), H=equipoLes(les,nh); if(!A||!H||!les.juegan) return null;
+ var hit=null; les.juegan.forEach(function(g){ if(!hit&&g.h===H.nom&&g.a===A.nom) hit=g; });
+ return hit?{a:A.nom,h:H.nom,ga:hit.ga||'',gh:hit.gh||'',cambios:hit.cambios||[]}:null;
+}
+function apellidoGk(n){ var w=String(n||'').trim().split(/\s+/); return w.length>1?w.slice(1).join(' '):(w[0]||''); }
 function textoLes(x){ return x.n+(x.p?' ('+x.p+')':'')+(x.d?' · '+x.d:'')+(x.nuevo?' 🆕':''); }
 function ultimaPalabra(n){ var w=String(n||'').trim().split(/\s+/); return w[w.length-1]||n; }
 /* resumen de varios juegos: cuántos jugadores fuera o dudosos y cuántos son nuevos */
@@ -236,7 +243,7 @@ function resumenLes(lista){
  (lista||[]).forEach(function(j){ var h=false; [j&&j.a,j&&j.h].forEach(function(t){ if(!t) return; o.out+=t.out.length; o.dud+=t.dud.length; o.nuevos+=t.nuevos; if(t.out.length||t.dud.length) h=true; }); if(h) o.juegos++; });
  return o;
 }
-var API={equipoLes:equipoLes,lesionesDe:lesionesDe,clavesLes:clavesLes,resumenLes:resumenLes,textoLes:textoLes,pl:pl,resumenEstado:resumenEstado,subPct:subPct,compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,oficialDe:oficialDe,ajustarPorOficial:ajustarPorOficial,textoOficial:textoOficial,tokens:tokens,mismoEq:mismoEq,cruzarMercado:cruzarMercado,compararMercado:compararMercado,mezclar:mezclar,ajustarPorMercado:ajustarPorMercado,
+var API={juegoNhl:juegoNhl,equipoLes:equipoLes,lesionesDe:lesionesDe,clavesLes:clavesLes,resumenLes:resumenLes,textoLes:textoLes,pl:pl,resumenEstado:resumenEstado,subPct:subPct,compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,oficialDe:oficialDe,ajustarPorOficial:ajustarPorOficial,textoOficial:textoOficial,tokens:tokens,mismoEq:mismoEq,cruzarMercado:cruzarMercado,compararMercado:compararMercado,mezclar:mezclar,ajustarPorMercado:ajustarPorMercado,
  resumenRegistro:resumenRegistro};
 root.OVAMesa=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
@@ -382,7 +389,7 @@ function leerJuego(g,i){
   }else j.sinMer=true;
  }
  if(j.of) j.et=ajustarPorOficial(j.et,j.of);
- if(ST.les){ var la=lesionesDe(ST.les,o.na,0,ST.les.vistas), lh=lesionesDe(ST.les,o.nh,0,ST.les.vistas); if(la||lh) j.les={a:la,h:lh}; }
+ if(ST.les){ var la=lesionesDe(ST.les,o.na,0,ST.les.vistas), lh=lesionesDe(ST.les,o.nh,0,ST.les.vistas); if(la||lh) j.les={a:la,h:lh}; if(APP==='nhl') j.gk=juegoNhl(ST.les,o.na,o.nh); }
  return j;
 }
 
@@ -452,6 +459,10 @@ function nuevaFila(j,pos){
    var tl='🩹 '+(la?ultimaPalabra(la.nom)+' '+(la.out.length+la.dud.length):'')+(la&&lh?' · ':'')+(lh?ultimaPalabra(lh.nom)+' '+(lh.out.length+lh.dud.length):'')+(rl.nuevos?' · 🆕 '+rl.nuevos+(rl.nuevos===1?' nuevo':' nuevos'):'');
    tx.appendChild(mk('span','msChip '+(rl.nuevos?'mchoca':'mcerca'),tl));
   }
+ }
+ if(j.gk&&!j.vivo&&(j.gk.ga||j.gk.gh)){
+  tx.appendChild(mk('span','msChip mcerca','🥅 '+ultimaPalabra(j.gk.a)+': '+(apellidoGk(j.gk.ga)||'por confirmar')+' · '+ultimaPalabra(j.gk.h)+': '+(apellidoGk(j.gk.gh)||'por confirmar')));
+  if(j.gk.cambios.length) tx.appendChild(mk('span','msChip mchoca','⚠ Cambió el portero: '+j.gk.cambios.map(function(c){ return ultimaPalabra(c.eq)+' '+apellidoGk(c.antes)+' → '+apellidoGk(c.ahora); }).join(', ')));
  }
  top.appendChild(tx);
  if(j.pf!=null){
@@ -528,6 +539,7 @@ function pintarLista(){
  estado.textContent=resumenEstado({app:APP,n:js.length,c:c,ev:ev,cr:cr,co:co,ch:ch,ofn:ofn,lp:lp,cb:cb,tieneOf:!!ST.of,tieneMer:!!ST.mer,edad:ST.mer?ST.mer.edad:'',viejo:!!(ST.mer&&ST.mer.viejo)});
  var rs=resumenLes(js.map(function(j){ return j.les; }).filter(Boolean));
  if(ST.les){ estado.textContent+=' 🩹 Lesionados ('+(ST.les.edad||'sin hora')+(ST.les.copia?', copia guardada':'')+(ST.les.viejo?' · viejos, verifica':'')+'): '+rs.out+' fuera y '+rs.dud+' dudosos en '+pl(rs.juegos,'juego','juegos')+(rs.nuevos?' · '+rs.nuevos+(rs.nuevos===1?' nuevo':' nuevos')+' desde la última vez':(ST.les.base?' · primera lectura: desde ahora marco lo nuevo':''))+'.'; }
+ var nCp=js.filter(function(j){ return j.gk&&j.gk.cambios.length; }).length; if(nCp) estado.textContent+=' 🥅 '+pl(nCp,'juego con cambio de portero','juegos con cambio de portero')+'.';
  if(ST.les&&ST.les.equipos){ ST.les.vistas=clavesLes(ST.les); ST.les.base=false; try{ root.localStorage.setItem('ova_les_vistas_'+APP,JSON.stringify(ST.les.vistas)); }catch(e){} }
 }
 function diaMas(f,n){ try{ var t=new Date(f+'T12:00:00Z'); t.setUTCDate(t.getUTCDate()+n); return t.toISOString().slice(0,10); }catch(e){ return f; } }
@@ -575,7 +587,7 @@ function cargarLesiones(){
   if(!j||!j.equipos) return;
   var m=j.generado?Math.max(0,Math.round((Date.now()-Date.parse(j.generado))/60000)):null;
   var vs=null; try{ vs=JSON.parse(root.localStorage.getItem('ova_les_vistas_'+APP)||'null'); }catch(e){}
-  ST.les={vistas:vs,base:!vs,equipos:j.equipos,generado:j.generado,edad:m==null?'':(m<90?'hace '+m+' min':'hace '+Math.round(m/60)+' h'),viejo:m!=null&&m>=12*60,copia:!!desdeCopia};
+  ST.les={vistas:vs,base:!vs,equipos:j.equipos,juegan:j.juegan||[],generado:j.generado,edad:m==null?'':(m<90?'hace '+m+' min':'hace '+Math.round(m/60)+' h'),viejo:m!=null&&m>=12*60,copia:!!desdeCopia};
  }
  try{
   return root.fetch(URL_LES+APP+'.json?v='+Date.now()).then(function(r){ return r.ok?r.json():null; }).then(function(j){
@@ -619,14 +631,16 @@ function avisoBarra(){
  var sp=fab.querySelector('span'); if(!sp) return;
  cargarLesiones().then(function(){
   if(!ST.les) return;
-  var js=[]; $$('.game').forEach(function(g){
+  var js=[], nCp=0; $$('.game').forEach(function(g){
    var nm=$$('.head .eq span:not(.tag):not(.esc)',g).map(function(x){ return compactar(x.textContent); }).filter(Boolean);
    if(nm.length<2) return;
    var a=lesionesDe(ST.les,nm[0],0,ST.les.vistas), h=lesionesDe(ST.les,nm[1],0,ST.les.vistas); if(a||h) js.push({a:a,h:h});
+   if(APP==='nhl'){ var gk=juegoNhl(ST.les,nm[0],nm[1]); if(gk&&gk.cambios.length) nCp++; }
   });
   var r=resumenLes(js);
   if(ST.les.base){ try{ root.localStorage.setItem('ova_les_vistas_'+APP,JSON.stringify(clavesLes(ST.les))); }catch(e){} }     /* primera vez: lo de hoy es la base, no cuenta como nuevo */
-  sp.textContent=r.nuevos?('🩹 '+r.nuevos+(r.nuevos===1?' lesionado nuevo':' lesionados nuevos')+' en '+pl(r.juegos,'juego','juegos')+' de hoy · toca para verlos'):base;
+  var pz=[]; if(r.nuevos) pz.push('🩹 '+r.nuevos+(r.nuevos===1?' lesionado nuevo':' lesionados nuevos')); if(nCp) pz.push('🥅 '+nCp+(nCp===1?' cambio de portero':' cambios de portero'));
+  sp.textContent=pz.length?(pz.join(' · ')+' hoy · toca para verlos'):base;
  }).catch(function(){});
 }
 function armar(){

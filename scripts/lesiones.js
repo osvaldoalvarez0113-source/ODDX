@@ -4,7 +4,7 @@
      equipos: { "Boston Celtics": { id, l: [ {n, p, s, d, f, c, r} ] } }   n = jugador, p = posicion, s = estado (Out, Doubtful, Questionable, ...),
                                                                          d = lesion, f = cuando lo reporto ESPN, c = comentario corto, r = fecha de regreso
      juegan: [ {t, h, a} ]   los juegos de las proximas 36 h (para saber de quien importan los lesionados)
-   La app lo lee desde la rama «datos» (no ensucia main). Si existe NTFY_TOPIC manda UN aviso por corrida con los Out / Doubtful
+   La app lo lee desde la rama «datos» (no ensucia main). Si existe NTFY_TOPIC manda un aviso por corrida con los cambios de portero (NHL) y otro con los Out / Doubtful
    NUEVOS de equipos que juegan hoy o manana (la primera vez solo anota, no avisa).
    Las funciones puras se exportan para las pruebas (pruebas.js).
    =================================================================== */
@@ -51,7 +51,10 @@ function juegosDe(j) {
     let h = null, a = null; c.competitors.forEach(x => { if (x.homeAway === 'home') h = x; else if (x.homeAway === 'away') a = x; });
     if (!h || !a || !h.team || !a.team) return;
     const st = (e.status && e.status.type) || {}; if (st.completed) return;
-    out.push({ t: e.date, h: h.team.displayName, a: a.team.displayName });
+    const g = { t: e.date, h: h.team.displayName, a: a.team.displayName };
+    const gk = x => { const p = (x.probables || []).find(q => /startinggoalie/i.test(q.name || '')); return p && p.athlete ? (p.athlete.displayName || p.athlete.fullName || null) : null; };   // solo hockey
+    const gh = gk(h), ga = gk(a); if (gh) g.gh = gh; if (ga) g.ga = ga;
+    out.push(g);
   });
   return out;
 }
@@ -72,7 +75,30 @@ function mensaje(dep, lista) {
   if (lista.length > 10) L.push('… y ' + (lista.length - 10) + ' más');
   return { titulo: '🩹 ' + dep.toUpperCase() + ': lesionados nuevos (' + lista.length + ')', cuerpo: L.join('\n') };
 }
-module.exports = { compactar, armar, juegosDe, nuevos, mensaje, recorta };
+
+/* portero titular que cambió entre dos corridas (mismo juego, otro nombre). Se arrastra el cambio hasta que el juego empieza.
+   prev / ahora = listas de juegos [{t,h,a,gh,ga,cambios?}] -> devuelve la lista nueva con .cambios [{eq,antes,ahora}] y los cambios recién detectados */
+function cambiosPortero(prev, ahora) {
+  const clave = g => g.h + '|' + g.a + '|' + String(g.t).slice(0, 10);
+  const viejo = {}; (prev || []).forEach(g => { viejo[clave(g)] = g; });
+  const nuevosC = [];
+  ahora.forEach(g => {
+    const v = viejo[clave(g)]; if (!v) return;
+    const cs = [];
+    [['gh', 'h'], ['ga', 'a']].forEach(([k, lado]) => {
+      const antes = v[k], ya = g[k]; if (!antes || !ya) return;
+      const heredado = (v.cambios || []).find(c => c.eq === g[lado]);
+      if (antes !== ya) { const c = { eq: g[lado], antes: antes, ahora: ya }; cs.push(c); nuevosC.push(Object.assign({ juego: g.a + ' @ ' + g.h }, c)); }
+      else if (heredado && heredado.ahora === ya) cs.push(heredado);
+    });
+    if (cs.length) g.cambios = cs;
+  });
+  return nuevosC;
+}
+function mensajePortero(lista) {
+  return { titulo: '🥅 NHL: cambió el portero (' + lista.length + ')', cuerpo: lista.slice(0, 10).map(c => '• ' + c.juego + ': ' + c.eq + ' ' + c.antes + ' → ' + c.ahora).join('\n') };
+}
+module.exports = { compactar, armar, juegosDe, nuevos, mensaje, recorta, cambiosPortero, mensajePortero };
 if (require.main !== module) return;
 
 async function pedir(url, intentos) {
@@ -97,9 +123,11 @@ async function avisar(m) {
     const juegan = []; for (const k of [0, 1, 2]) { const m = await pedir(BASE + DEPS[dep] + '/scoreboard?dates=' + diaStr(ahora + k * 864e5), 2); juegosDe(m).forEach(g => { if (Date.parse(g.t) <= ahora + 36 * 36e5) juegan.push(g); }); }
     const prev = await pedir(PREV + 'lesiones-' + dep + '.json', 2);
     const nu = nuevos(prev, eq, juegan);
+    const cp = dep === 'nhl' ? cambiosPortero(prev && prev.juegan, juegan) : [];
     const n = Object.keys(eq).reduce((a, k) => a + eq[k].l.length, 0);
     fs.writeFileSync('salida/lesiones-' + dep + '.json', JSON.stringify({ v: 1, dep: dep, generado: iso(ahora), equipos: eq, juegan: juegan }));
     console.log(dep + ': ' + Object.keys(eq).length + ' equipos · ' + n + ' lesionados · ' + juegan.length + ' juegos proximos · ' + nu.length + ' nuevos Out/Doubtful' + (prev ? '' : ' (primera vez: no avisa)'));
+    if (cp.length) { const ok = await avisar(mensajePortero(cp)); console.log('  ' + cp.length + ' cambios de portero · aviso ' + (NTFY ? (ok ? 'enviado' : 'FALLO') : 'omitido (sin NTFY_TOPIC)')); }
     if (nu.length) { const ok = await avisar(mensaje(dep, nu)); console.log('  aviso ' + (NTFY ? (ok ? 'enviado' : 'FALLO') : 'omitido (sin NTFY_TOPIC)')); }
     hubo++;
   }

@@ -1272,6 +1272,18 @@ sec('Lesionados: robot de ESPN (scripts/lesiones.js) y avisos dentro del Escáne
  ok('el workflow de lesionados corre cada 3 horas, no usa OddsPapi y guarda en la rama datos (no ensucia main)',/cron: "7 \*\/3 \* \* \*"/.test(wl)&&!/ODDSPAPI/.test(wl)&&/push -q -f "\$URL" datos/.test(wl));
  ok('la app lee los lesionados de la rama datos y guarda una copia por si no hay internet',/ODDX\/datos\/lesiones-/.test(rd('asistente.js'))&&/ova_les_'\+APP/.test(rd('asistente.js'))&&/ova_les_vistas_/.test(rd('asistente.js')));
  ok('Herramientas: la pestaña Salud y la de Avisos hablan de los lesionados',/Lesionados \(NBA, NHL y NFL\)/.test(rd('herramientas.js'))&&/Lesionados dentro de NBA, NHL y NFL/.test(rd('herramientas.js')));
+ // portero titular (NHL)
+ ok('lesiones.js: juegosDe lee el portero titular probable de cada equipo (solo hockey lo trae)',(()=>{const ev={date:'2026-10-25T23:00Z',status:{type:{completed:false}},competitions:[{competitors:[{homeAway:'home',team:{displayName:'A'},probables:[{name:'probableStartingGoalie',athlete:{displayName:'Uno Local'}}]},{homeAway:'away',team:{displayName:'B'}}]}]};const g=LE.juegosDe({events:[ev]})[0];return g.gh==='Uno Local'&&g.ga===undefined;})());
+ ok('lesiones.js: cambiosPortero detecta el cambio, lo arrastra en la corrida siguiente sin volver a avisar y lo suelta si el juego es otro',(()=>{
+  const p1=[{t:'2026-10-25T23:00Z',h:'A',a:'B',gh:'Uno',ga:'Dos'}];
+  const p2=[{t:'2026-10-25T23:00Z',h:'A',a:'B',gh:'Tres',ga:'Dos'}];
+  const c=LE.cambiosPortero(p1,p2);
+  const p3=[{t:'2026-10-25T23:00Z',h:'A',a:'B',gh:'Tres',ga:'Dos'}];
+  const c2=LE.cambiosPortero(p2,p3);
+  const p4=[{t:'2026-10-26T23:00Z',h:'A',a:'B',gh:'Cuatro',ga:'Dos'}];
+  return c.length===1&&c[0].antes==='Uno'&&c[0].ahora==='Tres'&&p2[0].cambios.length===1&&c2.length===0&&p3[0].cambios&&p3[0].cambios[0].ahora==='Tres'&&LE.cambiosPortero(p3,p4).length===0&&!p4[0].cambios;})());
+ ok('lesiones.js: sin portero anunciado (null) no se inventa ningún cambio',LE.cambiosPortero([{t:'2026-10-25T23:00Z',h:'A',a:'B',gh:'Uno'}],[{t:'2026-10-25T23:00Z',h:'A',a:'B'}]).length===0);
+ ok('asistente: juegoNhl encuentra el juego por equipos (visita, local) y trae porteros y cambios',(()=>{const l={equipos:{'Dallas Stars':{l:[]},'New York Islanders':{l:[]}},juegan:[{h:'Dallas Stars',a:'New York Islanders',gh:'J O',ga:'I S',cambios:[{eq:'Dallas Stars',antes:'X',ahora:'J O'}]}]};const g=AS.juegoNhl(l,'Islanders','Stars');return g&&g.gh==='J O'&&g.ga==='I S'&&g.cambios.length===1&&AS.juegoNhl(l,'Stars','Islanders')===null;})());
 }
 
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
