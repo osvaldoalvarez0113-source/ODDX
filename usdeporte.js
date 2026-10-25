@@ -318,7 +318,7 @@
       if (k !== prev) { html += `<div class="diaHead">${esc(etiquetaDia(g.ts))}${DEP === 'nfl' && g.wk ? ' · semana ' + g.wk : ''}</div>`; prev = k; }
       const H = T(g.h), A = T(g.a);
       const hora = g.live ? `<div class="hora" style="color:var(--bad)">🔴 ${g.as}–${g.hs}<br><small style="font-size:9px">${esc(g.detail)}</small></div>` : `<div class="hora">${horaTxt(g.ts)}</div>`;
-      html += `<div class="game" data-i="${i}" data-id="${g.id}" data-h="${g.h}" data-a="${g.a}"><div class="head"><div class="crestpair">
+      html += `<div class="game" data-i="${i}" data-id="${g.id}" data-h="${g.h}" data-a="${g.a}" data-ab-a="${esc(A.ab)}" data-ab-h="${esc(H.ab)}"><div class="head"><div class="crestpair">
         <div class="eq"><img src="${esc(A.logo)}" alt="" onerror="this.style.display='none'"><span class="n">${esc(A.n)}</span></div>
         <div class="eq"><img src="${esc(H.logo)}" alt="" onerror="this.style.display='none'"><span class="n">${esc(H.n)}</span><span class="tag">${g.neutral ? 'NEUTRAL' : 'LOCAL'}</span></div>
         </div>${hora}<div class="chev">▾</div></div><div class="body"></div></div>`;

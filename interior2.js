@@ -685,7 +685,8 @@ var PANELES=dis('paneles',`
 & .nxHora::before{content:"";width:8px;height:8px;border-radius:50%;background:#fff}
 & .nxHora.vivo{background:#E5322D}
 & .nxHora.vivo::before{animation:nxPulse 1.4s infinite}
-& .nxTit,& .nxLogo,& .nxNom,& .nxRing,& .nxMT,& .nxPcF{display:none}
+& .nxTit,& .nxNom,& .nxRing,& .nxMT,& .nxPcF{display:none}
+& .nxLogo{width:48px;height:48px;margin-bottom:7px;border:2px solid #fff;background:rgba(0,0,0,.32);font-size:14px;box-shadow:0 8px 18px -6px rgba(0,0,0,.55)}
 & .nxInfo{font:700 12px/1.2 Inter,system-ui,sans-serif;color:rgba(255,255,255,.92);text-shadow:0 1px 8px rgba(0,0,0,.5);max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 & .nxVs{display:flex;align-items:flex-end;gap:10px;margin-top:2px}
 & .nxSide{display:flex;flex-direction:column;align-items:flex-start}
@@ -719,12 +720,31 @@ function inyectar(){
 /* ===================================================================== armado de la cabecera */
 function activo(){ var u=html&&html.getAttribute('data-ui')||''; return NEW.indexOf(u)>=0?u:''; }
 function T(tag,cls,txt){ var e=doc.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+/* Siglas de clubes de fútbol (la app de fútbol no trae la sigla oficial, solo el nombre). Se busca por palabras del nombre, sin acentos. */
+var SIGLAS_FUT=[
+ [/manchester c|man city/,'MCI'],[/manchester u|man u(td|ni)/,'MUN'],[/newcastle/,'NEW'],[/tottenham|spurs/,'TOT'],[/west ham/,'WHU'],[/wolverhampton|wolves/,'WOL'],[/nottingham|forest/,'NFO'],[/crystal palace/,'CRY'],[/aston villa/,'AVL'],[/brighton/,'BHA'],[/bournemouth/,'BOU'],[/brentford/,'BRE'],[/arsenal/,'ARS'],[/chelsea/,'CHE'],[/liverpool/,'LIV'],[/everton/,'EVE'],[/fulham/,'FUL'],[/leeds/,'LEE'],[/leicester/,'LEI'],[/burnley/,'BUR'],[/sunderland/,'SUN'],[/southampton/,'SOU'],[/ipswich/,'IPS'],[/sheffield/,'SHU'],[/luton/,'LUT'],[/watford/,'WAT'],[/norwich/,'NOR'],[/west brom/,'WBA'],
+ [/real madrid/,'RMA'],[/atletico/,'ATM'],[/barcelona/,'BAR'],[/athletic|bilbao/,'ATH'],[/real sociedad/,'RSO'],[/betis/,'BET'],[/sevilla/,'SEV'],[/valencia/,'VAL'],[/villarreal/,'VIL'],[/celta/,'CEL'],[/getafe/,'GET'],[/girona/,'GIR'],[/osasuna/,'OSA'],[/rayo/,'RAY'],[/mallorca/,'MLL'],[/alaves/,'ALA'],[/las palmas/,'LPA'],[/leganes/,'LEG'],[/valladolid/,'VLL'],[/espanyol/,'ESP'],[/elche/,'ELC'],[/levante/,'LEV'],[/oviedo/,'OVI'],[/cadiz/,'CAD'],[/almeria/,'ALM'],[/granada/,'GRA'],
+ [/juventus/,'JUV'],[/inter\b|internazionale/,'INT'],[/milan/,'MIL'],[/napoli/,'NAP'],[/roma\b/,'ROM'],[/lazio/,'LAZ'],[/atalanta/,'ATA'],[/fiorentina/,'FIO'],[/bologna/,'BOL'],[/torino/,'TOR'],[/udinese/,'UDI'],[/genoa/,'GEN'],[/cagliari/,'CAG'],[/verona/,'VER'],[/lecce/,'LEC'],[/parma/,'PAR'],[/como\b/,'COM'],[/empoli/,'EMP'],[/monza/,'MON'],[/sassuolo/,'SAS'],[/venezia/,'VEN'],[/cremonese/,'CRE'],[/pisa/,'PIS'],
+ [/bayern/,'BAY'],[/dortmund/,'BVB'],[/leverkusen/,'LEV'],[/leipzig/,'RBL'],[/frankfurt/,'SGE'],[/stuttgart/,'STU'],[/wolfsburg/,'WOB'],[/gladbach/,'BMG'],[/freiburg/,'SCF'],[/hoffenheim/,'TSG'],[/union berlin/,'UNB'],[/mainz/,'M05'],[/augsburg/,'AUG'],[/werder|bremen/,'BRE'],[/heidenheim/,'HDH'],[/st pauli/,'STP'],[/koln|cologne/,'KOE'],[/hamburg/,'HSV'],[/bochum/,'BOC'],[/kiel/,'KIE'],[/darmstadt/,'DAR'],
+ [/paris saint|psg/,'PSG'],[/marseille/,'OM'],[/lyon/,'OL'],[/monaco/,'ASM'],[/lille/,'LIL'],[/nice\b/,'NIC'],[/lens\b/,'RCL'],[/rennes/,'REN'],[/reims/,'REI'],[/nantes/,'NAN'],[/strasbourg/,'STR'],[/toulouse/,'TFC'],[/montpellier/,'MHS'],[/brest/,'SB29'],[/lorient/,'LOR'],[/auxerre/,'AUX'],[/angers/,'ANG'],[/havre/,'HAC'],[/metz/,'MET'],[/paris fc/,'PFC'],
+ [/benfica/,'BEN'],[/porto/,'POR'],[/sporting/,'SCP'],[/braga/,'SCB'],[/ajax/,'AJA'],[/psv/,'PSV'],[/feyenoord/,'FEY'],[/celtic/,'CEL'],[/rangers/,'RAN'],[/galatasaray/,'GAL'],[/fenerbahce/,'FEN'],[/besiktas/,'BJK'],[/brugge/,'BRU'],[/anderlecht/,'AND'],[/union saint|saint gilloise/,'USG'],[/salzburg/,'RBS'],[/shakhtar/,'SHK'],[/zagreb/,'DZG'],[/zvezda|red star/,'CZV'],[/young boys/,'YB'],[/copenhagen/,'FCK'],[/olympiacos/,'OLY'],[/slavia/,'SLA'],[/sparta/,'SPA'],[/bodo/,'BOD'],[/qarabag/,'QAR'],[/pafos/,'PAF'],[/kairat/,'KAI']
+];
+var SOBRA=/^(fc|cf|ac|as|sc|sv|ssc|rc|rcd|us|ud|cd|ca|afc|club|de|la|el|le|the|1|04|05|1899|1846|fk|sk|bsc|vfb|vfl|tsg|rb)$/;
+function sigla(nombre){
+  var n=String(nombre||'').normalize?String(nombre||'').normalize('NFD').replace(/[̀-ͯ]/g,''):String(nombre||'');
+  n=n.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); if(!n) return '';
+  for(var i=0;i<SIGLAS_FUT.length;i++){ if(SIGLAS_FUT[i][0].test(n)) return SIGLAS_FUT[i][1]; }
+  var w=n.split(' ').filter(function(x){ return x&&!SOBRA.test(x); });
+  if(!w.length) return n.slice(0,3).toUpperCase();
+  if(w.length>1&&w[0].length<3) return w.map(function(x){ return x.charAt(0); }).join('').slice(0,3).toUpperCase();
+  return w[0].slice(0,3).toUpperCase();
+}
 function abr(g,o,lado){
+  var at=g.getAttribute&&g.getAttribute('data-ab-'+lado);
+  if(at&&at!=='?'&&at.length<=4) return at.toUpperCase();
   var e=g._eq&&g._eq[lado], ab=e&&e.ab?String(e.ab):'';
   if(ab&&ab.length<=4) return ab.toUpperCase();
-  var n=(lado==='a'?o.na:o.nh)||'', w=n.split(/\s+/).filter(function(x){ return /[A-Za-zÀ-ÿ]/.test(x); });
-  if(w.length>1) return w.slice(0,3).map(function(x){ return x.replace(/[^A-Za-zÀ-ÿ]/g,'').charAt(0); }).join('').toUpperCase();
-  return (w[0]||n).replace(/[^A-Za-zÀ-ÿ]/g,'').slice(0,3).toUpperCase();
+  return sigla((lado==='a'?o.na:o.nh)||'');
 }
 function logo(src,ab){
   var s=T('span','nxLogo'), i=T('i','',ab); s.appendChild(i);
@@ -935,7 +955,7 @@ function arrancar(){
   if(doc.readyState==='loading') doc.addEventListener('DOMContentLoaded',listo); else listo();
 }
 
-var API={NEW:NEW,css:CSS_ALL,armar:armar,minutos:minutos,_pasar:pasar};
+var API={NEW:NEW,css:CSS_ALL,armar:armar,minutos:minutos,sigla:sigla,_pasar:pasar};
 root.OVAInterior2=API;
 if(typeof module!=='undefined'&&module.exports){ module.exports=API; }
 else if(doc&&html){ try{ arrancar(); }catch(e){} }
