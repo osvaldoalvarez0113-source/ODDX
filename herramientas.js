@@ -418,6 +418,12 @@ function pantallaAvisos(cont){
       el('li',{text:'🌬️ Hay viento fuerte, lluvia o frío que mueve el total.'}),
       el('li',{text:'📈 La cuota de Pinnacle se mueve 3 puntos o más entre dos revisiones del escáner (que corre 3 veces al día): alguien con información está apostando.'})]),
     el('p',{class:'nota',text:'Cada aviso se manda una sola vez. Si no te llegan, revisa en GitHub → Actions que el robot «Avisos MLB» esté corriendo y que el secreto NTFY_TOPIC exista.'})]));
+  cont.appendChild(el('div',{class:'caja'},[el('h3',{text:'🩹 Lesionados dentro de NBA, NHL y NFL'}),
+    el('p',{class:'nota',text:'Un robot en GitHub baja la lista de lesionados de ESPN cada 3 horas y la deja en un archivo chico. En el Escáner de cada app, cada juego muestra quién está fuera y quién es dudoso de los dos equipos, y la barra «Escáner del día» te dice cuántos son nuevos sin abrirla.'}),
+    el('ul',{class:'lis'},[el('li',{text:'🆕 = no estaba la última vez que abriste el Escáner. La primera vez solo guarda la lista de hoy como base.'}),
+      el('li',{text:'Los jugadores que no juegan por decisión técnica no cuentan como lesionados.'}),
+      el('li',{text:'Si el secreto NTFY_TOPIC existe, el robot además te manda UN aviso al teléfono por corrida con los Out y Doubtful nuevos de equipos que juegan hoy o mañana.'}),
+      el('li',{text:'La línea del mercado ya trae las lesiones conocidas: el aviso sirve para saber qué cambió, no para sumarle al número.'})])]));
   cont.appendChild(el('div',{class:'caja'},[el('h3',{text:'Dentro de la app MLB'}),
     el('p',{class:'nota',text:'Cuando abres la lista de juegos y un abridor es distinto al que vio la app la última vez, la tarjeta de ese juego marca ⚠️ «Cambió el abridor» con los dos nombres.'})]));
 }
@@ -494,7 +500,7 @@ function edadTxt(ms){ var m=Math.max(0,Math.round(ms/6e4)); if(m<60) return 'hac
 var SALUD_DATOS=[['⚾ MLB','pinnacle-datos.json',30],['⚽ Fútbol','pinnacle-futbol.json',30],['🏀 NBA','pinnacle-nba.json',30],['🏒 NHL','pinnacle-nhl.json',36],['🏈 NFL','pinnacle-nfl.json',120]];
 function pedirJson(url){
   if(!root.fetch) return Promise.resolve(null);
-  return root.fetch(url+'?t='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; });
+  return root.fetch(url+(url.indexOf('?')<0?'?t='+Date.now():''),{cache:'no-store'}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; });
 }
 function pantallaSalud(cont,ls){
   limpiar(cont);
@@ -510,6 +516,20 @@ function pantallaSalud(cont,ls){
       if(!j||!isFinite(g)){ txt='sin archivo todavía'; cls='ambar'; }
       else{ var ed=ahora-g; cls=ed<=d[2]*36e5?'verde':'ambar'; txt=edadTxt(ed)+' · '+n+(n===1?' juego':' juegos'); }
       listaP.appendChild(el('div',{class:'flag '+cls,style:'margin:6px 0'},[el('b',{text:d[0]+': '}),txt]));
+    });
+  });
+  /* 1b. Lesionados (rama «datos», los baja un robot de GitHub cada 3 horas) */
+  var cajaL=el('div',{class:'caja'},[el('h3',{text:'Lesionados (NBA, NHL y NFL)'}),
+    el('p',{class:'nota',text:'Los baja un robot de GitHub desde ESPN cada 3 horas. El Escáner de cada app los muestra por juego y marca 🆕 lo que cambió desde la última vez que lo abriste.'})]);
+  var listaL=el('div',{},[el('p',{class:'nota',text:'Leyendo…'})]); cajaL.appendChild(listaL); cont.appendChild(cajaL);
+  var DEPL=[['🏀 NBA','nba'],['🏒 NHL','nhl'],['🏈 NFL','nfl']];
+  Promise.all(DEPL.map(function(d){ return pedirJson('https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/datos/lesiones-'+d[1]+'.json'); })).then(function(rs){
+    limpiar(listaL);
+    DEPL.forEach(function(d,i){
+      var j=rs[i], g=j&&j.generado?Date.parse(j.generado):NaN, ok=j&&isFinite(g)&&(ahora-g)<=9*36e5;
+      var n=j&&j.equipos?Object.keys(j.equipos).reduce(function(a,k){ return a+((j.equipos[k].l||[]).length); },0):0;
+      listaL.appendChild(el('div',{class:'flag '+(ok?'verde':'ambar'),style:'margin:6px 0'},[el('b',{text:d[0]+': '}),
+        j&&isFinite(g)?edadTxt(ahora-g)+' · '+n+' reportados · '+((j.juegan||[]).length)+' juegos próximos':'sin archivo todavía']));
     });
   });
   /* 2. Archivo de partidos (NHL y NFL) */

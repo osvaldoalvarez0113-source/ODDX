@@ -1243,6 +1243,37 @@ sec('Auditoría 3: pestaña Salud, cancha de cada deporte, íconos y repartició
  ok('Al gane de fútbol rotula el porcentaje como «solo modelo» (el Escáner da el mezclado con el mercado)',/<em>solo modelo<\/em>/.test(rd('futbol.html')));
 }
 
+/* ---------------- Lesionados dentro de las apps ---------------- */
+sec('Lesionados: robot de ESPN (scripts/lesiones.js) y avisos dentro del Escáner (asistente.js)');
+{
+ const LE=require(path.join(__dirname,'scripts','lesiones.js')),AS=require(path.join(__dirname,'asistente.js'));
+ const it=(n,s,d,f,extra)=>Object.assign({status:s,date:f||'2026-10-25T12:00Z',athlete:{displayName:n,position:{abbreviation:'C'}},details:{type:d||'Knee'},shortComment:'ok'},extra||{});
+ const j={injuries:[{id:'1',displayName:'Boston Bruins',injuries:[it('A Uno','Out'),it('B Dos','Active'),it('C Tres','Questionable'),it('D Cuatro','Injured Reserve'),it('E Cinco','Doubtful')]},{id:'2',displayName:'Dallas Stars',injuries:[]}]};
+ const eq=LE.armar(j);
+ ok('lesiones.js: deja fuera a los Active, ordena Out → Doubtful → Questionable y deja los equipos sin lesionados',eq['Boston Bruins'].l.length===4&&eq['Boston Bruins'].l.map(x=>x.n).join()==='A Uno,D Cuatro,E Cinco,C Tres'&&eq['Dallas Stars'].l.length===0);
+ ok('lesiones.js: compactar guarda jugador, posición, estado, lesión y fecha; recorta comentarios largos y descarta los de una palabra',(()=>{const c=LE.compactar(it('Z','Out','Knee','2026-10-25T10:00Z',{shortComment:'x'.repeat(300),details:{type:'Knee',detail:'Sprain',returnDate:'2026-11-01'}}));return c.n==='Z'&&c.p==='C'&&c.s==='Out'&&c.d==='Knee · Sprain'&&c.r==='2026-11-01'&&c.c.length<=120&&LE.compactar(it('Q','Out')).c==='';})());
+ ok('lesiones.js: juegosDe lee el marcador y se salta los juegos ya terminados',(()=>{const ev=(c)=>({date:'2026-10-25T23:00Z',status:{type:{completed:c}},competitions:[{competitors:[{homeAway:'home',team:{displayName:'Boston Bruins'}},{homeAway:'away',team:{displayName:'Dallas Stars'}}]}]});const g=LE.juegosDe({events:[ev(false),ev(true)]});return g.length===1&&g[0].h==='Boston Bruins'&&g[0].a==='Dallas Stars';})());
+ const prev={equipos:{'Boston Bruins':{l:[{n:'A Uno',s:'Questionable'},{n:'E Cinco',s:'Doubtful'}]}}};
+ const nu=LE.nuevos(prev,eq,[{h:'Boston Bruins',a:'Dallas Stars'}]);
+ ok('lesiones.js: avisa solo de Out / Doubtful NUEVOS (A Uno pasó de Questionable a Out); Questionable e IR no avisan',nu.length===1&&nu[0].n==='A Uno'&&nu[0].s==='Out');
+ ok('lesiones.js: la primera vez (sin archivo anterior) y los equipos que no juegan no avisan nada',LE.nuevos(null,eq,[{h:'Boston Bruins',a:'x'}]).length===0&&LE.nuevos(prev,eq,[{h:'Otro',a:'x'}]).length===0);
+ ok('lesiones.js: el mensaje lista hasta 10 y cuenta el resto',LE.mensaje('nhl',Array.from({length:12},(_,i)=>({eq:'E',n:'J'+i,p:'C',s:'Out',d:''}))).cuerpo.split('\n').length===11&&/NHL/.test(LE.mensaje('nhl',nu).titulo));
+ // el lado de la app
+ const les={equipos:{'Boston Bruins':{l:[{n:'A Uno',p:'C',s:'Out',d:'Knee',f:'x'},{n:'Pedro Sano',p:'D',s:'Out',d:"Coach's Decision"},{n:'C Tres',p:'W',s:'Questionable',d:'Illness'},{n:'D Cuatro',p:'D',s:'Injured Reserve'}]},'Dallas Stars':{l:[]}}};
+ ok('asistente: equipoLes cruza por nombre completo, por nombre contenido y por la última palabra',AS.equipoLes(les,'Boston Bruins').nom==='Boston Bruins'&&AS.equipoLes(les,'Bruins').nom==='Boston Bruins'&&AS.equipoLes(les,'Boston').nom==='Boston Bruins'&&AS.equipoLes(les,'Desconocidos')===null);
+ const d0=AS.lesionesDe(les,'Bruins',0,null);
+ ok('asistente: separa fuera / dudosos / lista larga y NO cuenta al que no juega por decisión técnica',d0.out.length===1&&d0.dud.length===1&&d0.largo===1&&d0.decision===1&&d0.nuevos===0);
+ const vistas=AS.clavesLes({equipos:{'Boston Bruins':{l:[{n:'A Uno',s:'Out'}]}}});
+ const d1=AS.lesionesDe(les,'Bruins',0,vistas);
+ ok('asistente: 🆕 es lo que no estaba en lo ya visto (C Tres) y A Uno, que ya estaba, no lo es',d1.nuevos===1&&d1.dud[0].nuevo===true&&d1.out[0].nuevo===false);
+ ok('asistente: sin nada visto todavía (primera lectura) no marca ninguno como nuevo',AS.lesionesDe(les,'Bruins',0,null).nuevos===0);
+ ok('asistente: resumenLes suma juegos, fuera, dudosos y nuevos',(()=>{const r=AS.resumenLes([{a:d1,h:null},{a:null,h:null}]);return r.juegos===1&&r.out===1&&r.dud===1&&r.nuevos===1;})());
+ const wl=rd('.github/workflows/lesiones.yml');
+ ok('el workflow de lesionados corre cada 3 horas, no usa OddsPapi y guarda en la rama datos (no ensucia main)',/cron: "7 \*\/3 \* \* \*"/.test(wl)&&!/ODDSPAPI/.test(wl)&&/push -q -f "\$URL" datos/.test(wl));
+ ok('la app lee los lesionados de la rama datos y guarda una copia por si no hay internet',/ODDX\/datos\/lesiones-/.test(rd('asistente.js'))&&/ova_les_'\+APP/.test(rd('asistente.js'))&&/ova_les_vistas_/.test(rd('asistente.js')));
+ ok('Herramientas: la pestaña Salud y la de Avisos hablan de los lesionados',/Lesionados \(NBA, NHL y NFL\)/.test(rd('herramientas.js'))&&/Lesionados dentro de NBA, NHL y NFL/.test(rd('herramientas.js')));
+}
+
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);

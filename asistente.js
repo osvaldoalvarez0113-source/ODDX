@@ -196,7 +196,47 @@ function subPct(j){
  var o=['solo modelo']; if(j.cu) o.push('justa '+j.cu);
  return o;
 }
-var API={pl:pl,resumenEstado:resumenEstado,subPct:subPct,compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,oficialDe:oficialDe,ajustarPorOficial:ajustarPorOficial,textoOficial:textoOficial,tokens:tokens,mismoEq:mismoEq,cruzarMercado:cruzarMercado,compararMercado:compararMercado,mezclar:mezclar,ajustarPorMercado:ajustarPorMercado,
+
+/* ---------- lesionados (lesiones-<dep>.json: un robot de GitHub baja la lista de ESPN y la deja chica; solo NBA, NHL y NFL) ---------- */
+var URL_LES='https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/datos/lesiones-';
+function normN(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim(); }
+function equipoLes(les,nombre){
+ if(!les||!les.equipos||!nombre) return null;
+ var q=normN(nombre); if(!q) return null;
+ var ks=Object.keys(les.equipos), hit=null;
+ ks.forEach(function(k){ if(!hit&&normN(k)===q) hit=k; });
+ if(!hit) ks.forEach(function(k){ var n=normN(k); if(!hit&&(n.indexOf(q)>=0||q.indexOf(n)>=0)) hit=k; });
+ if(!hit){ var ult=q.split(' ').pop(); var c=ks.filter(function(k){ return normN(k).split(' ').pop()===ult; }); if(c.length===1) hit=c[0]; }
+ return hit?{nom:hit,l:les.equipos[hit].l||[]}:null;
+}
+/* lo que importa de un equipo: los que están fuera, los dudosos y cuántos hay en lista larga (IR, suspendidos).
+   «Nuevo» = no estaba en lo que ya viste la última vez que abriste el Escáner (vistas = {clave: 1}); si todavía no hay nada visto, no marca nada (primera lectura).
+   «Decisión técnica» (jugadores sanos que no juegan) no es lesión: no cuenta. */
+function claveLes(eq,x){ return eq+'|'+x.n+'|'+x.s; }
+function lesionesDe(les,nombre,ahora,vistas){
+ var e=equipoLes(les,nombre); if(!e) return null;
+ var r={nom:e.nom,out:[],dud:[],largo:0,nuevos:0,decision:0};
+ e.l.forEach(function(x){
+  var st=String(x.s||'').toLowerCase();
+  if(/coach/i.test(x.d||'')||/coach'?s decision/i.test(x.c||'')){ r.decision++; return; }
+  var nuevo=!!vistas&&!vistas[claveLes(e.nom,x)];
+  var y={n:x.n,p:x.p||'',s:x.s,d:x.d||'',c:x.c||'',r:x.r||'',nuevo:nuevo,f:x.f||''};
+  if(st==='out') r.out.push(y); else if(st==='doubtful'||st==='questionable'||st==='day-to-day') r.dud.push(y); else { r.largo++; return; }
+  if(nuevo) r.nuevos++;
+ });
+ return r;
+}
+/* todas las claves de la lista (para guardar «ya lo vi») */
+function clavesLes(les){ var o={}; Object.keys((les&&les.equipos)||{}).forEach(function(k){ (les.equipos[k].l||[]).forEach(function(x){ o[claveLes(k,x)]=1; }); }); return o; }
+function textoLes(x){ return x.n+(x.p?' ('+x.p+')':'')+(x.d?' · '+x.d:'')+(x.nuevo?' 🆕':''); }
+function ultimaPalabra(n){ var w=String(n||'').trim().split(/\s+/); return w[w.length-1]||n; }
+/* resumen de varios juegos: cuántos jugadores fuera o dudosos y cuántos son nuevos */
+function resumenLes(lista){
+ var o={juegos:0,out:0,dud:0,nuevos:0};
+ (lista||[]).forEach(function(j){ var h=false; [j&&j.a,j&&j.h].forEach(function(t){ if(!t) return; o.out+=t.out.length; o.dud+=t.dud.length; o.nuevos+=t.nuevos; if(t.out.length||t.dud.length) h=true; }); if(h) o.juegos++; });
+ return o;
+}
+var API={equipoLes:equipoLes,lesionesDe:lesionesDe,clavesLes:clavesLes,resumenLes:resumenLes,textoLes:textoLes,pl:pl,resumenEstado:resumenEstado,subPct:subPct,compactar:compactar,recortar:recortar,aDecimal:aDecimal,americana:americana,valorDe:valorDe,etiqueta:etiqueta,oficialDe:oficialDe,ajustarPorOficial:ajustarPorOficial,textoOficial:textoOficial,tokens:tokens,mismoEq:mismoEq,cruzarMercado:cruzarMercado,compararMercado:compararMercado,mezclar:mezclar,ajustarPorMercado:ajustarPorMercado,
  resumenRegistro:resumenRegistro};
 root.OVAMesa=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
@@ -342,6 +382,7 @@ function leerJuego(g,i){
   }else j.sinMer=true;
  }
  if(j.of) j.et=ajustarPorOficial(j.et,j.of);
+ if(ST.les){ var la=lesionesDe(ST.les,o.na,0,ST.les.vistas), lh=lesionesDe(ST.les,o.nh,0,ST.les.vistas); if(la||lh) j.les={a:la,h:lh}; }
  return j;
 }
 
@@ -405,6 +446,13 @@ function nuevaFila(j,pos){
   if(!of.empezo&&!of.malo) tx.appendChild(mk('span','msChip '+(of.lin.ok?'mcoinc':'mcerca'),of.lin.ok?'✔ Lineups confirmados':'⏳ Lineup pendiente'+(of.min!=null&&of.min<=90&&of.min>0?' · empieza en '+of.min+' min':'')));
   if(of.mov.length) tx.appendChild(mk('span','msChip mcerca','📋 '+of.mov.length+' mov. de lesionados'));
  }
+ if(j.les&&!j.vivo){
+  var rl=resumenLes([j.les]), la=j.les.a, lh=j.les.h;
+  if(rl.out||rl.dud){
+   var tl='🩹 '+(la?ultimaPalabra(la.nom)+' '+(la.out.length+la.dud.length):'')+(la&&lh?' · ':'')+(lh?ultimaPalabra(lh.nom)+' '+(lh.out.length+lh.dud.length):'')+(rl.nuevos?' · 🆕 '+rl.nuevos+(rl.nuevos===1?' nuevo':' nuevos'):'');
+   tx.appendChild(mk('span','msChip '+(rl.nuevos?'mchoca':'mcerca'),tl));
+  }
+ }
  top.appendChild(tx);
  if(j.pf!=null){
   var pc=mk('div','msPc',(j.mix?j.mix.pf:j.pf).toFixed(0)+'%');
@@ -445,6 +493,18 @@ function nuevaFila(j,pos){
   cu.appendChild(inp); det.appendChild(cu); det.appendChild(res); calc();
  }
  if(j.of){ var ot=mk('div','msLeido'); ot.appendChild(mk('b','','Lo oficial (MLB):\n')); ot.appendChild(doc.createTextNode(textoOficial(j.of,j.na,j.nh,'ahora').replace(/^OFICIAL \(MLB StatsAPI, ahora\): /,'').split(' · ').join('\n'))); det.appendChild(ot); }
+ if(j.les){
+  var bl=mk('div','msLeido'); bl.appendChild(mk('b','','Lesionados (ESPN'+(ST.les&&ST.les.edad?', '+ST.les.edad:'')+'):\n'));
+  [j.les.a,j.les.h].forEach(function(t){
+   if(!t) return;
+   var L=[]; if(t.out.length) L.push('Fuera: '+t.out.slice(0,8).map(textoLes).join(', ')+(t.out.length>8?' y '+(t.out.length-8)+' más':''));
+   if(t.dud.length) L.push('Dudosos: '+t.dud.slice(0,8).map(textoLes).join(', ')+(t.dud.length>8?' y '+(t.dud.length-8)+' más':''));
+   if(t.largo) L.push(t.largo+' en lista larga (IR o suspendidos)');
+   bl.appendChild(doc.createTextNode(t.nom+': '+(L.length?L.join(' · '):'sin lesionados reportados')+'\n'));
+  });
+  bl.appendChild(doc.createTextNode((ST.les&&ST.les.base?'Primera lectura: desde ahora marco con 🆕 lo que cambie. ':'🆕 = no estaba la última vez que abriste el Escáner. ')+'La línea del mercado ya trae las lesiones conocidas: úsalo para saber qué cambió, no para sumarle al número.'));
+  det.appendChild(bl);
+ }
  var lt=mk('div','msLeido');
  var resumen=j.tabs.map(function(t){ return t.nombre+': '+recortar(t.txt,400); }).join('\n\n');
  lt.appendChild(mk('b','','Esto leí de este juego:\n'));
@@ -466,6 +526,9 @@ function pintarLista(){
  var cr=js.filter(function(j){ return j.mer; }).length, co=js.filter(function(j){ return j.cmp&&j.cmp.k==='coinc'; }).length, ch=js.filter(function(j){ return j.cmp&&j.cmp.k==='choca'; }).length;
  var ofn=js.filter(function(j){ return j.of; }).length, lp=js.filter(function(j){ return j.of&&!j.of.lin.ok&&!j.of.empezo; }).length, cb=js.filter(function(j){ return j.of&&j.of.camb.length; }).length;
  estado.textContent=resumenEstado({app:APP,n:js.length,c:c,ev:ev,cr:cr,co:co,ch:ch,ofn:ofn,lp:lp,cb:cb,tieneOf:!!ST.of,tieneMer:!!ST.mer,edad:ST.mer?ST.mer.edad:'',viejo:!!(ST.mer&&ST.mer.viejo)});
+ var rs=resumenLes(js.map(function(j){ return j.les; }).filter(Boolean));
+ if(ST.les){ estado.textContent+=' 🩹 Lesionados ('+(ST.les.edad||'sin hora')+(ST.les.copia?', copia guardada':'')+(ST.les.viejo?' · viejos, verifica':'')+'): '+rs.out+' fuera y '+rs.dud+' dudosos en '+pl(rs.juegos,'juego','juegos')+(rs.nuevos?' · '+rs.nuevos+(rs.nuevos===1?' nuevo':' nuevos')+' desde la última vez':(ST.les.base?' · primera lectura: desde ahora marco lo nuevo':''))+'.'; }
+ if(ST.les&&ST.les.equipos){ ST.les.vistas=clavesLes(ST.les); ST.les.base=false; try{ root.localStorage.setItem('ova_les_vistas_'+APP,JSON.stringify(ST.les.vistas)); }catch(e){} }
 }
 function diaMas(f,n){ try{ var t=new Date(f+'T12:00:00Z'); t.setUTCDate(t.getUTCDate()+n); return t.toISOString().slice(0,10); }catch(e){ return f; } }
 function cargarOficial(){
@@ -505,6 +568,22 @@ function cargarMercado(){
   }).catch(function(){});
  }catch(e){ return Promise.resolve(); }
 }
+function cargarLesiones(){
+ ST.les=null; if(APP!=='nba'&&APP!=='nhl'&&APP!=='nfl') return Promise.resolve();
+ var clave='ova_les_'+APP;
+ function poner(j,desdeCopia){
+  if(!j||!j.equipos) return;
+  var m=j.generado?Math.max(0,Math.round((Date.now()-Date.parse(j.generado))/60000)):null;
+  var vs=null; try{ vs=JSON.parse(root.localStorage.getItem('ova_les_vistas_'+APP)||'null'); }catch(e){}
+  ST.les={vistas:vs,base:!vs,equipos:j.equipos,generado:j.generado,edad:m==null?'':(m<90?'hace '+m+' min':'hace '+Math.round(m/60)+' h'),viejo:m!=null&&m>=12*60,copia:!!desdeCopia};
+ }
+ try{
+  return root.fetch(URL_LES+APP+'.json?v='+Date.now()).then(function(r){ return r.ok?r.json():null; }).then(function(j){
+   if(j&&j.equipos){ poner(j,false); try{ root.localStorage.setItem(clave,JSON.stringify(j)); }catch(e){} }
+   else throw new Error('sin archivo');
+  }).catch(function(){ try{ poner(JSON.parse(root.localStorage.getItem(clave)||'null'),true); }catch(e){} });
+ }catch(e){ return Promise.resolve(); }
+}
 function leer(){
  if(ST.cargando) return;
  ST.cargando=true;
@@ -512,7 +591,7 @@ function leer(){
  if(!gs.length){ estado.textContent='Primero carga los juegos (fecha / liga) y vuelve a abrir el Escáner.'; ST.cargando=false; return; }
  estado.textContent='Leyendo '+gs.length+' juegos…';
  try{ ST.cuotas=JSON.parse(ls('ova_mesa_cu_'+APP+'_'+fechaApp())||'{}')||{}; }catch(e){ ST.cuotas={}; }
- Promise.all([cargarMercado(),cargarOficial(),cargarTodo(function(h,t){ estado.textContent='Leyendo juego '+h+' de '+t+'…'; }).catch(function(){})]).then(function(){
+ Promise.all([cargarMercado(),cargarLesiones(),cargarOficial(),cargarTodo(function(h,t){ estado.textContent='Leyendo juego '+h+' de '+t+'…'; }).catch(function(){})]).then(function(){
   ST.juegos=$$('.game').map(leerJuego);
   ST.cargando=false; pintarLista();
  });
@@ -531,6 +610,25 @@ function colocar(){
  if(lista&&lista.parentNode){ lista.parentNode.insertBefore(fab,lista); return; }
  doc.body.appendChild(fab);
 }
+
+/* contador en la barra «Escáner del día», sin abrirlo: lesionados nuevos de los juegos que ya están en pantalla */
+function avisoBarra(){
+ if(APP!=='nba'&&APP!=='nhl'&&APP!=='nfl') return;
+ if(!fab) return;
+ var base='Analiza todos los juegos: ordena, filtra y calcula el valor con tu cuota';
+ var sp=fab.querySelector('span'); if(!sp) return;
+ cargarLesiones().then(function(){
+  if(!ST.les) return;
+  var js=[]; $$('.game').forEach(function(g){
+   var nm=$$('.head .eq span:not(.tag):not(.esc)',g).map(function(x){ return compactar(x.textContent); }).filter(Boolean);
+   if(nm.length<2) return;
+   var a=lesionesDe(ST.les,nm[0],0,ST.les.vistas), h=lesionesDe(ST.les,nm[1],0,ST.les.vistas); if(a||h) js.push({a:a,h:h});
+  });
+  var r=resumenLes(js);
+  if(ST.les.base){ try{ root.localStorage.setItem('ova_les_vistas_'+APP,JSON.stringify(clavesLes(ST.les))); }catch(e){} }     /* primera vez: lo de hoy es la base, no cuenta como nuevo */
+  sp.textContent=r.nuevos?('🩹 '+r.nuevos+(r.nuevos===1?' lesionado nuevo':' lesionados nuevos')+' en '+pl(r.juegos,'juego','juegos')+' de hoy · toca para verlos'):base;
+ }).catch(function(){});
+}
 function armar(){
  if($('.msBarra')) return;
  APP=appActual();
@@ -539,6 +637,7 @@ function armar(){
  var tx=mk('div'); tx.appendChild(doc.createTextNode('Escáner del día')); tx.appendChild(mk('span','','Analiza todos los juegos: ordena, filtra y calcula el valor con tu cuota'));
  fab.appendChild(tx); fab.setAttribute('aria-label','Abrir el Escáner del día');
  colocar();
+ [2500,8000,20000].forEach(function(ms){ root.setTimeout(function(){ try{ avisoBarra(); }catch(e){} },ms); });
  sheet=mk('div','msSheet'); sheet.setAttribute('role','dialog'); sheet.setAttribute('aria-label','Escáner de hoy');
  var bar=mk('div','msBar'); var h=mk('h2','','Escáner de hoy'); h.appendChild(mk('small','',({mlb:'MLB',fut:'Fútbol',nba:'NBA',nhl:'NHL',nfl:'NFL'})[APP]+' · lee todos los juegos y todas las pestañas'));
  bar.appendChild(h); bar.appendChild(boton('msX','✕ Cerrar',cerrar)); sheet.appendChild(bar);

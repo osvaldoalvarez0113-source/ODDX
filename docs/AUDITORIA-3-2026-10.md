@@ -44,3 +44,11 @@ Cómo se verificó: las 8 pantallas cargadas en un navegador de 390 px de ancho 
 3. **Avisos por ntfy solo existen para MLB.** Un aviso de portero confirmado (NHL) o de lesionados (NFL) sería la siguiente mejora natural.
 4. Con 1,449 juegos de NFL y 4,577 de NHL, los márgenes de error de cualquier ROI son de ±6 a ±10 puntos: la medición en vivo (🤖 Auto) irá diciendo más con el tiempo.
 5. La verificación se hizo en un navegador de computadora con un iPhone simulado: falta tu prueba en el teléfono real (pestaña Salud, Escáner en NHL/NFL, ícono nuevo de Juegos).
+
+## Adición: lesionados y avisos dentro de las apps (mismo día)
+- **Robot** `lesiones.yml` + `scripts/lesiones.js`: cada 3 horas baja la lista de lesionados de ESPN (1 a 9 MB) y deja un archivo chico por deporte (`lesiones-nba|nhl|nfl.json`, 20 a 45 KB) en la rama `datos`, junto con los juegos de las próximas 36 h. No gasta OddsPapi.
+- **En cada app (NBA, NHL, NFL)**: el Escáner muestra por juego quién está fuera y quién es dudoso de los dos equipos, con lesión y fecha de regreso; el resumen de arriba suma los de todos los juegos; la barra «Escáner del día» dice cuántos son nuevos sin abrirla.
+- **🆕 = nuevo desde la última vez que abriste el Escáner** (se compara con lo que ya viste, guardado en el teléfono). La primera vez solo toma la lista de hoy como base. Los jugadores que no juegan por decisión técnica no cuentan (en la NFL el domingo eran la mayoría del ruido).
+- **Aviso al teléfono** (opcional): si existe el secreto `NTFY_TOPIC`, el robot manda UN mensaje por corrida con los Out y Doubtful nuevos de equipos que juegan hoy o mañana.
+- Para MLB ya existían los movimientos de lesionados del Escáner (API oficial) y los avisos por ntfy. Fútbol no tiene lista de lesionados en ESPN.
+- Límite honesto: dentro de la app los avisos aparecen cuando la abres; un iPhone no recibe avisos con la app cerrada sin un servidor de notificaciones. Para eso está el aviso por ntfy.

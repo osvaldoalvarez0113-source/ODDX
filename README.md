@@ -89,6 +89,7 @@ Todos en `.github/workflows/`. «OddsPapi» = gasta llamadas del plan (250 al me
 | `valor-pinnacle.yml` | 3 veces al día | escáner MLB → `pinnacle-datos.json` (tope 100 al mes) | sí |
 | `valor-futbol-nba.yml` | 2 veces al día | escáner fútbol y NBA → `pinnacle-futbol.json`, `pinnacle-nba.json` (tope 80) | sí |
 | `valor-nhl-nfl.yml` | NHL cada noche, NFL jueves/domingo/lunes | escáner NHL y NFL → `pinnacle-nhl.json`, `pinnacle-nfl.json` (tope 60) | sí |
+| `lesiones.yml` | cada 3 horas | `scripts/lesiones.js` baja los lesionados de ESPN (NBA, NHL, NFL) a archivos chicos en la rama `datos` (`lesiones-<dep>.json`); el Escáner de cada app los muestra y marca 🆕 lo nuevo. Si existe `NTFY_TOPIC` manda un aviso con los Out/Doubtful nuevos | no |
 | `avisos-mlb.yml` | cada 30 min en horas de juego, marzo a noviembre | avisos por ntfy: abridor cambiado, lineup, clima | no |
 | `archivo-espn.yml` | 4 veces al día | archivo de partidos de fútbol/NBA/MLB desde ESPN | no |
 | `archivo-nhl-nfl.yml` | diario 09:40 UTC | `hist-nhl.json`, `hist-nfl.json` (3 temporadas completas + la actual) | no |
