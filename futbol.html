@@ -231,6 +231,7 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 .fila-rank .nom{flex:1;font-size:13px;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fila-rank .nom small{display:block;font-size:10.5px;color:var(--mut2);font-weight:400}
 .fila-rank .pct{font-family:var(--cond);font-weight:800;font-size:15px;color:var(--hot)}
+.fila-rank .pct em{display:block;font-style:normal;font-weight:600;font-size:10px;opacity:.65;text-align:right}
 
 /* encabezados de dia (Hoy / Mañana / dia fecha) */
 .diaHead{font-size:11.5px;color:var(--mut);font-weight:700;text-transform:uppercase;letter-spacing:.6px;
@@ -2542,8 +2543,8 @@ function pintarAlGane(partidos){
   if(!filas.length){ cont.innerHTML = '<div class="estado bad">No hay partidos para calcular el ranking.</div>'; return; }
   cont.innerHTML = filas.map(function(f,i){
     return '<div class="fila-rank"><div class="pos">'+(i+1)+'</div><img src="'+f.escudo+'">'+
-      '<div class="nom">'+f.nombre+' vs '+f.rival+'<small>'+f.cuando+'</small></div><div class="pct">'+(f.pct*100).toFixed(1)+'%</div></div>';
-  }).join('');
+      '<div class="nom">'+f.nombre+' vs '+f.rival+'<small>'+f.cuando+'</small></div><div class="pct">'+(f.pct*100).toFixed(1)+'%<em>solo modelo</em></div></div>';
+  }).join('')+'<div class="estado" style="margin-top:10px">Este % es solo del modelo (no mira las cuotas). El Escáner lo mezcla mitad con el mercado y por eso da otro número.</div>';
 }
 
 // ---------- backtest SIN TRAMPA (walk-forward) ----------
