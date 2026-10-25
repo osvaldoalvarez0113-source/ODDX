@@ -1,0 +1,45 @@
+name: Lesionados NBA, NHL y NFL
+
+# Baja la lista de lesionados de ESPN (pesa 1 a 9 MB) y deja un archivo chico por deporte en la rama «datos»; las apps lo leen desde ahi.
+# No usa OddsPapi (ESPN es publico). Si existe el secreto NTFY_TOPIC manda UN aviso por corrida con los Out / Doubtful nuevos de equipos que juegan.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "7 */3 * * *"
+  push:
+    branches: [main]
+    paths:
+      - scripts/lesiones.js
+      - .github/workflows/lesiones.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lesiones
+  cancel-in-progress: false
+
+jobs:
+  lesiones:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Traer lesionados de ESPN
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: node scripts/lesiones.js
+      - name: Guardar en la rama datos
+        run: |
+          ls salida/*.json >/dev/null 2>&1 || { echo "Nada que guardar"; exit 0; }
+          URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          # conserva los archivos de los deportes que esta corrida no pudo traer
+          mkdir -p /tmp/datos && cd /tmp/datos && git init -q -b datos
+          git fetch -q --depth 1 "$URL" datos 2>/dev/null && git checkout -q FETCH_HEAD -- . 2>/dev/null || true
+          cp "$GITHUB_WORKSPACE"/salida/*.json .
+          git config user.name "lesiones-ova" && git config user.email "lesiones-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "lesionados $(date -u +%FT%TZ)" || exit 0
+          git push -q -f "$URL" datos
