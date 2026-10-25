@@ -1,4 +1,4 @@
-/* OVA · Escáner (antes «Mesa») — MLB, fútbol y NBA.
+/* OVA · Escáner (antes «Mesa») — MLB, fútbol, NBA, NHL y NFL.
    Una barra dentro de la lista de juegos que abre el «Escáner de hoy». Hace tres cosas, en este orden de confianza:
    1) LEE todos los juegos de la pantalla, pestaña por pestaña (Veredicto, Cuotas, Números, Forma, Parque…),
       sin que tengas que abrirlos uno por uno.

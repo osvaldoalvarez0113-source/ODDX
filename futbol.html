@@ -1469,32 +1469,9 @@ function extraerPerfil(html){
   return perfil;
 }
 
-function cargarPerfil(nombreEquipo, href){
-  if(CACHE_PERFIL[nombreEquipo]) return Promise.resolve(CACHE_PERFIL[nombreEquipo]);
-  if(!href) return Promise.resolve(null);
-  var url = href.indexOf('http')===0 ? href : 'https://www.worldfootball.net'+href;
-  return fetch(url+'?v='+Date.now()).then(function(r){ return r.text(); })
-    .then(function(html){
-      var p = extraerPerfil(html);
-      CACHE_PERFIL[nombreEquipo] = p;
-      return p;
-    }).catch(function(){ return null; });
-}
-
 // ---------- forma, cara a cara y descanso (de los partidos ya terminados) ----------
 function partidosDe(nombre){
   return TERMINADOS.filter(function(p){ return mismoEquipo(p.local, nombre) || mismoEquipo(p.visita, nombre); });
-}
-function calcularForma(nombreEquipo){
-  var juegos = partidosDe(nombreEquipo).sort(function(a,b){ return tsPartido(b)-tsPartido(a); });
-  return juegos.slice(0,5).map(function(p){
-    var esLocal = mismoEquipo(p.local, nombreEquipo);
-    var gf = esLocal?p.golesLocal:p.golesVisita;
-    var gc = esLocal?p.golesVisita:p.golesLocal;
-    if(gf>gc) return 'V';
-    if(gf<gc) return 'D';
-    return 'E';
-  });
 }
 function diasDesdeUltimo(nombreEquipo){
   var juegos = partidosDe(nombreEquipo);
@@ -1610,21 +1587,6 @@ function pintarH2H(elId, nombreL, nombreV, textoVacio){
   var r = h2hLocal(nombreL, nombreV);
   pintarH2HLista(el, nombreL, nombreV, r.partidos,
     r.partidos.length ? (r.temporadas>1 ? 'Incluye esta temporada y '+(r.temporadas-1)+' '+plural(r.temporadas-1,'temporada guardada','temporadas guardadas')+' en el teléfono.' : 'Solo esta temporada.') : (textoVacio||'Todavía no se han enfrentado en lo que hay guardado.'));
-}
-function calcularH2H(nombreL, nombreV){
-  var juegos = TERMINADOS.filter(function(p){
-    return (mismoEquipo(p.local,nombreL) && mismoEquipo(p.visita,nombreV)) ||
-           (mismoEquipo(p.local,nombreV) && mismoEquipo(p.visita,nombreL));
-  });
-  if(!juegos.length) return null;
-  var vL=0,vV=0,e=0;
-  juegos.forEach(function(p){
-    var localEsL = mismoEquipo(p.local, nombreL);
-    var golesA = localEsL?p.golesLocal:p.golesVisita;
-    var golesB = localEsL?p.golesVisita:p.golesLocal;
-    if(golesA>golesB) vL++; else if(golesA<golesB) vV++; else e++;
-  });
-  return {juegos:juegos.length, vL:vL, vV:vV, e:e};
 }
 
 // ---------- modelo: Poisson + encogimiento + localia + Dixon-Coles ----------
@@ -2064,22 +2026,6 @@ function buscarPinF(p){
     else if(mismoEquipo(g.n[0], p.visita) && mismoEquipo(g.n[1], p.local)) res = {g:g, inv:true};
   });
   return res;
-}
-function pinBloqueFutbol(p, r){
-  var m = buscarPinF(p); if(!m) return '';
-  var g = m.g, f = m.inv ? [g.r[2], g.r[1], g.r[0]] : g.r.slice();
-  var fa = function(x){ var v = cuotaJustaAmericana(x); return v===null ? '—' : (v>0?'+':'')+v; };
-  var fila = function(txt, pin, mod){
-    var d = (mod-pin)*100;
-    return '<div class="linea"><span>'+txt+'</span><b>'+(pin*100).toFixed(1)+'% · '+fa(pin)+' <span style="color:var(--mut2);font-weight:500;font-size:11.5px">modelo '+(mod*100).toFixed(1)+' ('+(d>=0?'+':'')+d.toFixed(1)+')</span></b></div>';
-  };
-  var h = '<h3>Lo que dice Pinnacle</h3><div class="lineas">' +
-    fila(p.local+' gana', f[0], r.pL) + fila('Empate', f[1], r.pD) + fila(p.visita+' gana', f[2], r.pV);
-  if(g.ou25){ var ov = g.ou25[0]; h += fila('Más de 2.5 goles', ov, r.overLin[2.5]); }
-  h += '</div>';
-  var min = Math.max(0, Math.round((Date.now()-Date.parse(PIN_F.generado))/60000));
-  h += '<div class="nota">Probabilidad de Pinnacle ya sin su margen y la cuota justa que le corresponde (actualizado hace '+(min<90?min+' min':Math.round(min/60)+' h')+'). Una cuota solo tiene valor si paga <b>más</b> que esa cuota justa. Ojo: el mercado acertó más que este modelo en la medición, así que la columna de Pinnacle es la mejor estimación; el modelo queda de referencia.</div>';
-  return h;
 }
 function pintarFilasValor(filas, out, p){
   var conOdd = filas.filter(function(f){ return f.odd!==null && impProb(f.odd)!==null; });

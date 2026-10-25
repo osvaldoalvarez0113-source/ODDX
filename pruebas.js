@@ -1224,6 +1224,25 @@ sec('NHL y NFL: núcleo compartido, modelos y lector de Pinnacle');
  ok('el escáner de Pinnacle de NHL/NFL tiene su propio tope mensual (no gasta la cuota del de MLB / NBA / fútbol)',/MAX_MES\s*=\s*parseInt\(ENV\.MAX_MES \|\| '60'/.test(rd('scripts/valor3.js')));
 }
 
+/* ---------------- Auditoría 3: Salud, canchas por deporte, cuota de OddsPapi ---------------- */
+sec('Auditoría 3: pestaña Salud, cancha de cada deporte, íconos y repartición de las llamadas de OddsPapi');
+{
+ const hj=rd('herramientas.js');
+ ok('Herramientas tiene la pestaña 🩺 Salud con precios de Pinnacle, archivo de partidos, registro por app, respaldo y botón de forzar actualización',/\['salud','🩺 Salud'\]/.test(hj)&&/pantallaSalud\(cont,ls\)/.test(hj)&&/pinnacle-nhl\.json/.test(hj)&&/hist-nfl\.json/.test(hj)&&/Forzar actualización/.test(hj));
+ ok('Forzar actualización borra solo la copia de la app (caches y service worker), nunca localStorage ni IndexedDB',/caches\.keys/.test(hj)&&/unregister/.test(hj)&&!/localStorage\.clear|removeItem\(/.test(hj.slice(hj.indexOf('function pantallaSalud'),hj.indexOf('/* ----- arranque ----- */'))));
+ const i2=rd('interior2.js'),i1=rd('interior.js');
+ ok('Campo dibuja pista de hockey en NHL, cancha de fútbol americano en NFL, de baloncesto en NBA y de fútbol (el diamante queda para MLB)',/CAMPO_SVGS=\{/.test(i2)&&['nhl','nfl','nba','fut'].every(k=>new RegExp('\\n '+k+":'<svg").test(i2))&&/innerHTML=campoSvg\(\)/.test(i2));
+ ok('el ícono de «Juegos» es propio de cada deporte (balón de fútbol, de basket, disco de hockey y balón de fútbol americano)',/nba:'basket',nhl:'puck',nfl:'football'/.test(i1)&&/ puck:'/.test(i1)&&/ football:'/.test(i1)&&/ basket:'/.test(i1));
+ // las llamadas de OddsPapi: el plan da 250 al mes en total y los tres escáneres no pueden pasarse
+ const tope=(f,re)=>{const m=re.exec(rd(f));return m?+m[1]:null;};
+ const t1=tope('scripts/valor.js',/MAX_MES=parseInt\(ENV\.MAX_MES\|\|'(\d+)'/),t2=tope('scripts/valor2.js',/MAX_MES=parseInt\(ENV\.MAX_MES\|\|'(\d+)'/),t3=tope('scripts/valor3.js',/MAX_MES = parseInt\(ENV\.MAX_MES \|\| '(\d+)'/);
+ ok('los topes mensuales de los tres escáneres de Pinnacle suman 250 o menos (MLB '+t1+' + fútbol/NBA '+t2+' + NHL/NFL '+t3+')',t1&&t2&&t3&&t1+t2+t3<=250,String(t1+t2+t3));
+ const wf=fs.readdirSync(path.join(__dirname,'.github','workflows'));
+ ok('ningún workflow que gasta llamadas de OddsPapi corre solo porque se toque un archivo (push): solo por horario o a mano',wf.filter(f=>/ODDSPAPI/.test(rd('.github/workflows/'+f))).every(f=>!/^  push:/m.test(rd('.github/workflows/'+f))),wf.filter(f=>/ODDSPAPI/.test(rd('.github/workflows/'+f))&&/^  push:/m.test(rd('.github/workflows/'+f))).join(','));
+ ok('los avisos de MLB solo corren de marzo a noviembre',/cron: "\*\/30 15-23,0-2 \* 3-11 \*"/.test(rd('.github/workflows/avisos-mlb.yml')));
+ ok('Al gane de fútbol rotula el porcentaje como «solo modelo» (el Escáner da el mezclado con el mercado)',/<em>solo modelo<\/em>/.test(rd('futbol.html')));
+}
+
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);

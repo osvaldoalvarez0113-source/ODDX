@@ -1,4 +1,4 @@
-/* banca.js · control de banca de OVA (MLB, fútbol y NBA comparten este registro).
+/* banca.js · control de banca de OVA (MLB, fútbol, NBA, NHL y NFL comparten este registro).
    Guarda lo que APUESTAS (no lo que la app sugiere) y avisa cuando te acercas o pasas el tope que tú mismo pusiste.
    No cambia ningún cálculo ni ningún pick: solo lee y escribe la clave 'ova_banca_v1' de este teléfono.
    Lo carga herramientas.html (pantalla completa) y las demás páginas (solo el aviso de arriba). */

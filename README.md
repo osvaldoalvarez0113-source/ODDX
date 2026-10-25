@@ -22,11 +22,11 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 | `ovaextra.js` | Respaldo de picks en IndexedDB, exportar/importar y resumen «Hoy». Lo cargan las cinco páginas. |
 | `interior2.js` | Diez diseños con cabecera propia: **Historias** (un juego por pantalla, se desliza de lado), **Duelo** (cartelera de pelea en diagonal), **Bento** (recuadros de colores y resumen), **Agenda** (línea de tiempo con AHORA), **Radar de valor** (mapa del día de burbujas), **Cromos** (carta coleccionable con borde holográfico), **Campo** (el juego sobre el diamante), **Telemetría** (aguja de probabilidad y letra de máquina), **Marcador** (fichas que giran, ámbar sobre negro) y **Recibo** (recibo de caja con sello y código de barras). Leen las tarjetas con `OVALeerJuego` (`diseno.js`), no calculan nada. |
 | `ajustes.js` | **Ajustes de MLB como menú**: Apariencia, Modelo y apuestas, Cálculo a mano y Cómo funciona, cada uno en su ventana con «‹ Ajustes» para volver. Mueve los bloques que ya existen (no los recrea), así que ningún ajuste ni cálculo cambia. En fútbol y NBA, Ajustes → Apariencia abre la hoja 🎨. Dentro de Apariencia hay dos pestañas: **Diseño de adentro** (18 diseños en 3 categorías) y **Tema de color**. |
-| `asistente.js` | **Mesa** (botón flotante en MLB, fútbol y NBA): lee todos los juegos y todas las pestañas sin que los abras, los ordena con reglas fijas y sin internet, calcula si una cuota que tú escribes tiene valor (pide +5% por el ruido del modelo) lee el mercado del servidor (pinnacle-datos/futbol/nba.json) y marca si modelo y mercado coinciden o chocan, verifica en MLB con la API oficial (lineups, abridor probable, estado, clima, lesionados; solo MLB) sin gastar IA (si chocan baja el nivel y manda el mercado), y, si quieres, manda todo lo leído (≤ 11,500 caracteres) al mismo Worker de la 🦈 IA para que busque lineups, lesiones y noticias y devuelva una SENAL por juego. Solo lee: no escribe en tus registros ni toca ningún cálculo. |
+| `asistente.js` | **Mesa** (botón flotante en las cinco apps): lee todos los juegos y todas las pestañas sin que los abras, los ordena con reglas fijas y sin internet, calcula si una cuota que tú escribes tiene valor (pide +5% por el ruido del modelo) lee el mercado del servidor (pinnacle-datos/futbol/nba.json) y marca si modelo y mercado coinciden o chocan, verifica en MLB con la API oficial (lineups, abridor probable, estado, clima, lesionados; solo MLB) sin gastar IA (si chocan baja el nivel y manda el mercado), y, si quieres, manda todo lo leído (≤ 11,500 caracteres) al mismo Worker de la 🦈 IA para que busque lineups, lesiones y noticias y devuelva una SENAL por juego. Solo lee: no escribe en tus registros ni toca ningún cálculo. |
 | `autoregistro.js` | **Registro automático** (`window.OVARegAuto`): cada vez que abres MLB, Fútbol o NBA guarda solo cada juego **antes** de que empiece (lo que dijo el modelo y lo que decía Pinnacle sin margen), baja el resultado de ESPN unas 3 h después y lo resume en Herramientas → 🤖 Auto: acierto, ROI a precio justo y con margen de 3%, quién acierta cuando modelo y mercado chocan, y Brier. Vive aparte (`ova_auto_v1`, entra en el respaldo): no toca Mis picks, CLV, banca ni ningún cálculo. En fútbol guarda la liga que tengas en pantalla. |
-| `herramientas.html` + `herramientas.js` + `banca.js` | Pantalla **Herramientas** (enlace en el pie del hub): **Marcador** (resultados reales de MLB, fútbol y NBA con curva de unidades, ROI y CLV), **Banca** (lo que apuestas, con topes diario/semanal/mensual; `banca.js` pone un aviso ámbar al 80% y rojo al llegar al tope en las demás páginas), **Casas** (misma cuota en varias casas: mejor precio, EV contra tu número, arbitraje) y **Avisos**. Todo sale de tu teléfono (localStorage), sin servidor. |
+| `herramientas.html` + `herramientas.js` + `banca.js` | Pantalla **Herramientas** (enlace en el pie del hub): **Marcador** (resultados reales de las cinco apps con curva de unidades, ROI y CLV), **Banca** (lo que apuestas, con topes diario/semanal/mensual; `banca.js` pone un aviso ámbar al 80% y rojo al llegar al tope en las demás páginas), **Casas** (misma cuota en varias casas: mejor precio, EV contra tu número, arbitraje) y **Avisos**. Todo sale de tu teléfono (localStorage), sin servidor. |
 | `interior.js`, `obsidiana.js`, `hubestilos.js` | Ocho diseños de adentro (Clásico, Cristal, Broadcast, Pro, Boleto, Boleto noche, **Prensa** y **Radar**; la lista de los 18 vive en `interior.js`; se eligen con pulsación larga en el logo o en 🎨), tema «Oro negro» y los 6 estilos del hub. Prensa y Radar traen sus propios colores (no cambian con el tema de color) para garantizar que se lean. |
-| `diseno.js` | Barra de abajo igual en MLB, fútbol y NBA (Juegos · Al gane · Combo · Mis picks · Ajustes), lo técnico (Backtest, Ratings, Diagnóstico) en Ajustes → Avanzado, versión visible en Ajustes y carga automática de MLB. No cambia ningún cálculo. |
+| `diseno.js` | Barra de abajo igual en las cinco apps (Juegos · Al gane · Combo · Mis picks · Ajustes), lo técnico (Backtest, Ratings, Diagnóstico) en Ajustes → Avanzado, versión visible en Ajustes y carga automática de MLB. No cambia ningún cálculo. |
 | `historial.js` | MLB v47-v64: historial del abridor a 3 años y FIP del abridor (los dos opcionales, apagados por defecto), botón 🦈 de IA con análisis completo, y la etiqueta de versión que se ve junto al título. |
 | `railway.js` | Compara (o aplica) el cálculo del servidor Railway sobre el Veredicto de MLB. **Única copia** de ese parche. |
 | `pinnacle.js` + `pinnacle-datos.json` | Muestra lo que dice el mercado (Pinnacle sin margen). El JSON lo escribe el escáner de GitHub Actions. |
@@ -40,7 +40,7 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 | `docs/MEDICION-PICKS-APP-2026-10.md` | **Qué habría dicho la app en 2024-2026 y cuánto habría rendido** (6,171 juegos de MLB, cuota de cierre): ningún titular gana de forma comprobable, el número de la app dice más de lo que pasa (50.5% vs 45.8%) y el stake sobre el número crudo hundía la banca ($1,000 → $524; sobre la mezcla con el mercado, $981). Scripts en `scripts/medicion/picks_app.js` y `analisis_picks.py`. |
 | `docs/MEDICION-MESA-2026-10.md` | Medición con datos reales de las reglas de la Mesa (cortes, coincidencia con el mercado, mezcla modelo+mercado). Scripts en `scripts/medicion/`. |
 | `docs/MEDICION-FUTBOL-LOCAL-ELO-2026-10.md` | Medición de ratings local/visita, Elo, mezcla con el mercado y descanso en fútbol (ninguno aporta lo suficiente). Se repite con el workflow «Experimento de futbol». |
-| `.github/workflows/` | `pruebas.yml` (corre las pruebas en cada subida), `valor-pinnacle.yml` (escáner 3 veces al día), `avisos-mlb.yml` (abridor, alineación y clima cada 30 min en horas de juego), `mercado.yml` y `deportes.yml` (backtests manuales). |
+| `.github/workflows/` | Ver la tabla «Workflows de GitHub Actions» más abajo. |
 
 ## Cómo se actualiza
 
@@ -78,6 +78,23 @@ Las páginas de `backtests/` y `scripts/ova_formula.py` **replican** estas const
 - **Worker `ova-ia`** (Cloudflare, repo `Ova-worker`): recibe la petición del botón 🦈 y le pone la clave de Anthropic. La clave vive como secreto del Worker, nunca en el código. Usa `worker/ova-ia.js` como base: acepta solo peticiones desde tu página, fija el modelo y topa los gastos por petición.
 - **Worker `kalshi-ova`** (Cloudflare, repo `Kalshi-ova`): proxy de solo lectura hacia la API pública de Kalshi.
 - **Servidor Railway** (`worker-production-be04.up.railway.app`, repo Betbot): cálculo de MLB en segundo plano. Su fórmula debe usar las mismas constantes que `index.html` (sobre todo `BONO_LOCAL = 0.59`).
+
+## Workflows de GitHub Actions
+
+Todos en `.github/workflows/`. «OddsPapi» = gasta llamadas del plan (250 al mes en total para toda la cuenta; los topes por escáner suman 240).
+
+| Workflow | Cuándo corre | Qué hace | OddsPapi |
+|---|---|---|---|
+| `pruebas.yml` | en cada subida a `main` y en pull requests | corre `pruebas.js` (sintaxis, nombres, modelos, hub, respaldo…). Una X roja = algo se rompió | no |
+| `valor-pinnacle.yml` | 3 veces al día | escáner MLB → `pinnacle-datos.json` (tope 100 al mes) | sí |
+| `valor-futbol-nba.yml` | 2 veces al día | escáner fútbol y NBA → `pinnacle-futbol.json`, `pinnacle-nba.json` (tope 80) | sí |
+| `valor-nhl-nfl.yml` | NHL cada noche, NFL jueves/domingo/lunes | escáner NHL y NFL → `pinnacle-nhl.json`, `pinnacle-nfl.json` (tope 60) | sí |
+| `avisos-mlb.yml` | cada 30 min en horas de juego, marzo a noviembre | avisos por ntfy: abridor cambiado, lineup, clima | no |
+| `archivo-espn.yml` | 4 veces al día | archivo de partidos de fútbol/NBA/MLB desde ESPN | no |
+| `archivo-nhl-nfl.yml` | diario 09:40 UTC | `hist-nhl.json`, `hist-nfl.json` (3 temporadas completas + la actual) | no |
+| `medir-nhl-nfl.yml` | al tocar el modelo o el medidor de NHL/NFL | mide los modelos contra el mercado → rama `resultados-nhl-nfl` | no |
+| `mercado.yml`, `deportes.yml`, `backtest-fip.yml`, `experimento-futbol.yml`, `medir-mesa.yml` | a mano | backtests y mediciones puntuales (resultados en ramas `resultados-*`) | no |
+| `sonda.yml` | a mano | diagnóstico de OddsPapi (no correr sin necesidad: gasta llamadas) | sí |
 
 ## Secretos de GitHub Actions
 

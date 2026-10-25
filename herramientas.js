@@ -1,6 +1,6 @@
 /* herramientas.js · lógica y pantalla de herramientas.html
    Tres cosas, todas leyendo lo que ya está en este teléfono (localStorage) o lo que tú escribes aquí:
-   1) Marcador: resultados reales de tus picks guardados en MLB, fútbol y NBA, con curva de unidades, CLV y ROI.
+   1) Marcador: resultados reales de tus picks guardados en las cinco apps, con curva de unidades, CLV y ROI.
    2) Banca: lo que apuestas, con topes diario/semanal/mensual (banca.js).
    3) Casas: la misma cuota en varias casas, cuál paga más, el EV contra tu número y si hay arbitraje.
    No cambia ningún cálculo ni ningún pick de las apps. Las funciones puras se exportan para pruebas. */
@@ -329,7 +329,7 @@ function pantallaBanca(cont){
   });
   var inI=el('input',{type:'text',inputmode:'decimal',placeholder:'Banca inicial $',autocomplete:'off','aria-label':'Banca inicial',value:o.inicial!=null?String(o.inicial):''});
   cont.appendChild(el('div',{class:'caja'},[el('h3',{text:'Tus topes'}),
-    el('p',{class:'nota',text:'Pon el máximo que aceptas apostar. A partir del 80% sale un aviso arriba en MLB, fútbol y NBA, y al llegar al tope se pone en rojo. Déjalo vacío si no quieres tope.'}),
+    el('p',{class:'nota',text:'Pon el máximo que aceptas apostar. A partir del 80% sale un aviso arriba en las cinco apps, y al llegar al tope se pone en rojo. Déjalo vacío si no quieres tope.'}),
     fila,el('div',{class:'fila'},[inI]),
     el('button',{class:'btn ghost',text:'Guardar topes',onclick:function(){
       o.topes={dia:B.num(tI.dia.value),sem:B.num(tI.sem.value),mes:B.num(tI.mes.value)}; o.inicial=B.num(inI.value); guardar();
@@ -489,15 +489,81 @@ function pantallaAuto(cont,ls){
   if(hubo) cont.appendChild(el('p',{class:'nota',text:'Con menos de 30 juegos por grupo, los números bailan por pura suerte. Para distinguir de la suerte un ROI real de +3% hacen falta miles de juegos; por eso mira la calibración y los choques primero, que se mueven más rápido. Si el mercado no trae un juego, queda sin precio y no cuenta para el ROI.'}));
 }
 
+/* ----- Salud: qué tan frescos están los datos y qué lleva guardado cada app ----- */
+function edadTxt(ms){ var m=Math.max(0,Math.round(ms/6e4)); if(m<60) return 'hace '+Math.max(1,m)+' min'; var h=Math.round(m/60); if(h<48) return 'hace '+h+' h'; return 'hace '+Math.round(h/24)+' días'; }
+var SALUD_DATOS=[['⚾ MLB','pinnacle-datos.json',30],['⚽ Fútbol','pinnacle-futbol.json',30],['🏀 NBA','pinnacle-nba.json',30],['🏒 NHL','pinnacle-nhl.json',36],['🏈 NFL','pinnacle-nfl.json',120]];
+function pedirJson(url){
+  if(!root.fetch) return Promise.resolve(null);
+  return root.fetch(url+'?t='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; });
+}
+function pantallaSalud(cont,ls){
+  limpiar(cont);
+  var ahora=Date.now();
+  /* 1. Precios de Pinnacle */
+  var cajaP=el('div',{class:'caja'},[el('h3',{text:'Precios de Pinnacle (mercado)'}),
+    el('p',{class:'nota',text:'Los baja un escáner de GitHub varias veces al día. Verde = al día · ámbar = viejo (la app avisa «cuotas viejas»). Si un deporte no tiene archivo, la app usa las líneas de ESPN.'})]);
+  var listaP=el('div',{},[el('p',{class:'nota',text:'Leyendo…'})]); cajaP.appendChild(listaP); cont.appendChild(cajaP);
+  Promise.all(SALUD_DATOS.map(function(d){ return pedirJson(d[1]); })).then(function(rs){
+    limpiar(listaP);
+    SALUD_DATOS.forEach(function(d,i){
+      var j=rs[i], g=j&&j.generado?Date.parse(j.generado):NaN, n=j&&j.juegos?j.juegos.length:0, txt, cls;
+      if(!j||!isFinite(g)){ txt='sin archivo todavía'; cls='ambar'; }
+      else{ var ed=ahora-g; cls=ed<=d[2]*36e5?'verde':'ambar'; txt=edadTxt(ed)+' · '+n+(n===1?' juego':' juegos'); }
+      listaP.appendChild(el('div',{class:'flag '+cls,style:'margin:6px 0'},[el('b',{text:d[0]+': '}),txt]));
+    });
+  });
+  /* 2. Archivo de partidos (NHL y NFL) */
+  var cajaA=el('div',{class:'caja'},[el('h3',{text:'Archivo de partidos (NHL y NFL)'}),
+    el('p',{class:'nota',text:'Lo actualiza GitHub cada día; de ahí salen las calificaciones de los equipos.'})]);
+  var listaA=el('div',{},[el('p',{class:'nota',text:'Leyendo…'})]); cajaA.appendChild(listaA); cont.appendChild(cajaA);
+  Promise.all([pedirJson('hist-nhl.json'),pedirJson('hist-nfl.json')]).then(function(rs){
+    limpiar(listaA);
+    [['🏒 NHL',rs[0]],['🏈 NFL',rs[1]]].forEach(function(x){
+      var j=x[1], g=j&&j.generado?Date.parse(j.generado):NaN, ok=j&&isFinite(g)&&(ahora-g)<=48*36e5;
+      listaA.appendChild(el('div',{class:'flag '+(ok?'verde':'ambar'),style:'margin:6px 0'},[el('b',{text:x[0]+': '}),
+        j&&isFinite(g)?edadTxt(ahora-g)+' · '+(j.g?j.g.length:0)+' partidos · '+(j.teams?Object.keys(j.teams).length:0)+' equipos':'no se pudo leer']));
+    });
+  });
+  /* 3. Lo que lleva guardado cada app */
+  var A=root.OVARegAuto, items=[]; try{ items=JSON.parse(ls.getItem('ova_auto_v1')||'[]')||[]; }catch(e){ items=[]; }
+  var cajaG=el('div',{class:'caja'},[el('h3',{text:'Registro automático por app'})]);
+  var t=el('table',{class:'tab'},[el('tr',null,['App','Guardados','Con resultado','Pendientes','Último'].map(function(h){ return el('th',{text:h}); }))]);
+  Object.keys(APPS).forEach(function(a){
+    var mios=items.filter(function(r){ return r&&r.app===a; }), res=mios.filter(function(r){ return r.res!=null&&r.res!==''; }).length;
+    var ult=mios.reduce(function(m,r){ return Math.max(m,+r.ts||0); },0);
+    t.appendChild(el('tr',null,[el('td',{text:APPS[a]}),el('td',{class:'n',text:String(mios.length)}),el('td',{class:'n',text:String(res)}),el('td',{class:'n',text:String(mios.length-res)}),el('td',{class:'n',text:ult?edadTxt(ahora-ult):'—'})]));
+  });
+  cajaG.appendChild(t); cont.appendChild(cajaG);
+  /* 4. Respaldo */
+  var cajaR=el('div',{class:'caja'},[el('h3',{text:'Respaldo de tus picks'})]);
+  var linea=el('div',{class:'flag',style:'margin:6px 0'},['Leyendo…']); cajaR.appendChild(linea); cont.appendChild(cajaR);
+  var R=root.OVARespaldo;
+  if(R&&R.estado) R.estado(ls).then(function(e){
+    if(e){ linea.textContent=''; linea.className='flag verde'; linea.appendChild(root.document.createTextNode('Copia interna '+edadTxt(ahora-e.t)+' · '+e.picks+' picks. Se guarda sola; si Safari borra los datos, la app te ofrece restaurarla.')); }
+    else{ linea.className='flag ambar'; linea.textContent='Todavía no hay copia interna (se crea sola cuando guardas tu primer pick).'; }
+  },function(){ linea.textContent='No se pudo leer la copia interna.'; });
+  else linea.textContent='El módulo de respaldo no cargó.';
+  /* 5. Forzar actualización */
+  var cajaU=el('div',{class:'caja'},[el('h3',{text:'¿La app se ve vieja?'}),
+    el('p',{class:'nota',text:'La app se actualiza sola cada vez que abres con internet. Si algo se ve desactualizado, este botón borra la copia guardada en el teléfono y vuelve a bajar todo. No toca tus picks, tu banca ni tus ajustes.'}),
+    el('div',{class:'pie2'},[el('button',{type:'button',text:'🔄 Forzar actualización',onclick:function(){
+      var tareas=[];
+      try{ if(root.caches&&root.caches.keys) tareas.push(root.caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return root.caches.delete(k); })); })); }catch(e){}
+      try{ if(root.navigator&&root.navigator.serviceWorker&&root.navigator.serviceWorker.getRegistrations) tareas.push(root.navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); })); }catch(e){}
+      Promise.all(tareas).catch(function(){}).then(function(){ root.location.reload(); });
+    }})])]);
+  cont.appendChild(cajaU);
+}
+
 /* ----- arranque ----- */
-var TABS=[['marcador','📊 Marcador'],['banca','💰 Banca'],['casas','🏦 Casas'],['auto','🤖 Auto'],['avisos','🔔 Avisos']];
+var TABS=[['marcador','📊 Marcador'],['banca','💰 Banca'],['casas','🏦 Casas'],['auto','🤖 Auto'],['avisos','🔔 Avisos'],['salud','🩺 Salud']];
 function arrancar(){
   var d=root.document, cont=d.getElementById('vista'), nav=d.getElementById('tabs'); if(!cont||!nav) return;
   var ls; try{ ls=root.localStorage; }catch(e){ ls={getItem:function(){ return null; }}; }
   function ir(k){
     if(!TABS.some(function(t){ return t[0]===k; })) k='marcador';
     Array.prototype.forEach.call(nav.children,function(b){ b.classList.toggle('on',b.getAttribute('data-k')===k); b.setAttribute('aria-selected',b.getAttribute('data-k')===k?'true':'false'); });
-    if(k==='marcador') pantallaMarcador(cont,ls); else if(k==='banca') pantallaBanca(cont); else if(k==='casas') pantallaCasas(cont); else if(k==='auto') pantallaAuto(cont,ls); else pantallaAvisos(cont);
+    if(k==='marcador') pantallaMarcador(cont,ls); else if(k==='banca') pantallaBanca(cont); else if(k==='casas') pantallaCasas(cont); else if(k==='auto') pantallaAuto(cont,ls); else if(k==='salud') pantallaSalud(cont,ls); else pantallaAvisos(cont);
     try{ if(root.history&&root.history.replaceState) root.history.replaceState(null,'','#'+k); }catch(e){}
   }
   TABS.forEach(function(t){ nav.appendChild(el('button',{type:'button',role:'tab','data-k':t[0],text:t[1],onclick:function(){ ir(t[0]); }})); });

@@ -1,4 +1,4 @@
-/* OVA · En vivo — MLB, fútbol y NBA.
+/* OVA · En vivo — MLB, fútbol, NBA, NHL y NFL.
    Una pestaña «En vivo» dentro de cada juego y una pantalla con todos los juegos que se están jugando ahora; al tocar uno,
    la vista del juego en vivo con refresco automático:
    · MLB: rombo con corredores, conteo (bolas, strikes, outs), zona de strike con cada lanzamiento, marcador por entrada

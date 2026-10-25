@@ -1,4 +1,4 @@
-/* OVA · diseño interior v1  (MLB, fútbol y NBA)
+/* OVA · diseño interior v1  (MLB, fútbol, NBA, NHL y NFL)
    Cambia la FORMA de las pantallas de adentro (tarjetas de partido, pestañas, barra de abajo, iconos,
    números y animaciones). Es aparte del tema de color: se combinan.
    Diseños:  Clásico (como estaba) · Cristal · Broadcast · Pro · Boleto · Boleto noche · Prensa · Radar
@@ -558,6 +558,9 @@ CSS+='\n'+LEGIBLE+'\n/* ---- diseño Prensa ---- */\n'+PRENSA+'\n/* ---- diseño
 var IC={
  ball:'<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6c3.4 3 3.4 9.8 0 12.8M18.4 5.6c-3.4 3-3.4 9.8 0 12.8"/>',
  soccer:'<circle cx="12" cy="12" r="9"/><path d="M12 7.6l3.3 2.4-1.3 3.9h-4L8.7 10z"/><path d="M12 7.6V3.1M15.3 10l4.5-1.5M14 13.9l2.8 3.8M10 13.9l-2.8 3.8M8.7 10L4.2 8.5"/>',
+ basket:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18M5.6 5.6c3.4 3 3.4 9.8 0 12.8M18.4 5.6c-3.4 3-3.4 9.8 0 12.8"/>',
+ puck:'<ellipse cx="12" cy="9" rx="8" ry="3.4"/><path d="M4 9v5c0 1.9 3.6 3.4 8 3.4s8-1.5 8-3.4V9"/><path d="M4 12c0 1.9 3.6 3.4 8 3.4s8-1.5 8-3.4" opacity=".5"/>',
+ football:'<path d="M3.5 20.5C2.5 12 8 5.5 20.5 3.5 21.5 12 16 18.5 3.5 20.5z"/><path d="M9 15l6-6M10.5 10.5l3 3M8 13l3 3M12.5 8l3 3"/>',
  trophy:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5v1.5A3 3 0 0 0 8 10.5M16 6h3v1.5a3 3 0 0 1-3 3M12 13v4M8.5 20h7"/>',
  layers:'<path d="M12 3 3 8l9 5 9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 17l9 5 9-5" opacity=".5"/>',
  mark:'<path d="M6 4h12v17l-6-4-6 4z"/><path d="M9.5 9h5"/>',
@@ -567,7 +570,7 @@ var IC={
 };
 function claveIcono(txt){
   var t=String(txt||'').toLowerCase().replace(/[^a-záéíóúñ ]/g,'').trim();
-  if(t==='juegos') return (html && html.getAttribute && html.getAttribute('data-app')==='fut' ? 'soccer' : 'ball'); if(t==='al gane') return 'trophy';
+  if(t==='juegos'){ var ap=(html && html.getAttribute && html.getAttribute('data-app'))||''; return ({fut:'soccer',nba:'basket',nhl:'puck',nfl:'football'})[ap]||'ball'; } if(t==='al gane') return 'trophy';
   if(t==='mis picks'||t==='registro') return 'mark'; if(t==='ajustes') return 'sliders'; if(t==='ratings') return 'bars'; if(t==='backtest') return 'chart';
   return null;
 }

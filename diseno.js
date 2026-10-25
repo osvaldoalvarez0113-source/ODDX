@@ -1,12 +1,12 @@
 /* OVA · diseño común (MLB v53 / fútbol v15 / NBA v3.6).
-   Un solo script que iguala la navegación de las tres apps y limpia lo técnico:
-     · Barra de abajo igual en las tres:  Juegos · Al gane · Mis picks · Ajustes
+   Un solo script que iguala la navegación de las cinco apps y limpia lo técnico:
+     · Barra de abajo igual en las cinco:  Juegos · Al gane · Mis picks · Ajustes
      · Lo técnico (Backtest, Ratings, Diagnóstico, herramientas pesadas) vive en Ajustes → Avanzado
      · El respaldo de picks vive en Ajustes
      · La versión se ve siempre en Ajustes (en el tema Cristal la etiqueta del título está oculta)
      · Letra mínima de 12 px
      · MLB abre ya con los juegos de hoy cargados, con la fila de fecha compacta y los juegos sin abridores al final («Por confirmar»)
-     · Mismos iconos y mismo botón de Inicio en las tres apps; en MLB, Ajustes abre con lo que usas (banca, modo de pago) y la Apariencia va después
+     · Mismos iconos y mismo botón de Inicio en las cinco apps; en MLB, Ajustes abre con lo que usas (banca, modo de pago) y la Apariencia va después
      · Barra de probabilidad en cada juego ya calculado (solo se ve en el diseño Pro)
    No cambia ningún cálculo. Todo va en try/catch: si falta una pieza, la app se queda como estaba.
    Los botones originales NO se borran: se ocultan y se activan por código, así que sus eventos siguen funcionando. */
@@ -41,7 +41,7 @@ var CSS=[
  '.cargafila #cargar{padding:8px 12px!important;font-size:13px!important;font-weight:700!important;min-height:0!important;box-shadow:none!important;background:var(--bg2)!important;color:var(--txt)!important;border:1px solid var(--line2)!important;text-transform:none!important;letter-spacing:0!important;transform:none!important;border-radius:var(--r,10px)!important}',
  /* mismos iconos de la barra en Clásico (en los otros diseños ya los pone interior.js) */
  '.navbar svg.ic2,.tabbar svg.ic2{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}',
- /* botón de Inicio igual en las tres apps: círculo con ‹ a la izquierda (Cristal y Broadcast traen el suyo) */
+ /* botón de Inicio igual en las cinco apps: círculo con ‹ a la izquierda (Cristal y Broadcast traen el suyo) */
  'html:not([data-ui="cristal"]):not([data-ui="broadcast"]) .topbar .ovaHome{order:-1;width:34px;height:34px;padding:0 0 3px;font-size:0!important;min-height:0;line-height:1}',
  'html:not([data-ui="cristal"]):not([data-ui="broadcast"]) .topbar .ovaHome::before{content:"‹";font-size:24px;line-height:1;color:inherit}',
  /* juegos sin abridores confirmados: una línea corta y apagada, al final de la lista */

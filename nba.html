@@ -640,23 +640,6 @@ function pinPH(g){
   PIN_N.juegos.forEach(x=>{ if(r!==null||Math.abs(Date.parse(x.t)-g.ts)>20*3600e3) return; const a=nickN(x.n[0]), b=nickN(x.n[1]); if(a===kh&&b===ka) r=x.ml[0]; else if(a===ka&&b===kh) r=x.ml[1]; });
   return r;
 }
-function pinNba(g,pr){
-  if(!PIN_N) return '';
-  const H=T(g.h), A=T(g.a), kh=nickN(H.n), ka=nickN(A.n);
-  let hit=null;
-  PIN_N.juegos.forEach(x=>{
-    if(hit) return;
-    if(Math.abs(Date.parse(x.t)-g.ts)>20*3600e3) return;
-    const a=nickN(x.n[0]), b=nickN(x.n[1]);
-    if(a===kh&&b===ka) hit={pH:x.ml[0],x:x}; else if(a===ka&&b===kh) hit={pH:x.ml[1],x:x};
-  });
-  if(!hit) return '';
-  const pA=1-hit.pH, mod=pr.pH, d=(mod-hit.pH)*100;
-  const min=Math.max(0,Math.round((Date.now()-Date.parse(PIN_N.generado))/60000));
-  const fila=(t,pin,m)=>`<div class="linea"><span>${esc(t)}</span><b>${pct1(pin)} · ${amTxt(pin)} <span style="color:var(--mut2);font-weight:500;font-size:11.5px">modelo ${pct1(m)} (${(m-pin)*100>=0?'+':''}${((m-pin)*100).toFixed(1)})</span></b></div>`;
-  return `<h3>Lo que dice Pinnacle</h3><div class="lineas">${fila(A.n+' gana',pA,1-mod)}${fila(H.n+' gana',hit.pH,mod)}</div>
-   <div class="nota">Probabilidad de Pinnacle ya sin su margen y la cuota justa que le corresponde (actualizado hace ${min<90?min+' min':Math.round(min/60)+' h'}). Una cuota solo tiene valor si paga <b>más</b> que esa cuota justa. El mercado es la mejor estimación; el modelo queda de referencia.</div>`;
-}
 
 /* ---- Resumen completo del Veredicto: pronóstico, modelo contra mercado, líneas justas, qué tan confiable es y forma ---- */
 function resumenN(g,pr,H,A){

@@ -1,17 +1,12 @@
 name: Pinnacle NHL y NFL
 
 # Guarda pinnacle-nhl.json y pinnacle-nfl.json (precio justo de Pinnacle sin margen: ganador, handicap y total principal).
-# Gasta pocas llamadas de OddsPapi: NHL dos veces al dia, NFL solo los dias con juegos (tope propio de 100 al mes).
+# Gasta pocas llamadas de OddsPapi: NHL cada noche, NFL solo jueves, domingo y lunes (tope propio de 60 al mes; el plan da 250 en total).
 on:
   workflow_dispatch:
   schedule:
     - cron: "40 15 * * 0"      # solo domingos: la NFL juega desde la 1 pm ET
     - cron: "10 22 * * *"
-  push:
-    branches: [main]
-    paths:
-      - scripts/valor3.js
-      - .github/workflows/valor-nhl-nfl.yml
 
 permissions:
   contents: write
