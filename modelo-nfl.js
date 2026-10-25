@@ -50,7 +50,7 @@
     const pm = mh - ma + ha + rd;
     const pt = S.lg + th + ta;
     const mar = g.hs - g.as, tot = g.hs + g.as;
-    if (cb) cb(g, { pm: pm, pt: pt, mar: mar, tot: tot, cH: S.cnt[g.h] || 0, cA: S.cnt[g.a] || 0, S: S, lg: S.lg, rd: mh - ma, b0: pm - (mh - ma) });
+    if (cb) cb(g, { pm: pm, pt: pt, mar: mar, tot: tot, cH: S.cnt[g.h] || 0, cA: S.cnt[g.a] || 0, S: S, lg: S.lg, rd: mh - ma, b0: pm - (mh - ma), gH: gH, gA: gA });
     const e = Math.max(-35, Math.min(35, mar - pm));
     S.m[g.h] = mh + P.kM * e; S.m[g.a] = ma - P.kM * e;
     const eT = Math.max(-35, Math.min(35, tot - pt));

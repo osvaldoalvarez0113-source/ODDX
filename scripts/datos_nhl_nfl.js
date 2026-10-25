@@ -75,7 +75,7 @@ async function bajarDia(dep, d, DIAG) {
   try { return parseEventos(await L.pedir(ESPN[dep] + 'scoreboard?dates=' + ymdU(d) + '&limit=300'), dep); }
   catch (e) { DIAG.errores.push(ymdU(d) + ': ' + e.message); return []; }
 }
-async function temporada(dep, sk, DIAG) {
+async function temporada(dep, sk, DIAG, desde) {
   if (dep === 'nfl') {
     // por semana (los rangos de fechas dan 400 en la NFL y la NHL)
     const tareas = [];
@@ -88,8 +88,10 @@ async function temporada(dep, sk, DIAG) {
     const m = new Map(); [].concat(...res.filter(Boolean)).forEach(g => m.set(g.id, g));
     return [...m.values()];
   }
-  const [ini, fin] = ventana(dep, sk); const dias = [];
-  for (let d = new Date(ini); d <= fin; d = new Date(d.getTime() + 864e5)) dias.push(new Date(d));
+  const [ini0, fin] = ventana(dep, sk); const dias = [];
+  const ini = desde && desde > ini0 ? desde : ini0;
+  const tope = new Date(Math.min(fin.getTime(), Date.now() + 864e5));
+  for (let d = new Date(Date.UTC(ini.getUTCFullYear(), ini.getUTCMonth(), ini.getUTCDate())); d <= tope; d = new Date(d.getTime() + 864e5)) dias.push(new Date(d));
   const res = await L.pool(dias.map(d => () => bajarDia(dep, d, DIAG)), 10);
   const m = new Map(); [].concat(...res.filter(Boolean)).forEach(g => m.set(g.id, g));
   return [...m.values()];
@@ -107,8 +109,28 @@ async function bajarLineas(dep, juegos, DIAG, cb) {
   return { fallos, ejemplo };
 }
 
+/* Actualiza una temporada en curso: baja solo desde 4 dias antes del ultimo juego terminado que ya se tenia. Conserva las lineas ya bajadas. */
+async function actualizar(dep, sk, previo, DIAG) {
+  const viejo = new Map(((previo && previo.juegos) || []).map(g => [g.id, g]));
+  let desde = null; const hechos = [...viejo.values()].filter(g => g.done);
+  if (hechos.length && dep === 'nhl') desde = new Date(Math.max(...hechos.map(g => g.ts)) - 4 * 864e5);
+  const nuevos = await temporada(dep, sk, DIAG, desde);
+  nuevos.forEach(g => { const v = viejo.get(g.id); if (v && v.linea !== undefined && g.done) g.linea = v.linea; viejo.set(g.id, g); });
+  return [...viejo.values()];
+}
+const F_SO = 1, F_OT = 2, F_NEUTRAL = 4, F_INDOOR = 8;
+// archivo compacto que lee la app: [id,ts,local,visita,golesL,golesV,tipo,banderas,semana]
+function compacto(dep, juegos, skMin) {
+  const teams = {}; const g = [];
+  juegos.filter(x => x.done && !x.skip && x.ts >= skMin).sort((a, b) => a.ts - b.ts).forEach(x => {
+    teams[x.h] = [x.nh || '', x.abH || '']; teams[x.a] = [x.na || '', x.abA || ''];
+    g.push([x.id, x.ts, x.h, x.a, x.hs, x.as, x.ty, (x.so ? F_SO : 0) | (x.ot ? F_OT : 0) | (x.neutral ? F_NEUTRAL : 0) | (x.indoor ? F_INDOOR : 0), x.wk == null ? 0 : x.wk]);
+  });
+  return { v: 1, dep, generado: new Date().toISOString(), teams, g };
+}
+
 /* ---------- cache ---------- */
 function cargarCache(dep, ruta) { try { return JSON.parse(fs.readFileSync(ruta, 'utf8')); } catch (e) { return { dep, temps: {} }; } }
 function guardarCache(ruta, c) { fs.writeFileSync(ruta, JSON.stringify(c)); }
 
-module.exports = { ESPN, CORE, parseEventos, lineaCore, ventana, temporada, bajarLineas, bajarDia, cargarCache, guardarCache, ymdU };
+module.exports = { ESPN, CORE, parseEventos, lineaCore, ventana, temporada, actualizar, compacto, bajarLineas, bajarDia, cargarCache, guardarCache, ymdU, F_SO, F_OT, F_NEUTRAL, F_INDOOR };

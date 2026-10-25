@@ -1,0 +1,52 @@
+name: Archivo de partidos NHL y NFL
+
+# Una vez al dia guarda hist-nhl.json y hist-nfl.json en la app (marcadores de las ultimas temporadas) para que cargue rapido.
+# Reusa los datos de la rama "datos-nhl-nfl" y solo baja lo nuevo.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "40 9 * * *"
+  push:
+    branches: [main]
+    paths:
+      - scripts/archivo_nhl_nfl.js
+      - .github/workflows/archivo-nhl-nfl.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: archivo-nhl-nfl
+  cancel-in-progress: false
+
+jobs:
+  archivo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Recuperar datos ya bajados
+        continue-on-error: true
+        run: git fetch -q origin datos-nhl-nfl && git checkout FETCH_HEAD -- datos-nhl.json datos-nfl.json || echo "sin cache todavia"
+      - name: Actualizar y escribir el archivo
+        run: node scripts/archivo_nhl_nfl.js
+      - name: Guardar el archivo en la app
+        run: |
+          git config user.name "escaner-ova"
+          git config user.email "escaner-ova@users.noreply.github.com"
+          git add -f hist-nhl.json hist-nfl.json
+          if git diff --cached --quiet; then echo "Sin cambios que guardar"; exit 0; fi
+          git commit -q -m "archivo: partidos NHL y NFL"
+          git pull --rebase -q || true
+          git push -q origin HEAD
+      - name: Guardar datos bajados
+        if: always()
+        continue-on-error: true
+        run: |
+          [ -f datos-nhl.json ] || [ -f datos-nfl.json ] || exit 0
+          mkdir -p /tmp/dat && cp -f datos-nhl.json datos-nfl.json /tmp/dat/ 2>/dev/null || true
+          cd /tmp/dat && git init -q -b datos-nhl-nfl && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "datos nhl nfl" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" datos-nhl-nfl

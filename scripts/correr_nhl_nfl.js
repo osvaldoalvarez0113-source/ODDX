@@ -111,9 +111,7 @@ async function medir(dep) {
       const pasada = sk < skHoy;
       if (t && t.completa && pasada && t.juegos.length > (dep === 'nhl' ? 900 : 200)) continue;
       console.log('Bajando ' + cfg.nombre + ' temporada ' + sk + '...');
-      const nuevos = await D.temporada(dep, sk, DIAG);
-      const viejo = new Map(((t && t.juegos) || []).map(g => [g.id, g]));
-      nuevos.forEach(g => { const v = viejo.get(g.id); if (v && v.linea !== undefined && g.done) g.linea = v.linea; });
+      const nuevos = await D.actualizar(dep, sk, t, DIAG);
       cache.temps[sk] = { juegos: nuevos, completa: pasada && nuevos.length > (dep === 'nhl' ? 900 : 200) };
       console.log('  ' + nuevos.length + ' juegos');
       D.guardarCache(ruta, cache);
@@ -162,7 +160,7 @@ async function medir(dep) {
       if (M.seasonOf(g.ts) !== sk || g.ty !== 2 || x.cH < cfg.minJ || x.cA < cfg.minJ) return;
       const Zc = P.Z === undefined ? 1 : P.Z, pm = x.b0 + Zc * x.rd;
       const r = { g, sk, pm, pt: x.pt, P, K, bH: !!x.bH, bA: !!x.bA };
-      if (dep === 'nfl') { const sg = M.sigmas(x.S); r.sM = sg.sM; r.sT = sg.sT; }
+      if (dep === 'nfl') { const sg = M.sigmas(x.S); r.sM = sg.sM; r.sT = sg.sT; r.gH = x.gH; r.gA = x.gA; }
       let dd = null; r.D = () => dd || (dd = M.dist(pm, x.pt, P));
       filas.push(r);
     });
@@ -179,15 +177,15 @@ async function medir(dep) {
   /* ============ 2) ganador: modelo contra mercado ============ */
   {
     const ll = (p, w) => -Math.log(clip(w ? p : 1 - p)), br = (p, w) => (p - w) * (p - w);
-    const dM = [], dB = [], dO = []; let sM = 0, sK = 0, bM = 0, bK = 0, sO = 0, nO = 0;
+    const dM = [], dB = [], dO = []; let sM = 0, sK = 0, bM = 0, bK = 0, sO = 0, nO = 0, sKo = 0;
     gMl.forEach(r => { const w = win(r), pm = clip(A.pWin(r)), pkk = clip(pk(r));
       const lm = ll(pm, w), lk = ll(pkk, w); sM += lm; sK += lk; bM += br(pm, w); bK += br(pkk, w); dM.push(lm - lk); dB.push(br(pm, w) - br(pkk, w));
-      if (r.g.linea.mlOpen) { const po = clip(L.sinMargen(r.g.linea.mlOpen[0], r.g.linea.mlOpen[1])[0]); sO += ll(po, w); nO++; dO.push(ll(po, w) - lk); } });
+      if (r.g.linea.mlOpen) { const po = clip(L.sinMargen(r.g.linea.mlOpen[0], r.g.linea.mlOpen[1])[0]); sO += ll(po, w); sKo += lk; nO++; dO.push(ll(po, w) - lk); } });
     const n = gMl.length;
     log('\n## 2) Ganador: modelo contra el mercado (moneyline de cierre sin margen)\nPérdida logarítmica (más baja = mejor). "dif" = modelo − mercado: positivo = el mercado acierta más.\n' + L.tabla(['', 'Juegos', 'Modelo', 'Mercado', 'dif ± 2·se', 'Veredicto'], [
       ['Log-loss', String(n), L.f(sM / n, 4), L.f(sK / n, 4), L.f(L.ms(dM).m, 4) + ' ± ' + L.f(2 * L.ms(dM).se, 4), L.veredicto(L.ms(dM))],
       ['Brier', String(n), L.f(bM / n, 4), L.f(bK / n, 4), L.f(L.ms(dB).m, 4) + ' ± ' + L.f(2 * L.ms(dB).se, 4), L.veredicto(L.ms(dB))]]));
-    if (nO > 200) log('Apertura contra cierre: log-loss de la línea de APERTURA ' + L.f(sO / nO, 4) + ' contra ' + L.f(L.ms(dO).m + sK / n, 4) + ' del cierre (dif apertura−cierre ' + L.f(L.ms(dO).m, 4) + ' ± ' + L.f(2 * L.ms(dO).se, 4) + '; positivo = el cierre es mejor, el mercado aprende durante el día).');
+    if (nO > 200) log('Apertura contra cierre (' + nO + ' juegos con las dos): log-loss de la línea de APERTURA ' + L.f(sO / nO, 4) + ' contra ' + L.f(sKo / nO, 4) + ' del cierre (dif apertura−cierre ' + L.f(L.ms(dO).m, 4) + ' ± ' + L.f(2 * L.ms(dO).se, 4) + '; positivo = el cierre es mejor, el mercado aprende durante el día).');
     resumen.logloss = { modelo: sM / n, mercado: sK / n, dif: L.ms(dM) };
     const aciertoM = gMl.filter(r => (A.pWin(r) >= 0.5) === (win(r) === 1)).length / n, aciertoK = gMl.filter(r => (pk(r) >= 0.5) === (win(r) === 1)).length / n;
     log('Acierto del favorito: modelo ' + L.pc(aciertoM) + ' · mercado ' + L.pc(aciertoK) + '. Local gana: ' + L.pc(gMl.filter(r => win(r)).length / n) + ' (el mercado le daba ' + L.pc(gMl.reduce((a, r) => a + pk(r), 0) / n) + ').');
@@ -322,7 +320,8 @@ async function medir(dep) {
         rt.push(['Total ' + v + ' · Más'].concat(fa(apuestas(o)))); rt.push(['Total ' + v + ' · Menos'].concat(fa(apuestas(u)))); });
       log('**Totales por línea** (' + lineas.length + ' líneas con 60+ juegos)\n' + L.tabla(['Grupo', 'Apuestas', 'G-P-Push', '% ganadas', 'ROI ± 2·se', 'z'], rt));
       const porT2 = [...new Set(gt.map(r => r.sk))].sort().map(s => { const a = gt.filter(r => r.sk === s), o = []; a.forEach(r => o.push({ odds: (r.g.linea.ou || [-110, -110])[0], v: resOver(dep, r.g, r.g.linea.tot) })); return [String(s), 'Más'].concat(fa(apuestas(o))); });
-      log('**Más, por temporada** (¿el mercado de totales se corrige con los años?)\n' + L.tabla(['Temporada', 'Lado', 'Apuestas', 'G-P-Push', '% ganadas', 'ROI ± 2·se', 'z'], porT2));
+      const porT3 = [...new Set(gt.map(r => r.sk))].sort().map(s => { const a = gt.filter(r => r.sk === s), o = []; a.forEach(r => o.push({ odds: (r.g.linea.ou || [-110, -110])[1], v: -resOver(dep, r.g, r.g.linea.tot) })); return [String(s), 'Menos'].concat(fa(apuestas(o))); });
+      log('**Más y Menos, por temporada** (¿el mercado de totales se corrige con los años?)\n' + L.tabla(['Temporada', 'Lado', 'Apuestas', 'G-P-Push', '% ganadas', 'ROI ± 2·se', 'z'], porT2.concat(porT3)));
     }
   }
 
@@ -342,6 +341,11 @@ async function medir(dep) {
       if (res.length > 100) { const rg = L.ols(res.map(o => [1, o.x]), res.map(o => o.y)); if (rg) log('**Back-to-back**: ' + res.length + ' juegos en los que solo uno jugó ayer. Margen real − margen del mercado, por cada back-to-back del visitante (positivo = el local rinde más de lo que el mercado dice): ' + L.f(rg.b[1], 3) + ' ± ' + L.f(2 * rg.se[1], 3) + ' goles (el modelo usa R=' + M.PDEF.R + '). Cero = el mercado ya lo tiene en el precio.'); }
       const rb = []; [['Visitante en back-to-back (local descansado)', r => r.bA && !r.bH, true], ['Local en back-to-back (visitante descansado)', r => r.bH && !r.bA, false]].forEach(([nom, f, apLocal]) => { const b = []; gMl.filter(f).forEach(r => b.push(apLocal ? { odds: r.g.linea.ml[0], v: win(r) ? 1 : -1 } : { odds: r.g.linea.ml[1], v: win(r) ? -1 : 1 })); rb.push([nom + ' · apostar al descansado'].concat(fa(apuestas(b)))); });
       log(L.tabla(['Regla', 'Apuestas', 'G-P', '% ganadas', 'ROI ± 2·se', 'z'], rb));
+      { const ep = filas.reduce((a, r) => a + r.D().regE, 0) / filas.length, er = filas.filter(r => r.g.ot || r.g.so).length / filas.length;
+        log('Empates a 60 minutos (llegan a OT): modelo ' + L.pc(ep) + ' · real ' + L.pc(er) + '. Local gana en OT/SO: real ' + L.pc(T.filter(g => (g.ot || g.so) && g.hs > g.as).length / Math.max(T.filter(g => g.ot || g.so).length, 1)) + ' · modelo ' + L.pc(filas.filter(r => r.g.ot || r.g.so).reduce((a, r) => a + r.D().q, 0) / Math.max(filas.filter(r => r.g.ot || r.g.so).length, 1)) + '.'); }
+      [5.5, 6.5].forEach(lv => { const gl = filas.filter(r => r.g.linea && r.g.linea.tot === lv); if (gl.length < 200) return;
+        const cb = [[0, 0.40], [0.40, 0.46], [0.46, 0.52], [0.52, 0.58], [0.58, 1]]; const rr = cb.map(([a, b]) => { const s = gl.filter(r => { const p = A.over(r, lv).w; return p >= a && p < b; }); return [a.toFixed(2) + '–' + Math.min(b, 1).toFixed(2), String(s.length), L.pc(s.length ? s.reduce((x, r) => x + A.over(r, lv).w, 0) / s.length : null), L.pc(s.length ? s.filter(r => resOver(dep, r.g, lv) > 0).length / s.length : null)]; });
+        log('Calibración de P(Más ' + lv + ') del modelo:\n' + L.tabla(['Tramo del modelo', 'Juegos', 'Modelo dijo', 'Real'], rr)); });
       // calibracion del total contra la linea mas comun
       const gt = filas.filter(r => r.g.linea && r.g.linea.tot === 6);
       if (gt.length > 100) { const pr = gt.reduce((a, r) => a + A.over(r, 6).w, 0) / gt.length, ac = gt.filter(r => resOver(dep, r.g, 6) > 0).length / gt.length, pu = gt.filter(r => resOver(dep, r.g, 6) === 0).length / gt.length;
@@ -359,7 +363,7 @@ async function medir(dep) {
       log('**Push en líneas enteras** (lo que pasa cuando el margen cae justo en la línea)\n' + L.tabla(['Línea', 'Juegos', 'Push real', 'Push que daría la normal', 'Push con números clave'], Object.keys(pushes).map(Number).filter(s => pushes[s].n >= 25).sort((a, b) => a - b).map(s => [String(s), String(pushes[s].n), L.pc(pushes[s].p / pushes[s].n), L.pc(pushes[s].pm / pushes[s].n), L.pc(pushes[s].pk / pushes[s].n)])));
       // descanso
       const rs = []; const rel = filas.filter(r => A.mktPm(r) !== null);
-      [['Local en semana corta (≤5 días)', r => r.rH < 0 && r.rA === 0], ['Visitante en semana corta', r => r.rA < 0 && r.rH === 0], ['Local viene de bye', r => r.rH > 0 && r.rA <= 0], ['Visitante viene de bye', r => r.rA > 0 && r.rH <= 0]].forEach(([nom, f]) => {
+      [['Local en semana corta (≤5 días)', r => r.gH !== null && r.gH <= 5 && r.gH >= 1 && !(r.gA !== null && r.gA <= 5)], ['Visitante en semana corta', r => r.gA !== null && r.gA <= 5 && r.gA >= 1 && !(r.gH !== null && r.gH <= 5)], ['Local viene de bye (11+ días)', r => r.gH !== null && r.gH >= 11 && r.gH <= 40 && !(r.gA !== null && r.gA >= 11)], ['Visitante viene de bye', r => r.gA !== null && r.gA >= 11 && r.gA <= 40 && !(r.gH !== null && r.gH >= 11)]].forEach(([nom, f]) => {
         const b = rel.filter(f); if (b.length < 30) return; const v = b.map(r => marg(dep, r.g) - A.mktPm(r)); const s = L.ms(v); rs.push([nom, String(b.length), L.f(s.m, 2) + ' ± ' + L.f(2 * s.se, 2)]); });
       log('**Descanso**: margen real − margen de la línea (positivo = el local rinde más de lo que la línea dice)\n' + (rs.length ? L.tabla(['Situación', 'Juegos', 'Margen real − línea'], rs) : '(muestra pequeña)\n'));
       const rr = []; [['Techo cerrado', r => r.g.indoor], ['Al aire libre', r => !r.g.indoor], ['Semanas 1–4', r => r.g.wk <= 4], ['Semanas 5–12', r => r.g.wk >= 5 && r.g.wk <= 12], ['Semanas 13–18', r => r.g.wk >= 13], ['Juego de noche (jueves/domingo/lunes, 8pm ET o después)', r => { const h = new Date(r.g.ts).getUTCHours(); return h >= 0 && h <= 3; }]].forEach(([nom, f]) => {

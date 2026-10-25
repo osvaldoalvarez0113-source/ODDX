@@ -10,9 +10,11 @@
    =================================================================== */
 (function (root) {
   'use strict';
-  const PDEF = { kM: 0.03, kT: 0.02, carry: 0.7, H: 0.14, R: 0.12, Q: 0.25, Z: 1 };
-  // Q = cuanto inclina el tiempo extra hacia el mejor equipo (logit por gol de margen esperado). OTG = fraccion de empates de 60' que se deciden con gol en OT (el resto es shootout)
-  const OTG = 0.55, LG0 = 6.1, NMAX = 16;
+  const PDEF = { kM: 0.02, kT: 0.01, carry: 0.7, H: 0.15, R: 0.2, Q: 0.25, KT: 0.023, Z: 1 };
+  // Q = cuanto inclina el tiempo extra hacia el mejor equipo (logit por gol de margen esperado).
+  // KT = los goles totales varian MENOS que un Poisson puro (medido: varianza 0.88 de la media en 6,747 juegos 2021-26); se aprieta la curva de totales con un peso exp(-KT*(s-media)^2/2).
+  // OTG = fraccion de empates a 60' que se deciden con gol en OT (medido: 67%; el resto es shootout).
+  const OTG = 0.67, LG0 = 6.1, NMAX = 16;
 
   function seasonOf(ts) { const d = new Date(ts - 10 * 3600e3); const m = d.getUTCMonth(), y = d.getUTCFullYear(); return m >= 7 ? y : y - 1; }
   function dayKey(ts) { return Math.floor((ts - 10 * 3600e3) / 864e5); }
@@ -44,6 +46,12 @@
     const s = 1 / tot;
     for (let k = 0; k < M.length; k++) M[k] *= s;
     for (let k = 0; k < T.length; k++) T[k] *= s;
+    const kt = P && P.KT !== undefined ? P.KT : PDEF.KT;
+    if (kt > 0) {
+      let mu2 = 0; for (let k = 0; k < T.length; k++) mu2 += k * T[k];
+      let sw = 0; for (let k = 0; k < T.length; k++) { T[k] *= Math.exp(-0.5 * kt * (k - mu2) * (k - mu2)); sw += T[k]; }
+      for (let k = 0; k < T.length; k++) T[k] /= sw;
+    }
     regH *= s; regE *= s; regA *= s;
     return { pH: regH + regE * q, pA: regA + regE * (1 - q), regH: regH, regE: regE, regA: regA, M: M, T: T, lh: lh, la: la, q: q };
   }
