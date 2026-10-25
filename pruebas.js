@@ -1221,7 +1221,7 @@ sec('NHL y NFL: núcleo compartido, modelos y lector de Pinnacle');
  ['ovaextra.js','herramientas.js','autoregistro.js','cierre.js','asistente.js','envivo.js','diseno.js'].forEach(f=>ok(f+' reconoce NHL y NFL',/nhl/.test(rd(f))&&/nfl/.test(rd(f))));
  ok('el respaldo incluye las claves de NHL y NFL (ova_nhl_… / ova_nfl_…)',/ova_nhl_registro_v1/.test(rd('ovaextra.js'))&&/ova_nfl_registro_v1/.test(rd('ovaextra.js')));
  ok('los workflows de NHL/NFL existen: medición, archivo diario y escáner de Pinnacle',['medir-nhl-nfl.yml','archivo-nhl-nfl.yml','valor-nhl-nfl.yml'].every(f=>fs.existsSync(path.join(__dirname,'.github','workflows',f))));
- ok('el escáner de Pinnacle de NHL/NFL tiene su propio tope mensual (no gasta la cuota del de MLB / NBA / fútbol)',/MAX_MES\s*=\s*parseInt\(ENV\.MAX_MES \|\| '100'/.test(rd('scripts/valor3.js')));
+ ok('el escáner de Pinnacle de NHL/NFL tiene su propio tope mensual (no gasta la cuota del de MLB / NBA / fútbol)',/MAX_MES\s*=\s*parseInt\(ENV\.MAX_MES \|\| '60'/.test(rd('scripts/valor3.js')));
 }
 
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{

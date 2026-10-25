@@ -47,7 +47,7 @@ Misma prueba que se le hizo a MLB, fútbol y NBA: el modelo de cada deporte se c
 
 ## Cómo se mide en vivo
 - **Auto** (Herramientas → 🤖 Auto) guarda cada juego de NHL y NFL antes de que empiece con lo que dijo el modelo y el precio de mercado, lo resuelve solo con el resultado de ESPN y mide acierto, ROI a precio justo y quién acierta cuando chocan.
-- **Escáner de Pinnacle** (`scripts/valor3.js`, workflow **Pinnacle NHL y NFL**): dos veces al día baja el precio de Pinnacle (ganador, hándicap principal, total principal y, en NHL, ganador a 60 minutos) a `pinnacle-nhl.json` / `pinnacle-nfl.json`. Tope propio de 100 llamadas al mes (`MAX_MES`), separado del de MLB / NBA / fútbol.
+- **Escáner de Pinnacle** (`scripts/valor3.js`, workflow **Pinnacle NHL y NFL**): dos veces al día baja el precio de Pinnacle (ganador, hándicap principal, total principal y, en NHL, ganador a 60 minutos) a `pinnacle-nhl.json` / `pinnacle-nfl.json`. Tope propio de 60 llamadas al mes (`MAX_MES`). El plan de OddsPapi da 250 al mes en total: MLB 100 + fútbol/NBA 80 + NHL/NFL 60 = 240.
 - **CLV** (`cierre.js`): compara tu cuota con la de cierre de ESPN.
 
 ## Límites

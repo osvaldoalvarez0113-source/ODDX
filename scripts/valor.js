@@ -19,7 +19,7 @@ const QUIERO=(ENV.BOOKS||'kalshi').split(',').map(s=>s.trim().toLowerCase()).fil
 const MOV_PTS=parseFloat(ENV.MOV_PTS||'3')/100;       /* movimiento de la probabilidad justa entre revisiones: 3 puntos */
 const MIN_FAV=parseFloat(ENV.MIN_FAV||'0.60');       /* favorito claro: 60% o mas segun Pinnacle sin margen */
 const HORAS=parseFloat(ENV.HORAS||'20');              /* juegos que empiezan en las proximas N horas */
-const MAX_MES=parseInt(ENV.MAX_MES||'150',10);        /* tope de llamadas por mes de ESTE escaner */
+const MAX_MES=parseInt(ENV.MAX_MES||'100',10);        /* tope de llamadas por mes de ESTE escaner */
 const TORNEO=ENV.TORNEO_ID||'';                       /* si se conoce el id de MLB en OddsPapi */
 const OP='https://api.oddspapi.io/v4';
 const CDIR='.cache', CF=CDIR+'/valor.json';

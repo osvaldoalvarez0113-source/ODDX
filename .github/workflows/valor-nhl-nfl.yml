@@ -5,7 +5,7 @@ name: Pinnacle NHL y NFL
 on:
   workflow_dispatch:
   schedule:
-    - cron: "40 15 * * *"
+    - cron: "40 15 * * 0"      # solo domingos: la NFL juega desde la 1 pm ET
     - cron: "10 22 * * *"
   push:
     branches: [main]
@@ -37,10 +37,8 @@ jobs:
       - name: Elegir deportes del dia
         run: |
           DOW=$(date -u +%u)   # 1=lunes ... 7=domingo
-          HORA=$(date -u +%H)
           SOLO="nhl"
-          # NFL: juega jueves, domingo y lunes (y algo de sabado/viernes al final de la temporada). El martes no hay nada que traer.
-          if [ "$DOW" != "2" ] && [ "$HORA" -lt 20 ]; then SOLO="nhl,nfl"; fi
+          # NFL: solo jueves, domingo y lunes (la ventana de la NFL es de 150 h, una corrida cubre la semana). El plan de OddsPapi es de 250 llamadas al mes para TODOS los escaneres.
           if [ "$DOW" = "7" ] || [ "$DOW" = "4" ] || [ "$DOW" = "1" ]; then SOLO="nhl,nfl"; fi
           echo "SOLO=$SOLO" >> "$GITHUB_ENV"
           echo "Deportes de esta corrida: $SOLO"

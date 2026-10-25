@@ -14,7 +14,7 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 | `futbol.html` | App de **fútbol**: Poisson / Dixon-Coles, ligas de clubes, copas y (vía `selecciones.js`) selecciones. |
 | `nba.html` | App de **NBA**: rating tipo Elo de margen, márgenes y totales. |
 | `nhl.html` + `nfl.html` + `usdeporte.js` | Apps de **NHL** y **NFL**. Comparten `usdeporte.js` (partidos de `hist-<dep>.json` + ESPN, mercado de Pinnacle o DraftKings, picks y cierre); cada una trae su modelo: `modelo-nhl.js` (Poisson de goles, tiempo extra/shootout, back-to-back) y `modelo-nfl.js` (Elo de margen, números clave 3 y 7, descanso). Medidas en `docs/MEDICION-NHL-NFL-2026-10.md`: el mercado manda, el modelo pesa 5%. |
-| `scripts/valor3.js` + `.github/workflows/valor-nhl-nfl.yml` | Escáner de Pinnacle para NHL y NFL (`pinnacle-nhl.json`, `pinnacle-nfl.json`), con su propio tope de 100 llamadas al mes. |
+| `scripts/valor3.js` + `.github/workflows/valor-nhl-nfl.yml` | Escáner de Pinnacle para NHL y NFL (`pinnacle-nhl.json`, `pinnacle-nfl.json`), con su propio tope de 60 llamadas al mes (MLB 100 + fútbol/NBA 80 + NHL/NFL 60 = 240 de las 250 del plan de OddsPapi). |
 | `scripts/correr_nhl_nfl.js`, `datos_nhl_nfl.js`, `archivo_nhl_nfl.js`, `lib_medir.js` | Medición contra el mercado (workflow *Medir NHL y NFL*, resultado en la rama `resultados-nhl-nfl`) y archivo diario de partidos (`hist-nhl.json`, `hist-nfl.json`). |
 | `panel.html` | Panel de respaldo y resumen del día. No está enlazado desde el hub a propósito. |
 | `sw.js`, `manifest.json`, `icon-*.png` | Service worker (red primero, sin internet usa copia), manifest e iconos de la app instalada. |

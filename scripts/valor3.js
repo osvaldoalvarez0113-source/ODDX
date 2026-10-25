@@ -9,7 +9,7 @@
 const fs = require('fs'); const ENV = process.env; const KEY = ENV.ODDSPAPI_KEY || '';
 const OP = 'https://api.oddspapi.io/v4';
 const DEP = { nhl: { sport: 15, torneo: '234', horas: parseFloat(ENV.HORAS_NHL || '40') }, nfl: { sport: 14, torneo: '31', horas: parseFloat(ENV.HORAS_NFL || '150') } };
-const MAX_MES = parseInt(ENV.MAX_MES || '100', 10);
+const MAX_MES = parseInt(ENV.MAX_MES || '60', 10);
 const CDIR = '.cache', CF = CDIR + '/valor3.json';
 const out = []; const P = (...a) => { const s = a.join(' '); out.push(s); console.log(s); };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
