@@ -212,6 +212,19 @@ function resumir(items,app){
   mix:con.length?media(con.map(function(d){ return d.res===d.favMix?1:0; }))*100:null};
  return o;
 }
+/* los juegos resueltos con mercado, como si se hubiera apostado 1 unidad al favorito de la mezcla, al precio del mercado con margen del 3 %.
+   Salida en el mismo formato que usa Herramientas para los picks: {app,t,res:'G'|'P',u}. Sirve para sumar por semana y por mes. */
+function comoPicks(items,app){
+ var out=[];
+ (items||[]).forEach(function(r){
+  if(app&&(!r||r.app!==app)) return;
+  var d=derivar(r); if(!d||!d.k) return;
+  var k=d.k[d.favMix], dec=precio3(k); if(!(dec>0)) return;
+  var gana=d.res===d.favMix;
+  out.push({app:r.app,t:r.ts,res:gana?'G':'P',u:unidad(gana,dec)});
+ });
+ return out;
+}
 /* una frase honesta por app: no concluye nada con poca muestra */
 function veredicto(o){
  if(!o||!o.res) return 'Todavía no hay juegos resueltos. Abre la app cada día y se van juntando solos.';
@@ -230,7 +243,7 @@ function veredicto(o){
 }
 function exportar(items){ return JSON.stringify({app:'ova-auto',v:1,fecha:new Date().toISOString(),n:(items||[]).length,items:items||[]}); }
 
-var API={HORIZONTE:HORIZONTE,norm:norm,fechaLocal:fechaLocal,trio:trio,idDe:idDe,cruzar:cruzar,aplicarRegistro:aplicarRegistro,aplicarMercado:aplicarMercado,
+var API={comoPicks:comoPicks,HORIZONTE:HORIZONTE,norm:norm,fechaLocal:fechaLocal,trio:trio,idDe:idDe,cruzar:cruzar,aplicarRegistro:aplicarRegistro,aplicarMercado:aplicarMercado,
  eventosDe:eventosDe,esEq:esEq,ganadorDe:ganadorDe,buscarEvento:buscarEvento,derivar:derivar,brier:brier,resumir:resumir,veredicto:veredicto,
  exportar:exportar,precio0:precio0,precio3:precio3,KEY:KEY,MARGEN:MARGEN};
 root.OVARegAuto=API;

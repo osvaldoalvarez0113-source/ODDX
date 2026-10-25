@@ -149,6 +149,70 @@ function racha(items){
   return {res:r,n:n};
 }
 
+
+/* ---------- por semana y por mes: ganados, perdidos, unidades y si el periodo fue positivo ---------- */
+var MES_C=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+var MES_L=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function inicioPeriodo(ts,tipo){
+  var d=new Date(ts); d.setHours(0,0,0,0);
+  if(tipo==='mes') d.setDate(1); else d.setDate(d.getDate()-((d.getDay()+6)%7));     /* la semana empieza el lunes */
+  return d;
+}
+function etiquetaPeriodo(ini,tipo){
+  if(tipo==='mes') return MES_L[ini.getMonth()]+' '+ini.getFullYear();
+  var f=new Date(ini.getTime()); f.setDate(f.getDate()+6);
+  return ini.getDate()+' '+MES_C[ini.getMonth()]+' – '+f.getDate()+' '+MES_C[f.getMonth()];
+}
+/* items: [{t,res:'G'|'P'|'E'|null,u}] → [{ini,etiqueta,g,p,e,pend,u,jugados,roi,estado:'+'|'-'|'0'|'?'}], del más nuevo al más viejo.
+   Un periodo es positivo si sus unidades suman más de 0 (sin contar los pendientes). Los picks sin fecha no entran. */
+function porPeriodo(items,tipo){
+  var m={};
+  items.forEach(function(x){
+    if(!x||!x.t) return;
+    var ini=inicioPeriodo(x.t,tipo), k=ini.getTime();
+    var o=m[k]||(m[k]={ini:ini,etiqueta:etiquetaPeriodo(ini,tipo),g:0,p:0,e:0,pend:0,u:0,jugados:0});
+    if(!x.res){ o.pend++; return; }
+    if(x.res==='G') o.g++; else if(x.res==='P') o.p++; else o.e++;
+    if(x.u!=null){ o.u+=x.u; o.jugados++; }
+  });
+  return Object.keys(m).map(function(k){ return m[k]; }).sort(function(a,b){ return b.ini-a.ini; }).map(function(o){
+    o.roi=o.jugados?o.u/o.jugados*100:null;
+    o.estado=!o.jugados?'?':(Math.abs(o.u)<0.005?'0':(o.u>0?'+':'-'));
+    return o;
+  });
+}
+function bloquePeriodos(items,titulo,nota){
+  var tipo='semana';
+  var caja=el('div',{class:'caja'});
+  function pintar(){
+    limpiar(caja);
+    var lista=porPeriodo(items,tipo);
+    caja.appendChild(el('h3',{text:titulo}));
+    caja.appendChild(el('div',{class:'pie2'},[
+      el('button',{type:'button','aria-pressed':String(tipo==='semana'),text:(tipo==='semana'?'● ':'○ ')+'Por semana',onclick:function(){ tipo='semana'; pintar(); }}),
+      el('button',{type:'button','aria-pressed':String(tipo==='mes'),text:(tipo==='mes'?'● ':'○ ')+'Por mes',onclick:function(){ tipo='mes'; pintar(); }})]));
+    if(!lista.length){ caja.appendChild(el('p',{class:'nota',text:'Todavía no hay picks con fecha para agrupar.'})); return; }
+    var act=lista[0], hoy=inicioPeriodo(Date.now(),tipo).getTime()===act.ini.getTime();
+    if(hoy&&act.jugados) caja.appendChild(el('div',{class:'kpis dos'},[
+      kpi(act.g+'-'+act.p+(act.e?'-'+act.e:''),(tipo==='mes'?'este mes':'esta semana')+' (G-P)'),
+      kpi(signo(act.u,1)+' u',act.u>0?'va positivo':(act.u<0?'va negativo':'va en cero'),act.u>0?'g':(act.u<0?'p':''))]));
+    var t=el('table',{class:'tab'},[el('tr',null,[(tipo==='mes'?'Mes':'Semana'),'G-P','Unid.','ROI',''].map(function(h){ return el('th',{text:h}); }))]);
+    lista.slice(0,tipo==='mes'?12:16).forEach(function(o){
+      var cls=o.estado==='+'?'mejor':'';
+      t.appendChild(el('tr',null,[el('td',{text:o.etiqueta+(o.pend?' ('+o.pend+' pend.)':'')}),
+        el('td',{class:'n',text:o.g+'-'+o.p+(o.e?'-'+o.e:'')}),
+        el('td',{class:'n '+cls,text:o.jugados?signo(o.u,1):'—'}),
+        el('td',{class:'n',text:o.roi==null?'—':signo(o.roi,0)+'%'}),
+        el('td',{class:'n',text:o.estado==='+'?'✅':(o.estado==='-'?'❌':(o.estado==='0'?'➖':'⏳'))})]));
+    });
+    caja.appendChild(t);
+    var pos=lista.filter(function(o){ return o.estado==='+'; }).length, neg=lista.filter(function(o){ return o.estado==='-'; }).length;
+    caja.appendChild(el('p',{class:'nota',text:'✅ positivo (ganó unidades) · ❌ negativo · ⏳ sin resolver. De '+lista.length+(tipo==='mes'?' meses':' semanas')+' con picks: '+pos+' positivas y '+neg+' negativas.'+(nota?' '+nota:'')}));
+  }
+  pintar();
+  return caja;
+}
+
 /* ======================= pantalla ======================= */
 function el(tag,attrs,hijos){
   var d=root.document, e=d.createElement(tag);
@@ -214,6 +278,7 @@ function pantallaMarcador(cont,ls){
       el('td',{class:'n',text:r.roi==null?'—':signo(r.roi,0)+'%'}),el('td',{class:'n',text:r.clv==null?'—':signo(r.clv,1)})]));
   });
   cont.appendChild(t);
+  cont.appendChild(bloquePeriodos(items,'📅 Por semana y por mes','Cada pick vale 1 unidad.'));
   var mio=items.filter(function(x){ return x.mio; });
   if(mio.length){ var rm=resumir(mio); cont.appendChild(el('p',{class:'nota',text:'De MLB, '+mio.length+' picks los marcaste como tuyos 👁: '+(rm.jugados?signo(rm.u,1)+' unidades en '+rm.jugados+' resueltos.':'todavía sin resolver.')})); }
   /* lectura honesta */
@@ -404,6 +469,8 @@ function pantallaAuto(cont,ls){
     var b=o.brier;
     if(b.n>=5&&b.mod!=null) caja.appendChild(el('p',{class:'nota',text:'Calibración (Brier, más bajo es mejor) en '+b.n+' juegos: modelo '+b.mod.toFixed(3)+' · mercado '+b.mer.toFixed(3)+' · mezcla '+b.mix.toFixed(3)+'.'}));
     if(o.sinMer.n) caja.appendChild(el('p',{class:'nota',text:o.sinMer.n+' juegos resueltos sin precio de mercado (Pinnacle no los traía): el favorito del modelo acertó '+o.sinMer.hit.toFixed(0)+'%. Sin precio no hay ROI.'}));
+    var cp=A.comoPicks?A.comoPicks(items,a):[];
+    if(cp.length) caja.appendChild(bloquePeriodos(cp,'📅 Por semana y por mes','Como si hubieras apostado 1 unidad al favorito de la mezcla, a precio de mercado con margen de 3%.'));
     var lst=items.filter(function(r){ return r&&r.app===a; }).sort(function(x,y){ return y.ts-x.ts; }).slice(0,40);
     if(lst.length){
       var pc=function(p){ return p&&p.L!=null?Math.round(p.L*100)+'%':'—'; };
@@ -436,7 +503,7 @@ function arrancar(){
 }
 
 var API={aDecimal:aDecimal,aAmericana:aAmericana,quitarMargen:quitarMargen,compararCasas:compararCasas,normalizar:normalizar,resumir:resumir,
-  curva:curva,ventana:ventana,racha:racha,clvDe:clvDe,impPctTxt:impPctTxt,pagoMlb:pagoMlb,numero:numero,arrancar:arrancar,TABS:TABS};
+  curva:curva,ventana:ventana,porPeriodo:porPeriodo,racha:racha,clvDe:clvDe,impPctTxt:impPctTxt,pagoMlb:pagoMlb,numero:numero,arrancar:arrancar,TABS:TABS};
 root.OVAHerr=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
 else if(root.document){ if(root.document.readyState==='loading') root.document.addEventListener('DOMContentLoaded',arrancar); else arrancar(); }

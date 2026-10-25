@@ -1100,6 +1100,23 @@ sec('Registro automático: guarda ANTES del juego, resuelve solo y mide con prec
   ok('con menos de 30 juegos el veredicto dice que es muy pronto y no concluye',/muy pronto/.test(RA.veredicto(o)));
   ok('fútbol: el empate cuenta como derrota de la apuesta al favorito',(()=>{const f=RA.resumir([{id:'f',app:'fut',ts:1,m1:{L:0.5,A:0.2,D:0.3},k1:{L:0.5,A:0.2,D:0.3},res:'D'}],'fut');return f.grupos[0].w===0&&f.grupos[0].roi0===-100;})());
  }
+ // por semana y por mes (Herramientas)
+ {
+  const HR=require(path.join(__dirname,'herramientas.js'));
+  const dia=(y,m,d)=>new Date(y,m,d,12,0,0).getTime();
+  const it=[{t:dia(2026,9,19),res:'G',u:0.9},{t:dia(2026,9,20),res:'P',u:-1},{t:dia(2026,9,21),res:'G',u:0.8},{t:dia(2026,9,25),res:'G',u:0.9},{t:dia(2026,9,26),res:'P',u:-1},{t:dia(2026,9,27),res:'G',u:0.9},{t:dia(2026,9,27),res:null,u:null},{t:0,res:'G',u:1}];
+  const sem=HR.porPeriodo(it,'semana');
+  ok('la semana empieza el lunes: el domingo 25 se queda con la semana del lunes 19 y el lunes 26 abre otra',sem.length===2&&sem[1].g===3&&sem[1].p===1&&sem[0].g===1&&sem[0].p===1,JSON.stringify(sem.map(x=>[x.etiqueta,x.g,x.p])));
+  ok('el periodo más nuevo sale primero, con pendientes aparte y marca de positivo / negativo',sem[0].pend===1&&sem[0].estado==='-'&&sem[1].estado==='+'&&Math.abs(sem[0].u+0.1)<1e-9&&Math.abs(sem[1].u-1.6)<1e-9);
+  ok('un pick sin fecha no entra a ningún periodo',sem.reduce((a,x)=>a+x.g+x.p,0)===6);
+  const mes=HR.porPeriodo(it,'mes');
+  ok('por mes junta todo octubre: 4 ganados, 2 perdidos, +1.5 unidades y positivo',mes.length===1&&mes[0].g===4&&mes[0].p===2&&Math.abs(mes[0].u-1.5)<1e-9&&mes[0].estado==='+'&&/octubre 2026/.test(mes[0].etiqueta),JSON.stringify(mes));
+  ok('un periodo sin picks resueltos queda en ⏳ (no es positivo ni negativo)',HR.porPeriodo([{t:dia(2026,9,26),res:null,u:null}],'semana')[0].estado==='?');
+  const RA2=require(path.join(__dirname,'autoregistro.js'));
+  const cp=RA2.comoPicks([{id:'a',app:'nba',ts:dia(2026,9,25),m1:{L:0.6,A:0.4},k1:{L:0.58,A:0.42},res:'L'},{id:'b',app:'nba',ts:dia(2026,9,25),m1:{L:0.6,A:0.4},k1:null,res:'L'},{id:'c',app:'mlb',ts:1,m1:{L:0.6,A:0.4},k1:{L:0.58,A:0.42},res:'A'}],'nba');
+  ok('comoPicks: solo juegos resueltos con precio de mercado y de la app pedida; 1 unidad al favorito al precio con margen',cp.length===1&&cp[0].res==='G'&&Math.abs(cp[0].u-((1/0.58)/1.03-1))<1e-9);
+  ok('Marcador y Auto muestran el bloque «Por semana y por mes»',/bloquePeriodos\(items,'📅 Por semana y por mes'/.test(rd('herramientas.js'))&&/bloquePeriodos\(cp,'📅 Por semana y por mes'/.test(rd('herramientas.js')));
+ }
  ['index.html','futbol.html','nba.html'].forEach(f=>ok(f+' carga autoregistro.js después de asistente.js',rd(f).indexOf('<script src="autoregistro.js">')>rd(f).indexOf('<script src="asistente.js">')&&rd(f).indexOf('<script src="asistente.js">')>0));
  ok('herramientas.html lo carga antes de herramientas.js y el service worker lo guarda',rd('herramientas.html').indexOf('autoregistro.js')>0&&rd('herramientas.html').indexOf('autoregistro.js')<rd('herramientas.html').indexOf('herramientas.js')&&/'autoregistro\.js'/.test(rd('sw.js')));
  ok('las tres apps llaman al registro con try/catch y solo con juegos pendientes',/OVARegAuto\.registrar\('mlb'/.test(rd('index.html'))&&/OVARegAuto\.registrar\('fut'/.test(rd('futbol.html'))&&/OVARegAuto\.registrar\('nba'/.test(rd('nba.html')));
