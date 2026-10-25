@@ -87,9 +87,11 @@ html[data-hub="orbita"] body{background:#04050d}
 
 /* ============================ PANELES ============================ */
 html[data-hub="paneles"] body{background:#000}
-.L-paneles .stack{position:absolute;left:0;right:0;top:-3vh;bottom:-3vh;display:flex;flex-direction:column}
-.L-paneles .pn{position:relative;flex:1 1 0;display:block;overflow:hidden;clip-path:polygon(0 0,100% 6vh,100% 100%,0 calc(100% - 6vh));-webkit-clip-path:polygon(0 0,100% 6vh,100% 100%,0 calc(100% - 6vh));transition:filter .25s;animation:hlPnIn .9s cubic-bezier(.2,.9,.25,1) backwards}
-.L-paneles .pn+.pn{margin-top:-6vh}
+.L-paneles{--sk:3.4vh;--bg:clamp(38px,min(14.5vw,6.3vh),72px)}
+.L-paneles .stack{position:absolute;left:0;right:0;top:calc(-1*var(--sk));bottom:calc(-1*var(--sk));display:flex;flex-direction:column}
+.L-paneles .pn{position:relative;flex:1 1 0;display:block;overflow:hidden;clip-path:polygon(0 0,100% var(--sk),100% 100%,0 calc(100% - var(--sk)));-webkit-clip-path:polygon(0 0,100% var(--sk),100% 100%,0 calc(100% - var(--sk)));transition:filter .25s;animation:hlPnIn .9s cubic-bezier(.2,.9,.25,1) backwards}
+.L-paneles .pn:first-child{flex-grow:1.35}
+.L-paneles .pn+.pn{margin-top:calc(-1*var(--sk))}
 .L-paneles .pn:nth-child(1){animation-delay:.05s;--from:-100vw}
 .L-paneles .pn:nth-child(2){animation-delay:.2s;--from:100vw}
 .L-paneles .pn:nth-child(3){animation-delay:.35s;--from:-100vw}
@@ -110,10 +112,11 @@ html[data-hub="paneles"] body{background:#000}
 .L-paneles .pn4 .pat{background:repeating-linear-gradient(90deg,rgba(255,255,255,.1) 0 3px,transparent 3px 28px)}
 .L-paneles .pn2 .pat{background:radial-gradient(circle at 78% 50%,transparent 0 22px,rgba(0,0,0,.2) 23px 25px,transparent 26px 56px,rgba(0,0,0,.2) 57px 59px,transparent 60px)}
 .L-paneles .pn .emo{position:absolute;right:-5vw;top:50%;margin-top:-11vw;font-size:22vw;line-height:1;transform:rotate(-12deg);filter:drop-shadow(0 14px 24px rgba(0,0,0,.45));animation:hlBob 5s ease-in-out infinite}
-.L-paneles .pn .big{position:absolute;left:6vw;bottom:26%;font:900 italic clamp(52px,18.5vw,88px)/.9 Inter,system-ui,sans-serif;letter-spacing:-.03em;text-transform:uppercase;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.92);transition:color .25s}
+.L-paneles .pn .big{position:absolute;left:6vw;bottom:calc(var(--sk) + 46px);font:900 italic var(--bg)/.9 Inter,system-ui,sans-serif;letter-spacing:-.03em;text-transform:uppercase;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.92);transition:color .25s}
 .L-paneles .pn:active .big{color:#fff}
-.L-paneles .pn .sm{position:absolute;left:6.4vw;bottom:calc(26% - 26px);font:600 12px Inter;color:rgba(255,255,255,.88);letter-spacing:.04em;max-width:60vw;text-shadow:0 1px 8px rgba(0,0,0,.5)}
-.L-paneles .pn .liv{position:absolute;left:6.4vw;bottom:calc(26% + clamp(48px,17vw,80px) + 12px);--c:#fff}
+.L-paneles .pn .sm{position:absolute;left:6.4vw;bottom:calc(var(--sk) + 10px);font:600 11.5px/1.25 Inter;color:rgba(255,255,255,.9);letter-spacing:.03em;max-width:58vw;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.L-paneles .pn .liv{position:absolute;left:6.4vw;bottom:calc(var(--sk) + 46px + var(--bg)*.9 + 8px);--c:#fff}
+.L-paneles .pn:last-child .big,.L-paneles .pn:last-child .sm,.L-paneles .pn:last-child .liv{margin-bottom:calc(env(safe-area-inset-bottom,0px) + 4px)}
 .L-paneles .hl-brand{text-shadow:0 2px 14px rgba(0,0,0,.9)}
 
 /* ============================ MAZO ============================ */

@@ -278,6 +278,7 @@ sec('Diseño unificado: misma barra en las 3 apps, lo técnico en Ajustes');
  ok('MLB: cargar() ignora respuestas viejas (no duplica juegos si se toca dos veces)',/CARGA_TK/.test(rd('index.html'))&&/if\(_tk!==CARGA_TK\) return;/.test(rd('index.html')));
  ok('la versión se ve en Ajustes (también con el tema Cristal)',/tarjetaVersion/.test(dj)&&/dsCard/.test(dj));
  ok('letra mínima de 12 px en notas y pies',/\.nota[^}]*font-size:12px!important/.test(dj));
+ {const hs=rd('hubestilos.js'); ok('hub Paneles: la inclinación es una variable (--sk) y el texto se coloca por encima de ella, con 5 deportes nada queda cortado',/--sk:/.test(hs)&&!/6vh/.test(hs.slice(hs.indexOf('PANELES'),hs.indexOf('MAZO')))&&/bottom:calc\(var\(--sk\) \+ 10px\)/.test(hs));}
  ok('el hub ya no muestra «LIVE» fijo',!/>LIVE<\/span>/.test(rd('hubestilos.js'))&&/livHtml/.test(rd('hubestilos.js')));
  ok('la caja del servidor Railway es de una línea y se despliega',/srv-chip/.test(rd('railway.js')));
  ok('la barra de estado de fútbol y NBA es corta',!/terminados medibles/.test(rd('futbol.html'))&&!/partidos medidos de 3 temporadas/.test(rd('nba.html')));
