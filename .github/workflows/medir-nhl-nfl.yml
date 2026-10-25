@@ -1,0 +1,59 @@
+name: Medir NHL y NFL contra el mercado
+
+# Baja las temporadas de ESPN (marcadores + lineas de cierre) y mide el modelo de OVA contra el mercado, sin mirar el futuro.
+# Corre solo cuando cambian estos archivos o a mano. Guarda los datos bajados en la rama "datos-nhl-nfl" (para no repetir la descarga)
+# y el informe en la rama "resultados-nhl-nfl". No toca la app.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/correr_nhl_nfl.js
+      - scripts/datos_nhl_nfl.js
+      - scripts/lib_medir.js
+      - modelo-nhl.js
+      - modelo-nfl.js
+      - .github/workflows/medir-nhl-nfl.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: medir-nhl-nfl
+  cancel-in-progress: true
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Recuperar datos ya bajados
+        continue-on-error: true
+        run: |
+          git fetch -q origin datos-nhl-nfl && git checkout FETCH_HEAD -- datos-nhl.json datos-nfl.json || echo "sin cache todavia"
+          ls -la datos-*.json 2>/dev/null || true
+      - name: Pruebas del programa de medicion (datos sinteticos)
+        run: |
+          mkdir -p /tmp/sint
+          OVA_OUT_DIR=/tmp/sint OVA_CACHE_DIR=/tmp/sint node scripts/correr_nhl_nfl.js ambos --sintetico > /tmp/sint/log.txt 2>&1 || (tail -30 /tmp/sint/log.txt; exit 1)
+      - name: Medir
+        run: node scripts/correr_nhl_nfl.js ambos 2>&1 | tee salida_nhl_nfl.txt
+      - name: Guardar datos bajados
+        if: always()
+        continue-on-error: true
+        run: |
+          [ -f datos-nhl.json ] || [ -f datos-nfl.json ] || exit 0
+          mkdir -p /tmp/dat && cp -f datos-nhl.json datos-nfl.json /tmp/dat/ 2>/dev/null || true
+          cd /tmp/dat && git init -q -b datos-nhl-nfl && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "datos nhl nfl" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" datos-nhl-nfl
+      - name: Guardar informe
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p /tmp/res && cp -f resultado_nhl.md resultado_nfl.md resultado_nhl_nfl.json salida_nhl_nfl.txt /tmp/res/ 2>/dev/null || true
+          cd /tmp/res && git init -q -b resultados-nhl-nfl && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "resultado nhl nfl" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" resultados-nhl-nfl
