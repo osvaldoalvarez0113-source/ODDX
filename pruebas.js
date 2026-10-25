@@ -392,7 +392,7 @@ sec('Presentaciones del hub (6 diseños)');
 sec('Diseño interior de las apps (Clásico · Cristal · Broadcast · Pro · Boleto · Prensa · Radar)');
 {
  const UI=require(path.join(__dirname,'interior.js'));
-ok('18 diseños: los 8 de siempre, los 5 de la segunda tanda (historias, duelo, bento, agenda, radar de valor) y los 5 nuevos (cromos, campo, telemetría, marcador, recibo)',JSON.stringify(UI.UIS.map(u=>u.id))===JSON.stringify(['clasico', 'cristal', 'broadcast', 'pro', 'boleto', 'boletonoche', 'prensa', 'radar', 'historias', 'duelo', 'bento', 'agenda', 'radarvalor', 'cromos', 'campo', 'telemetria', 'marcador', 'recibo']));
+ok('19 diseños: los 8 de siempre, los 5 de la segunda tanda (historias, duelo, bento, agenda, radar de valor), los 5 de la tercera (cromos, campo, telemetría, marcador, recibo) y Paneles',JSON.stringify(UI.UIS.map(u=>u.id))===JSON.stringify(['clasico', 'cristal', 'broadcast', 'pro', 'boleto', 'boletonoche', 'prensa', 'radar', 'historias', 'duelo', 'bento', 'agenda', 'radarvalor', 'cromos', 'campo', 'telemetria', 'marcador', 'recibo', 'paneles']));
  ok('Boleto: los dos diseños definen sus colores y comparten la forma',/html\[data-ui="boleto"\]\{--bzBg1/.test(UI.css)&&/html\[data-ui="boletonoche"\]\{--bzBg1/.test(UI.css)&&/html\[data-ui\^="boleto"\] \.bzSello/.test(UI.css));
  ok('Boleto: el ticket tiene muescas (máscara) y en la barra de abajo solo la pestaña activa lleva nombre',/\.game\.bzOn \.head\{-webkit-mask:radial-gradient/.test(UI.css)&&/\.tbar-btn:not\(\.on\) \.lb\{position:absolute/.test(UI.css));
  ok('Boleto: los botones que la app oculta con display:none siguen ocultos',!/\.tabbar \.tbar-btn\{[^}]*display:flex!important/.test(UI.css));
@@ -534,17 +534,19 @@ sec('Salidas del pícher: carreras permitidas a la vista');
  ok('«Ver más» ya no repite R y LP (queda HR y decisión)',/<th>Salida<\/th><th>HR<\/th><th>Dec<\/th>/.test(b));
  ok('el resumen dice cuántas carreras le anotan por salida',/Le anotan <b>/.test(b));
 }
-sec('Diez diseños con cabecera propia: Historias, Duelo, Bento, Agenda, Radar de valor, Cromos, Campo, Telemetría, Marcador y Recibo (interior2.js)');
+sec('Once diseños con cabecera propia: Historias, Duelo, Bento, Agenda, Radar de valor, Cromos, Campo, Telemetría, Marcador, Recibo y Paneles (interior2.js)');
 {
  const I2=require(path.join(__dirname,'interior2.js')), UI2=require(path.join(__dirname,'interior.js'));
- const ids=['historias','duelo','bento','agenda','radarvalor','cromos','campo','telemetria','marcador','recibo'];
- ok('interior2.js conoce los 10 diseños con cabecera propia',JSON.stringify(I2.NEW)===JSON.stringify(ids));
+ const ids=['historias','duelo','bento','agenda','radarvalor','cromos','campo','telemetria','marcador','recibo','paneles'];
+ ok('interior2.js conoce los 11 diseños con cabecera propia',JSON.stringify(I2.NEW)===JSON.stringify(ids));
  ids.forEach(id=>{
   const u=UI2.UIS.find(x=>x.id===id);
   ok(id+': aparece en el selector con nombre, descripción y muestra',!!(u&&u.n&&u.d&&u.sw));
   ok(id+': tiene sus reglas CSS (fondo, tarjeta, cabecera nueva y barra de abajo)',new RegExp('html\\[data-ui="'+id+'"\\]\\[data-ui\\] \\.game\\{').test(I2.css)&&new RegExp('html\\[data-ui="'+id+'"\\]\\[data-ui\\] \\.nxT\\{').test(I2.css)&&new RegExp('html\\[data-ui="'+id+'"\\]\\[data-ui\\] :is\\(\\.navbar,\\.tabbar\\)').test(I2.css));
   ok(id+': oculta la cabecera original solo dentro de su diseño (vuelve al cambiar)',new RegExp('html\\[data-ui="'+id+'"\\]\\[data-ui\\] \\.game \\.head>:not\\(\\.nxT\\):not\\(\\.bug\\)\\{display:none!important\\}').test(I2.css));
  });
+ ok('Paneles: usa el color y el emoji de cada deporte (mlb, fútbol, nba, nhl, nfl) y marca al favorito',['fut','nba','nhl','nfl'].every(a=>new RegExp('\\[data-app='+a+'\\]\\{--p0:').test(I2.css))&&/--emo:"🏈"/.test(I2.css)&&/classList\.add\('gana'\)/.test(rd('interior2.js')));
+ ok('Paneles: las tarjetas se encajan una con otra (margen negativo igual a la inclinación) y no hay hueco entre ellas',/\.game\+\.game\{margin-top:calc\(-1\*var\(--sk\)\)!important\}/.test(I2.css)&&/\.game\{--sk:14px;position:relative;margin:0!important/.test(I2.css));
  ok('la cabecera nueva está oculta por defecto (Clásico y demás no la ven)',/\.nxT,\.nxProg,\.nxSum,\.nxPlot,\.nxAhora\{display:none\}/.test(I2.css));
  ok('diseno.js entrega el lector de tarjetas (OVALeerJuego) que usa interior2.js',/root\.OVALeerJuego=bzLeer/.test(rd('diseno.js')));
  ok('el marcador en vivo no queda pegado al reloj (el <br> se cambia por un separador al leer la etiqueta)',/function bzTxt\(e\)\{[\s\S]*?querySelectorAll\('br'\)[\s\S]*?createTextNode\(' · '\)/.test(rd('diseno.js'))&&/querySelectorAll\("br"\)/.test(rd('obsidiana.js')));

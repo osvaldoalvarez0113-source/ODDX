@@ -6,7 +6,7 @@
 (function(root){
 "use strict";
 var doc=root.document, html=doc&&doc.documentElement;
-var NEW=['historias','duelo','bento','agenda','radarvalor','cromos','campo','telemetria','marcador','recibo'];
+var NEW=['historias','duelo','bento','agenda','radarvalor','cromos','campo','telemetria','marcador','recibo','paneles'];
 var NS='http://www.w3.org/2000/svg';
 var MONO='ui-monospace,"SF Mono",Menlo,Consolas,monospace';
 var COND='"Avenir Next Condensed","Arial Narrow",Impact,"Helvetica Neue",sans-serif';
@@ -48,6 +48,9 @@ var BASE=`
 @keyframes n3Needle{from{transform:rotate(-90deg)}}
 @keyframes n3Flip{from{opacity:0;transform:rotateX(-90deg)}to{opacity:1;transform:none}}
 @keyframes n3Print{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0)}}
+@keyframes p9Slide{to{background-position:84px 0}}
+@keyframes p9Bob{0%,100%{translate:0 0}50%{translate:0 -9px}}
+@keyframes p9In{from{translate:var(--from,-30vw) 0;opacity:0}}
 .nxFlap,.nxCod,.nxGauge,.nxStars{display:none}
 .game{position:relative}
 .nxT,.nxProg,.nxSum,.nxPlot,.nxAhora{display:none}
@@ -638,7 +641,76 @@ var RECIBO=dis('recibo',`
 & .nxArt,& .nxFlap,& .nxGauge,& .nxStars{display:none}
 `);
 
-var CSS_ALL=[BASE,HISTORIAS,DUELO,BENTO,AGENDA,RADARV,CROMOS,CAMPO,TELEM,MARCADOR,RECIBO].join('\n');
+/* ===================================================================== 11 · PANELES (igual que el hub: franjas inclinadas con el color del deporte) */
+var PANELES=dis('paneles',`
+&{--bg:#050507;--bg1:#0E0E15;--bg2:#15151F;--bg3:#1D1D2A;--line:#252535;--line2:#3A3A52;--txt:#FFFFFF;--mut:#C2C6E2;--mut2:#A0A5C8;--acc:var(--p2);--acc2:var(--p2);--accTx:#0B0B0B;--hot:var(--p2);--hotTx:#0B0B0B;--good:#5DFFA8;--bad:#FF7A7A;--info:#8FD8FF;--ia:#C2C6E2;--r:14px;--r2:18px;--body:system-ui,-apple-system,sans-serif;color-scheme:dark}
+&{--p0:#2C1F06;--p1:#8A5F16;--p2:#F0CE6B;--emo:"⚾"}
+&[data-app=fut]{--p0:#04200F;--p1:#0F6B3A;--p2:#3DDC84;--emo:"⚽"}
+&[data-app=nba]{--p0:#2B0F02;--p1:#B4400A;--p2:#FF8A3D;--emo:"🏀"}
+&[data-app=nhl]{--p0:#04202B;--p1:#0A5A8C;--p2:#5AC8FA;--emo:"🏒"}
+&[data-app=nfl]{--p0:#1D0A38;--p1:#5B21B6;--p2:#C084FC;--emo:"🏈"}
+&{background:#050507!important}
+&,& body{color:var(--txt)!important}
+& body{background:#050507!important;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 84px)!important;overflow-x:clip}
+& :is(.topbar,header){background:#050507!important;border-bottom:0!important;box-shadow:0 2px 0 var(--p1)!important}
+& :is(.brand,header h1){font:900 italic 24px/1 Inter,system-ui,-apple-system,sans-serif!important;letter-spacing:.05em;text-transform:uppercase;color:transparent!important;-webkit-text-fill-color:transparent!important;-webkit-text-stroke:1.5px #fff;background:none!important}
+& :is(.navbar,.tabbar){left:0!important;right:0!important;bottom:0!important;width:auto!important;border-radius:0!important;padding:6px 6px calc(env(safe-area-inset-bottom,0px) + 6px)!important;gap:4px!important;background:#050507!important;border:0!important;border-top:2px solid var(--p1)!important;box-shadow:none!important}
+& :is(.navbar button,.tabbar .tbar-btn){color:#B9BDD9!important;border-radius:0!important;-webkit-clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%)}
+& :is(.navbar button.on,.tabbar .tbar-btn.on){background:linear-gradient(115deg,var(--p0),var(--p1) 55%,var(--p2))!important;color:#fff!important;box-shadow:none!important}
+& :is(#cargar,.cargafila button){background:linear-gradient(115deg,var(--p0),var(--p1) 55%,var(--p2))!important;color:#fff!important;border:0!important;border-radius:0!important;-webkit-clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);font-weight:900;font-style:italic;text-transform:uppercase;letter-spacing:.04em;padding-inline:20px}
+& .cargafila input[type=date]{border-radius:0;background:var(--bg2);border:2px solid var(--line2)}
+& .diaBtn{border:2px solid #fff!important;background:rgba(0,0,0,.35)!important;border-radius:99px!important;color:#fff!important}
+& .diaBtn.on{background:linear-gradient(115deg,var(--p0),var(--p1) 55%,var(--p2))!important;border-color:transparent!important}
+& .nxSum{display:flex;flex-wrap:wrap;gap:8px;padding:12px 0 14px}
+& .nxSum>div{display:inline-flex;align-items:baseline;gap:6px;padding:7px 13px;border:2px solid var(--p2);border-radius:99px;background:rgba(255,255,255,.04)}
+& .nxSum small{font:700 11px/1 Inter,system-ui,sans-serif;color:var(--mut)}
+& .nxSum b{font:900 14px/1 Inter,system-ui,sans-serif}
+& .game{--sk:14px;position:relative;margin:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important;animation:p9In .6s cubic-bezier(.2,.9,.25,1) both}
+& .game:nth-child(odd){--from:-30vw}
+& .game:nth-child(even){--from:30vw}
+& .game+.game{margin-top:calc(-1*var(--sk))!important}
+& .game.open{background:var(--bg1)!important;padding-bottom:calc(var(--sk) + 8px)}
+& .game .head{padding:0!important;background:transparent!important;position:relative!important;top:auto!important;display:block!important}
+& .game .head>:not(.nxT):not(.bug){display:none!important}
+& .game .head .bug{margin:0;padding:8px 16px 10px}
+& .game .body{background:#0B0B11!important}
+& .nxT{position:relative;display:flex;flex-direction:column;gap:9px;min-height:176px;padding:16px 16px calc(var(--sk) + 14px);overflow:hidden;background:linear-gradient(115deg,var(--p0),var(--p1) 55%,var(--p2));-webkit-clip-path:polygon(0 0,100% var(--sk),100% 100%,0 calc(100% - var(--sk)));clip-path:polygon(0 0,100% var(--sk),100% 100%,0 calc(100% - var(--sk)))}
+& .nxT::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(135deg,rgba(0,0,0,.16) 25%,transparent 25% 50%,rgba(0,0,0,.16) 50% 75%,transparent 75%);background-size:84px 84px;animation:p9Slide 6s linear infinite}
+& .game:nth-child(3n+2) .nxT::before{background-image:repeating-linear-gradient(90deg,rgba(0,0,0,.18) 0 42px,transparent 42px 84px);background-size:84px 100%}
+& .game:nth-child(3n) .nxT::before{background-image:repeating-linear-gradient(60deg,rgba(255,255,255,.1) 0 3px,transparent 3px 30px);background-size:auto;animation:none}
+& .nxT::after{content:var(--emo);position:absolute;right:-3vw;top:calc(50% - 12vw);font-size:min(24vw,104px);line-height:1;rotate:-12deg;filter:drop-shadow(0 14px 24px rgba(0,0,0,.45));pointer-events:none;animation:p9Bob 5s ease-in-out infinite}
+& .nxT>*{position:relative;z-index:1}
+& .nxTop{display:flex;align-items:center;gap:10px}
+& .nxHora{display:inline-flex;align-items:center;gap:7px;padding:6px 13px 6px 11px;border:2px solid #fff;border-radius:99px;background:rgba(0,0,0,.3);font:800 13px/1 Inter,system-ui,sans-serif;color:#fff;letter-spacing:.02em;white-space:pre}
+& .nxHora::before{content:"";width:8px;height:8px;border-radius:50%;background:#fff}
+& .nxHora.vivo{background:#E5322D}
+& .nxHora.vivo::before{animation:nxPulse 1.4s infinite}
+& .nxTit,& .nxLogo,& .nxNom,& .nxRing,& .nxMT,& .nxPcF{display:none}
+& .nxInfo{font:700 12px/1.2 Inter,system-ui,sans-serif;color:rgba(255,255,255,.92);text-shadow:0 1px 8px rgba(0,0,0,.5);max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+& .nxVs{display:flex;align-items:flex-end;gap:10px;margin-top:2px}
+& .nxSide{display:flex;flex-direction:column;align-items:flex-start}
+& .nxAb{display:block;font:900 italic clamp(40px,12.8vw,60px)/.9 Inter,system-ui,-apple-system,sans-serif;letter-spacing:-.03em;text-transform:uppercase;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.92)}
+& .nxSide.gana .nxAb{color:#fff}
+& .nxPc{display:block;margin-top:6px;font:800 17px/1 Inter,system-ui,sans-serif;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.45);font-variant-numeric:tabular-nums}
+& .nxMid{display:flex;align-self:center;position:relative}
+& .nxVsb{display:block;font:900 italic 14px/1 Inter,system-ui,sans-serif;letter-spacing:.08em;color:rgba(255,255,255,.85);transform:rotate(-6deg);margin-bottom:12px}
+& .nxFoto{position:relative;display:flex;margin-top:6px;width:30px;height:30px;border:2px solid #fff}
+& .nxPn{display:block;position:absolute;left:36px;top:50%;transform:translateY(-50%);font:700 11.5px/1 Inter,system-ui,sans-serif;color:#fff;white-space:nowrap;max-width:84px;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+& .nxBar{height:6px;background:rgba(0,0,0,.35);transform:skewX(-24deg);margin-right:3vw}
+& .nxBar i{background:rgba(255,255,255,.28)}
+& .nxBar i.w{background:#fff;transform-origin:left;animation:nxGrow .9s .2s cubic-bezier(.3,.9,.3,1) both}
+& .nxFoot{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+& .nxFoot .sp{display:none}
+& .nxSello{padding:6px 13px;border:2px solid #fff;border-radius:99px;background:rgba(0,0,0,.3);color:#fff;font:800 12.5px/1 Inter,system-ui,sans-serif;letter-spacing:.03em;text-transform:uppercase}
+& .nxSello.si{background:#fff;color:#0B0B0B}
+& .nxSello.gris{opacity:.78}
+& .nxC{display:inline-flex;align-items:baseline;gap:6px;padding:6px 12px;border-radius:99px;border:2px solid rgba(255,255,255,.55);background:rgba(0,0,0,.4);text-align:left}
+& .nxC small{display:inline;font:700 10.5px/1 Inter,system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:rgba(255,255,255,.88)}
+& .nxC b{display:inline;font:900 15px/1 Inter,system-ui,sans-serif;color:#fff}
+& .nxEmpty{font:700 12.5px/1.2 Inter,system-ui,sans-serif;color:#fff}
+`);
+
+var CSS_ALL=[BASE,HISTORIAS,DUELO,BENTO,AGENDA,RADARV,CROMOS,CAMPO,TELEM,MARCADOR,RECIBO,PANELES].join('\n');
 function inyectar(){
   if(!doc||doc.getElementById('uiInterior2Css')) return;
   var s=doc.createElement('style'); s.id='uiInterior2Css'; s.textContent=CSS_ALL; (doc.head||html).appendChild(s);
@@ -712,6 +784,7 @@ function decorar(u,t,o,tiene,pf,aA,aH){
     });
   }
   if(u==='recibo') t.appendChild(T('div','nxCod'));
+  if(u==='paneles'&&tiene){ var ss=t.querySelectorAll('.nxSide'); if(ss.length===2) ss[o.pa>o.ph?0:1].classList.add('gana'); }
 }
 
 function armar(g,u){
@@ -802,7 +875,7 @@ function extras(u,cards){
     c.__nxMarca=marca; marca();
     c.parentNode.insertBefore(p,c);
   }
-  if(u==='bento'&&datos.length){
+  if((u==='bento'||u==='paneles')&&datos.length){
     var s=T('div','nxSum'), mejor=datos.slice().sort(function(a,b){ return b.__nxo.pf-a.__nxo.pf; })[0].__nxo;
     var fuertes=datos.filter(function(g){ return g.__nxo.tono==='si'; }).length;
     function cel(et,v){ var d=T('div'); d.appendChild(T('small','',et)); d.appendChild(T('b','',v)); s.appendChild(d); }

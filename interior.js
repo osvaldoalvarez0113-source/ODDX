@@ -26,7 +26,8 @@ var UIS=[
  {id:'campo',n:'Campo',d:'El juego sobre el diamante de béisbol: cada equipo es un banderín sobre el césped',sw:'repeating-linear-gradient(90deg,#1b6b3a 0 9px,#1f7a42 9px 18px)'},
  {id:'telemetria',n:'Telemetría',d:'Tablero de instrumentos: aguja de probabilidad y lecturas en letra de máquina',sw:'radial-gradient(circle at 50% 110%,#22E4FF 0 30%,transparent 31%),linear-gradient(#04080F,#04080F)'},
  {id:'marcador',n:'Marcador',d:'Tablero de estadio con fichas que giran, números en ámbar sobre negro',sw:'linear-gradient(90deg,#1d1d1d 0 46%,#FFB000 46% 50%,#1d1d1d 50% 54%,#FFB000 54% 58%,#1d1d1d 58%)'},
- {id:'recibo',n:'Recibo',d:'Cada juego se imprime como un recibo de caja: líneas con puntos, sello y código de barras',sw:'linear-gradient(135deg,#F6F2E6 0 70%,#C0261A 70%)'}
+ {id:'recibo',n:'Recibo',d:'Cada juego se imprime como un recibo de caja: líneas con puntos, sello y código de barras',sw:'linear-gradient(135deg,#F6F2E6 0 70%,#C0261A 70%)'},
+ {id:'paneles',n:'Paneles',d:'Franjas inclinadas con el color de cada deporte, títulos de contorno y movimiento: igual que el hub',sw:'linear-gradient(172deg,#F0CE6B 0 33%,#0a0a0a 33% 34%,#3DDC84 34% 66%,#0a0a0a 66% 67%,#FF8A3D 67%)'}
 ];
 var BY={};UIS.forEach(function(u){BY[u.id]=u;});
 
@@ -616,7 +617,7 @@ function aplicar(id,opts){
 var CATS=[
  {t:'Base y papel',ids:['clasico','cristal','boleto','boletonoche','prensa','recibo']},
  {t:'Datos y tableros',ids:['pro','radar','telemetria','radarvalor','bento','agenda']},
- {t:'Deportivos y espectaculares',ids:['broadcast','campo','marcador','duelo','historias','cromos']}
+ {t:'Deportivos y espectaculares',ids:['broadcast','campo','marcador','duelo','historias','cromos','paneles']}
 ];
 var TKEY='ova_ui_tab';
 function pestana(){ try{ return root.localStorage.getItem(TKEY)==='t'?'t':'d'; }catch(e){ return 'd'; } }
