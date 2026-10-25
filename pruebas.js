@@ -1100,6 +1100,7 @@ sec('Registro automático: guarda ANTES del juego, resuelve solo y mide con prec
  ok('herramientas.html lo carga antes de herramientas.js y el service worker lo guarda',rd('herramientas.html').indexOf('autoregistro.js')>0&&rd('herramientas.html').indexOf('autoregistro.js')<rd('herramientas.html').indexOf('herramientas.js')&&/'autoregistro\.js'/.test(rd('sw.js')));
  ok('las tres apps llaman al registro con try/catch y solo con juegos pendientes',/OVARegAuto\.registrar\('mlb'/.test(rd('index.html'))&&/OVARegAuto\.registrar\('fut'/.test(rd('futbol.html'))&&/OVARegAuto\.registrar\('nba'/.test(rd('nba.html')));
  ok('el respaldo (ovaextra.js) incluye ova_auto_v1 y lo mezcla sin duplicar',/'ova_auto_v1'\]/.test(rd('ovaextra.js'))&&/ova_auto_v1:1\}/.test(rd('ovaextra.js')));
+ ok('la pestaña Auto lista los juegos guardados (los 40 más recientes) con modelo, mercado y quién ganó',/Ver los '\+lst\.length\+' juegos más recientes/.test(rd('herramientas.js')));
  ok('Herramientas tiene la pestaña 🤖 Auto',/\['auto','🤖 Auto'\]/.test(rd('herramientas.js'))&&/pantallaAuto\(cont,ls\)/.test(rd('herramientas.js')));
 }
 

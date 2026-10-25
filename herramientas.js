@@ -404,6 +404,17 @@ function pantallaAuto(cont,ls){
     var b=o.brier;
     if(b.n>=5&&b.mod!=null) caja.appendChild(el('p',{class:'nota',text:'Calibración (Brier, más bajo es mejor) en '+b.n+' juegos: modelo '+b.mod.toFixed(3)+' · mercado '+b.mer.toFixed(3)+' · mezcla '+b.mix.toFixed(3)+'.'}));
     if(o.sinMer.n) caja.appendChild(el('p',{class:'nota',text:o.sinMer.n+' juegos resueltos sin precio de mercado (Pinnacle no los traía): el favorito del modelo acertó '+o.sinMer.hit.toFixed(0)+'%. Sin precio no hay ROI.'}));
+    var lst=items.filter(function(r){ return r&&r.app===a; }).sort(function(x,y){ return y.ts-x.ts; }).slice(0,40);
+    if(lst.length){
+      var pc=function(p){ return p&&p.L!=null?Math.round(p.L*100)+'%':'—'; };
+      var rs=function(r){ return r.res==='L'?'Local':(r.res==='A'?'Visita':(r.res==='D'?'Empate':(r.res==='X'?'Anulado':'⏳'))); };
+      var tl=el('table',{class:'tab'},[el('tr',null,['Juego','Modelo (local)','Mercado (local)','Ganó'].map(function(h){ return el('th',{text:h}); }))]);
+      lst.forEach(function(r){
+        tl.appendChild(el('tr',null,[el('td',{text:(r.fecha||'').slice(5)+' · '+r.local+' vs '+r.visita}),el('td',{class:'n',text:pc(r.m1||r.m0)}),
+          el('td',{class:'n',text:pc(r.k1||r.k0)}),el('td',{class:'n',text:rs(r)})]));
+      });
+      caja.appendChild(el('details',null,[el('summary',{text:'Ver los '+lst.length+' juegos más recientes'}),tl]));
+    }
     cont.appendChild(caja);
   });
   if(hubo) cont.appendChild(el('p',{class:'nota',text:'Con menos de 30 juegos por grupo, los números bailan por pura suerte. Para distinguir de la suerte un ROI real de +3% hacen falta miles de juegos; por eso mira la calibración y los choques primero, que se mueven más rápido. Si el mercado no trae un juego, queda sin precio y no cuenta para el ROI.'}));
