@@ -10,7 +10,7 @@
    =================================================================== */
 (function (root) {
   'use strict';
-  const PDEF = { kM: 0.02, kT: 0.01, carry: 0.7, H: 0.15, R: 0.2, Q: 0.25, KT: 0.023, Z: 1 };
+  const PDEF = { kM: 0.015, kT: 0.008, carry: 0.7, H: 0.2, R: 0.25, Q: 0.25, KT: 0.023, Z: 1 };
   // Q = cuanto inclina el tiempo extra hacia el mejor equipo (logit por gol de margen esperado).
   // KT = los goles totales varian MENOS que un Poisson puro (medido: varianza 0.88 de la media en 6,747 juegos 2021-26); se aprieta la curva de totales con un peso exp(-KT*(s-media)^2/2).
   // OTG = fraccion de empates a 60' que se deciden con gol en OT (medido: 67%; el resto es shootout).

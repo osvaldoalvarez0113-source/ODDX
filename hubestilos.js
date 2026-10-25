@@ -13,7 +13,9 @@ var reduce=false;try{reduce=!!(root.matchMedia&&root.matchMedia('(prefers-reduce
 var DEP=[
  {k:'mlb',href:'index.html',n:'MLB',d:'Modelo completo — ganador, total, hándicap y más',e:'⚾',c:'#F0CE6B',c2:'#9a6b1c'},
  {k:'fut',href:'futbol.html',n:'Fútbol',d:'Top 5 ligas + Champions League',e:'⚽',c:'#3DDC84',c2:'#0f6b3a'},
- {k:'nba',href:'nba.html',n:'NBA',d:'Ratings en puntos, hándicap y total',e:'🏀',c:'#FF8A3D',c2:'#b4400a'}
+ {k:'nba',href:'nba.html',n:'NBA',d:'Ratings en puntos, hándicap y total',e:'🏀',c:'#FF8A3D',c2:'#b4400a'},
+ {k:'nhl',href:'nhl.html',n:'NHL',d:'Goles, tiempo extra y total',e:'🏒',c:'#5AC8FA',c2:'#0a5a8c'},
+ {k:'nfl',href:'nfl.html',n:'NFL',d:'Números clave 3 y 7 y total',e:'🏈',c:'#C084FC',c2:'#5b21b6'}
 ];
 var ESTILOS=[
  {id:'oro',n:'Oro negro',d:'El clásico',sw:'linear-gradient(135deg,#0A0908,#3b2d10 60%,#C9A24A)'},
@@ -53,7 +55,7 @@ html[data-hub]:not([data-hub="oro"]),html[data-hub]:not([data-hub="oro"]) body{o
 /* ============================ CARRUSEL 3D ============================ */
 html[data-hub="carrusel"] body{background:#06070d}
 .L-carrusel .bgfx i{position:absolute;left:50%;top:44%;width:96vmax;height:96vmax;margin:-48vmax 0 0 -48vmax;border-radius:50%;background:radial-gradient(circle,var(--c),transparent 60%);opacity:0;transition:opacity .9s ease}
-.L-carrusel.a0 .bg0,.L-carrusel.a1 .bg1,.L-carrusel.a2 .bg2{opacity:.5}
+.L-carrusel.a0 .bg0,.L-carrusel.a1 .bg1,.L-carrusel.a2 .bg2,.L-carrusel.a3 .bg3,.L-carrusel.a4 .bg4{opacity:.5}
 .L-carrusel .car{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 54px);bottom:calc(env(safe-area-inset-bottom,0px) + 70px);display:flex;align-items:center;gap:3vw;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 16vw;touch-action:pan-x;animation:hlSlideIn 1s cubic-bezier(.2,.8,.2,1) backwards}
 .L-carrusel .car::-webkit-scrollbar{display:none}
 .L-carrusel .slide{position:relative;flex:0 0 68vw;height:100%;max-height:640px;scroll-snap-align:center;display:flex;flex-direction:column;justify-content:flex-end;padding:24px 22px;border-radius:32px;overflow:hidden;background:linear-gradient(165deg,var(--c2),#0a0b12 72%);border:1px solid rgba(255,255,255,.2);box-shadow:0 34px 70px -24px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.25);transform:perspective(900px) rotateY(calc(var(--d,0)*-24deg)) scale(calc(1 - var(--ad,0)*.1));opacity:calc(1 - var(--ad,0)*.3);will-change:transform}
@@ -91,6 +93,8 @@ html[data-hub="paneles"] body{background:#000}
 .L-paneles .pn:nth-child(1){animation-delay:.05s;--from:-100vw}
 .L-paneles .pn:nth-child(2){animation-delay:.2s;--from:100vw}
 .L-paneles .pn:nth-child(3){animation-delay:.35s;--from:-100vw}
+.L-paneles .pn:nth-child(4){animation-delay:.5s;--from:100vw}
+.L-paneles .pn:nth-child(5){animation-delay:.65s;--from:-100vw}
 @keyframes hlPnIn{from{translate:var(--from) 0}}
 .L-paneles .pn:active{filter:brightness(1.3)}
 .L-paneles .pn .pat{position:absolute;inset:0;animation:hlSlide 6s linear infinite}
@@ -100,6 +104,10 @@ html[data-hub="paneles"] body{background:#000}
 .L-paneles .pn1{background:linear-gradient(115deg,#04200f,#0f6b3a 55%,#3DDC84)}
 .L-paneles .pn1 .pat{background:repeating-linear-gradient(90deg,rgba(0,0,0,.18) 0 42px,transparent 42px 84px)}
 .L-paneles .pn2{background:linear-gradient(115deg,#2b0f02,#b4400a 55%,#FF8A3D)}
+.L-paneles .pn3{background:linear-gradient(115deg,#04202b,#0a5a8c 55%,#5AC8FA)}
+.L-paneles .pn3 .pat{background:repeating-linear-gradient(60deg,rgba(255,255,255,.1) 0 3px,transparent 3px 30px)}
+.L-paneles .pn4{background:linear-gradient(115deg,#1d0a38,#5b21b6 55%,#C084FC)}
+.L-paneles .pn4 .pat{background:repeating-linear-gradient(90deg,rgba(255,255,255,.1) 0 3px,transparent 3px 28px)}
 .L-paneles .pn2 .pat{background:radial-gradient(circle at 78% 50%,transparent 0 22px,rgba(0,0,0,.2) 23px 25px,transparent 26px 56px,rgba(0,0,0,.2) 57px 59px,transparent 60px)}
 .L-paneles .pn .emo{position:absolute;right:-5vw;top:50%;margin-top:-11vw;font-size:22vw;line-height:1;transform:rotate(-12deg);filter:drop-shadow(0 14px 24px rgba(0,0,0,.45));animation:hlBob 5s ease-in-out infinite}
 .L-paneles .pn .big{position:absolute;left:6vw;bottom:26%;font:900 italic clamp(52px,18.5vw,88px)/.9 Inter,system-ui,sans-serif;letter-spacing:-.03em;text-transform:uppercase;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.92);transition:color .25s}
@@ -193,6 +201,8 @@ function tm(f,ms){ var t=root.setTimeout(f,ms); ST.timers.push(t); return t; }
 var ARTS={
  mlb:'<path d="M60 12 L108 60 L60 108 L12 60 Z"/><path d="M60 38 L82 60 L60 82 L38 60 Z"/><circle cx="60" cy="60" r="5"/><path d="M12 60 A48 48 0 0 1 60 12"/><path d="M60 12 A48 48 0 0 1 108 60"/><rect x="55" y="7" width="10" height="10" rx="1"/><rect x="103" y="55" width="10" height="10" rx="1"/><rect x="7" y="55" width="10" height="10" rx="1"/><path d="M60 103 l6 -6 v-6 h-12 v6 z"/>',
  fut:'<rect x="6" y="20" width="108" height="80" rx="4"/><path d="M60 20 V100"/><circle cx="60" cy="60" r="14"/><circle cx="60" cy="60" r="1.5"/><rect x="6" y="40" width="20" height="40"/><rect x="94" y="40" width="20" height="40"/><rect x="6" y="51" width="8" height="18"/><rect x="106" y="51" width="8" height="18"/><path d="M26 52 A10 10 0 0 1 26 68"/><path d="M94 52 A10 10 0 0 0 94 68"/>',
+ nhl:'<rect x="6" y="20" width="108" height="80" rx="30"/><path d="M60 20 V100"/><circle cx="60" cy="60" r="12"/><path d="M30 20 V100M90 20 V100"/><rect x="2" y="52" width="8" height="16" rx="1"/><rect x="110" y="52" width="8" height="16" rx="1"/><circle cx="36" cy="40" r="4"/><circle cx="36" cy="80" r="4"/><circle cx="84" cy="40" r="4"/><circle cx="84" cy="80" r="4"/>',
+ nfl:'<rect x="6" y="24" width="108" height="72" rx="3"/><path d="M26 24 V96M46 24 V96M66 24 V96M86 24 V96M106 24 V96"/><path d="M60 6 V24M50 6 H70 M50 6 V16 M70 6 V16"/><ellipse cx="60" cy="60" rx="14" ry="8"/><path d="M56 60 H64M58 57 V63M62 57 V63"/>',
  nba:'<rect x="8" y="12" width="104" height="96" rx="4"/><rect x="40" y="12" width="40" height="44"/><circle cx="60" cy="56" r="16"/><path d="M20 12 V34 A40 40 0 0 0 100 34 V12"/><circle cx="60" cy="22" r="4"/><path d="M52 12 H68"/>'
 };
 function livTxt(k){
@@ -229,8 +239,9 @@ function htmlCarrusel(){
     bg+='<i class="bg'+i+'" style="--c:'+d.c+'"></i>';
     s+='<a class="slide" href="'+d.href+'" style="--c:'+d.c+';--c2:'+d.c2+'">'+art(d.k)+'<span class="emo">'+d.e+'</span>'+livHtml(d.k)+'<b class="nm">'+d.n+'</b><p>'+d.d+'</p><span class="go">ENTRAR ›</span></a>';
   });
-  return '<div class="bgfx">'+bg+'</div>'+brand()+'<div class="car">'+s+'</div><div class="dots"><i class="on"></i><i></i><i></i></div>';
+  return '<div class="bgfx">'+bg+'</div>'+brand()+'<div class="car">'+s+'</div><div class="dots">'+puntos()+'</div>';
 }
+function puntos(){ var o=''; DEP.forEach(function(d,i){ o+=i?'<i></i>':'<i class="on"></i>'; }); return o; }
 function initCarrusel(lay){
   var car=lay.querySelector('.car'), slides=[].slice.call(lay.querySelectorAll('.slide')), dots=[].slice.call(lay.querySelectorAll('.dots i'));
   var pend=false, act=-1, tocado=false;
@@ -243,7 +254,7 @@ function initCarrusel(lay){
       s.style.setProperty('--d',d.toFixed(3)); s.style.setProperty('--ad',Math.abs(d).toFixed(3));
       if(Math.abs(d)<bd){ bd=Math.abs(d); best=i; }
     });
-    if(best!==act){ act=best; lay.classList.remove('a0','a1','a2'); lay.classList.add('a'+best); dots.forEach(function(x,i){ x.classList.toggle('on',i===best); }); }
+    if(best!==act){ act=best; lay.classList.remove('a0','a1','a2','a3','a4'); lay.classList.add('a'+best); dots.forEach(function(x,i){ x.classList.toggle('on',i===best); }); }
   }
   function sch(){ if(!pend){ pend=true; root.requestAnimationFrame(upd); } }
   car.addEventListener('scroll',sch,{passive:true}); root.addEventListener('resize',sch);
@@ -267,7 +278,7 @@ function initOrbita(lay){
   }
   function pos(){
     pls.forEach(function(p,i){
-      var a=th+i*Math.PI*2/3, x=cx+Rx*grow*Math.cos(a), y=cy+Ry*grow*Math.sin(a), dep=(Math.sin(a)+1)/2, s=0.68+0.62*dep;
+      var a=th+i*Math.PI*2/pls.length, x=cx+Rx*grow*Math.cos(a), y=cy+Ry*grow*Math.sin(a), dep=(Math.sin(a)+1)/2, s=0.68+0.62*dep;
       p.style.transform='translate3d('+x.toFixed(1)+'px,'+y.toFixed(1)+'px,0) scale('+s.toFixed(3)+')';
       p.style.opacity=(0.5+0.5*dep).toFixed(2); p.style.zIndex=dep>0.5?9:3;
     });
@@ -304,15 +315,15 @@ function htmlMazo(){
   DEP.forEach(function(d){
     s+='<a class="cd" href="'+d.href+'" style="--c:'+d.c+';--c2:'+d.c2+'">'+art(d.k)+'<span class="emo">'+d.e+'</span>'+livHtml(d.k)+'<b class="nm">'+d.n+'</b><p>'+d.d+'</p><span class="go">ENTRAR ›</span></a>';
   });
-  return '<div class="bgfx"><i class="m1"></i><i class="m2"></i></div>'+brand()+'<div class="deck">'+s+'</div><div class="hl-title"><div class="dots"><i class="on"></i><i></i><i></i></div>Lanza la carta para ver la siguiente</div>';
+  return '<div class="bgfx"><i class="m1"></i><i class="m2"></i></div>'+brand()+'<div class="deck">'+s+'</div><div class="hl-title"><div class="dots">'+puntos()+'</div>Lanza la carta para ver la siguiente</div>';
 }
 function initMazo(lay){
-  var cards=[].slice.call(lay.querySelectorAll('.cd')), dots=[].slice.call(lay.querySelectorAll('.dots i')), ord=[0,1,2], drag=null, moved=false, W=root.innerWidth||360, H=root.innerHeight||640;
+  var cards=[].slice.call(lay.querySelectorAll('.cd')), dots=[].slice.call(lay.querySelectorAll('.dots i')), ord=DEP.map(function(d,i){ return i; }), drag=null, moved=false, W=root.innerWidth||360, H=root.innerHeight||640;
   function colocar(anim,delays){
     ord.forEach(function(ci,k){
       var el=cards[ci];
       el.style.transition=anim?'transform .5s cubic-bezier(.2,.8,.2,1),opacity .5s':'none';
-      el.style.transitionDelay=delays?((2-k)*0.1)+'s':'0s';
+      el.style.transitionDelay=delays?((ord.length-1-k)*0.1)+'s':'0s';
       el.style.zIndex=10-k; el.style.opacity=(1-k*0.16).toFixed(2);
       el.style.transform='translate3d(0,'+(k*30)+'px,0) scale('+(1-k*0.065).toFixed(3)+') rotate('+(k===0?0:(k%2?2.4:-2.4))+'deg)';
       el.style.pointerEvents=k===0?'auto':'none';

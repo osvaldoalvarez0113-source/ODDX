@@ -10,7 +10,7 @@
    =================================================================== */
 (function (root) {
   'use strict';
-  const PDEF = { kM: 0.09, kT: 0.04, carry: 0.7, H: 1.8, Rs: 1.0, Bb: 0.8, Z: 1 };
+  const PDEF = { kM: 0.08, kT: 0.04, carry: 0.6, H: 2.0, Rs: 1.0, Bb: 0.8, Z: 1 };
   // Rs = puntos que pierde un equipo en semana corta (juega con 5 dias o menos de descanso)
   // Bb = puntos que gana un equipo que viene de semana libre (11 dias o mas)
   // Z  = cuanto se le cree a la diferencia de ratings (1 = todo); se mide como pendiente en el backtest

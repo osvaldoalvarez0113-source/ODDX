@@ -107,11 +107,13 @@ function normalizar(leerClave){
     out.push({app:'fut',t:fechaDe(p.fecha)||p.ts||tsDeId(p.id)||0,res:res,u:u,clv:clvDe(p.cuota,p.cierre),
       juego:(p.local||'')+' vs '+(p.visita||''),sel:p.seleccion||'',cuota:p.cuota!=null?String(p.cuota):'',mio:false});
   });
-  J('ova_nba_registro_v1').forEach(function(p){
+  ['nba','nhl','nfl'].forEach(function(ap){
+  J('ova_'+ap+'_registro_v1').forEach(function(p){
     if(!p) return; var res=p.estado==='ganado'?'G':(p.estado==='perdido'?'P':(p.estado==='push'?'E':null)), u=null;
     if(res==='G'){ u=decAm(p.cuota); } else if(res==='P') u=-1; else if(res==='E') u=0;
-    out.push({app:'nba',t:p.ts||tsDeId(p.id)||0,res:res,u:u,clv:clvDe(p.cuota,p.cierre),
+    out.push({app:ap,t:p.ts||tsDeId(p.id)||0,res:res,u:u,clv:clvDe(p.cuota,p.cierre),
       juego:(p.aN||'')+' @ '+(p.hN||''),sel:p.seleccion||'',cuota:p.cuota!=null?String(p.cuota):'',mio:false});
+  });
   });
   return out;
 }
@@ -244,14 +246,14 @@ function dibujarCurva(c){
   var u=c.pts[c.pts.length-1], dot=d.createElementNS(NS,'circle'); dot.setAttribute('cx',X(u.i)); dot.setAttribute('cy',Y(u.y)); dot.setAttribute('r',4); dot.setAttribute('class','punto '+(c.final>=0?'sube':'baja')); svg.appendChild(dot);
   return svg;
 }
-var APPS={mlb:'⚾ MLB',fut:'⚽ Fútbol',nba:'🏀 NBA'};
+var APPS={mlb:'⚾ MLB',fut:'⚽ Fútbol',nba:'🏀 NBA',nhl:'🏒 NHL',nfl:'🏈 NFL'};
 
 function pantallaMarcador(cont,ls){
   limpiar(cont);
   var items=normalizar(function(k){ try{ return ls.getItem(k); }catch(e){ return null; } });
   if(!items.length){
     cont.appendChild(el('div',{class:'vacio'},[el('b',{text:'Todavía no hay picks guardados'}),
-      el('p',{text:'Guarda picks desde MLB, fútbol o NBA (Mis picks) y márcalos Ganó o Perdió. Aquí vas a ver tu récord real, la curva de unidades y si le ganas a la línea de cierre.'})]));
+      el('p',{text:'Guarda picks desde MLB, fútbol, NBA, NHL o NFL (Mis picks) y márcalos Ganó o Perdió. Aquí vas a ver tu récord real, la curva de unidades y si le ganas a la línea de cierre.'})]));
     return;
   }
   var R=resumir(items), C=curva(items), w7=ventana(items,7), w30=ventana(items,30), rc=racha(items);
@@ -270,7 +272,7 @@ function pantallaMarcador(cont,ls){
     kpi(w30.n?signo(w30.u,1)+' u':'—','últimos 30 días · '+w30.n+' picks',w30.u>0?'g':(w30.u<0?'p':''))]));
   /* por app */
   var t=el('table',{class:'tab'},[el('tr',null,['App','Picks','Rec.','Unid.','ROI','CLV'].map(function(h){ return el('th',{text:h}); }))]);
-  ['mlb','fut','nba'].forEach(function(a){
+  ['mlb','fut','nba','nhl','nfl'].forEach(function(a){
     var g=items.filter(function(x){ return x.app===a; }); if(!g.length) return;
     var r=resumir(g);
     t.appendChild(el('tr',null,[el('td',{text:APPS[a]}),el('td',{class:'n',text:String(r.n)}),
@@ -440,11 +442,11 @@ function pantallaAuto(cont,ls){
   cont.appendChild(barra);
   if(!items.length){
     cont.appendChild(el('div',{class:'vacio'},[el('b',{text:'Todavía no hay juegos guardados'}),
-      el('p',{text:'Abre MLB (y toca Cargar), Fútbol o NBA con juegos por jugar y se guardan solos.'})]));
+      el('p',{text:'Abre MLB (y toca Cargar), Fútbol, NBA, NHL o NFL con juegos por jugar y se guardan solos.'})]));
     return;
   }
   var hubo=false;
-  ['mlb','fut','nba'].forEach(function(a){
+  ['mlb','fut','nba','nhl','nfl'].forEach(function(a){
     var o=A.resumir(items,a); if(!o.total) return; hubo=true;
     var caja=el('div',{class:'caja'},[el('h3',{text:APPS[a]}),
       el('div',{class:'kpis'},[kpi(String(o.total),'guardados'),kpi(String(o.res),'con resultado'),kpi(String(o.pend),'pendientes')]),

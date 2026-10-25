@@ -1,4 +1,4 @@
-/* OVA · Registro automático (MLB, fútbol y NBA) — window.OVARegAuto
+/* OVA · Registro automático (MLB, fútbol, NBA, NHL y NFL) — window.OVARegAuto
    Para medir de verdad si la app sirve hace falta una lista larga, sin huecos y sin trampa. Esta pieza la arma sola:
    1) GUARDA cada juego ANTES de que empiece (nunca después): lo que dijo el modelo y lo que decía el mercado
       (Pinnacle sin margen, el archivo pinnacle-*.json). Guarda TODOS los juegos, no solo los «candidatos», porque lo que
@@ -10,9 +10,9 @@
 (function(root){
 "use strict";
 var KEY='ova_auto_v1', TOPE=6000, HORIZONTE=48*3600e3;   /* solo se guardan juegos que empiezan en las próximas 48 h: es lo que cubre el archivo del mercado */
-var MERC={mlb:'pinnacle-datos.json',fut:'pinnacle-futbol.json',nba:'pinnacle-nba.json'};
+var MERC={mlb:'pinnacle-datos.json',fut:'pinnacle-futbol.json',nba:'pinnacle-nba.json',nhl:'pinnacle-nhl.json',nfl:'pinnacle-nfl.json'};
 var ESPN='https://site.api.espn.com/apis/site/v2/sports/';
-var DEPORTE={mlb:'baseball/mlb',nba:'basketball/nba'};
+var DEPORTE={mlb:'baseball/mlb',nba:'basketball/nba',nhl:'hockey/nhl',nfl:'football/nfl'};
 var MARGEN=0.03;                       /* margen realista de una casa en un ganador: el ROI «con margen» baja el pago así */
 var HORAS_RES=3.5, DIAS_MAX=8;         /* se intenta resolver 3.5 h después del inicio; a los 8 días sin resultado se descarta */
 
@@ -22,6 +22,8 @@ function norm(s){
  try{ s=s.normalize('NFD').replace(/[̀-ͯ]/g,''); }catch(e){}
  return s.replace(/[^a-z0-9]/g,'');
 }
+/* la NFL juega una vez por semana: se guarda con hasta 5 días de anticipación (en las demás, 48 h) */
+function horiz(app){ return app==='nfl'?5*864e5:HORIZONTE; }
 function pad2(n){ return (n<10?'0':'')+n; }
 function fechaLocal(ts){ var d=new Date(ts); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
 function ymdUTC(ts){ var d=new Date(ts); return d.getUTCFullYear()+pad2(d.getUTCMonth()+1)+pad2(d.getUTCDate()); }
@@ -58,7 +60,7 @@ function cruzar(juegos,app,rec){
  if(!Array.isArray(juegos)) return null;
  for(var i=0;i<juegos.length;i++){
   var g=juegos[i]; if(!g||!g.n||g.n.length<2) continue;
-  var v=app==='fut'?g.r:(app==='nba'?g.ml:g.fair); if(!Array.isArray(v)) continue;
+  var v=app==='fut'?g.r:((app==='nba'||app==='nhl'||app==='nfl')?g.ml:g.fair); if(!Array.isArray(v)) continue;
   if(g.t){ var dt=Math.abs(Date.parse(g.t)-rec.ts); if(!(dt<5*3600e3)) continue; }   /* mismo equipo pero otro día de la serie: no vale */
   var dir=mismoEq(g.n[0],rec.local)&&mismoEq(g.n[1],rec.visita), inv=!dir&&mismoEq(g.n[0],rec.visita)&&mismoEq(g.n[1],rec.local);
   if(!dir&&!inv) continue;
@@ -76,7 +78,7 @@ function aplicarRegistro(arr,app,lista,ahora){
  var cambios=0, tocados=[];
  (lista||[]).forEach(function(g){
   if(!g||!g.local||!g.visita||!(g.ts>ahora)) return;                 /* SOLO antes de que empiece */
-  if(g.ts>ahora+HORIZONTE) return;                                    /* y no con días de anticipación: esos aún no tienen precio de mercado */
+  if(g.ts>ahora+horiz(app)) return;                                    /* y no con días de anticipación: esos aún no tienen precio de mercado */
   var m=trio(g.p); if(!m) return;
   var id=idDe(app,g.ts,g.local,g.visita), r=null, i;
   for(i=0;i<arr.length;i++){ if(arr[i]&&arr[i].id===id){ r=arr[i]; break; } }
@@ -89,7 +91,7 @@ function aplicarRegistro(arr,app,lista,ahora){
   cambios++; tocados.push(r);
  });
  /* limpia lo que se guardó con demasiada anticipación y nunca tuvo precio de mercado: se vuelve a guardar bien cuando se acerque */
- for(var j=arr.length-1;j>=0;j--){ var q=arr[j]; if(q&&!q.res&&!q.k1&&q.ts>ahora+HORIZONTE) arr.splice(j,1); }
+ for(var j=arr.length-1;j>=0;j--){ var q=arr[j]; if(q&&!q.res&&!q.k1&&q.ts>ahora+horiz(q.app)) arr.splice(j,1); }
  if(arr.length>TOPE) arr.splice(0,arr.length-TOPE);
  return {arr:arr,cambios:cambios,tocados:tocados};
 }

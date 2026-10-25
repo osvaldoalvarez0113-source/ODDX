@@ -7,11 +7,11 @@
 (function(root){
 "use strict";
 
-var REG_KEYS={mlb:'ventaja_picks_v1', fut:'ova_futbol_registro_v1', nba:'ova_nba_registro_v1'};
+var REG_KEYS={mlb:'ventaja_picks_v1', fut:'ova_futbol_registro_v1', nba:'ova_nba_registro_v1', nhl:'ova_nhl_registro_v1', nfl:'ova_nfl_registro_v1'};
 var KEYS=['ventaja_picks_v1','ova_futbol_registro_v1','ova_futbol_combinada_v1','ova_futbol_params_v1',
-  'ova_futbol_veredictos_v2','ova_nba_registro_v1','ova_nba_comb_v1','ova_nba_params_v1','ova_nba_ver_v1','ova_skin','ova_auto_v1'];
+  'ova_futbol_veredictos_v2','ova_nba_registro_v1','ova_nba_comb_v1','ova_nba_params_v1','ova_nba_ver_v1','ova_nhl_registro_v1','ova_nhl_params_v1','ova_nhl_ver_v1','ova_nfl_registro_v1','ova_nfl_params_v1','ova_nfl_ver_v1','ova_skin','ova_auto_v1'];
 /* estas son listas de objetos con id: se mezclan sin duplicar. Lo demas solo se pone si falta. */
-var MERGE={ventaja_picks_v1:1,ova_futbol_registro_v1:1,ova_futbol_combinada_v1:1,ova_nba_registro_v1:1,ova_nba_comb_v1:1,ova_auto_v1:1};
+var MERGE={ventaja_picks_v1:1,ova_futbol_registro_v1:1,ova_futbol_combinada_v1:1,ova_nba_registro_v1:1,ova_nba_comb_v1:1,ova_nhl_registro_v1:1,ova_nfl_registro_v1:1,ova_auto_v1:1};
 
 function jparse(s){ try{ return JSON.parse(s); }catch(e){ return null; } }
 function pad2(n){ return (n<10?'0':'')+n; }
@@ -131,6 +131,10 @@ function importar(texto, ls){
   else if(d && d.app==='ova-nba'){
     datos={ova_nba_registro_v1:JSON.stringify(d.registro||[]),ova_nba_comb_v1:JSON.stringify(d.combinada||[])};
     if(d.params) datos.ova_nba_params_v1=JSON.stringify(d.params);
+  }else if(d && (d.app==='ova-nhl'||d.app==='ova-nfl')){
+    var dp=d.app.slice(4);
+    datos={}; datos['ova_'+dp+'_registro_v1']=JSON.stringify(d.registro||[]);
+    if(d.params) datos['ova_'+dp+'_params_v1']=JSON.stringify(d.params);
   }else if(d && d.app==='ova-futbol'){
     datos={ova_futbol_registro_v1:JSON.stringify(d.registro||[]),ova_futbol_combinada_v1:JSON.stringify(d.combinada||[])};
     if(d.params) datos.ova_futbol_params_v1=JSON.stringify(d.params);
@@ -261,7 +265,7 @@ function publicar(app, items, extra){
 }
 function resumen(ls, ahora){
   ahora=ahora||Date.now();
-  var out={pend:[],rec:{mlb:nuevoRec(),fut:nuevoRec(),nba:nuevoRec()},apps:{},tops:[]};
+  var out={pend:[],rec:{mlb:nuevoRec(),fut:nuevoRec(),nba:nuevoRec(),nhl:nuevoRec(),nfl:nuevoRec()},apps:{},tops:[]};
   function cuenta(app,estadoRes,u){
     var r=out.rec[app]; r.n++;
     if(estadoRes==='G'){ r.g++; if(u!=null) r.u+=u; }
@@ -283,13 +287,15 @@ function resumen(ls, ahora){
     cuenta('fut',res,u);
     if(!res) out.pend.push({app:'fut',juego:(p.local||'')+' vs '+(p.visita||''),sel:p.seleccion||'',cuota:p.cuota!=null?String(p.cuota):'',cuando:p.fecha||''});
   });
-  (jparse(ls.getItem(REG_KEYS.nba))||[]).forEach(function(p){
+  ['nba','nhl','nfl'].forEach(function(ap){
+  (jparse(ls.getItem(REG_KEYS[ap]))||[]).forEach(function(p){
     if(!p) return;
     var res=p.estado==='ganado'?'G':(p.estado==='perdido'?'P':(p.estado==='push'?'E':null)), u=null;
     if(res==='G'){ var b=decB(p.cuota); u=b==null?null:b; } else if(res==='P') u=-1; else if(res==='E') u=0;
-    cuenta('nba',res,u);
+    cuenta(ap,res,u);
     if(!res){ var dt=p.ts?new Date(p.ts):null;
-      out.pend.push({app:'nba',juego:(p.aN||'')+' @ '+(p.hN||''),sel:p.seleccion||'',cuota:p.cuota!=null?String(p.cuota):'',cuando:dt?hoyLocal(dt):''}); }
+      out.pend.push({app:ap,juego:(p.aN||'')+' @ '+(p.hN||''),sel:p.seleccion||'',cuota:p.cuota!=null?String(p.cuota):'',cuando:dt?hoyLocal(dt):''}); }
+  });
   });
   /* dos picks del mismo juego no son dos apuestas: comparten el mismo resultado de fondo */
   var cont={};
@@ -297,7 +303,7 @@ function resumen(ls, ahora){
   out.pend.forEach(function(x){ x.corr=cont[x.app+'|'+x.juego]>1; });
   out.pend.sort(function(a,b){ return a.cuando<b.cuando?-1:(a.cuando>b.cuando?1:0); });
   var hoy=hoyLocal(new Date(ahora)), pool=[];
-  ['mlb','fut','nba'].forEach(function(app){
+  ['mlb','fut','nba','nhl','nfl'].forEach(function(app){
     var s=jparse(ls.getItem('ova_hoy_'+app));
     if(!s||!Array.isArray(s.items)) return;
     var edadH=(ahora-s.t)/3600000, vigente=(s.fecha===hoy && edadH<12);

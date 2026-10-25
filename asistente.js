@@ -51,7 +51,7 @@ function valorDe(pPct,cuota,pmPct){   /* ev = p·decimal − 1; si hay mercado, 
 function etiqueta(p,nivel,app,vivo){
  if(vivo) return {k:'vivo',t:'En vivo'};
  if(p==null) return {k:'sin',t:'Sin números'};
- var fuerte=app==='fut'?52:62, ligero=app==='fut'?45:55;
+ var fuerte=app==='fut'?52:(app==='nhl'?57:62), ligero=app==='fut'?45:(app==='nhl'?52:55);
  var k=p>=fuerte?'cand':(p>=ligero?'cuid':'evit');
  if(nivel==='baja') k=(k==='cand')?'cuid':'evit';     /* datos flojos: baja un nivel */
  return {k:k,t:k==='cand'?'Candidato':(k==='cuid'?'Cuidado':'Parejo · evitar'),flojo:nivel==='baja'};
@@ -76,7 +76,7 @@ function cruzarMercado(juegos,app,na,nh){
   var g=juegos[i]; if(!g||!g.n||g.n.length<2) continue;
   var dir=mismoEq(g.n[0],na)&&mismoEq(g.n[1],nh), inv=!dir&&mismoEq(g.n[0],nh)&&mismoEq(g.n[1],na);
   if(!dir&&!inv) continue;
-  var v=app==='fut'?g.r:(app==='nba'?g.ml:g.fair);
+  var v=app==='fut'?g.r:((app==='nba'||app==='nhl'||app==='nfl')?g.ml:g.fair);
   if(!Array.isArray(v)) continue;
   var p0,p1,d=null;
   if(app==='fut'){ if(v.length<3) continue; p0=+v[0]; d=+v[1]; p1=+v[2]; } else { if(v.length<2) continue; p0=+v[0]; p1=+v[1]; }
@@ -160,7 +160,7 @@ function textoOficial(of,na,nh,edad){
 }
 function resumenRegistro(app,leer){
  try{
-  var k={mlb:'ventaja_picks_v1',fut:'ova_futbol_registro_v1',nba:'ova_nba_registro_v1'}[app];
+  var k={mlb:'ventaja_picks_v1',fut:'ova_futbol_registro_v1',nba:'ova_nba_registro_v1',nhl:'ova_nhl_registro_v1',nfl:'ova_nfl_registro_v1'}[app];
   var arr=JSON.parse(leer(k)||'null'); if(!Array.isArray(arr)) return '';
   var g=0,p=0;
   arr.forEach(function(x){
@@ -214,9 +214,9 @@ function boton(cls,txt,fn){
 }
 function appActual(){
  var a=doc.documentElement.getAttribute('data-app')||'';
- if(a==='mlb'||a==='fut'||a==='nba') return a;
+ if(a==='mlb'||a==='fut'||a==='nba'||a==='nhl'||a==='nfl') return a;
  var p=(root.location&&root.location.pathname)||'';
- return /futbol/.test(p)?'fut':(/nba/.test(p)?'nba':'mlb');
+ return /futbol/.test(p)?'fut':(/nba/.test(p)?'nba':(/nhl/.test(p)?'nhl':(/nfl/.test(p)?'nfl':'mlb')));
 }
 var APP=null;
 function hoyISO(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
@@ -493,7 +493,7 @@ function cargarOficial(){
   });
  }).catch(function(){});
 }
-var ARCH={mlb:'pinnacle-datos.json',fut:'pinnacle-futbol.json',nba:'pinnacle-nba.json'};
+var ARCH={mlb:'pinnacle-datos.json',fut:'pinnacle-futbol.json',nba:'pinnacle-nba.json',nhl:'pinnacle-nhl.json',nfl:'pinnacle-nfl.json'};
 function cargarMercado(){
  ST.mer=null;
  try{
@@ -540,7 +540,7 @@ function armar(){
  fab.appendChild(tx); fab.setAttribute('aria-label','Abrir el Escáner del día');
  colocar();
  sheet=mk('div','msSheet'); sheet.setAttribute('role','dialog'); sheet.setAttribute('aria-label','Escáner de hoy');
- var bar=mk('div','msBar'); var h=mk('h2','','Escáner de hoy'); h.appendChild(mk('small','',({mlb:'MLB',fut:'Fútbol',nba:'NBA'})[APP]+' · lee todos los juegos y todas las pestañas'));
+ var bar=mk('div','msBar'); var h=mk('h2','','Escáner de hoy'); h.appendChild(mk('small','',({mlb:'MLB',fut:'Fútbol',nba:'NBA',nhl:'NHL',nfl:'NFL'})[APP]+' · lee todos los juegos y todas las pestañas'));
  bar.appendChild(h); bar.appendChild(boton('msX','✕ Cerrar',cerrar)); sheet.appendChild(bar);
  /* «Cómo leerla»: abierto la primera vez, después queda cerrado y se abre con un toque (en el iPhone ocupaba media pantalla) */
  avPrimera=ls(AV_KEY)!=='1';

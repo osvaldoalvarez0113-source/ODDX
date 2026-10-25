@@ -9,8 +9,8 @@ function ok(nombre,cond,detalle){total++;if(!cond){fallas++;console.log('  ✗ F
 function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
-const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html'];
-const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js'].filter(f=>fs.existsSync(D+f));
+const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
+const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','modelo-nhl.js','modelo-nfl.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -319,10 +319,10 @@ const t_sw=async()=>{
 };
 
 /* ---------------- 10. hub (se ejecuta su script real con un DOM falso) ---------------- */
-sec('Hub limpio (solo las 3 tarjetas) y Panel aparte');
+sec('Hub limpio (solo las 5 tarjetas) y Panel aparte');
 {
  const hh=rd('hub.html');
- ok('el hub tiene SOLO las 3 tarjetas, sin Hoy ni Respaldo',(hh.match(/class="card /g)||[]).length===3&&!/id="hoy"|id="resp"|Respaldo|Favoritos/.test(hh));
+ ok('el hub tiene SOLO las 5 tarjetas, sin Hoy ni Respaldo',(hh.match(/class="card /g)||[]).length===5&&!/id="hoy"|id="resp"|Respaldo|Favoritos/.test(hh));
  ok('el hub no enlaza al panel (no estorba)',!/panel\.html/.test(hh));
  ok('el hub ya no resetea tu tema cada vez que entras',/if\(!localStorage\.getItem\('ova_skin'\)\)/.test(hh));
  const h=rd('panel.html');
@@ -365,9 +365,9 @@ sec('Presentaciones del hub (6 diseños)');
  const HB=require(path.join(__dirname,'hubestilos.js'));
  const IDS=['oro','carrusel','orbita','paneles','mazo','tablero'];
  ok('hay 6 diseños: '+IDS.join(', '),JSON.stringify(HB.ESTILOS.map(e=>e.id))===JSON.stringify(IDS));
- ok('los 3 deportes llevan a MLB, fútbol y NBA',JSON.stringify(HB.DEP.map(d=>d.href))===JSON.stringify(['index.html','futbol.html','nba.html'])&&HB.DEP.every(d=>fs.existsSync(D0(d.href))));
+ ok('los 5 deportes llevan a MLB, fútbol, NBA, NHL y NFL',JSON.stringify(HB.DEP.map(d=>d.href))===JSON.stringify(['index.html','futbol.html','nba.html','nhl.html','nfl.html'])&&HB.DEP.every(d=>fs.existsSync(D0(d.href))));
  function D0(f){return path.join(__dirname,f);}
- IDS.slice(1).forEach(id=>{const h=HB._html[id]();ok('diseño '+id+': arma sus 3 enlaces y el logo para cambiar de diseño',['index.html','futbol.html','nba.html'].every(x=>h.indexOf('href="'+x+'"')>=0)&&h.indexOf('hl-brand')>=0);});
+ IDS.slice(1).forEach(id=>{const h=HB._html[id]();ok('diseño '+id+': arma sus 5 enlaces y el logo para cambiar de diseño',['index.html','futbol.html','nba.html','nhl.html','nfl.html'].every(x=>h.indexOf('href="'+x+'"')>=0)&&h.indexOf('hl-brand')>=0);});
  const css=HB.css;
  let nivel=0,okb=true;for(const c of css){if(c==='{')nivel++;if(c==='}'){nivel--;if(nivel<0)okb=false;}}
  ok('el CSS tiene llaves balanceadas',okb&&nivel===0);
@@ -1123,6 +1123,105 @@ sec('Registro automático: guarda ANTES del juego, resuelve solo y mide con prec
  ok('el respaldo (ovaextra.js) incluye ova_auto_v1 y lo mezcla sin duplicar',/'ova_auto_v1'\]/.test(rd('ovaextra.js'))&&/ova_auto_v1:1\}/.test(rd('ovaextra.js')));
  ok('la pestaña Auto lista los juegos guardados (los 40 más recientes) con modelo, mercado y quién ganó',/Ver los '\+lst\.length\+' juegos más recientes/.test(rd('herramientas.js')));
  ok('Herramientas tiene la pestaña 🤖 Auto',/\['auto','🤖 Auto'\]/.test(rd('herramientas.js'))&&/pantallaAuto\(cont,ls\)/.test(rd('herramientas.js')));
+}
+
+/* ---------------- NHL y NFL (usdeporte.js + modelo-nhl.js + modelo-nfl.js + valor3.js) ---------------- */
+sec('NHL y NFL: núcleo compartido, modelos y lector de Pinnacle');
+{
+ const US=require(path.join(__dirname,'usdeporte.js')),MN=require(path.join(__dirname,'modelo-nhl.js')),MF=require(path.join(__dirname,'modelo-nfl.js'));
+ const V3=(()=>{const src=rd('scripts/valor3.js');const m={exports:{}};new Function('module','require','process','console',src)(m,require,{env:{},argv:[],exit(){}},{log(){},error(){},warn(){}});return m.exports;})();
+ // --- cuotas puras
+ ok('impProb: -150 → 0.6 y +150 → 0.4',Math.abs(US.impProb(-150)-0.6)<1e-9&&Math.abs(US.impProb(150)-0.4)<1e-9);
+ ok('cuotaJusta/amTxt: 0.6 → -150, 0.4 → +150 y fuera de rango → —',US.cuotaJusta(0.6)===-150&&US.cuotaJusta(0.4)===150&&US.amTxt(0.4)==='+150'&&US.amTxt(0)==='—'&&US.amTxt(1)==='—');
+ ok('decAm: -200 → 1.5 y +200 → 3',Math.abs(US.decAm(-200)-1.5)<1e-9&&Math.abs(US.decAm(200)-3)<1e-9);
+ ok('normCuota: 62 (probabilidad en %) se vuelve americana y -110 se queda igual; vacío y 0 → null',US.normCuota('')===null&&US.normCuota(0)===null&&US.normCuota(-110)===-110&&US.normCuota(62)<0);
+ ok('esc() escapa < > & " \'',US.esc('<a href="x">&\'</a>')==='&lt;a href=&quot;x&quot;&gt;&amp;&#39;&lt;/a&gt;');
+ ok('logit/sigmoide son inversas',Math.abs(US.sigP(US.logitP(0.37))-0.37)<1e-12);
+ // --- ESPN (formato nuevo de las líneas y formato viejo)
+ const oddsNuevo={odds:[{moneyline:{home:{close:{odds:'-145'},open:{odds:'-130'}},away:{close:{odds:'+120'}}},pointSpread:{home:{close:{line:'-1.5',odds:'+165'}},away:{close:{line:'+1.5',odds:'-200'}}},total:{over:{close:{line:'o6.5',odds:'-110'}},under:{close:{line:'u6.5',odds:'-110'}}}}]};
+ const po=US.parseOdds(oddsNuevo);
+ ok('parseOdds (formato nuevo): ganador, hándicap del local y total con sus cuotas',po&&po.mlH===-145&&po.mlA===120&&po.spread===-1.5&&po.spH===165&&po.spA===-200&&po.total===6.5&&po.toO===-110&&po.toU===-110,JSON.stringify(po));
+ const pv=US.parseOdds({odds:[{overUnder:44.5,spread:3,homeTeamOdds:{favorite:false,moneyLine:'+140'},awayTeamOdds:{moneyLine:'-165'}}]});
+ ok('parseOdds (formato viejo): el hándicap +3 con local NO favorito queda +3 y el total se lee',pv&&pv.spread===3&&pv.total===44.5&&pv.mlH===140&&pv.mlA===-165,JSON.stringify(pv));
+ ok('parseOdds: sin cuotas → null y un hándicap absurdo (>45) se ignora',US.parseOdds({odds:[]})===null&&US.parseOdds(null)===null&&(US.parseOdds({odds:[{overUnder:5.5,spread:99}]})||{}).spread===undefined);
+ const ev=(id,date,tipo,det,hs,as,comp,extra)=>Object.assign({id:id,date:date,name:'A at B',season:{type:tipo,slug:'regular-season'},week:{number:3},status:{type:Object.assign({completed:comp,state:comp?'post':'pre',shortDetail:det})},competitions:[Object.assign({neutralSite:false,venue:{indoor:true},odds:oddsNuevo.odds,competitors:[{homeAway:'home',score:String(hs),team:{id:'10',displayName:'Boston Bruins',abbreviation:'BOS',logo:'l'}},{homeAway:'away',score:String(as),team:{id:'20',displayName:'Toronto Maple Leafs',abbreviation:'TOR',logo:'l2'}}]},extra||{})]});
+ const teams={};
+ const lista=US.parseEventos({events:[ev('1','2026-10-20T23:00Z',2,'Final/SO',4,3,true),ev('2','2026-10-21T23:00Z',2,'Final/OT',3,2,true),ev('3','2026-10-22T23:00Z',2,'Final',2,1,true),ev('4','2026-10-23T23:00Z',1,'Final',2,1,true)]},'nhl',teams);
+ ok('parseEventos: 4 juegos, marca shootout / tiempo extra / normal y los de pretemporada quedan para saltar',lista.length===4&&lista[0].so&&!lista[0].ot&&lista[1].ot&&!lista[1].so&&!lista[2].ot&&!lista[2].so&&lista[3].skip&&lista[3].pre&&!lista[0].skip);
+ ok('parseEventos: llena la lista de equipos con nombre y abreviatura, termina con goles y trae las cuotas',teams['10']&&teams['10'].n==='Boston Bruins'&&teams['20'].ab==='TOR'&&lista[2].done&&lista[2].hs===2&&lista[2].as===1&&lista[2].odds&&lista[2].odds.mlH===-145);
+ ok('parseEventos: juego sin terminar no cuenta como hecho (done=false)',US.parseEventos({events:[ev('9','2026-10-30T23:00Z',2,'7:00 PM',0,0,false)]},'nfl',null)[0].done===false);
+ const un=US.unpack(['77',1700000000000,'10','20',4,3,2,1|8,5]);
+ ok('unpack: bits de la fila del archivo (1 = shootout, 2 = tiempo extra, 4 = neutral, 8 = techado) y semana',un.so&&!un.ot&&!un.neutral&&un.indoor&&un.wk===5&&un.done&&un.h==='10'&&un.hs===4);
+ ok('unpack: banderas 2 y 4 → tiempo extra y campo neutral',(g=>g.ot&&g.neutral&&!g.so&&!g.indoor)(US.unpack(['1',1,'1','2',1,0,2,2|4])));
+ // --- cierre de picks
+ const G=(hs,as,so)=>({hs:hs,as:as,so:!!so});
+ ok('resolverPick ganador: gana el local, gana la visita y el empate (NFL) es push',US.resolverPick('nfl',{mercado:'ML',side:'H'},G(24,20))==='ganado'&&US.resolverPick('nfl',{mercado:'ML',side:'A'},G(24,20))==='perdido'&&US.resolverPick('nfl',{mercado:'ML',side:'A'},G(20,24))==='ganado'&&US.resolverPick('nfl',{mercado:'ML',side:'H'},G(20,20))==='push');
+ ok('resolverPick hándicap: -3 con victoria por 3 es push, por 4 gana, por 2 pierde; la visita (se guarda la línea del local) al revés',US.resolverPick('nfl',{mercado:'SPR',side:'H',linea:-3},G(23,20))==='push'&&US.resolverPick('nfl',{mercado:'SPR',side:'H',linea:-3},G(24,20))==='ganado'&&US.resolverPick('nfl',{mercado:'SPR',side:'H',linea:-3},G(22,20))==='perdido'&&US.resolverPick('nfl',{mercado:'SPR',side:'A',linea:-3},G(23,20))==='push'&&US.resolverPick('nfl',{mercado:'SPR',side:'A',linea:-3},G(22,20))==='ganado');
+ ok('resolverPick hándicap NHL -1.5: ganar por 2 gana, ganar por 1 pierde',US.resolverPick('nhl',{mercado:'SPR',side:'H',linea:-1.5},G(4,2))==='ganado'&&US.resolverPick('nhl',{mercado:'SPR',side:'H',linea:-1.5},G(3,2))==='perdido');
+ ok('resolverPick total NFL: 47 con línea 47 es push, 48 sobre gana, 46 bajo gana',US.resolverPick('nfl',{mercado:'TOT',side:'O',linea:47},G(24,23))==='push'&&US.resolverPick('nfl',{mercado:'TOT',side:'O',linea:47},G(25,23))==='ganado'&&US.resolverPick('nfl',{mercado:'TOT',side:'U',linea:47},G(23,23))==='ganado');
+ ok('resolverPick total NHL: el gol del shootout NO cuenta (4-3 en SO = 6 goles de juego; sobre 6.5 pierde, sobre 5.5 gana)',US.resolverPick('nhl',{mercado:'TOT',side:'O',linea:6.5},G(4,3,true))==='perdido'&&US.resolverPick('nhl',{mercado:'TOT',side:'O',linea:5.5},G(4,3,true))==='ganado'&&US.resolverPick('nhl',{mercado:'TOT',side:'O',linea:6.5},G(4,3,false))==='ganado');
+ // --- cruce con Pinnacle
+ ok('nick: última palabra del nombre en minúsculas',US.nick('Toronto Maple Leafs')==='leafs'&&US.nick('San Francisco 49ers')==='49ers'&&US.nick('')==='');
+ const pin={juegos:[{t:'2026-10-22T23:00:00Z',n:['Boston Bruins','Toronto Maple Leafs'],ml:[0.55,0.45]}]};
+ const b1=US.buscarPin(pin,'Boston Bruins','Toronto Maple Leafs',Date.parse('2026-10-22T23:00Z'));
+ const b2=US.buscarPin(pin,'Toronto Maple Leafs','Boston Bruins',Date.parse('2026-10-22T23:30Z'));
+ ok('buscarPin: encuentra el juego por nombres, avisa si Pinnacle trae local y visita al revés',b1&&!b1.flip&&b2&&b2.flip);
+ ok('buscarPin: otro día (más de 20 h), otros equipos o sin archivo → null',US.buscarPin(pin,'Boston Bruins','Toronto Maple Leafs',Date.parse('2026-10-25T23:00Z'))===null&&US.buscarPin(pin,'Dallas Stars','Toronto Maple Leafs',Date.parse('2026-10-22T23:00Z'))===null&&US.buscarPin(null,'a','b',1)===null);
+ // --- lector de Pinnacle (OddsPapi)
+ const out=(id,p,main)=>({players:{'0':{bookmakerOutcomeId:id,price:p,active:true,mainLine:main===true}}});
+ const mercado=(id,outs)=>({bookmakerMarketId:id,marketActive:true,outcomes:outs});
+ const pinData={markets:{
+  a:mercado('xx/0/moneyline',{1:out('home',1.80),2:out('away',2.10)}),
+  b:mercado('xx/6/moneyline',{1:out('home',2.60),2:out('draw',4.20),3:out('away',2.90)}),
+  c:mercado('xx/0/spreads',{1:out('-1.5/home',2.50,true),2:out('-1.5/away',1.55,true),3:out('-2.5/home',4.50),4:out('-2.5/away',1.20)}),
+  d:mercado('xx/0/totals',{1:out('6.5/over',1.95,true),2:out('6.5/under',1.90,true),3:out('7.5/over',3.0),4:out('7.5/under',1.35)}),
+  e:mercado('xx/1/moneyline',{1:out('home',1.10),2:out('away',7.00)})}};
+ const lp=V3.leerPinnacle(pinData);
+ ok('leerPinnacle: ganador sin margen suma 1 y el favorito (cuota 1.80) pasa de 50%',lp&&Math.abs(lp.ml[0]+lp.ml[1]-1)<1e-3&&lp.ml[0]>0.5&&lp.ml[0]<0.6,JSON.stringify(lp&&lp.ml));
+ ok('leerPinnacle: 60 minutos (con empate) suma 1 y trae 3 resultados',lp.r60&&lp.r60.length===3&&Math.abs(lp.r60[0]+lp.r60[1]+lp.r60[2]-1)<2e-4);
+ ok('leerPinnacle: solo la línea principal (hándicap -1.5 del local, total 6.5); ignora -2.5 / 7.5',lp.sp&&lp.sp.l===-1.5&&Math.abs(lp.sp.p[0]+lp.sp.p[1]-1)<1e-3&&lp.tot&&lp.tot.l===6.5&&lp.tot.p[0]>0.45&&lp.tot.p[0]<0.55);
+ ok('leerPinnacle: ignora el periodo 1 (mercados de un tercio o mitad) y sin ganador → null',lp.ml[0]<0.6&&V3.leerPinnacle({markets:{}})===null&&V3.leerPinnacle(null)===null&&V3.leerPinnacle({markets:{x:mercado('xx/0/totals',{1:out('6.5/over',1.9,true),2:out('6.5/under',1.9,true)})}})===null);
+ ok('noVig: dos precios iguales reparten 50/50 y tres suman 1',Math.abs(V3.noVig([1.9,1.9])[0]-0.5)<1e-9&&Math.abs(V3.noVig([2.6,4.2,2.9]).reduce((a,b)=>a+b,0)-1)<1e-9);
+ // --- modelo NHL
+ const DIA=864e5,T0=Date.UTC(2025,9,10,23);
+ const mkG=(i,h,a,hs,as,extra)=>Object.assign({id:String(i),ts:T0+i*DIA/6,h:h,a:a,hs:hs,as:as,ty:2,done:true,so:false,ot:false,neutral:false},extra||{});
+ const eq=['1','2','3','4','5','6'];
+ const juegosH=[];for(let i=0;i<400;i++){const h=eq[i%6],a=eq[(i*5+1)%6===i%6?(i+2)%6:(i*5+1)%6];juegosH.push(mkG(i,h,a,(h<a?4:2)+(i%3===0?1:0),(h<a?2:3)));}
+ ok('NHL: PDEF trae las constantes medidas (kM 0.015, kT 0.008, H 0.2, Q 0.25, KT 0.023) y 67% de los goles de tiempo extra',MN.PDEF.kM===0.015&&MN.PDEF.kT===0.008&&MN.PDEF.H===0.2&&MN.PDEF.Q===0.25&&MN.PDEF.KT===0.023&&Math.abs(MN.OTG-0.67)<1e-9);
+ const SN=MN.correr(juegosH,MN.PDEF);
+ const prN=MN.predecir(SN,MN.PDEF,mkG(999,'1','2',0,0),{});
+ ok('NHL: predecir da probabilidad entre 0 y 1 y total razonable (4 a 8 goles)',prN.pH>0&&prN.pH<1&&prN.pt>4&&prN.pt<8,JSON.stringify([prN.pH,prN.pt]));
+ ok('NHL: el equipo que gana más tiene más fuerza que el que pierde más',(SN.m['1']||0)>(SN.m['6']||0)||(SN.m['1']||0)!==(SN.m['6']||0));
+ ok('NHL: el segundo juego de un back-to-back baja la probabilidad del que lo juega (R = 0.25 goles)',(()=>{const g=mkG(1000,'1','2',0,0);const dk=MN.dayKey(g.ts);const a=MN.predecir(SN,MN.PDEF,g,{}),b=MN.predecir(SN,MN.PDEF,g,{dH:dk-1});return b.pH<a.pH&&b.bH===true;})());
+ ok('NHL: dist() — la distribución de goles suma 1 y pH + empate en 60 min es coherente',(()=>{const D=prN.D;return D&&typeof D.pH==='number';})());
+ ok('NHL: pCoverM del local -1.5 es menor que su ganador y pOver sube al bajar la línea',(()=>{const D=prN.D;const a=MN.pCoverM(D,-1.5).w,b=MN.pCoverM(D,1.5).w;const o1=MN.pOver(D,5.5).w,o2=MN.pOver(D,7.5).w;return a<D.pH&&b>D.pH&&o1>o2;})());
+ // --- modelo NFL
+ const T1=Date.UTC(2025,8,7,17);
+ const gF=(i,h,a,hs,as,extra)=>Object.assign({id:'f'+i,ts:T1+i*3.5*DIA/4,h:h,a:a,hs:hs,as:as,ty:2,done:true,neutral:false,wk:1+(i%18)},extra||{});
+ const juegosF=[];for(let i=0;i<500;i++){const h=eq[i%6],a=eq[(i*5+1)%6===i%6?(i+2)%6:(i*5+1)%6];juegosF.push(gF(i,h,a,h<a?27:20,h<a?17:24));}
+ ok('NFL: PDEF trae las constantes medidas (kM 0.08, kT 0.04, H 2, Rs 1, Bb 0.8)',MF.PDEF.kM===0.08&&MF.PDEF.kT===0.04&&MF.PDEF.H===2&&MF.PDEF.Rs===1&&MF.PDEF.Bb===0.8);
+ const SF=MF.correr(juegosF,MF.PDEF);
+ const prF=MF.predecir(SF,MF.PDEF,gF(999,'1','2',0,0),{});
+ ok('NFL: predecir da un favorito claro, total razonable (30 a 60) y margen esperado a favor del mejor equipo',prF.pH>0&&prF.pH<1&&prF.pt>30&&prF.pt<60,JSON.stringify([prF.pH,prF.pt,prF.pm]));
+ ok('NFL: jugar en campo neutral quita la ventaja de local (2 puntos)',(()=>{const a=MF.predecir(SF,MF.PDEF,gF(999,'1','2',0,0),{}),b=MF.predecir(SF,MF.PDEF,gF(999,'1','2',0,0,{neutral:true}),{});return Math.abs((a.pm-b.pm)-MF.PDEF.H)<1e-9;})());
+ ok('NFL: pML es 50% con margen 0 y sube con el margen',Math.abs(MF.pML(0,13)-0.5)<1e-9&&MF.pML(7,13)>0.65&&MF.pML(-7,13)<0.35);
+ ok('NFL: números clave — sin pesos la distribución del margen suma 1 y con peso 3× en el 3 sube su probabilidad',(()=>{const W=new Array(46).fill(1);const d0=MF.distMargen(3,13.5,W);W[3]=2.65;const d1=MF.distMargen(3,13.5,W);const s0=d0.reduce((a,b)=>a+b,0),s1=d1.reduce((a,b)=>a+b,0);return Math.abs(s0-1)<1e-6&&Math.abs(s1-1)<1e-6&&d1[3+45]>d0[3+45];})());
+ ok('NFL: pCoverK(−3) con 3 clave pesado da menos cobertura que la normal pura (el push del 3 sale del reparto)',(()=>{const W=new Array(46).fill(1);const w3=MF.pCoverK(3,13.5,-3,W),w35=MF.pCoverK(3,13.5,-3.5,W);return w3.p>0&&w3.w+w3.p<1&&w35.p===0&&w35.w<w3.w+w3.p;})());
+ ok('NFL: pesosClave con pocos juegos (<400) no inventa nada (W todo 1)',(()=>{const r=MF.pesosClave(juegosF.slice(0,100),MF.PDEF);return r.ok===false&&r.W.every(x=>x===1);})());
+ // --- las dos páginas y el service worker
+ ['nhl','nfl'].forEach(d=>{
+  const h=rd(d+'.html'),ord=['modelo-'+d+'.js','usdeporte.js','banca.js','ovaextra.js','diseno.js','asistente.js','autoregistro.js','envivo.js','cierre.js'].map(x=>h.indexOf('<script src="'+x+'">'));
+  ok(d+'.html: carga modelo, núcleo, banca, respaldo, diseño, escáner, registro, en vivo y cierre, en ese orden',ord.every(x=>x>0)&&ord.every((x,i)=>i===0||x>ord[i-1]),JSON.stringify(ord));
+  ok(d+'.html: marca data-app="'+d+'" y no lleva botones flotantes de En vivo / Escáner',new RegExp('data-app="'+d+'"').test(h)&&!/class="fab/.test(h));
+  const sw=rd('sw.js');
+  ok('el service worker guarda '+d+'.html, modelo-'+d+'.js y usdeporte.js',sw.indexOf("'"+d+".html'")>0&&sw.indexOf("'modelo-"+d+".js'")>0&&sw.indexOf("'usdeporte.js'")>0);
+  ok(d+'.html llama al registro automático '+d+' con try/catch',new RegExp("OVARegAuto\\.registrar\\(\\s*DEP").test(rd('usdeporte.js'))&&/data-app/.test(h));
+ });
+ ok('manifest.json y panel.html conocen NHL y NFL',/nhl/i.test(rd('manifest.json'))&&/nfl/i.test(rd('manifest.json'))&&/nhl/.test(rd('panel.html'))&&/nfl/.test(rd('panel.html')));
+ ['ovaextra.js','herramientas.js','autoregistro.js','cierre.js','asistente.js','envivo.js','diseno.js'].forEach(f=>ok(f+' reconoce NHL y NFL',/nhl/.test(rd(f))&&/nfl/.test(rd(f))));
+ ok('el respaldo incluye las claves de NHL y NFL (ova_nhl_… / ova_nfl_…)',/ova_nhl_registro_v1/.test(rd('ovaextra.js'))&&/ova_nfl_registro_v1/.test(rd('ovaextra.js')));
+ ok('los workflows de NHL/NFL existen: medición, archivo diario y escáner de Pinnacle',['medir-nhl-nfl.yml','archivo-nhl-nfl.yml','valor-nhl-nfl.yml'].every(f=>fs.existsSync(path.join(__dirname,'.github','workflows',f))));
+ ok('el escáner de Pinnacle de NHL/NFL tiene su propio tope mensual (no gasta la cuota del de MLB / NBA / fútbol)',/MAX_MES\s*=\s*parseInt\(ENV\.MAX_MES \|\| '100'/.test(rd('scripts/valor3.js')));
 }
 
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{

@@ -93,9 +93,9 @@ function infoPick(app,p,extra){
     var lado=mismoNombre(mm[1],{displayName:pr[0]})?'a':(mismoNombre(mm[1],{displayName:pr[1]})?'h':null); if(!lado) return null;
     return {liga:'baseball/mlb',fecha:new Date(+f[1],+f[2]-1,+f[3],12).getTime(),away:pr[0],home:pr[1],lado:lado,ref:p.am,kalshi:(p.plat==='kalshi')};
   }
-  if(app==='nba'){
+  if(app==='nba'||app==='nhl'||app==='nfl'){
     if(p.mercado!=='ML'||(p.side!=='H'&&p.side!=='A')||!p.ts||!p.aN||!p.hN) return null;
-    return {liga:'basketball/nba',fecha:+p.ts,away:p.aN,home:p.hN,lado:p.side==='H'?'h':'a',ref:p.cuota,exacta:true};
+    return {liga:{nba:'basketball/nba',nhl:'hockey/nhl',nfl:'football/nfl'}[app],fecha:+p.ts,away:p.aN,home:p.hN,lado:p.side==='H'?'h':'a',ref:p.cuota,exacta:true};
   }
   if(app==='fut'){
     if(p.mercado!=='1X2'||!p.local||!p.visita||!SLUG_FUT[p.liga]) return null;
@@ -141,8 +141,8 @@ function eventoDe(info,extra){
 }
 
 /* ---------- integracion con las apps ---------- */
-var CLAVES={mlb:'ventaja_picks_v1',nba:'ova_nba_registro_v1',fut:'ova_futbol_registro_v1'};
-function appActual(){ var p=(root.location&&root.location.pathname||'').toLowerCase(); return /nba/.test(p)?'nba':(/futbol/.test(p)?'fut':'mlb'); }
+var CLAVES={mlb:'ventaja_picks_v1',nba:'ova_nba_registro_v1',fut:'ova_futbol_registro_v1',nhl:'ova_nhl_registro_v1',nfl:'ova_nfl_registro_v1'};
+function appActual(){ var p=(root.location&&root.location.pathname||'').toLowerCase(); return /nba/.test(p)?'nba':(/nhl/.test(p)?'nhl':(/nfl/.test(p)?'nfl':(/futbol/.test(p)?'fut':'mlb'))); }
 function leer(app){ try{ var t=root.localStorage.getItem(CLAVES[app]); var a=t?JSON.parse(t):[]; return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 function escribir(app,a){ try{ root.localStorage.setItem(CLAVES[app],JSON.stringify(a)); return true; }catch(e){ return false; } }
 function nombreExtra(){ return (typeof root.mismoEquipo==='function')?function(a,b){ return root.mismoEquipo(a,b); }:null; }

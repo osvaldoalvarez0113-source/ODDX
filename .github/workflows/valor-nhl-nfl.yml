@@ -1,0 +1,75 @@
+name: Pinnacle NHL y NFL
+
+# Guarda pinnacle-nhl.json y pinnacle-nfl.json (precio justo de Pinnacle sin margen: ganador, handicap y total principal).
+# Gasta pocas llamadas de OddsPapi: NHL dos veces al dia, NFL solo los dias con juegos (tope propio de 100 al mes).
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "40 15 * * *"
+    - cron: "10 22 * * *"
+  push:
+    branches: [main]
+    paths:
+      - scripts/valor3.js
+      - .github/workflows/valor-nhl-nfl.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: valor-nhl-nfl
+  cancel-in-progress: false
+
+jobs:
+  escaner:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/cache/restore@v4
+        with:
+          path: .cache
+          key: valor3-${{ github.run_id }}
+          restore-keys: valor3-
+      - name: Elegir deportes del dia
+        run: |
+          DOW=$(date -u +%u)   # 1=lunes ... 7=domingo
+          HORA=$(date -u +%H)
+          SOLO="nhl"
+          # NFL: juega jueves, domingo y lunes (y algo de sabado/viernes al final de la temporada). El martes no hay nada que traer.
+          if [ "$DOW" != "2" ] && [ "$HORA" -lt 20 ]; then SOLO="nhl,nfl"; fi
+          if [ "$DOW" = "7" ] || [ "$DOW" = "4" ] || [ "$DOW" = "1" ]; then SOLO="nhl,nfl"; fi
+          echo "SOLO=$SOLO" >> "$GITHUB_ENV"
+          echo "Deportes de esta corrida: $SOLO"
+      - name: Traer precios de Pinnacle
+        env:
+          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_KEY }}
+        run: node scripts/valor3.js
+      - name: Guardar los datos en la app
+        if: always()
+        continue-on-error: true
+        run: |
+          git config user.name "escaner-ova"
+          git config user.email "escaner-ova@users.noreply.github.com"
+          git add -f pinnacle-nhl.json pinnacle-nfl.json 2>/dev/null || true
+          if git diff --cached --quiet; then echo "Sin cambios que guardar"; exit 0; fi
+          git commit -q -m "mercado: precios de Pinnacle (NHL y NFL)"
+          git pull --rebase -q || true
+          git push -q origin HEAD
+      - name: Guardar el informe
+        if: always()
+        continue-on-error: true
+        run: |
+          [ -f resultado3.md ] || exit 0
+          mkdir -p /tmp/inf && cp resultado3.md /tmp/inf/escaner3.md && cd /tmp/inf
+          git init -q -b escaner3 && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add escaner3.md && git commit -q -m "informe"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" escaner3
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: .cache
+          key: valor3-${{ github.run_id }}

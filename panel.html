@@ -111,6 +111,8 @@ h1{font-family:var(--cond);font-weight:800;font-size:27px;line-height:1.2;
 .mlb .glow{background:radial-gradient(circle,rgba(240,206,107,.28),transparent 70%)}
 .fut .glow{background:radial-gradient(circle,rgba(111,211,154,.22),transparent 70%)}
 .nba .glow{background:radial-gradient(circle,rgba(232,137,44,.26),transparent 70%)}
+.nhl .glow{background:radial-gradient(circle,rgba(90,200,250,.24),transparent 70%)}
+.nfl .glow{background:radial-gradient(circle,rgba(192,132,252,.24),transparent 70%)}
 
 .ico{position:relative;z-index:1;flex:0 0 auto;width:52px;height:52px;border-radius:14px;
  display:flex;align-items:center;justify-content:center;font-size:24px;
@@ -192,7 +194,7 @@ h1{font-family:var(--cond);font-weight:800;font-size:27px;line-height:1.2;
 <script>
 (function(){
  function esc(s){ return String(s==null?'':s).replace(/[<>&"]/g,function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); }
- var NOM={mlb:'MLB',fut:'FÚT',nba:'NBA'};
+ var NOM={mlb:'MLB',fut:'FÚT',nba:'NBA',nhl:'NHL',nfl:'NFL'};
  function hace(ms){ var h=ms/3600000; if(h<1) return 'hace '+Math.max(1,Math.round(h*60))+' min'; if(h<48) return 'hace '+Math.round(h)+' h'; return 'hace '+Math.round(h/24)+' días'; }
  function pintarHoy(){
   var body=document.getElementById('hoyBody'); if(!body) return;
@@ -200,7 +202,7 @@ h1{font-family:var(--cond);font-weight:800;font-size:27px;line-height:1.2;
   var R=OVAHoy.resumen(localStorage,Date.now()), h='';
   document.getElementById('hoyFecha').textContent=OVAHoy.hoyLocal();
   h+='<div class="rec">';
-  ['mlb','fut','nba'].forEach(function(a){
+  ['mlb','fut','nba','nhl','nfl'].forEach(function(a){
    var r=R.rec[a], u=r.u, res=r.g+'-'+r.p+(r.e?'-'+r.e:'');
    h+='<div class="'+(r.g+r.p+r.e? (u>=0?'pos':'neg') : '')+'"><b>'+(r.g+r.p+r.e?(u>=0?'+':'')+u.toFixed(1)+'u':'—')+'</b><span>'+NOM[a]+' · '+res+(r.pend?' · '+r.pend+' pend.':'')+'</span></div>';
   });
@@ -219,7 +221,7 @@ h1{font-family:var(--cond);font-weight:800;font-size:27px;line-height:1.2;
    R.tops.forEach(function(t){ h+='<div class="lin"><span class="tg">'+NOM[t.app]+'</span><div class="tx">'+esc(t.n)+'<small>'+esc(t.sub)+'</small></div><div class="pc">'+t.p.toFixed(1)+'%</div></div>'; });
   }
   var viejos=[];
-  ['mlb','fut','nba'].forEach(function(a){
+  ['mlb','fut','nba','nhl','nfl'].forEach(function(a){
    var s=R.apps[a];
    if(!s) viejos.push(NOM[a]+': aún no has corrido «Al gane»');
    else if(!s.vigente) viejos.push(NOM[a]+': última vez '+hace(Date.now()-s.t)+' (abre la app para actualizar)');

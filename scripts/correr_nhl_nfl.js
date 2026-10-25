@@ -248,7 +248,7 @@ async function medir(dep) {
         if (wv - q >= e) bets.push({ odds: po[0], v: resCubre(dep, r.g, l.sp) }); else if ((1 - wv) - (1 - q) >= e) bets.push({ odds: po[1], v: -resCubre(dep, r.g, l.sp) }); });
       const a = apuestas(bets); rows.push([nom, (e * 100).toFixed(0) + ' pts'].concat(fa(a)));
     };
-    [0.03, 0.05, 0.08].forEach(e => evalEdge(dep === 'nfl' ? 'Normal' : 'Poisson', (r, Lh) => A.cubre(r, Lh), e));
+    [0.03, 0.05, 0.08].forEach(e => evalEdge(dep === 'nfl' ? 'Normal' : 'Poisson', (r, Lh) => (dep === 'nfl' ? A.cubreN(r, Lh) : A.cubre(r, Lh)), e));
     if (dep === 'nfl') [0.03, 0.05, 0.08].forEach(e => evalEdge('Con números clave', (r, Lh) => r.K ? M.pCoverK(r.pm, r.sM, Lh, r.K) : null, e));
     log('\n## 6) ' + (dep === 'nfl' ? 'Handicap (spread)' : 'Línea de gol (±1.5)') + ': apostar cuando la probabilidad del modelo de cubrir difiere de la del precio\n' + L.tabla(['Modelo', 'Diferencia mínima', 'Apuestas', 'G-P-Push', '% ganadas', 'ROI ± 2·se', 'z'], rows));
     if (dep === 'nfl') {

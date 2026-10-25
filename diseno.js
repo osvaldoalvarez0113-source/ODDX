@@ -91,10 +91,12 @@ function versionApp(){
  if(!v){ var e=$('.ver'); if(e) v=(e.textContent||'').trim(); }
  return v;
 }
-function nombreApp(a){ return a==='mlb'?'OVA MLB':(a==='fut'?'OVA Fútbol':'OVA NBA'); }
+function nombreApp(a){ return a==='mlb'?'OVA MLB':(a==='fut'?'OVA Fútbol':(a==='nhl'?'OVA NHL':(a==='nfl'?'OVA NFL':'OVA NBA'))); }
 function fuentesApp(a){
  return a==='mlb'?'Datos: MLB StatsAPI y Open-Meteo. Modelo propio de OVA (diferencial de abridores, bullpen y ofensiva).'
   :a==='fut'?'Datos: ESPN y worldfootball.net. Modelo Poisson con corrección Dixon-Coles.'
+  :a==='nhl'?'Datos: ESPN (3 temporadas completas + la actual) y Pinnacle. Modelo de goles Poisson con tiempo extra; el mercado manda.'
+  :a==='nfl'?'Datos: ESPN (3 temporadas completas + la actual) y Pinnacle. Modelo de rating de margen con números clave 3 y 7; el mercado manda.'
   :'Datos: ESPN (3 temporadas). Modelo de rating de margen con aproximación normal.';
 }
 function tarjetaVersion(a){
@@ -216,7 +218,8 @@ function unificarNBA(){
  var porV=function(k){ return $('[data-v="'+k+'"]',barra); };
  diagEnEncabezado();
  ponerLabel(porV('vReg'),'Mis picks');
- var aj=armarAjustes('nba',{
+ var apDeApp=d.documentElement.getAttribute('data-app'); apDeApp=(apDeApp==='nhl'||apDeApp==='nfl')?apDeApp:'nba';
+ var aj=armarAjustes(apDeApp,{
   attr:'data-v',
   tabBtn:porV,
   respaldoRango:function(){

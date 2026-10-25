@@ -99,6 +99,8 @@ h1{font-family:var(--cond);font-weight:800;font-size:27px;line-height:1.2;
 .card:nth-child(1){animation-delay:.52s}
 .card:nth-child(2){animation-delay:.64s}
 .card:nth-child(3){animation-delay:.76s}
+.card:nth-child(4){animation-delay:.88s}
+.card:nth-child(5){animation-delay:1s}
 @keyframes cardIn{to{opacity:1;transform:none}}
 .card:active{transform:scale(.975)}
 .card::before{
@@ -112,6 +114,8 @@ h1{font-family:var(--cond);font-weight:800;font-size:27px;line-height:1.2;
 .mlb .glow{background:radial-gradient(circle,rgba(240,206,107,.28),transparent 70%)}
 .fut .glow{background:radial-gradient(circle,rgba(111,211,154,.22),transparent 70%)}
 .nba .glow{background:radial-gradient(circle,rgba(232,137,44,.26),transparent 70%)}
+.nhl .glow{background:radial-gradient(circle,rgba(90,200,250,.24),transparent 70%)}
+.nfl .glow{background:radial-gradient(circle,rgba(192,132,252,.24),transparent 70%)}
 
 .ico{position:relative;z-index:1;flex:0 0 auto;width:52px;height:52px;border-radius:14px;
  display:flex;align-items:center;justify-content:center;font-size:24px;
@@ -151,7 +155,7 @@ h1{font-family:var(--cond);font-weight:800;font-size:27px;line-height:1.2;
 <div class="wrap">
  <div class="brandbar"><div class="brand">O V A <span>&middot;</span></div></div>
  <h1>&iquest;Qu&eacute; deporte hoy?</h1>
- <p class="sub">Ventaja calculada, cuota justa y valor real contra el mercado &mdash; MLB, f&uacute;tbol y NBA.</p>
+ <p class="sub">Ventaja calculada, cuota justa y valor real contra el mercado &mdash; MLB, f&uacute;tbol, NBA, NHL y NFL.</p>
 
  <div class="grid">
   <a class="card mlb" href="index.html">
@@ -175,12 +179,26 @@ h1{font-family:var(--cond);font-weight:800;font-size:27px;line-height:1.2;
    <div class="badge">Live</div>
    <div class="arrow">&rsaquo;</div>
   </a>
+  <a class="card nhl" href="nhl.html">
+   <div class="glow"></div>
+   <div class="ico">&#127954;</div>
+   <div class="txt"><b>NHL</b><span>Goles, tiempo extra, l&iacute;nea de gol y total</span></div>
+   <div class="badge">Nuevo</div>
+   <div class="arrow">&rsaquo;</div>
+  </a>
+  <a class="card nfl" href="nfl.html">
+   <div class="glow"></div>
+   <div class="ico">&#127944;</div>
+   <div class="txt"><b>NFL</b><span>H&aacute;ndicap con n&uacute;meros clave (3 y 7) y total</span></div>
+   <div class="badge">Nuevo</div>
+   <div class="arrow">&rsaquo;</div>
+  </a>
  </div>
 
  <div class="foot">
   <a class="herr" href="herramientas.html">&#128202; Herramientas<span>marcador de resultados, banca con topes y comparador de casas</span></a>
   <h2>Apariencia</h2>
-  <p>El tema Oro negro es el que ves aqu&iacute;. Puedes cambiarlo desde cualquiera de las tres apps, en Ajustes &rarr; 🎨.</p>
+  <p>El tema Oro negro es el que ves aqu&iacute;. Puedes cambiarlo desde cualquiera de las cinco apps, en Ajustes &rarr; 🎨.</p>
  </div>
 </div>
 

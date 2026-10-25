@@ -276,11 +276,12 @@ if(!doc) return;
 /* ---------- pantalla ---------- */
 function appActual(){
  var a=doc.documentElement.getAttribute('data-app')||'';
- if(a==='mlb'||a==='fut'||a==='nba') return a;
+ if(a==='mlb'||a==='fut'||a==='nba'||a==='nhl'||a==='nfl') return a;
  var p=(root.location&&root.location.pathname)||'';
- return /futbol/.test(p)?'fut':(/nba/.test(p)?'nba':'mlb');
+ return /futbol/.test(p)?'fut':(/nba/.test(p)?'nba':(/nhl/.test(p)?'nhl':(/nfl/.test(p)?'nfl':'mlb')));
 }
 var APP=appActual();
+var USP={nhl:'hockey/nhl',nfl:'football/nfl'};
 var S={prevSc:{},sinLang:false,open:false,view:'list',games:[],cur:null,det:null,tab:'',filt:'all',timer:null,pollList:null,req:0,seen:{},cargado:false,error:'',upd:0,scroll:0};
 var sheet=null,fab=null,bodyEl=null,titleEl=null,backEl=null,fabN=null;
 
@@ -395,6 +396,9 @@ function cargarLista(){
   var fechas=[ymd(hoy)]; if(hoy.getHours()<6) fechas.push(ymd(ayer));
   var viaEspn=function(){ return Promise.all(fechas.map(function(f){ return getJSON(ESPN+'basketball/nba/scoreboard?dates='+f+'&limit=100').then(function(j){ return parseEspnEventos(j,'NBA','').map(function(g){ g.src='espn'; return g; }); }).catch(function(){ return null; }); })).then(function(rs){ var ok=rs.filter(function(r){ return r; }); if(!ok.length) throw new Error('sin ESPN'); return [].concat.apply([],ok); }); };
   ps=[(NBA_OFF?Promise.reject(new Error('NBA.com no deja leer sus datos desde otra página web')):getJSON(NBACDN+'scoreboard/todaysScoreboard_00.json')).then(parseNbaScoreboard).then(function(l){ if(!l.length) throw new Error('vacío'); NBA_ERR=''; return l; }).catch(function(e){ NBA_OFF=true; NBA_ERR=String((e&&e.message)||e).slice(0,70); return viaEspn(); }).catch(function(){ return null; })];
+ } else if(APP==='nhl'||APP==='nfl'){
+  var f3=[ymd(hoy)]; if(hoy.getHours()<6) f3.push(ymd(ayer));
+  ps=f3.map(function(f){ return getJSON(ESPN+USP[APP]+'/scoreboard?dates='+f+'&limit=100').then(function(j){ return parseEspnEventos(j,APP==='nhl'?'NHL':'NFL',''); }).catch(function(){ return null; }); });
  } else if(APP==='fut'){
   ps=LIGAS.map(function(l){ return getJSON(ESPN+'soccer/'+l[0]+'/scoreboard').then(function(j){ return parseEspnEventos(j,l[1],l[0]); }).catch(function(){ return null; }); });
  } else {
@@ -416,6 +420,7 @@ function actualizarFab(){
 function urlDetalle(g){
  var q=S.sinLang?'':'&lang=es&region=us';
  if(APP==='nba') return ESPN+'basketball/nba/summary?event='+g.id+q;
+ if(APP==='nhl'||APP==='nfl') return ESPN+USP[APP]+'/summary?event='+g.id+q;
  if(APP==='fut') return ESPN+'soccer/'+g.slug+'/summary?event='+g.id+q;
  /* la API de MLB guarda cada respuesta 10 s en caché y hasta 30 s más «mientras se renueva»: sin este parámetro el dato puede llegar con ~40 s de edad. Un valor distinto en cada pedido salta esa copia. */
  return MLBAPI+'v1.1/game/'+g.id+'/feed/live'+(g.state==='in'?'?_='+Date.now():'');
@@ -435,7 +440,7 @@ function tick(){
  if(doc.hidden||!S.open) return;
  if(S.view==='game') cargarDetalle(); else cargarLista().then(pintar);
 }
-function msVivo(g){ return (g&&g.state==='in')?(APP==='mlb'?6000:(APP==='nba'?5000:6000)):10000; }
+function msVivo(g){ return (g&&g.state==='in')?(APP==='mlb'?6000:(APP==='nba'?5000:(APP==='nfl'?8000:6000))):10000; }
 function programar(){
  if(S.timer){ clearInterval(S.timer); S.timer=null; }
  if(!S.open) return;
@@ -529,6 +534,54 @@ function cabeceraEspn(j,g){
  if(h&&!home.logo) home.logo=g.home.logo; if(a&&!away.logo) away.logo=g.away.logo;
  var det=detalleCorto(ty.shortDetail||ty.detail||'')||g.det;
  return {home:home,away:away,state:state,det:det,clock:st.displayClock||''};
+}
+
+/* ---------- NHL y NFL (ESPN): marcador por periodo, anotaciones, jugadas y estadisticas ---------- */
+var MAPA_NHL=[['shotsTotal','Tiros'],['hits','Golpes'],['blockedShots','Tiros bloqueados'],['takeaways','Robos de disco'],['giveaways','Pérdidas de disco'],['faceoffPercent','% de face-offs',1],['powerPlayGoals','Goles en power play'],['penaltyMinutes','Minutos de castigo']];
+var MAPA_NFL=[['totalYards','Yardas totales'],['netPassingYards','Yardas por aire'],['rushingYards','Yardas por tierra'],['firstDowns','Primeros downs'],['turnovers','Pérdidas de balón'],['totalPenaltiesYards','Castigos (cant-yardas)'],['possessionTime','Posesión']];
+function perUS(n){ n=+n; if(APP==='nhl') return n<=3?(n+'º'):(n===4?'OT':(n===5?'SO':'OT'+(n-3))); return n<=4?('Q'+n):(n===5?'OT':'OT'+(n-4)); }
+function jugadasUS(j){
+ var plays=[], sc=[], seen={};
+ function add(p,lista){
+  if(!p||p.id==null) return; var id=String(p.id); if(lista===plays&&seen[id]) return; if(lista===plays) seen[id]=1;
+  lista.push({id:id,txt:String(p.text||p.shortText||''),ty:(p.type&&p.type.text)||'',per:p.period&&p.period.number,clk:(p.clock&&p.clock.displayValue)||'',as:p.awayScore,hs:p.homeScore,tid:String((p.team&&p.team.id)||''),sc:!!p.scoringPlay||lista===sc});
+ }
+ ((j&&j.scoringPlays)||[]).forEach(function(p){ add(p,sc); });
+ ((j&&j.plays)||[]).forEach(function(p){ add(p,plays); });
+ var dr=j&&j.drives; if(dr){ (dr.previous||[]).concat(dr.current?[dr.current]:[]).forEach(function(d){ ((d&&d.plays)||[]).forEach(function(p){ add(p,plays); }); }); }
+ return {plays:plays,sc:sc};
+}
+function lineaUS(j,Hm,A){
+ var c=((((j||{}).header||{}).competitions||[])[0])||{}, cs=c.competitors||[], h=null, a=null;
+ cs.forEach(function(x){ if(x.homeAway==='home') h=x; else if(x.homeAway==='away') a=x; });
+ var n=Math.max((h&&h.linescores||[]).length,(a&&a.linescores||[]).length); if(!n) return '';
+ var hd='<tr><th></th>', ra='<tr><td class="n">'+esc(A.ab)+'</td>', rh='<tr><td class="n">'+esc(Hm.ab)+'</td>';
+ for(var i=0;i<n;i++){ hd+='<th>'+perUS(i+1)+'</th>'; ra+='<td>'+esc((a&&a.linescores&&a.linescores[i]&&a.linescores[i].displayValue)||'–')+'</td>'; rh+='<td>'+esc((h&&h.linescores&&h.linescores[i]&&h.linescores[i].displayValue)||'–')+'</td>'; }
+ hd+='<th>T</th></tr>'; ra+='<td><b>'+esc(A.score)+'</b></td></tr>'; rh+='<td><b>'+esc(Hm.score)+'</b></td></tr>';
+ return '<div class="evCard" style="overflow-x:auto"><table class="evLs">'+hd+ra+rh+'</table></div>';
+}
+function feedUS(l,A,Hm){
+ if(!l.length) return '<div class="evVacio">Todavía no hay jugadas.</div>';
+ return '<div class="evFeed">'+l.map(function(p){
+  var eq=p.tid===String(Hm.id)?Hm.ab:(p.tid===String(A.id)?A.ab:'');
+  return '<div class="evItem'+(p.sc?' g':'')+'"><span class="t">'+(p.per?esc(perUS(p.per))+' ':'')+esc(p.clk)+'</span><span class="x">'+esc(tr(p.txt))+(eq&&p.sc?' · '+esc(eq):'')+'</span>'+(p.sc&&p.as!=null&&p.hs!=null?'<span class="sc">'+esc(p.as)+'-'+esc(p.hs)+'</span>':'')+'</div>';
+ }).join('')+'</div>';
+}
+function renderUS(g){
+ var j=S.det||{}, H=cabeceraEspn(j,g), A=H.away, Hm=H.home; ESTADO[g.key]=H.state;
+ var s=cabecera(g,H,A,Hm), tab=(S.tab==='jug'||S.tab==='est')?S.tab:'res';
+ if(H.state==='pre') return s+'<div class="evCard"><div class="evVacio">El juego todavía no empieza. Cuando arranque verás aquí el marcador por periodo, las anotaciones y las jugadas.</div></div>'+nota('ESPN',APP);
+ var J=jugadasUS(j);
+ s+=lineaUS(j,Hm,A);
+ s+='<div class="evTabs"><div role="button" tabindex="0" class="evTab'+(tab==='res'?' on':'')+'" data-a="tab" data-v="res">Anotaciones</div><div role="button" tabindex="0" class="evTab'+(tab==='jug'?' on':'')+'" data-a="tab" data-v="jug">Jugadas</div><div role="button" tabindex="0" class="evTab'+(tab==='est'?' on':'')+'" data-a="tab" data-v="est">Estadísticas</div></div>';
+ if(tab==='res'){
+  s+='<div class="evCard"><h3>'+(APP==='nhl'?'Goles':'Touchdowns y goles de campo')+'</h3>'+(J.sc.length?feedUS(J.sc.slice().reverse(),A,Hm):'<div class="evVacio">Todavía no hay anotaciones.</div>')+'</div>';
+ } else if(tab==='jug'){
+  s+='<div class="evCard"><h3>Jugada por jugada</h3>'+feedUS(J.plays.slice(-60).reverse(),A,Hm)+'</div>';
+ } else {
+  s+='<div class="evCard"><div class="evMatch"><div><b>'+esc(A.ab)+'</b></div><div><b>'+esc(Hm.ab)+'</b></div></div>'+barras(statsPor(j,Hm.id,A.id,APP==='nhl'?MAPA_NHL:MAPA_NFL),A,Hm,false)+'</div>';
+ }
+ return s+nota('ESPN',APP);
 }
 
 /* ---------- fútbol ---------- */
@@ -666,12 +719,12 @@ function renderLista(){
 /* ---------- pintar ---------- */
 function pintar(){
  if(!sheet||!S.open) return;
- var y=sheet.scrollTop, html='', nombre=({mlb:'MLB',fut:'Fútbol',nba:'NBA'})[APP];
+ var y=sheet.scrollTop, html='', nombre=({mlb:'MLB',fut:'Fútbol',nba:'NBA',nhl:'NHL',nfl:'NFL'})[APP];
  if(S.view==='game'&&S.cur){
   titleEl.firstChild.nodeValue=(APP==='fut'?S.cur.home.ab+' vs '+S.cur.away.ab:S.cur.away.ab+' @ '+S.cur.home.ab); titleEl.lastChild.textContent=S.cur.liga||nombre;
   backEl.style.visibility='visible';
   if(!S.det) html='<div class="evVacio">'+(S.error?esc(S.error):'Cargando el juego…')+'</div>';
-  else { try{ html=(APP==='nba'?renderNBA(S.cur):(APP==='fut'?renderFut(S.cur):renderMLB(S.cur))); }catch(e){ html='<div class="evVacio">No pude dibujar este juego con los datos que llegaron.</div>'; if(root.console) root.console.error('envivo',e); } }
+  else { try{ html=(APP==='nba'?renderNBA(S.cur):(APP==='fut'?renderFut(S.cur):((APP==='nhl'||APP==='nfl')?renderUS(S.cur):renderMLB(S.cur)))); }catch(e){ html='<div class="evVacio">No pude dibujar este juego con los datos que llegaron.</div>'; if(root.console) root.console.error('envivo',e); } }
  } else {
   titleEl.firstChild.nodeValue='En vivo'; titleEl.lastChild.textContent=nombre; backEl.style.visibility='hidden'; html=renderLista();
  }
@@ -683,7 +736,7 @@ function pintar(){
 function abrirJuego(key){
  var g=null; for(var i=0;i<S.games.length;i++) if(S.games[i].key===key){ g=S.games[i]; break; }
  if(!g) return;
- S.view='game'; S.cur=g; S.det=null; S.error=''; S.filt='all'; S.tab=(APP==='nba'||APP==='fut'?'cancha':''); S.listY=sheet.scrollTop;
+ S.view='game'; S.cur=g; S.det=null; S.error=''; S.filt='all'; S.tab=(APP==='nba'||APP==='fut'?'cancha':(APP==='nhl'||APP==='nfl'?'res':'')); S.listY=sheet.scrollTop;
  sheet.scrollTop=0; pintar();
  if(g.state==='pre'&&APP!=='mlb'){ S.det={}; pintar(); } else cargarDetalle();
  programar();
@@ -1059,7 +1112,7 @@ function juegoDe(el){
  }
  return null;
 }
-function porDefecto(){ return (APP==='nba'||APP==='fut')?'cancha':''; }
+function porDefecto(){ return (APP==='nba'||APP==='fut')?'cancha':((APP==='nhl'||APP==='nfl')?'res':''); }
 function pintarInline(){
  if(!I) return;
  if(!doc.contains(I.pane)){ pararInline(); return; }
@@ -1067,7 +1120,7 @@ function pintarInline(){
  S.cur=I.g; S.det=I.det; S.tab=I.tab; S.filt=I.filt; S.error=I.error;
  try{
   if(!I.det) html='<div class="evVacio">'+(I.error?esc(I.error):'Cargando el juego…')+'</div>';
-  else html=(APP==='nba'?renderNBA(I.g):(APP==='fut'?renderFut(I.g):renderMLB(I.g)));
+  else html=(APP==='nba'?renderNBA(I.g):(APP==='fut'?renderFut(I.g):((APP==='nhl'||APP==='nfl')?renderUS(I.g):renderMLB(I.g))));
  }catch(e){ html='<div class="evVacio">No pude dibujar este juego con los datos que llegaron.</div>'; if(root.console) root.console.error('envivo',e); }
  I.tab=S.tab; I.filt=S.filt;
  S.cur=sv.cur; S.det=sv.det; S.tab=sv.tab; S.filt=sv.filt; S.error=sv.error;
