@@ -1038,6 +1038,10 @@ sec('Registro automático: guarda ANTES del juego, resuelve solo y mide con prec
   a2.arr[0].res='L';
   const a3=RA.aplicarRegistro(a2.arr,'mlb',[{ts:AHORA+2*H,local:'Boston Red Sox',visita:'New York Yankees',p:{L:0.9,A:0.1}}],AHORA+H);
   ok('un juego ya resuelto no se vuelve a tocar',a3.arr[0].m1.L===0.58&&a3.tocados.length===0);
+  const lejos=RA.aplicarRegistro([],'nba',[{ts:AHORA+10*24*H,local:'A',visita:'B',p:{L:0.6,A:0.4}},{ts:AHORA+40*H,local:'C',visita:'D',p:{L:0.6,A:0.4}}],AHORA);
+  ok('solo se guardan juegos de las próximas 48 h (un partido de dentro de 10 días no)',lejos.arr.length===1&&lejos.arr[0].local==='C');
+  const vieja=[{id:'v',app:'nba',ts:AHORA+9*24*H,res:null,m1:{L:0.5,A:0.5}},{id:'w',app:'nba',ts:AHORA+9*24*H,res:null,k1:{L:0.5,A:0.5},m1:{L:0.5,A:0.5}}];
+  ok('se limpia lo guardado con muchos días de anticipación sin precio de mercado, pero no lo que ya tiene precio',RA.aplicarRegistro(vieja,'nba',[],AHORA).arr.length===1);
   ok('el id lleva app, fecha y los dos equipos sin acentos ni signos',RA.idDe('fut',AHORA,'Atlético Madrid','Real Sociedad').split('|')[2]==='atleticomadrid');
   // el mercado solo cuenta si se tomó antes del inicio
   const r={ts:AHORA+H}; ok('un precio de mercado tomado con el juego empezado se rechaza',RA.aplicarMercado(r,{L:0.5,A:0.5},'g',AHORA+2*H)===false&&!r.k1);

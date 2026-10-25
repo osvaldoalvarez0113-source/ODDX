@@ -9,7 +9,7 @@
    No usa cuotas inventadas: el ROI se calcula con el precio del mercado (sin margen, y con un margen realista del 3 %). */
 (function(root){
 "use strict";
-var KEY='ova_auto_v1', TOPE=6000;
+var KEY='ova_auto_v1', TOPE=6000, HORIZONTE=48*3600e3;   /* solo se guardan juegos que empiezan en las próximas 48 h: es lo que cubre el archivo del mercado */
 var MERC={mlb:'pinnacle-datos.json',fut:'pinnacle-futbol.json',nba:'pinnacle-nba.json'};
 var ESPN='https://site.api.espn.com/apis/site/v2/sports/';
 var DEPORTE={mlb:'baseball/mlb',nba:'basketball/nba'};
@@ -76,6 +76,7 @@ function aplicarRegistro(arr,app,lista,ahora){
  var cambios=0, tocados=[];
  (lista||[]).forEach(function(g){
   if(!g||!g.local||!g.visita||!(g.ts>ahora)) return;                 /* SOLO antes de que empiece */
+  if(g.ts>ahora+HORIZONTE) return;                                    /* y no con días de anticipación: esos aún no tienen precio de mercado */
   var m=trio(g.p); if(!m) return;
   var id=idDe(app,g.ts,g.local,g.visita), r=null, i;
   for(i=0;i<arr.length;i++){ if(arr[i]&&arr[i].id===id){ r=arr[i]; break; } }
@@ -87,6 +88,8 @@ function aplicarRegistro(arr,app,lista,ahora){
   r.m1=m; r.t1=ahora; r.ts=g.ts; if(g.liga) r.liga=g.liga; if(g.slug) r.slug=g.slug;
   cambios++; tocados.push(r);
  });
+ /* limpia lo que se guardó con demasiada anticipación y nunca tuvo precio de mercado: se vuelve a guardar bien cuando se acerque */
+ for(var j=arr.length-1;j>=0;j--){ var q=arr[j]; if(q&&!q.res&&!q.k1&&q.ts>ahora+HORIZONTE) arr.splice(j,1); }
  if(arr.length>TOPE) arr.splice(0,arr.length-TOPE);
  return {arr:arr,cambios:cambios,tocados:tocados};
 }
@@ -227,7 +230,7 @@ function veredicto(o){
 }
 function exportar(items){ return JSON.stringify({app:'ova-auto',v:1,fecha:new Date().toISOString(),n:(items||[]).length,items:items||[]}); }
 
-var API={norm:norm,fechaLocal:fechaLocal,trio:trio,idDe:idDe,cruzar:cruzar,aplicarRegistro:aplicarRegistro,aplicarMercado:aplicarMercado,
+var API={HORIZONTE:HORIZONTE,norm:norm,fechaLocal:fechaLocal,trio:trio,idDe:idDe,cruzar:cruzar,aplicarRegistro:aplicarRegistro,aplicarMercado:aplicarMercado,
  eventosDe:eventosDe,esEq:esEq,ganadorDe:ganadorDe,buscarEvento:buscarEvento,derivar:derivar,brier:brier,resumir:resumir,veredicto:veredicto,
  exportar:exportar,precio0:precio0,precio3:precio3,KEY:KEY,MARGEN:MARGEN};
 root.OVARegAuto=API;
@@ -250,8 +253,8 @@ function traerMercado(app){
 function registrar(app,lista){
  try{
   if(!MERC[app]) return Promise.resolve(0);
-  var ahora=Date.now(), arr=leer(), ap=aplicarRegistro(arr,app,lista,ahora);
-  if(!ap.tocados.length) return Promise.resolve(0);
+  var ahora=Date.now(), arr=leer(), n0=arr.length, ap=aplicarRegistro(arr,app,lista,ahora);
+  if(!ap.tocados.length){ if(ap.arr.length!==n0) escribir(ap.arr); return Promise.resolve(0); }
   escribir(ap.arr);
   return traerMercado(app).then(function(j){
    if(!j||!Array.isArray(j.juegos)) return ap.tocados.length;
