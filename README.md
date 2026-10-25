@@ -1,6 +1,6 @@
 # OVA · ODDX
 
-Apps de análisis de apuestas (MLB, fútbol y NBA) publicadas en GitHub Pages e instaladas en la pantalla de inicio del iPhone.
+Apps de análisis de apuestas (MLB, fútbol, NBA, NHL y NFL) publicadas en GitHub Pages e instaladas en la pantalla de inicio del iPhone.
 Todo corre en el navegador: no hay servidor propio salvo dos Workers de Cloudflare y un servidor opcional en Railway (ver «Piezas externas»).
 
 Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
@@ -9,10 +9,13 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 
 | Ruta | Qué es |
 |---|---|
-| `hub.html` | Pantalla de inicio: tres tarjetas (MLB, Fútbol, NBA). Es lo que abre el icono del iPhone (`manifest.json` → `start_url`). |
+| `hub.html` | Pantalla de inicio: cinco tarjetas (MLB, Fútbol, NBA, NHL, NFL). Es lo que abre el icono del iPhone (`manifest.json` → `start_url`). |
 | `index.html` | App de **MLB** (la más grande). Fórmula de ventaja en carreras, cuotas, ranking por valor, registro de picks con CLV. |
 | `futbol.html` | App de **fútbol**: Poisson / Dixon-Coles, ligas de clubes, copas y (vía `selecciones.js`) selecciones. |
 | `nba.html` | App de **NBA**: rating tipo Elo de margen, márgenes y totales. |
+| `nhl.html` + `nfl.html` + `usdeporte.js` | Apps de **NHL** y **NFL**. Comparten `usdeporte.js` (partidos de `hist-<dep>.json` + ESPN, mercado de Pinnacle o DraftKings, picks y cierre); cada una trae su modelo: `modelo-nhl.js` (Poisson de goles, tiempo extra/shootout, back-to-back) y `modelo-nfl.js` (Elo de margen, números clave 3 y 7, descanso). Medidas en `docs/MEDICION-NHL-NFL-2026-10.md`: el mercado manda, el modelo pesa 5%. |
+| `scripts/valor3.js` + `.github/workflows/valor-nhl-nfl.yml` | Escáner de Pinnacle para NHL y NFL (`pinnacle-nhl.json`, `pinnacle-nfl.json`), con su propio tope de 100 llamadas al mes. |
+| `scripts/correr_nhl_nfl.js`, `datos_nhl_nfl.js`, `archivo_nhl_nfl.js`, `lib_medir.js` | Medición contra el mercado (workflow *Medir NHL y NFL*, resultado en la rama `resultados-nhl-nfl`) y archivo diario de partidos (`hist-nhl.json`, `hist-nfl.json`). |
 | `panel.html` | Panel de respaldo y resumen del día. No está enlazado desde el hub a propósito. |
 | `sw.js`, `manifest.json`, `icon-*.png` | Service worker (red primero, sin internet usa copia), manifest e iconos de la app instalada. |
 | `ovaedge.js` | Matemática de apuestas en un solo archivo, sin dependencias (`window.OVAEdge`): quitar el vig (Shin, power, multiplicativo), Kelly fraccional con margen de error, CLV contra el cierre sin vig y su prueba t, calibración (Brier, Platt, isotónica) y Monte Carlo del juego (ML, hándicap, totales, carreras por equipo y F5 de una sola simulación). En MLB lo usan el **Chequeo contra el mercado** del Veredicto (plegado) y, en Mis picks, la prueba t del CLV y el Brier. El Monte Carlo **no** está conectado a ningún cálculo: coincide con `matriz()` (ver `docs/MEDICION-OVAEDGE-2026-10.md`). |
