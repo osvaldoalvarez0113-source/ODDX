@@ -1,41 +1,38 @@
 'use strict';
-/* SONDA 2 del mercado de prediccion (Polymarket): ¿hay una forma LIVIANA de pedir solo los partidos de futbol (1X2)?
-   Prueba varias consultas y anota estado, tamano y cuantos resultados trae cada una. */
+/* SONDA 3 de Polymarket: ¿se puede reconstruir el precio de ANTES del juego de partidos ya terminados?
+   Prueba la lista de mercados cerrados y el historial de precios (clob.polymarket.com/prices-history) con varias formas. */
 const fs = require('fs');
-const G = 'https://gamma-api.polymarket.com';
+const G = 'https://gamma-api.polymarket.com', C = 'https://clob.polymarket.com';
 fs.mkdirSync('salida_pred', { recursive: true });
 const log = []; const P = s => { log.push(s); console.log(s); };
-const ahora = Date.now(), desde = new Date(ahora - 6 * 36e5).toISOString(), hasta = new Date(ahora + 6 * 864e5).toISOString();
-async function get(path, guardar) {
+async function get(url, guardar) {
   const t0 = Date.now();
   try {
-    const r = await fetch(G + path, { headers: { accept: 'application/json', 'user-agent': 'ova-sonda/2.0' } });
+    const r = await fetch(url, { headers: { accept: 'application/json', 'user-agent': 'ova-sonda/3.0' } });
     const txt = await r.text(); let j = null; try { j = JSON.parse(txt); } catch (e) { }
-    const n = Array.isArray(j) ? j.length : (j && j.events ? j.events.length : -1);
-    P(r.status + ' · ' + (txt.length / 1e6).toFixed(2) + ' MB · ' + (Date.now() - t0) + ' ms · ' + n + ' elementos · ' + path.slice(0, 230));
-    if (guardar && j) fs.writeFileSync('salida_pred/' + guardar, JSON.stringify(j, null, 1).slice(0, 300000));
-    return j;
-  } catch (e) { P('ERROR ' + e.message + ' · ' + path.slice(0, 200)); return null; }
+    P(r.status + ' · ' + (txt.length / 1e3).toFixed(0) + ' KB · ' + (Date.now() - t0) + ' ms · ' + url.replace(/%3A/g, ':').slice(0, 230));
+    if (guardar && j) fs.writeFileSync('salida_pred/' + guardar, JSON.stringify(j, null, 1).slice(0, 200000));
+    return { j, txt, status: r.status };
+  } catch (e) { P('ERROR ' + e.message + ' · ' + url.slice(0, 200)); return { j: null, txt: '', status: 0 }; }
 }
 (async () => {
-  const sp = await get('/sports');
-  const lal = (sp || []).find(x => x.sport === 'lal'); const tag = lal ? lal.primaryTagId : 780;
-  const w = '&end_date_min=' + encodeURIComponent(desde) + '&end_date_max=' + encodeURIComponent(hasta);
-  // A) eventos de la liga en la ventana (lo que hace hoy el robot)
-  await get('/events?tag_id=' + tag + '&active=true&closed=false&limit=50' + w);
-  // B) mercados "moneyline" de la liga, sin los subeventos
-  const m1 = await get('/markets?tag_id=' + tag + '&active=true&closed=false&limit=100&sports_market_types=moneyline' + w, 'markets-sm.json');
-  const m2 = await get('/markets?tag_id=' + tag + '&active=true&closed=false&limit=100&sports_market_type=moneyline' + w);
-  const m3 = await get('/markets?tag_id=' + tag + '&active=true&closed=false&limit=100' + w, 'markets-todos.json');
-  // C) eventos con exclusion de subeventos
-  await get('/events?tag_id=' + tag + '&active=true&closed=false&limit=50&exclude_tag_id=100639' + w);
-  await get('/events?series_id=' + (lal ? lal.series : 10193) + '&active=true&closed=false&limit=50&order=startTime&ascending=true' + w, 'events-series.json');
-  // D) una consulta por slug conocido (futbol): el slug del primer partido que aparezca
-  const ev = await get('/events?tag_id=' + tag + '&active=true&closed=false&limit=20' + w);
-  const bases = (ev || []).map(e => e.slug).filter(s => /^lal-[a-z0-9]+-[a-z0-9]+-\d{4}-\d{2}-\d{2}$/.test(s));
-  P('slugs base: ' + bases.join(' '));
-  if (bases.length) await get('/events?' + bases.slice(0, 6).map(s => 'slug=' + s).join('&'));
-  if (Array.isArray(m3)) P('tipos en /markets (todos): ' + JSON.stringify(m3.reduce((a, x) => { const k = x.sportsMarketType || '?'; a[k] = (a[k] || 0) + 1; return a; }, {})));
-  if (Array.isArray(m1) && m1[0]) P('ejemplo /markets sports_market_types: ' + JSON.stringify({ slug: m1[0].slug, q: m1[0].question, g: m1[0].groupItemTitle, t: m1[0].sportsMarketType, ev: (m1[0].events || []).map(e => e.slug), o: m1[0].outcomePrices }));
+  const sp = (await get(G + '/sports')).j || [];
+  const nhl = sp.find(x => x.sport === 'nhl'), nfl = sp.find(x => x.sport === 'nfl'), lal = sp.find(x => x.sport === 'lal');
+  const ahora = Date.now(), d = n => new Date(ahora - n * 864e5).toISOString();
+  for (const [nom, m, dias] of [['nhl', nhl, 14], ['nfl', nfl, 60], ['lal', lal, 30]]) {
+    if (!m) continue;
+    const w = '&end_date_min=' + encodeURIComponent(d(dias)) + '&end_date_max=' + encodeURIComponent(d(0));
+    const r = await get(G + '/markets?tag_id=' + m.primaryTagId + '&closed=true&limit=100&sports_market_types=moneyline' + w, 'cerrados-' + nom + '.json');
+    const arr = Array.isArray(r.j) ? r.j : [];
+    P(nom + ': ' + arr.length + ' mercados cerrados; ejemplo: ' + JSON.stringify(arr.slice(0, 2).map(x => ({ s: x.slug, g: x.groupItemTitle, o: x.outcomes, p: x.outcomePrices, t: x.gameStartTime, tok: String(x.clobTokenIds || '').slice(0, 60), lp: x.lastTradePrice }))));
+    const x = arr.find(y => y.clobTokenIds); if (!x) continue;
+    const tok = JSON.parse(x.clobTokenIds)[0]; const ini = Date.parse(String(x.gameStartTime).replace(' ', 'T').replace(/\+00$/, 'Z'));
+    P(nom + ': probando historial de ' + x.slug + ' inicio ' + new Date(ini).toISOString());
+    const t = s => Math.floor(s / 1000);
+    await get(C + '/prices-history?market=' + tok + '&startTs=' + t(ini - 6 * 36e5) + '&endTs=' + t(ini + 36e5) + '&fidelity=10', 'hist-' + nom + '-a.json');
+    await get(C + '/prices-history?market=' + tok + '&startTs=' + t(ini - 6 * 36e5) + '&endTs=' + t(ini + 36e5) + '&fidelity=60', 'hist-' + nom + '-b.json');
+    await get(C + '/prices-history?market=' + tok + '&interval=max&fidelity=60', 'hist-' + nom + '-c.json');
+    await get(C + '/prices-history?market=' + tok + '&interval=all&fidelity=60');
+  }
   fs.writeFileSync('salida_pred/log.txt', log.join('\n'));
 })();
