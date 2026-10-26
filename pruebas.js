@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','modelo-nhl.js','modelo-nfl.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','prediccion.js','modelo-nhl.js','modelo-nfl.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -1319,7 +1319,7 @@ sec('Línea de antes del juego: ESPN la quita al empezar (KC@SEA en vivo salía 
  ok('odds robot: escribe salida/odds-<dep>.json y mira 7 días',/salida\/odds-/.test(ls)&&/\[0, 1, 2, 3, 4, 5, 6\]/.test(ls));
  const us=rd('usdeporte.js'), nb=rd('nba.html');
  ok('apps: NFL/NHL y NBA rellenan la línea con la guardada en el teléfono o la del robot',/function rellenarOdds/.test(us)&&/odds-' \+ DEP/.test(us)&&/ova_odds_/.test(us)&&/async function rellenarOdds/.test(nb)&&/odds-nba\.json/.test(nb)&&/ova_odds_nba/.test(nb));
- ok('apps: rellenarOdds corre al terminar cargarProximos (antes de pintar)',/await rellenarOdds\(\);\s*\}\s*\/\/ lesionados/.test(us)&&/await rellenarOdds\(\);\s*\}\s*async function lesiones/.test(nb));
+ ok('apps: rellenarOdds corre al terminar cargarProximos (antes de pintar)',/await rellenarOdds\(\);\s*await rellenarPred\(\);\s*\}\s*\/\/ lesionados/.test(us)&&/await rellenarOdds\(\);\s*await rellenarPred\(\);\s*\}\s*async function lesiones/.test(nb));
 }
 
 sec('Pestañas pegajosas dentro del juego (se quedaban flotando a media pantalla en los diseños nuevos)');
@@ -1338,6 +1338,40 @@ sec('Patrones contra el mercado (scripts/medicion/patrones.py + workflow mensual
  ok('patrones: el workflow trae los datos de las otras ramas y guarda el informe sin tocar la app',/resultados-futbol-6t/.test(wf)&&/datos-nhl-nfl/.test(wf)&&/resultados-patrones/.test(wf)&&/cron/.test(wf));
  ok('patrones: el informe dice el veredicto y está en el índice',/Ningún patrón demuestra/.test(doc)&&/PATRONES-2026-10/.test(idx));
  ok('patrones: el script de Python compila',(()=>{try{require('child_process').execFileSync('python3',['-I','-m','py_compile',path.join(__dirname,'scripts','medicion','patrones.py')],{stdio:'pipe'});return true;}catch(e){return false;}})());
+}
+
+sec('Mercado de predicción (Polymarket): robot pred.js, prediccion.js y las apps (precio en vivo)');
+{
+ const PR=require(path.join(__dirname,'scripts','pred.js')), OP=require(path.join(__dirname,'prediccion.js'));
+ const ml=(o,pr,x)=>Object.assign({sportsMarketType:'moneyline',closed:false,outcomes:JSON.stringify(o),outcomePrices:JSON.stringify(pr),gameStartTime:'2026-10-26 02:00:00+00',volumeNum:142761,liquidityNum:33220,updatedAt:'2026-10-26T04:20:37Z'},x||{});
+ const ev=(slug,m,x)=>Object.assign({slug:slug,closed:false,markets:m},x||{});
+ const ahora=Date.parse('2026-10-26T04:25:00Z');
+ const j=PR.parsearEventos([
+   ev('nhl-min-van-2026-10-25',[{sportsMarketType:'totals',outcomes:'["Over","Under"]',outcomePrices:'["0.5","0.5"]'},ml(['Wild','Canucks'],['0.993','0.007'],{bestBid:0.988,bestAsk:0.998})],{live:true}),
+   ev('nhl-lak-nyr-2026-10-26',[ml(['Kings','Rangers'],['0.45','0.56'],{gameStartTime:'2026-10-26 23:00:00+00'})]),
+   ev('nhl-lak-nyr-2026-10-26-more-markets',[ml(['A','B'],['0.5','0.5'])]),
+   ev('what-will-the-announcers-say-during-the-49ers-vs-seahawks-game-20261011',[ml(['Yes','No'],['0.5','0.5'])]),
+   ev('nfl-kc-sea-2026-10-26',[ml(['Chiefs','Seahawks'],['1','0'],{closed:true})]),
+   ev('nba-bos-nyk-2026-10-20',[ml(['Celtics','Knicks'],['0.6','0.4'],{gameStartTime:'2026-10-20 23:00:00+00'})]),
+   ev('mlb-x-y-2026-10-26',[ml(['A','B'],['bad','0.5'])]),
+ ],ahora);
+ ok('pred.js: solo toma juegos reales (slug liga-visita-local-fecha), con moneyline abierto y precio válido',j.length===2&&j[0].slug==='nhl-min-van-2026-10-25'&&j[1].slug==='nhl-lak-nyr-2026-10-26');
+ ok('pred.js: el precio es el punto medio del libro y suma 1 (Wild 99.3%)',Math.abs(j[0].pa-0.993)<1e-6&&Math.abs(j[0].pa+j[0].ph-1)<1e-6&&j[0].live===true);
+ ok('pred.js: sin libro estrecho usa outcomePrices y normaliza (0.45 + 0.56 → 44.6% / 55.4%)',Math.abs(j[1].pa-0.4455)<1e-3&&Math.abs(j[1].ph-0.5545)<1e-3);
+ ok('pred.js: la hora de inicio sale de gameStartTime (UTC) y los juegos de hace más de 12 h se descartan',j[0].ini==='2026-10-26T02:00:00.000Z');
+ ok('prediccion.js: empareja el apodo de Polymarket con el nombre completo de ESPN, también con dos palabras',OP.esDe('Wild','Minnesota Wild')&&OP.esDe('Trail Blazers','Portland Trail Blazers')&&OP.esDe('Milwaukee Brewers','Milwaukee Brewers')&&!OP.esDe('Sox','Chicago White Sox')===false&&!OP.esDe('Kings','Sacramento Wild'));
+ const arch={generado:'2026-10-26T04:20:00Z',juegos:j};
+ const b1=OP.buscar(arch,'Vancouver Canucks','Minnesota Wild',Date.parse('2026-10-26T02:00:00Z'),ahora);
+ ok('prediccion.js: encuentra el juego (local Canucks 0.7%, visita Wild 99.3%) y calcula la edad del archivo',b1&&Math.abs(b1.pH-0.007)<1e-6&&Math.abs(b1.pA-0.993)<1e-6&&b1.edad===300000&&b1.vivo===true);
+ ok('prediccion.js: si Polymarket pone los equipos al revés, invierte las probabilidades',(()=>{const x=OP.buscar(arch,'Minnesota Wild','Vancouver Canucks',Date.parse('2026-10-26T02:00:00Z'),ahora);return x&&Math.abs(x.pH-0.993)<1e-6;})());
+ ok('prediccion.js: no empareja si la hora está a más de 30 h ni si los equipos no coinciden',OP.buscar(arch,'Vancouver Canucks','Minnesota Wild',Date.parse('2026-10-29T02:00:00Z'),ahora)===null&&OP.buscar(arch,'Boston Bruins','Minnesota Wild',Date.parse('2026-10-26T02:00:00Z'),ahora)===null);
+ ok('prediccion.js: «fino» avisa cuando hay poco dinero en el mercado',OP.fino({vol:300,liq:5000})===true&&OP.fino({vol:50000,liq:90000})===false&&OP.fino(null)===true);
+ const us=rd('usdeporte.js'), nb=rd('nba.html'), wf=rd('.github/workflows/pred.yml');
+ ok('apps: NFL/NHL/NBA cargan prediccion.js y el service worker la guarda',/prediccion\.js/.test(rd('nfl.html'))&&/prediccion\.js/.test(rd('nhl.html'))&&/prediccion\.js/.test(nb)&&/'prediccion\.js'/.test(rd('sw.js')));
+ ok('apps: en vivo manda el precio de Polymarket y el Veredicto avisa que no se compara con el modelo de antes del juego',/vivoJ\(g\) && g\.pred && !g\.pred\.fin\) return \{ p: g\.pred\.pH, src: 'pred', live: true \}/.test(us)&&/vivoJ\(g\)&&g\.pred&&!g\.pred\.fin\) return \{p:g\.pred\.pH,src:'pred',live:true\}/.test(nb)&&/En vivo: el precio ya incluye el marcador/.test(us)&&/En vivo: el precio ya incluye el marcador/.test(nb));
+ ok('apps: sin Pinnacle ni ESPN el mercado de predicción es el precio (NBA ya no queda «sin precio de Pinnacle»)',/if \(g\.pred\) return \{ p: g\.pred\.pH, src: 'pred' \}/.test(us)&&/if\(g\.pred\) return \{p:g\.pred\.pH,src:'pred'\}/.test(nb));
+ ok('apps: el precio se vuelve a bajar en el ciclo en vivo (cada 20 s, con caché de 2 min)',/await rellenarPred\(\);\s*\/\/ precio en vivo/.test(us)&&/await rellenarPred\(\);\s*\/\/ precio en vivo/.test(nb));
+ ok('workflow pred.yml: cada 10 min, rama pred, conserva los deportes que no trajo',/\*\/10/.test(wf)&&/git push -q -f "\$URL" pred/.test(wf)&&/checkout -q FETCH_HEAD/.test(wf));
 }
 
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{

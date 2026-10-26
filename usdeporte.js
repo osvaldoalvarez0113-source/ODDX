@@ -198,6 +198,20 @@
       if (cambio) LS.set(K, mem);
     } catch (e) { }
   }
+  /* ---------- mercado de predicción (Polymarket): precio gratis y EN VIVO ---------- */
+  const vivoJ = g => !!g.live || (g.ts < Date.now() && !g.done);
+  let PRED = null;
+  async function rellenarPred() {
+    try {
+      if (!window.OVAPred) return;
+      PRED = await window.OVAPred.cargar(DEP);
+      aplicarPred();
+    } catch (e) { }
+  }
+  function aplicarPred() {
+    if (!PRED || !window.OVAPred) return;
+    PEND.forEach(g => { const h = T(g.h), a = T(g.a); const p = window.OVAPred.buscar(PRED, h.n, a.n, g.ts); g.pred = p && !(p.edad !== null && p.edad > (vivoJ(g) ? 40 : 240) * 60000) ? p : null; });
+  }
   async function cargarProximos() {
     const hoy = new Date(), dias = [];
     for (let k = 0; k <= SP.diasMax; k++) dias.push(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + k));
@@ -206,6 +220,7 @@
     [].concat(...arr).forEach(g => { if (vistos.has(g.id) || g.done || (g.skip && !g.pre)) return; vistos.add(g.id); PEND.push(g); });
     PEND.sort((a, b) => a.ts - b.ts);
     await rellenarOdds();
+    await rellenarPred();
   }
   // lesionados: archivo grande (hockey ~1.4 MB, NFL ~9 MB). Solo se baja cuando lo pides.
   function lesiones() {
@@ -248,8 +263,11 @@
   const pinPH = g => { const o = pinDe(g); return o && o.ml ? o.ml[0] : null; };
   // probabilidad de que gane el local según el mercado, sin margen: Pinnacle si hay precio; si no, el moneyline de ESPN
   function mkPk(g) {
+    // en vivo el precio de antes del juego (Pinnacle / ESPN) ya no vale: manda el del mercado de predicción
+    if (vivoJ(g) && g.pred && !g.pred.fin) return { p: g.pred.pH, src: 'pred', live: true };
     const p = pinPH(g); if (p !== null) return { p: p, src: 'pin' };
     const o = g.odds; if (o && o.mlH && o.mlA) { const a = impProb(o.mlH), b = impProb(o.mlA); return { p: a / (a + b), src: 'espn' }; }
+    if (g.pred) return { p: g.pred.pH, src: 'pred' };
     return null;
   }
   function pmDeProbN(p, s) { let lo = -40, hi = 40; for (let i = 0; i < 50; i++) { const mid = (lo + hi) / 2; if (M.pML(mid, s) < p) lo = mid; else hi = mid; } return (lo + hi) / 2; }
@@ -287,6 +305,7 @@
       pr.cover = Lh => M.pCoverM(pr.D, Lh); pr.over = Lt => M.pOver(pr.D, Lt);
     }
     pr.mk = mk;
+    if (mk && mk.live) { pr.pH = mk.p; pr.conML = true; }       // en vivo: el modelo no sabe del marcador, manda el precio
     return pr;
   }
 
@@ -404,13 +423,13 @@
     const pH = (hit !== null) ? hit : pr.pH, favM = pH >= 0.5, pf = Math.max(pH, 1 - pH), nf = favM ? H.n : A.n;
     const gap = (hit !== null) ? Math.abs(pr.pHMod - hit) * 100 : null, pmNf = favM ? pr.pHMod : 1 - pr.pHMod, pctNf = ' en ' + esc(nf) + ' (modelo solo ' + Math.round(pmNf * 100) + '%, mercado ' + Math.round(pf * 100) + '%)';
     const favMod = pr.pHMod >= 0.5;
-    const sig = hit === null ? '<span class="rvSig mid">! Sin precio del mercado para este juego: pronóstico solo del modelo</span>' :
+    const sig = mk && mk.live ? '<span class="rvSig mid">● En vivo: el precio ya incluye el marcador, por eso no se compara con el modelo de antes del juego</span>' : hit === null ? '<span class="rvSig mid">! Sin precio del mercado para este juego: pronóstico solo del modelo</span>' :
       (gap <= 3 && favMod === favM ? '<span class="rvSig ok">✓ Modelo y mercado coinciden</span>' :
         (gap <= 7 && favMod === favM ? `<span class="rvSig mid">≈ Diferencia de ${gap.toFixed(0)} pts de probabilidad${pctNf} · confía más en el mercado</span>` :
           `<span class="rvSig bad">✗ Discrepan ${gap.toFixed(0)} pts de probabilidad${pctNf} · créele al mercado</span>`)) +
       (favMod !== favM ? `<div class="rvP" style="margin-top:7px">Modelo solo: <b>${esc(favMod ? H.n : A.n)}</b> (${Math.round((favMod ? pr.pHMod : 1 - pr.pHMod) * 100)}%). Mercado: <b>${esc(nf)}</b> (${Math.round(pf * 100)}%).</div>` : '');
     const umbral = DEP === 'nhl' ? 0.55 : 0.6;
-    const fuente = mk ? (mk.src === 'pin' ? 'Pinnacle, sin margen' : 'ESPN (DraftKings), sin margen') : '';
+    const fuente = mk ? (mk.src === 'pin' ? 'Pinnacle, sin margen' : (mk.src === 'pred' ? 'mercado de predicción (Polymarket)' + (mk.live ? ', en vivo' : '') : 'ESPN (DraftKings), sin margen')) : '';
     const main = `<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf >= umbral ? esc(nf) + ' gana · ' + Math.round(pf * 100) + '%' : 'Juego parejo'}</div>
      <div class="rvP">${pf >= umbral ? 'Es el favorito' + (hit !== null ? ' según el mercado (' + fuente + ').' : ' según el modelo.') : 'Ninguno pasa del ' + Math.round(umbral * 100) + '%. Lo más probable: ' + esc(nf) + ' ' + Math.round(pf * 100) + '%.'}${DEP === 'nhl' ? ' Incluye tiempo extra y shootout.' : ''}</div>${sig}
      <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amTxt(pf)}</b> por ${esc(nf)}${hit !== null ? '' : ' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(nf)}</label><input type="number" inputmode="decimal" data-vl="o" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${hit !== null ? 1 : 0}"><div class="rvVal" data-vl="r"></div></div></div>`;
@@ -419,9 +438,12 @@
      <div class="nota" style="margin-top:6px">Mercado = ${mk ? fuente : 'sin precio todavía'}.</div>`;
     const L = (c, t) => `<div><i class="${c}">${c === 'ok' ? '✓' : (c === 'w' ? '!' : '✗')}</i><span>${t}</span></div>`;
     const li = [];
-    if (mk && mk.src === 'pin') li.push(L('ok', `Precio de Pinnacle de hace ${pinTxt()}.`));
+    if (mk && mk.live) li.push(L('ok', `Precio EN VIVO del mercado de predicción (Polymarket): ${esc(A.ab)} ${pct1(1 - mk.p)} · ${esc(H.ab)} ${pct1(mk.p)}. Se actualiza cada pocos minutos.${window.OVAPred && window.OVAPred.fino(g.pred) ? ' Ojo: hay poco dinero en este mercado.' : ''}`));
+    else if (mk && mk.src === 'pin') li.push(L('ok', `Precio de Pinnacle de hace ${pinTxt()}.`));
+    else if (mk && mk.src === 'pred') li.push(L('ok', 'Precio del mercado de predicción (Polymarket): no hay Pinnacle ni línea de ESPN para este juego.' + (window.OVAPred && window.OVAPred.fino(g.pred) ? ' Ojo: hay poco dinero en este mercado.' : '')));
     else if (mk) li.push(L('ok', g.oddsViejo ? 'Precio de ESPN (DraftKings) de antes de que empezara el juego (ESPN lo quita en vivo); Pinnacle todavía no lo trae.' : 'Precio de ESPN (DraftKings) tomado del marcador; Pinnacle todavía no lo trae.'));
     else li.push(L('w', 'Sin precio del mercado para este juego.'));
+    if (mk && !mk.live && mk.src !== 'pred' && g.pred) { const d = Math.abs(g.pred.pH - mk.p) * 100; li.push(L(d <= 3 ? 'ok' : 'w', `Mercado de predicción (Polymarket): ${esc(H.ab)} ${pct1(g.pred.pH)}${d <= 3 ? ', coincide con el precio principal.' : ' (' + d.toFixed(0) + ' pts de diferencia con el precio principal; el principal suele tener razón).'}`)); }
     descansoTxt(g, pr, H, A).forEach(x => li.push(L(x[0], x[1])));
     if (g.pre) li.push(L('w', 'Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
     li.push(`<div data-inj><i class="w">!</i><span>Lesionados: toca «Cargar lesionados» abajo (archivo grande).</span></div>`);
@@ -439,7 +461,7 @@
       <div class="side${favH ? ' fav' : ''}"><img src="${esc(H.logo)}" alt="" onerror="this.style.display='none'"><span class="ab">${esc(H.ab)}</span><span class="pc">${pct1(pS)}</span></div>
      </div>
      <div class="bar"><span class="a" style="flex-grow:${Math.max(1 - pS, 0.08)}">${pct1(1 - pS)}</span><span class="h" style="flex-grow:${Math.max(pS, 0.08)}">${pct1(pS)}</span></div>
-     <div class="nota" style="margin:6px 0 0;text-align:center">${pr.mk ? 'Probabilidades del mercado' + (pr.mk.src === 'pin' ? ' (Pinnacle)' : ' (ESPN)') : 'Probabilidades del modelo (sin precio de mercado)'}${DEP === 'nhl' ? ' · incluye tiempo extra' : ''}</div>
+     <div class="nota" style="margin:6px 0 0;text-align:center">${pr.mk ? 'Probabilidades del mercado' + (pr.mk.src === 'pin' ? ' (Pinnacle)' : (pr.mk.src === 'pred' ? (pr.mk.live ? ' (Polymarket, en vivo)' : ' (Polymarket)') : ' (ESPN)')) : 'Probabilidades del modelo (sin precio de mercado)'}${DEP === 'nhl' ? ' · incluye tiempo extra' : ''}</div>
      ${resumenN(g, pr, H, A)}
      ${(g.odds || pinDe(g)) ? mercadoHtml(g, pr, H, A) : ''}
      ${pinNba(g, pr)}
@@ -846,8 +868,13 @@
         if (!cerca.length) return;
         const dias = new Set([ymdUTC(Date.now())]); cerca.forEach(g => dias.add(ymdUTC(g.ts)));
         const res = await Promise.all([...dias].map(d => getJSON(SP.espn + 'scoreboard?dates=' + d + '&limit=300').then(j => parseEventos(j, DEP, null)).catch(() => [])));
+        await rellenarPred();                           // precio en vivo del mercado de predicción (se vuelve a bajar cada 2 min)
         [].concat(...res).forEach(e => {
           const g = PEND.find(x => x.id === e.id); if (g) { g.live = e.live; g.hs = e.hs; g.as = e.as; g.detail = e.detail; g.done = e.done; }
+          if (g && g.live && g.pred) {                  // si el Veredicto de este juego está abierto, sin cuota escrita, se repinta con el precio nuevo
+            const bd = document.querySelector('#juegos .game[data-id="' + e.id + '"] .body'), tb = bd && bd.querySelector('.tb.on');
+            if (bd && bd.dataset.p && tb && tb.dataset.t === 'ver' && ![...bd.querySelectorAll('input')].some(i => i.value || i === document.activeElement)) { try { pintarCuerpo(bd, g); } catch (x) { } }
+          }
           const el = document.querySelector('#juegos .game[data-id="' + e.id + '"]'); if (!el) return;
           const b = el.querySelector('.hora'); if (!b) return;
           if (e.live) { b.style.color = 'var(--bad)'; b.innerHTML = '🔴 ' + e.as + '–' + e.hs + '<br><small style="font-size:9px">' + esc(e.detail) + '</small>'; }

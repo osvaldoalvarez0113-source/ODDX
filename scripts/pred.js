@@ -42,7 +42,7 @@ function parsearEventos(eventos, ahora) {
     if (ini < ahora - 12 * 36e5) return;                    // juegos de hace mas de 12 h ya no sirven
     out.push({ slug: e.slug, dep: sl[1], a: pl.nombres[0], h: pl.nombres[1], pa: +pl.p[0].toFixed(4), ph: +pl.p[1].toFixed(4),
       vol: Math.round(num(ml.volumeNum !== undefined ? ml.volumeNum : ml.volume) || 0), liq: Math.round(num(ml.liquidityNum !== undefined ? ml.liquidityNum : ml.liquidity) || 0),
-      ini: new Date(ini).toISOString(), upd: ml.updatedAt || null });
+      ini: new Date(ini).toISOString(), upd: ml.updatedAt || null, live: e.live === true, ended: e.ended === true, score: e.score || null });
   });
   return out;
 }
