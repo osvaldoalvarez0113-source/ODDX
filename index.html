@@ -3437,7 +3437,9 @@ function irA(el){
 }
 function medirHead(el){
   var h=el.querySelector('.head');
-  if(h) el.style.setProperty('--headh', h.offsetHeight+'px');
+  /* si el diseño de adentro dejó la cabecera fija en su sitio (no pegajosa), no ocupa espacio arriba: las pestañas se pegan directo bajo la barra */
+  var pega=false; try{ pega=h&&getComputedStyle(h).position==='sticky'; }catch(e){ pega=!!h; }
+  if(h) el.style.setProperty('--headh', (pega?h.offsetHeight:0)+'px');
 }
 
 function pintar(el){

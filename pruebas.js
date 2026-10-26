@@ -1322,6 +1322,14 @@ sec('Línea de antes del juego: ESPN la quita al empezar (KC@SEA en vivo salía 
  ok('apps: rellenarOdds corre al terminar cargarProximos (antes de pintar)',/await rellenarOdds\(\);\s*\}\s*\/\/ lesionados/.test(us)&&/await rellenarOdds\(\);\s*\}\s*async function lesiones/.test(nb));
 }
 
+sec('Pestañas pegajosas dentro del juego (se quedaban flotando a media pantalla en los diseños nuevos)');
+{
+ const ix=rd('index.html'), it=rd('interior.js');
+ ok('medirHead: si la cabecera no es pegajosa (diseño de adentro) --headh vale 0 y las pestañas se pegan bajo la barra',/getComputedStyle\(h\)\.position==='sticky'/.test(ix)&&/pega\?h\.offsetHeight:0/.test(ix));
+ ok('interior.js: al cambiar de diseño se vuelve a medir la cabecera de los juegos abiertos',/requestAnimationFrame\(function\(\)\{ if\(typeof root\.medirHead==='function'\)/.test(it));
+ ok('interior.js: el juego abierto recorta con overflow:clip para que las pestañas puedan pegarse',/html\[data-ui\] \.game\.open\{overflow:clip!important\}/.test(it));
+}
+
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);

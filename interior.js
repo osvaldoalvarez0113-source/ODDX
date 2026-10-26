@@ -97,6 +97,8 @@ html[data-ui="cristal"] .tb{border-radius:16px!important;background:transparent!
 html[data-ui="cristal"] .tb.on{background:linear-gradient(135deg,var(--acc),var(--acc2))!important;color:var(--accTx)!important;box-shadow:0 10px 22px -10px var(--acc);animation:uiPop .35s ease}
 html[data-ui="cristal"] .tab,html[data-ui="cristal"] .pane.on{animation:uiFade .4s ease}
 html[data-ui="cristal"] .game.open .head{position:relative!important;top:auto!important;background:transparent!important;box-shadow:none!important;border-radius:0!important}
+/* las pestañas pegajosas no se pegan si el juego abierto recorta con overflow:hidden (crea su propio scroll): clip recorta igual sin eso */
+html[data-ui] .game.open{overflow:clip!important}
 html[data-ui="cristal"] .game{--headh:0px!important}
 html[data-ui="cristal"] .game.open .tabs{position:sticky;top:calc(var(--barra,60px) + 6px)!important;z-index:8;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
 html[data-ui="cristal"] .game .body{padding-left:14px;padding-right:14px}
@@ -612,6 +614,8 @@ function aplicar(id,opts){
   if(opts.guardar!==false){ try{ root.localStorage.setItem(KEY,id); }catch(e){} }
   if(id==='clasico') html.removeAttribute('data-ui'); else html.setAttribute('data-ui',id);
   if(!opts.inicial){ iconos(); colorear(); marcar(); }
+  /* cambiar de diseño cambia si la cabecera del juego es pegajosa: se vuelve a medir para que las pestañas no queden flotando */
+  try{ root.requestAnimationFrame(function(){ if(typeof root.medirHead==='function') [].forEach.call(doc.querySelectorAll('.game.open'),root.medirHead); }); }catch(e){}
   return id;
 }
 var CATS=[
