@@ -138,6 +138,10 @@ h3{font-size:11.5px;color:var(--mut);margin:16px 0 7px;font-weight:700;text-tran
 .tabpos td{padding:6px 4px;border-bottom:1px solid var(--line)}
 .tabpos tr.destacada td{color:var(--hot);font-weight:700}
 .tabpos .num{color:var(--mut);width:20px}
+.tabpos tr.cab td{font-size:10.5px;color:var(--mut2);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.tabpos td.c{text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tabpos td.pts{font-weight:800}
+.tabpos td.eqn{max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* estadio */
 .estadio{display:flex;align-items:center;gap:10px;background:var(--bg2);border-radius:var(--r);
@@ -735,7 +739,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 
 
 <script>
-var VERSION = 'v20';
+var VERSION = 'v21';
 var EQUIPOS = null;
 var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
@@ -1017,7 +1021,10 @@ function extraerTabla(html){
     if(idxMarcador>=4){ var c=textoFila[idxMarcador-4]; if(/^\d+$/.test(c)) pj = +c; }
     if(!pj) return;
     if(equipos.some(function(e){ return e.nombre===nombre; })) return;
-    equipos.push({nombre:nombre, pj:pj, gf:partes[0], gc:partes[1], href:href, pos:equipos.length+1});
+    var num=function(j){ var c=textoFila[j]; return (c!=null&&/^\d+$/.test(c))?+c:null; };
+    var w=num(idxMarcador-3), d=num(idxMarcador-2), l=num(idxMarcador-1), pts=null;
+    if(w!==null&&d!==null&&l!==null&&w+d+l===pj) pts=3*w+d; else { w=d=l=null; }
+    equipos.push({nombre:nombre, pj:pj, g:w, e:d, p:l, pts:pts, gf:partes[0], gc:partes[1], href:href, pos:equipos.length+1});
   });
   return equipos;
 }
@@ -1027,8 +1034,9 @@ function equiposDesdeResultados(term){
   term.forEach(function(p){
     [[p.local,p.golesLocal,p.golesVisita],[p.visita,p.golesVisita,p.golesLocal]].forEach(function(x){
       var k = claveEq(x[0]);
-      var e = m[k] || (m[k] = {nombre:x[0], pj:0, gf:0, gc:0, pts:0});
+      var e = m[k] || (m[k] = {nombre:x[0], pj:0, g:0, e:0, p:0, gf:0, gc:0, pts:0});
       e.pj++; e.gf+=x[1]; e.gc+=x[2];
+      if(x[1]>x[2]) e.g++; else if(x[1]===x[2]) e.e++; else e.p++;
       e.pts += x[1]>x[2] ? 3 : (x[1]===x[2] ? 1 : 0);
     });
   });
@@ -1853,13 +1861,22 @@ function buscarEquipo(nombre){
 }
 
 function tablaPosicionesHtml(eL, eV){
-  var html = '<table class="tabpos">';
+  /* si la tabla de la página no trajo G-E-P, se saca de los partidos terminados (solo si cuadran con los PJ) */
   EQUIPOS.forEach(function(e){
-    var destacada = (e.nombre===eL.nombre || e.nombre===eV.nombre);
-    html += '<tr'+(destacada?' class="destacada"':'')+'><td class="num">'+e.pos+'</td><td>'+e.nombre+
-      '</td><td>'+e.pj+'</td><td>'+e.gf+':'+e.gc+'</td></tr>';
+    if(e.pts!=null||typeof partidosDe!=='function') return;
+    var js=partidosDe(e.nombre); if(!js.length||js.length!==e.pj) return;
+    var g=0,em=0,pe=0; js.forEach(function(q){ var L=mismoEquipo(q.local,e.nombre), f=L?q.golesLocal:q.golesVisita, c=L?q.golesVisita:q.golesLocal; if(f>c) g++; else if(f===c) em++; else pe++; });
+    e.g=g; e.e=em; e.p=pe; e.pts=3*g+em;
   });
-  html += '</table>';
+  var conPts = EQUIPOS.some(function(e){ return e.pts!=null; });
+  var html = '<table class="tabpos"><tr class="cab"><td class="num">#</td><td>Equipo</td><td class="c">PJ</td><td class="c">G-E-P</td><td class="c">Goles</td><td class="c">DG</td>'+(conPts?'<td class="c pts">Pts</td>':'')+'</tr>';
+  EQUIPOS.forEach(function(e){
+    var destacada = (e.nombre===eL.nombre || e.nombre===eV.nombre), dg=e.gf-e.gc;
+    html += '<tr'+(destacada?' class="destacada"':'')+'><td class="num">'+e.pos+'</td><td class="eqn">'+escT(e.nombre)+
+      '</td><td class="c">'+e.pj+'</td><td class="c">'+(e.g!=null?e.g+'-'+e.e+'-'+e.p:'—')+'</td><td class="c">'+e.gf+':'+e.gc+'</td><td class="c">'+(dg>0?'+':'')+dg+'</td>'+
+      (conPts?'<td class="c pts">'+(e.pts!=null?e.pts:'—')+'</td>':'')+'</tr>';
+  });
+  html += '</table><div class="nota" style="margin-top:6px">PJ = partidos jugados · G-E-P = ganados, empatados y perdidos · Goles = a favor : en contra · DG = diferencia de goles · Pts = puntos (3 por victoria, 1 por empate).</div>';
   return html;
 }
 
@@ -1961,7 +1978,7 @@ function resumenTabla(nombre){
   });
   if(!b) return js.length ? (pts+' pts en '+js.length+' PJ') : '';
   var e = b.eq, dg = e.gf - e.gc;
-  var p = (e.pts!==undefined ? e.pts : (js.length ? pts : null));
+  var p = (e.pts!=null ? e.pts : (js.length ? pts : null));
   return '#'+e.pos+(p!==null?' · '+p+' pts':'')+' · DG '+(dg>0?'+':'')+dg+' · '+e.pj+' PJ';
 }
 // forma solo en casa (equipo local) o solo de visita (equipo visitante)
