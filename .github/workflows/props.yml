@@ -1,0 +1,60 @@
+name: Props (proposiciones de juego)
+
+# Baja marcadores POR PERIODO (inning, cuarto, periodo, medio tiempo) con la línea de cierre en los 5 deportes
+# para medir proposiciones: gol en el 1er tiempo, ambos anotan, carrera en el 1er inning, F5, 1er periodo, 1a mitad…
+# Deja los datos en la rama "datos-props". No toca la app ni gasta OddsPapi.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/props_bajar.js
+      - .github/workflows/props.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: props
+  cancel-in-progress: false
+
+jobs:
+  bajar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        dep: [fut, mlb, nba, nhl, nfl]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Recuperar lo ya bajado
+        continue-on-error: true
+        run: |
+          mkdir -p props-datos
+          git fetch -q origin datos-props && git checkout FETCH_HEAD -- props-datos/${{ matrix.dep }}.json.gz || echo "sin cache"
+          git fetch -q origin datos-nhl-nfl && git checkout FETCH_HEAD -- datos-nhl.json datos-nfl.json || echo "sin lineas nhl/nfl"
+      - name: Bajar
+        run: node scripts/props_bajar.js ${{ matrix.dep }} 2>&1 | tee props-datos/log-${{ matrix.dep }}.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: props-${{ matrix.dep }}
+          path: props-datos/
+  guardar:
+    needs: bajar
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: art
+      - name: Subir a la rama datos-props
+        run: |
+          mkdir -p /tmp/d/props-datos && find art -type f -exec cp -f {} /tmp/d/props-datos/ \;
+          ls -la /tmp/d/props-datos
+          cd /tmp/d && git init -q -b datos-props && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "datos props $(date -u +%F)" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" datos-props
