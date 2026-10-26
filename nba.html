@@ -643,7 +643,7 @@ function pinPH(g){
 
 /* ---- Resumen completo del Veredicto: pronóstico, modelo contra mercado, líneas justas, qué tan confiable es y forma ---- */
 function resumenN(g,pr,H,A){
-  const favH=pr.pH>=0.5, pmAbs=Math.abs(pr.pm);
+  const favH=pr.pHMod>=0.5, pmAbs=Math.abs(pr.pm);   /* «modelo» = el modelo SOLO (la app mezcla 95% mercado, y eso no es lo que el modelo opina) */
   let hit=null;
   if(PIN_N){
     const kh=nickN(H.n), ka=nickN(A.n);
@@ -654,7 +654,7 @@ function resumenN(g,pr,H,A){
     });
   }
   const pH=(hit!==null)?hit:pr.pH, favM=pH>=0.5, pf=Math.max(pH,1-pH), nf=favM?H.n:A.n;
-  const gap=(hit!==null)?Math.abs(pr.pH-hit)*100:null;
+  const gap=(hit!==null)?Math.abs(pr.pHMod-hit)*100:null;
   const sig=hit===null?'<span class="rvSig mid">! Sin precio del mercado para este juego: pronóstico solo del modelo</span>':
     (gap<=3&&favH===favM?'<span class="rvSig ok">✓ Modelo y mercado coinciden</span>':
     (gap<=7&&favH===favM?`<span class="rvSig mid">≈ Diferencia de ${gap.toFixed(0)} pts · confía más en el mercado</span>`:
@@ -664,7 +664,7 @@ function resumenN(g,pr,H,A){
    <div class="rvP">${pf>=0.6?'Es el favorito'+(hit!==null?' según el mercado (Pinnacle, sin margen).':' según el modelo.'):'Ninguno pasa del 60%. Lo más probable: '+esc(nf)+' '+Math.round(pf*100)+'%.'}</div>${sig}
    <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amTxt(pf)}</b> por ${esc(nf)}${hit!==null?'':' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(nf)}</label><input type="number" inputmode="decimal" data-vl="o" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${hit!==null?1:0}"><div class="rvVal" data-vl="r"></div></div></div>`;
   const row=(n,m,k)=>`<div class="nm">${esc(n)} gana</div><div class="n md">${pct1(m)}</div><div class="n mk">${k===null?'—':pct1(k)}</div><div class="n">${amTxt(k===null?m:k)}</div>`;
-  const tab=`<div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n,1-pr.pH,hit===null?null:1-hit)}${row(H.n,pr.pH,hit)}</div>
+  const tab=`<div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo solo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n,1-pr.pHMod,hit===null?null:1-hit)}${row(H.n,pr.pHMod,hit)}</div>
    <div class="nota" style="margin-top:6px">Mercado = Pinnacle sin su margen.</div>`;
   const L=(c,t)=>`<div><i class="${c}">${c==='ok'?'✓':(c==='w'?'!':'✗')}</i><span>${t}</span></div>`;
   const li=[];
@@ -790,14 +790,14 @@ function mercadoHtml(g,pr,H,A){
   if(!hayS&&!hayT) return '';
   const quien=m=>Math.abs(m)<0.05?'Parejo':(m>=0?H.ab:A.ab)+' por '+Math.abs(m).toFixed(1);
   const sig=d=>(d>=0?'+':'')+d.toFixed(1);
-  let filas='', av=[], dm=0, dt=0;
-  if(hayS){ const mer=-o.spread; dm=pr.pmMod-mer;
+  let filas='', av=[], dm=0, dt=0, mer=0;
+  if(hayS){ mer=-o.spread; dm=pr.pmMod-mer;
     filas+=`<tr><td>Quién gana</td><td class="n">${quien(mer)}</td><td class="n">${quien(pr.pmMod)}</td><td class="n usa">${quien(pr.pm)}</td></tr>`; }
   if(hayT){ dt=pr.ptMod-o.total;
     filas+=`<tr><td>Total de puntos</td><td class="n">${o.total.toFixed(1)}</td><td class="n">${pr.ptMod.toFixed(1)}</td><td class="n usa">${pr.pt.toFixed(1)}</td></tr>`; }
   const okM=!hayS||Math.abs(dm)<3, okT=!hayT||Math.abs(dt)<4;
-  if(hayS) av.push(okM?'En quién gana coinciden (dif. '+sig(dm)+' pts).':'En quién gana, el modelo se separa <strong>'+Math.abs(dm).toFixed(1)+' pts</strong> del mercado: tómalo como aviso de que el modelo anda dudoso, no como ventaja.');
-  if(hayT) av.push(okT?'En el total también (dif. '+sig(dt)+' pts).':'En el total se separa <strong>'+Math.abs(dt).toFixed(1)+' pts</strong>: al inicio de temporada el modelo usa ratings viejos, así que <strong>no apuestes Over/Under por eso</strong>.');
+  if(hayS) av.push(okM?'En quién gana coinciden (dif. '+sig(dm)+' pts).':'En quién gana, el mercado dice <strong>'+quien(mer)+'</strong> y el modelo solo dice <strong>'+quien(pr.pmMod)+'</strong>: <strong>'+Math.abs(dm).toFixed(1)+' pts</strong> de diferencia en el margen del partido (son puntos del marcador, no porcentaje). Tómalo como aviso de que el modelo anda dudoso, no como ventaja.');
+  if(hayT) av.push(okT?'En el total también (dif. '+sig(dt)+' pts).':'En el total el mercado dice <strong>'+o.total.toFixed(1)+'</strong> y el modelo solo <strong>'+pr.ptMod.toFixed(1)+'</strong> (<strong>'+Math.abs(dt).toFixed(1)+' pts</strong>): al inicio de temporada el modelo usa ratings viejos, así que <strong>no apuestes Over/Under por eso</strong>.');
   const tit=okM&&okT?'🟢 El modelo y el mercado coinciden':(okM?'🟡 Coinciden en quién gana, no en el total':'🟡 El modelo y el mercado no coinciden');
   return `<div class="rv"><h4>Línea del mercado</h4>
   <div class="pick${okM&&okT?'':' no'}"><b>${tit}</b>${av.join(' ')}</div>

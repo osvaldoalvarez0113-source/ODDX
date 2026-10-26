@@ -555,14 +555,14 @@
     if (!hayS && !hayT && !hayP) return '';
     const quien = m => Math.abs(m) < 0.05 ? 'Parejo' : (m >= 0 ? H.ab : A.ab) + ' por ' + Math.abs(m).toFixed(SP.dec);
     const sig = d => (d >= 0 ? '+' : '') + d.toFixed(SP.dec);
-    let filas = '', av = [], dm = 0, dt = 0;
-    if (hayS) { const mer = -lineaS; dm = pr.pmMod - mer; filas += `<tr><td>Quién gana</td><td class="n">${quien(mer)}</td><td class="n">${quien(pr.pmMod)}</td><td class="n usa">${quien(pr.pm)}</td></tr>`; }
-    if (hayP) { const pmM = M.pmDeProb(pr.mk.p, pr.pt, PARAMS); dm = pr.pmMod - pmM; filas += `<tr><td>Quién gana (margen implícito)</td><td class="n">${quien(pmM)}</td><td class="n">${quien(pr.pmMod)}</td><td class="n usa">${quien(pr.pm)}</td></tr>`; }
+    let filas = '', av = [], dm = 0, dt = 0, mer = 0, pmM = 0;
+    if (hayS) { mer = -lineaS; dm = pr.pmMod - mer; filas += `<tr><td>Quién gana</td><td class="n">${quien(mer)}</td><td class="n">${quien(pr.pmMod)}</td><td class="n usa">${quien(pr.pm)}</td></tr>`; }
+    if (hayP) { pmM = M.pmDeProb(pr.mk.p, pr.pt, PARAMS); dm = pr.pmMod - pmM; filas += `<tr><td>Quién gana (margen implícito)</td><td class="n">${quien(pmM)}</td><td class="n">${quien(pr.pmMod)}</td><td class="n usa">${quien(pr.pm)}</td></tr>`; }
     if (hayT) { dt = pr.ptMod - lineaT; filas += `<tr><td>Total de ${SP.u}</td><td class="n">${lineaT.toFixed(1)}</td><td class="n">${pr.ptMod.toFixed(1)}</td><td class="n usa">${pr.pt.toFixed(1)}</td></tr>`; }
     const tolM = DEP === 'nfl' ? 3 : 0.35, tolT = DEP === 'nfl' ? 4 : 0.5;
     const okM = (!hayS && !hayP) || Math.abs(dm) < tolM, okT = !hayT || Math.abs(dt) < tolT;
-    if (hayS || hayP) av.push(okM ? 'En quién gana coinciden (dif. ' + sig(dm) + ' ' + SP.uc + ').' : 'En quién gana, el modelo se separa <strong>' + Math.abs(dm).toFixed(SP.dec) + ' ' + SP.uc + '</strong> del mercado: tómalo como aviso de que el modelo anda dudoso, no como ventaja.');
-    if (hayT) av.push(okT ? 'En el total también (dif. ' + sig(dt) + ' ' + SP.uc + ').' : 'En el total se separa <strong>' + Math.abs(dt).toFixed(SP.dec) + ' ' + SP.uc + '</strong>: ' + (DEP === 'nhl' ? 'en hockey el modelo sí aportó algo en totales (por eso pesa más ahí), pero una diferencia grande suele ser portero o ritmo que él no ve.' : 'al inicio de temporada el modelo usa ratings viejos, así que <strong>no apuestes Over/Under por eso</strong>.'));
+    if (hayS || hayP) av.push(okM ? 'En quién gana coinciden (dif. ' + sig(dm) + ' ' + SP.uc + ').' : 'En quién gana, el mercado dice <strong>' + quien(hayS ? mer : pmM) + '</strong> y el modelo solo dice <strong>' + quien(pr.pmMod) + '</strong>: <strong>' + Math.abs(dm).toFixed(SP.dec) + ' ' + SP.uc + '</strong> de diferencia en el margen del partido (no es porcentaje). Tómalo como aviso de que el modelo anda dudoso, no como ventaja.');
+    if (hayT) av.push(okT ? 'En el total también (dif. ' + sig(dt) + ' ' + SP.uc + ').' : 'En el total el mercado dice <strong>' + lineaT.toFixed(1) + '</strong> y el modelo solo <strong>' + pr.ptMod.toFixed(1) + '</strong> (<strong>' + Math.abs(dt).toFixed(SP.dec) + ' ' + SP.uc + '</strong>): ' + (DEP === 'nhl' ? 'en hockey el modelo sí aportó algo en totales (por eso pesa más ahí), pero una diferencia grande suele ser portero o ritmo que él no ve.' : 'al inicio de temporada el modelo usa ratings viejos, así que <strong>no apuestes Over/Under por eso</strong>.'));
     const tit = okM && okT ? '🟢 El modelo y el mercado coinciden' : (okM ? '🟡 Coinciden en quién gana, no en el total' : '🟡 El modelo y el mercado no coinciden');
     return `<div class="rv"><h4>Línea del mercado</h4>
     <div class="pick${okM && okT ? '' : ' no'}"><b>${tit}</b>${av.join(' ')}</div>
