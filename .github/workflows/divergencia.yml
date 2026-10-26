@@ -1,0 +1,35 @@
+name: Polymarket contra la línea de cierre
+
+# Mide si la diferencia entre el precio de Polymarket y la línea de cierre de las casas trae información (juegos ya terminados).
+# Deja el informe y los datos en la rama "resultados-div". A mano, o el día 1 y 15 de cada mes.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 1,15 * *"
+  push:
+    branches: [main]
+    paths:
+      - scripts/divergencia.js
+      - .github/workflows/divergencia.yml
+
+permissions:
+  contents: write
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Medir
+        run: node scripts/divergencia.js
+      - name: Guardar
+        if: always()
+        continue-on-error: true
+        run: |
+          [ -d salida_div ] || exit 0
+          cd salida_div && git init -q -b resultados-div && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "divergencia" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" resultados-div

@@ -1389,6 +1389,19 @@ sec('Fútbol con Polymarket (1X2 en vivo y de respaldo)');
  ok('futbol.html: el Más/Menos sigue usando Pinnacle (Polymarket aquí solo trae 1X2)',/mk2=buscarPinF\(p\)/.test(fh)&&/mk1=buscarMkF\(p\)/.test(fh));
 }
 
+sec('Polymarket contra la línea de cierre (divergencia)');
+{
+ const DV=require(path.join(__dirname,'scripts','divergencia.js'));
+ let sd=11;const rn=()=>(sd=(sd*16807)%2147483647)/2147483647;
+ const mkf=(b,n)=>{const f=[];for(let i=0;i<n;i++){const dk=.3+.4*rn(),pm=Math.min(.95,Math.max(.05,dk+(rn()-.5)*.1));f.push({dep:'nhl',ts:1e12+i,pmH:pm,dkH:dk,mlH:-110,mlA:-110,gana:rn()<dk+b*(pm-dk)?1:0});}return f;};
+ const r0=DV.regresion(mkf(0,6000)),r1=DV.regresion(mkf(1,6000));
+ ok('divergencia.js: la regresión recupera b=0 (la casa lo sabe todo) y b=1 (Polymarket manda) con datos simulados',Math.abs(r0.b)<2.5*r0.se&&Math.abs(r1.b-1)<2.5*r1.se&&r1.z0>2);
+ ok('divergencia.js: el informe se arma con datos y avisa que con pocos juegos nuevos no se puede decir nada',/Fuera de muestra/.test(DV.informe(mkf(0,60)))&&/todavía no se puede decir nada/.test(DV.informe(mkf(0,60))));
+ const wf=rd('.github/workflows/divergencia.yml');
+ ok('divergencia.yml: corre a mano y 2 veces al mes, y deja el informe en la rama resultados-div',/workflow_dispatch/.test(wf)&&/cron:/.test(wf)&&/resultados-div/.test(wf));
+ ok('divergencia.js: una sola hipótesis escrita antes de mirar y corte fuera de muestra el 26-oct-2026',/H1:/.test(rd('scripts/divergencia.js'))&&/2026-10-26T00:00:00Z/.test(rd('scripts/divergencia.js')));
+}
+
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);
