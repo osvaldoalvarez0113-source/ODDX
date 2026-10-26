@@ -2524,7 +2524,8 @@ function pintarAlGane(partidos){
     if(!mL || !mV) return;
     var r = calcular(mL.eq, mV.eq);
     /* registro automático (autoregistro.js): lo que el modelo dijo ANTES del juego, para medir después si la app sirve */
-    try{ var tsA = tsPartido(p); if(tsA) regAuto.push({ts:tsA, local:p.local, visita:p.visita, p:{L:r.pL, D:r.pD, A:r.pV}, liga:(LIGAS[LIGA_ACTUAL]&&LIGAS[LIGA_ACTUAL].nombre)||'', slug:ESPN_SLUG[LIGA_ACTUAL]||'', ext:p.id}); }catch(e){}
+    /* hora REAL de inicio: tsPartido() solo trae la fecha (medianoche), y así los juegos de hoy parecían «ya empezados» y nunca se guardaban */
+    try{ var hdA = (!p.ts && p.hora) ? horaLocalDispositivo(p.fecha, p.hora) : null; var tsA = p.ts || (hdA ? hdA.getTime() : tsPartido(p)); if(tsA) regAuto.push({ts:tsA, local:p.local, visita:p.visita, p:{L:r.pL, D:r.pD, A:r.pV}, liga:(LIGAS[LIGA_ACTUAL]&&LIGAS[LIGA_ACTUAL].nombre)||'', slug:ESPN_SLUG[LIGA_ACTUAL]||'', ext:p.id}); }catch(e){}
     var mejor = Math.max(r.pL, r.pV);
     var esLocal = mejor===r.pL;
     filas.push({
