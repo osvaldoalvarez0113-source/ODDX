@@ -31,6 +31,7 @@ var BY={};ESTILOS.forEach(function(e){BY[e.id]=e;});
 var CSS=`
 .brandbar,html h1{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html[data-hub]:not([data-hub="oro"]) .wrap,html[data-hub]:not([data-hub="oro"]) #splash,html[data-hub]:not([data-hub="oro"]) body::before{display:none!important}
+#hubLay .hl-herr{position:fixed;z-index:9000;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;padding:7px 11px;border-radius:999px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.22);color:#fff;font:600 12px/1 -apple-system,system-ui,sans-serif;text-decoration:none;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);min-height:30px;display:flex;align-items:center}
 html[data-hub]:not([data-hub="oro"]),html[data-hub]:not([data-hub="oro"]) body{overflow:hidden;height:100%;background:#06070d}
 #hubLay{position:fixed;inset:0;z-index:5;overflow:hidden;color:#fff;font-family:Inter,-apple-system,system-ui,sans-serif;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none}
 #hubLay.L-carrusel{touch-action:pan-x}
@@ -417,6 +418,7 @@ function construir(id){
   var b=BUILD[id]; if(!b) return;
   var lay=doc.createElement('div'); lay.id='hubLay'; lay.className='L-'+id;
   lay.innerHTML=b.html(); doc.body.appendChild(lay);
+  var hr=doc.createElement('a'); hr.className='hl-herr'; hr.href='herramientas.html'; hr.setAttribute('aria-label','Herramientas'); hr.textContent='\uD83D\uDCCA Herramientas'; lay.appendChild(hr);
   try{ actualizarLiv(lay); }catch(e){}
   if(b.init) ST.stop=b.init(lay);
   [].forEach.call(lay.querySelectorAll('.hl-brand'),pulsacion);
