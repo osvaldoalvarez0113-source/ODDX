@@ -82,6 +82,8 @@ async function main() {
     const ev = await bajarDeporte(m.primaryTagId, ahora, log);
     const juegos = parsearEventos(ev, ahora).sort((a, b) => Date.parse(a.ini) - Date.parse(b.ini));
     log(dep + ': ' + ev.length + ' eventos · ' + juegos.length + ' juegos con precio' + (juegos[0] ? ' · ejemplo ' + juegos[0].slug + ' ' + juegos[0].a + ' ' + Math.round(juegos[0].pa * 100) + '% / ' + juegos[0].h + ' ' + Math.round(juegos[0].ph * 100) + '%' : ''));
+    log('  slugs: ' + ev.map(e => e.slug + (e.closed ? '[closed]' : '') + (e.ended ? '[ended]' : '') + (e.live ? '[live]' : '')).filter(x => SLUG.test(x.replace(/\[.*$/, ''))).join(' '));
+    if (dep === 'nfl') { const d = await pedir('/events/slug/nfl-kc-sea-2026-10-25', 1); log('  diag nfl-kc-sea-2026-10-25: ' + (d ? JSON.stringify({ closed: d.closed, active: d.active, live: d.live, ended: d.ended, score: d.score, period: d.period, gameStatus: d.gameStatus, endDate: d.endDate, startTime: d.startTime, mk: (d.markets || []).slice(0, 2).map(x => [x.sportsMarketType, x.closed, x.outcomePrices, x.bestBid, x.bestAsk, x.gameStartTime]) }) : 'sin respuesta')); }
     if (!ev.length) continue;                             // si Polymarket no trajo nada, no pisamos el archivo anterior
     fs.writeFileSync('salida_pred/pred-' + dep + '.json', JSON.stringify({ v: 1, dep, generado: new Date(ahora).toISOString(), juegos }));
     hubo++;
