@@ -103,7 +103,9 @@ async function mercadoNba(){
     P('Futbol usable: '+fut.length+' · descartados '+JSON.stringify(razon));
     P('Muestra nombres: '+fut.slice(0,12).map(x=>x.liga+': '+x.n.join(' vs ')+' '+x.r.join('/')).join(' | '));
     if(fx[0]) P('Campos de un partido: '+Object.keys(fx[0]).join(','));
-    fs.writeFileSync('pinnacle-futbol.json',JSON.stringify({generado:new Date().toISOString(),ventanaH:HORAS_F,juegos:fut})); salio++;
+    /* si OddsPapi no devolvio nada (cuota agotada, tope mensual o error) NO se pisa el archivo bueno con uno vacio: la app prefiere precios de hace unas horas a ninguno */
+    if(fx.length) { fs.writeFileSync('pinnacle-futbol.json',JSON.stringify({generado:new Date().toISOString(),ventanaH:HORAS_F,juegos:fut})); salio++; }
+    else P('Futbol: OddsPapi no devolvio partidos -> se conserva pinnacle-futbol.json anterior');
     /* ---- NBA ---- */
     try{
       await nombres(11);
@@ -120,7 +122,8 @@ async function mercadoNba(){
       });
       P('NBA usable: '+nba.length+' · descartados '+JSON.stringify(rz));
       P('Muestra NBA: '+nba.slice(0,8).map(x=>x.n.join(' vs ')+' '+x.ml.join('/')).join(' | '));
-      fs.writeFileSync('pinnacle-nba.json',JSON.stringify({generado:new Date().toISOString(),ventanaH:HORAS_N,juegos:nba})); salio++;
+      if(nx.length) { fs.writeFileSync('pinnacle-nba.json',JSON.stringify({generado:new Date().toISOString(),ventanaH:HORAS_N,juegos:nba})); salio++; }
+      else P('NBA: OddsPapi no devolvio partidos -> se conserva pinnacle-nba.json anterior');
     }catch(e){ P('NBA ERROR: '+String(e.message).replace(KEY,'***')); }
   }catch(e){ P('ERROR: '+String(e.message).replace(KEY,'***')); process.exitCode=1; }
   P('Llamadas este mes (este escaner): '+(cache.uso[mes]||0)+' de '+MAX_MES);
