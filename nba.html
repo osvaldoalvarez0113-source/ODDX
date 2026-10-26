@@ -654,12 +654,12 @@ function resumenN(g,pr,H,A){
     });
   }
   const pH=(hit!==null)?hit:pr.pH, favM=pH>=0.5, pf=Math.max(pH,1-pH), nf=favM?H.n:A.n;
-  const gap=(hit!==null)?Math.abs(pr.pHMod-hit)*100:null;
+  const gap=(hit!==null)?Math.abs(pr.pHMod-hit)*100:null, pmNf=favM?pr.pHMod:1-pr.pHMod, pctNf=` en ${esc(nf)} (modelo solo ${Math.round(pmNf*100)}%, mercado ${Math.round(pf*100)}%)`;
   const sig=hit===null?'<span class="rvSig mid">! Sin precio del mercado para este juego: pronóstico solo del modelo</span>':
     (gap<=3&&favH===favM?'<span class="rvSig ok">✓ Modelo y mercado coinciden</span>':
-    (gap<=7&&favH===favM?`<span class="rvSig mid">≈ Diferencia de ${gap.toFixed(0)} pts · confía más en el mercado</span>`:
-    `<span class="rvSig bad">✗ Discrepan ${gap.toFixed(0)} pts · créele al mercado</span>`))+
-    (favH!==favM?`<div class="rvP" style="margin-top:7px">Modelo: <b>${esc(favH?H.n:A.n)}</b>. Mercado: <b>${esc(nf)}</b>.</div>`:'');
+    (gap<=7&&favH===favM?`<span class="rvSig mid">≈ Diferencia de ${gap.toFixed(0)} pts de probabilidad${pctNf} · confía más en el mercado</span>`:
+    `<span class="rvSig bad">✗ Discrepan ${gap.toFixed(0)} pts de probabilidad${pctNf} · créele al mercado</span>`))+
+    (favH!==favM?`<div class="rvP" style="margin-top:7px">Modelo solo: <b>${esc(favH?H.n:A.n)}</b> (${Math.round((favH?pr.pHMod:1-pr.pHMod)*100)}%). Mercado: <b>${esc(nf)}</b> (${Math.round(pf*100)}%).</div>`:'');
   const main=`<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf>=0.6?esc(nf)+' gana · '+Math.round(pf*100)+'%':'Juego parejo'}</div>
    <div class="rvP">${pf>=0.6?'Es el favorito'+(hit!==null?' según el mercado (Pinnacle, sin margen).':' según el modelo.'):'Ninguno pasa del 60%. Lo más probable: '+esc(nf)+' '+Math.round(pf*100)+'%.'}</div>${sig}
    <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amTxt(pf)}</b> por ${esc(nf)}${hit!==null?'':' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(nf)}</label><input type="number" inputmode="decimal" data-vl="o" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${hit!==null?1:0}"><div class="rvVal" data-vl="r"></div></div></div>`;

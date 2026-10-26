@@ -702,7 +702,7 @@ var PANELES=dis('paneles',`
 & .nxBar i.w{background:#fff;transform-origin:left;animation:nxGrow .9s .2s cubic-bezier(.3,.9,.3,1) both}
 & .nxFoot{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 & .nxFoot .sp{display:none}
-& .nxSello{padding:6px 13px;border:2px solid #fff;border-radius:99px;background:rgba(0,0,0,.3);color:#fff;font:800 12.5px/1 Inter,system-ui,sans-serif;letter-spacing:.03em;text-transform:uppercase}
+& .nxSello{white-space:normal;max-width:100%;padding:6px 13px;border:2px solid #fff;border-radius:18px;line-height:1.15;background:rgba(0,0,0,.3);color:#fff;font:800 12.5px/1 Inter,system-ui,sans-serif;letter-spacing:.03em;text-transform:uppercase}
 & .nxSello.si{background:#fff;color:#0B0B0B}
 & .nxSello.gris{opacity:.78}
 & .nxC{display:inline-flex;align-items:baseline;gap:6px;padding:6px 12px;border-radius:99px;border:2px solid rgba(255,255,255,.55);background:rgba(0,0,0,.4);text-align:left}

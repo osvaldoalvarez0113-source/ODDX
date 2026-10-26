@@ -380,13 +380,13 @@
   function resumenN(g, pr, H, A) {
     const favH = pr.pH >= 0.5, mk = pr.mk, hit = mk ? mk.p : null;
     const pH = (hit !== null) ? hit : pr.pH, favM = pH >= 0.5, pf = Math.max(pH, 1 - pH), nf = favM ? H.n : A.n;
-    const gap = (hit !== null) ? Math.abs(pr.pHMod - hit) * 100 : null;
+    const gap = (hit !== null) ? Math.abs(pr.pHMod - hit) * 100 : null, pmNf = favM ? pr.pHMod : 1 - pr.pHMod, pctNf = ' en ' + esc(nf) + ' (modelo solo ' + Math.round(pmNf * 100) + '%, mercado ' + Math.round(pf * 100) + '%)';
     const favMod = pr.pHMod >= 0.5;
     const sig = hit === null ? '<span class="rvSig mid">! Sin precio del mercado para este juego: pronóstico solo del modelo</span>' :
       (gap <= 3 && favMod === favM ? '<span class="rvSig ok">✓ Modelo y mercado coinciden</span>' :
-        (gap <= 7 && favMod === favM ? `<span class="rvSig mid">≈ Diferencia de ${gap.toFixed(0)} pts · confía más en el mercado</span>` :
-          `<span class="rvSig bad">✗ Discrepan ${gap.toFixed(0)} pts · créele al mercado</span>`)) +
-      (favMod !== favM ? `<div class="rvP" style="margin-top:7px">Modelo: <b>${esc(favMod ? H.n : A.n)}</b>. Mercado: <b>${esc(nf)}</b>.</div>` : '');
+        (gap <= 7 && favMod === favM ? `<span class="rvSig mid">≈ Diferencia de ${gap.toFixed(0)} pts de probabilidad${pctNf} · confía más en el mercado</span>` :
+          `<span class="rvSig bad">✗ Discrepan ${gap.toFixed(0)} pts de probabilidad${pctNf} · créele al mercado</span>`)) +
+      (favMod !== favM ? `<div class="rvP" style="margin-top:7px">Modelo solo: <b>${esc(favMod ? H.n : A.n)}</b> (${Math.round((favMod ? pr.pHMod : 1 - pr.pHMod) * 100)}%). Mercado: <b>${esc(nf)}</b> (${Math.round(pf * 100)}%).</div>` : '');
     const umbral = DEP === 'nhl' ? 0.55 : 0.6;
     const fuente = mk ? (mk.src === 'pin' ? 'Pinnacle, sin margen' : 'ESPN (DraftKings), sin margen') : '';
     const main = `<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf >= umbral ? esc(nf) + ' gana · ' + Math.round(pf * 100) + '%' : 'Juego parejo'}</div>
