@@ -219,6 +219,7 @@ function bloquePeriodos(items,titulo,nota){
 function el(tag,attrs,hijos){
   var d=root.document, e=d.createElement(tag);
   if(attrs) Object.keys(attrs).forEach(function(k){
+    if(attrs[k]==null) return;
     if(k==='class') e.className=attrs[k]; else if(k==='text') e.textContent=attrs[k];
     else if(k.slice(0,2)==='on') e.addEventListener(k.slice(2),attrs[k]); else e.setAttribute(k,attrs[k]);
   });
@@ -428,71 +429,174 @@ function pantallaAvisos(cont){
     el('p',{class:'nota',text:'Cuando abres la lista de juegos y un abridor es distinto al que vio la app la última vez, la tarjeta de ese juego marca ⚠️ «Cambió el abridor» con los dos nombres.'})]));
 }
 
-/* ----- registro automático (autoregistro.js): mide si la app sirve con TODOS los juegos, sin que tengas que guardar nada ----- */
+/* ----- registro automático (autoregistro.js): mide si la app sirve con TODOS los juegos, sin que tengas que guardar nada -----
+   Vista fácil: un deporte a la vez, por semana / mes / todo, marcador modelo contra mercado y la lista de juegos
+   con quién eligió cada uno y quién ganó. Lo técnico (grupos, Brier, ROI con margen) queda plegado al final. */
+var DIAS_C=['dom','lun','mar','mié','jue','vie','sáb'];
+function autoFav(p){ return p?(p.L>=p.A?'L':'A'):null; }
+/* un juego guardado → lo que hace falta para pintarlo: a quién eligió el modelo, el mercado, quién ganó y la unidad apostada */
+function autoFila(r,A){
+  var m=r.m1||r.m0||null, k=r.k1||r.k0||null, o={r:r,t:r.ts,fin:!!(r.res&&r.res!=='X'),anul:r.res==='X'};
+  o.fm=autoFav(m); o.fk=autoFav(k); o.pm=m&&o.fm?m[o.fm]:null; o.pk=k&&o.fk?k[o.fk]:null;
+  if(o.fin){
+    o.okM=o.fm?r.res===o.fm:null; o.okK=o.fk?r.res===o.fk:null;
+    var d=A&&A.derivar?A.derivar(r):null;
+    if(d&&d.k&&d.favMix){ var dec=A.precio3(d.k[d.favMix]); if(dec>0) o.u=(r.res===d.favMix)?dec-1:-1; }
+  }
+  return o;
+}
+function autoStats(fs){
+  var s={n:0,pend:0,mN:0,mW:0,kN:0,kW:0,u:0,uN:0,choque:0,chM:0,chK:0};
+  fs.forEach(function(f){
+    if(f.anul) return;
+    if(!f.fin){ s.pend++; return; }
+    s.n++;
+    if(f.okM!=null){ s.mN++; if(f.okM) s.mW++; }
+    if(f.okK!=null){ s.kN++; if(f.okK) s.kW++; }
+    if(f.u!=null){ s.u+=f.u; s.uN++; }
+    if(f.fm&&f.fk&&f.fm!==f.fk){ s.choque++; if(f.okM) s.chM++; if(f.okK) s.chK++; }
+  });
+  return s;
+}
+function pct0(w,n){ return n?Math.round(w/n*100)+'%':'—'; }
 function pantallaAuto(cont,ls){
   limpiar(cont);
   var A=root.OVARegAuto;
   if(!A){ cont.appendChild(el('div',{class:'flag rojo',text:'No cargó el módulo del registro automático (autoregistro.js).'})); return; }
   var items=[]; try{ items=JSON.parse(ls.getItem('ova_auto_v1')||'[]')||[]; }catch(e){ items=[]; }
+  var V={dep:null,tipo:'semana',off:0}; try{ var g0=JSON.parse(ls.getItem('ova_auto_vista')||'null'); if(g0&&typeof g0==='object'){ V.dep=g0.dep||null; if(/^(semana|mes|todo)$/.test(g0.tipo)) V.tipo=g0.tipo; } }catch(e){}
+  function guardarV(){ try{ ls.setItem('ova_auto_vista',JSON.stringify({dep:V.dep,tipo:V.tipo})); }catch(e){} }
   function repintar(){ pantallaAuto(cont,ls); }
-  var barra=el('div',{class:'caja'},[
-    el('h3',{text:'Registro automático'}),
-    el('p',{class:'nota',text:'Cada vez que abres MLB, Fútbol o NBA, la app guarda sola cada juego antes de que empiece: lo que dijo el modelo y lo que decía el mercado (Pinnacle sin margen). Horas después baja el resultado de ESPN. Así se mide si sirve, sin que tengas que apuntar nada. No son tus picks: no tocan Mis picks ni tu CLV ni tu banca.'}),
-    el('div',{class:'pie2'},[
-      el('button',{type:'button',text:'↻ Actualizar resultados',onclick:function(){ A.resolver(true).then(repintar,repintar); }}),
-      el('button',{type:'button',text:'📋 Copiar datos',onclick:function(){
-        var txt=A.exportar(items), nav=root.navigator||{};
-        function mostrar(){ var ta=el('textarea',{rows:'6',readonly:'readonly'}); ta.value=txt; barra.appendChild(ta); try{ ta.focus(); ta.select(); }catch(e){} }
-        if(nav.clipboard&&nav.clipboard.writeText) nav.clipboard.writeText(txt).then(function(){ barra.appendChild(el('p',{class:'nota',text:'Copiado ('+items.length+' juegos). Pégalo en Notas o en el chat.'})); },mostrar); else mostrar();
-      }})])]);
-  cont.appendChild(barra);
+
+  cont.appendChild(el('div',{class:'caja'},[
+    el('h3',{text:'🤖 ¿La app acierta?'}),
+    el('p',{class:'nota',text:'Cada juego se guarda solo antes de empezar. Aquí ves a quién eligió tu modelo, a quién el mercado (Pinnacle) y quién ganó de verdad. No son tus picks: no tocan Mis picks, tu CLV ni tu banca.'}),
+    el('div',{class:'pie2'},[el('button',{type:'button',text:'↻ Buscar resultados nuevos',onclick:function(){ A.resolver(true).then(repintar,repintar); }})])]));
   if(!items.length){
     cont.appendChild(el('div',{class:'vacio'},[el('b',{text:'Todavía no hay juegos guardados'}),
-      el('p',{text:'Abre MLB (y toca Cargar), Fútbol, NBA, NHL o NFL con juegos por jugar y se guardan solos.'})]));
+      el('p',{text:'Abre MLB, Fútbol, NBA, NHL o NFL con juegos por jugar y se guardan solos.'})]));
     return;
   }
-  var hubo=false;
-  ['mlb','fut','nba','nhl','nfl'].forEach(function(a){
-    var o=A.resumir(items,a); if(!o.total) return; hubo=true;
-    var caja=el('div',{class:'caja'},[el('h3',{text:APPS[a]}),
-      el('div',{class:'kpis'},[kpi(String(o.total),'guardados'),kpi(String(o.res),'con resultado'),kpi(String(o.pend),'pendientes')]),
-      el('div',{class:'flag '+(o.conMer<30?'ambar':'')},[A.veredicto(o)])]);
+  var cuenta={}; items.forEach(function(r){ if(r&&r.app) cuenta[r.app]=(cuenta[r.app]||0)+1; });
+  var orden=['mlb','fut','nba','nhl','nfl'];
+  if(!V.dep||!cuenta[V.dep]){ V.dep=orden.filter(function(a){ return cuenta[a]; }).sort(function(x,y){ return cuenta[y]-cuenta[x]; })[0]; }
+
+  /* deporte */
+  var chD=el('div',{class:'chips',role:'tablist'});
+  orden.forEach(function(a){
+    chD.appendChild(el('button',{type:'button',class:a===V.dep?'on':'',disabled:cuenta[a]?null:'disabled','aria-pressed':String(a===V.dep),
+      text:APPS[a]+' · '+(cuenta[a]||0),onclick:function(){ V.dep=a; V.off=0; guardarV(); pintar(); }}));
+  });
+  [].forEach.call(chD.querySelectorAll('button[disabled=null]'),function(b){ b.removeAttribute('disabled'); });
+  cont.appendChild(chD);
+  var cuerpo=el('div',{class:'autoC'}); cont.appendChild(cuerpo);
+
+  function pintar(){
+    [].forEach.call(chD.children,function(b,i){ var on=orden[i]===V.dep; b.className=on?'on':''; b.setAttribute('aria-pressed',String(on)); });
+    limpiar(cuerpo);
+    var todas=items.filter(function(r){ return r&&r.app===V.dep; }).map(function(r){ return autoFila(r,A); }).sort(function(x,y){ return y.t-x.t; });
+    /* periodo elegido */
+    var ini=null, fin=null, etq='Todo lo guardado';
+    if(V.tipo!=='todo'){
+      ini=inicioPeriodo(Date.now(),V.tipo);
+      for(var i=0;i<V.off;i++){ if(V.tipo==='mes') ini.setMonth(ini.getMonth()-1); else ini.setDate(ini.getDate()-7); }
+      fin=new Date(ini.getTime()); if(V.tipo==='mes') fin.setMonth(fin.getMonth()+1); else fin.setDate(fin.getDate()+7);
+      etq=(V.off===0?(V.tipo==='mes'?'Este mes · ':'Esta semana · '):(V.off===1?(V.tipo==='mes'?'Mes pasado · ':'Semana pasada · '):''))+etiquetaPeriodo(ini,V.tipo);
+    }
+    var fs=todas.filter(function(f){ return !ini||(f.t>=ini.getTime()&&f.t<fin.getTime()); });
+    var hayAntes=ini&&todas.some(function(f){ return f.t<ini.getTime(); });
+
+    var chT=el('div',{class:'chips'});
+    [['semana','Semana'],['mes','Mes'],['todo','Todo']].forEach(function(x){
+      chT.appendChild(el('button',{type:'button',class:V.tipo===x[0]?'on':'','aria-pressed':String(V.tipo===x[0]),text:x[1],onclick:function(){ V.tipo=x[0]; V.off=0; guardarV(); pintar(); }}));
+    });
+    cuerpo.appendChild(chT);
+    if(V.tipo!=='todo') cuerpo.appendChild(el('div',{class:'navP'},[
+      el('button',{type:'button','aria-label':'Anterior',text:'‹',disabled:hayAntes?null:'disabled',onclick:function(){ V.off++; pintar(); }}),
+      el('b',{text:etq}),
+      el('button',{type:'button','aria-label':'Siguiente',text:'›',disabled:V.off>0?null:'disabled',onclick:function(){ V.off=Math.max(0,V.off-1); pintar(); }})]));
+    [].forEach.call(cuerpo.querySelectorAll('button[disabled="null"]'),function(b){ b.removeAttribute('disabled'); });
+
+    var s=autoStats(fs);
+    /* marcador */
+    var caja=el('div',{class:'caja'});
+    caja.appendChild(el('div',{class:'duelo'},[
+      el('div',{class:'lado'+(s.mN&&s.kN&&s.mW/s.mN>s.kW/s.kN?' gana':'')},[el('span',{text:'🧠 Tu modelo'}),el('b',{text:pct0(s.mW,s.mN)}),el('small',{text:s.mN?'acertó '+s.mW+' de '+s.mN:'sin juegos terminados'})]),
+      el('div',{class:'lado'+(s.mN&&s.kN&&s.kW/s.kN>s.mW/s.mN?' gana':'')},[el('span',{text:'📈 Mercado'}),el('b',{text:pct0(s.kW,s.kN)}),el('small',{text:s.kN?'acertó '+s.kW+' de '+s.kN:'sin precio todavía'})])]));
+    var lin=[];
+    if(s.uN) lin.push(el('div',{class:'linA'},[el('span',{text:'💵 Si apostabas 1 unidad a lo que dice la app'}),el('b',{class:s.u>0.005?'g':(s.u<-0.005?'p':''),text:signo(s.u,1)+' u'})]));
+    if(s.choque) lin.push(el('div',{class:'linA'},[el('span',{text:'⚔️ No coincidieron ('+s.choque+')'}),el('b',{text:'modelo '+s.chM+' · mercado '+s.chK})]));
+    lin.push(el('div',{class:'linA'},[el('span',{text:'⏳ Por jugarse o sin resultado'}),el('b',{text:String(s.pend)})]));
+    lin.forEach(function(x){ caja.appendChild(x); });
+    if(s.n&&s.n<30) caja.appendChild(el('p',{class:'nota',text:'Con '+s.n+' juego'+(s.n===1?'':'s')+' terminado'+(s.n===1?'':'s')+' esto todavía es casi pura suerte. Mira el «Todo» cuando pase de 100.'}));
+    cuerpo.appendChild(caja);
+
+    /* resumen de todas las semanas o meses */
+    if(V.tipo!=='todo'){
+      var per={}; todas.forEach(function(f){ var k=inicioPeriodo(f.t,V.tipo).getTime(); (per[k]=per[k]||[]).push(f); });
+      var ks=Object.keys(per).map(Number).sort(function(a,b){ return b-a; });
+      if(ks.length>1||(ks.length===1&&V.off>0)){
+        var t=el('table',{class:'tab'},[el('tr',null,[V.tipo==='mes'?'Mes':'Semana','Modelo','Mercado','Unid.'].map(function(h){ return el('th',{text:h}); }))]);
+        var base=inicioPeriodo(Date.now(),V.tipo).getTime();
+        ks.forEach(function(k){
+          var st=autoStats(per[k]), d=new Date(k), off=0, x=new Date(base);
+          while(x.getTime()>k&&off<120){ if(V.tipo==='mes') x.setMonth(x.getMonth()-1); else x.setDate(x.getDate()-7); off++; }
+          var tr=el('tr',{class:off===V.off?'sel':'',style:'cursor:pointer',onclick:function(){ V.off=off; pintar(); }},[
+            el('td',{text:etiquetaPeriodo(d,V.tipo)}),
+            el('td',{class:'n',text:st.mN?st.mW+'-'+(st.mN-st.mW):'—'}),
+            el('td',{class:'n',text:st.kN?st.kW+'-'+(st.kN-st.kW):'—'}),
+            el('td',{class:'n '+(st.u>0.005?'g':(st.u<-0.005?'p':'')),text:st.uN?signo(st.u,1):'—'})]);
+          t.appendChild(tr);
+        });
+        cuerpo.appendChild(el('div',{class:'caja'},[el('h3',{text:V.tipo==='mes'?'📅 Mes por mes':'📅 Semana por semana'}),t,
+          el('p',{class:'nota',text:'Ganados-perdidos de cada uno. Toca una fila para ver sus juegos.'})]));
+      }
+    }
+
+    /* lista de juegos por día */
+    var lista=el('div',{class:'caja'},[el('h3',{text:'🗓️ Juegos ('+fs.length+')'})]);
+    if(!fs.length) lista.appendChild(el('p',{class:'nota',text:V.tipo==='todo'?'No hay juegos guardados de este deporte.':'No hay juegos guardados en este periodo. Usa ‹ para ir hacia atrás.'}));
+    var diaAnt=null;
+    fs.forEach(function(f){
+      var r=f.r, d=new Date(f.t), dia=DIAS_C[d.getDay()]+' '+d.getDate()+' '+MES_C[d.getMonth()];
+      if(dia!==diaAnt){ lista.appendChild(el('div',{class:'diaA',text:dia})); diaAnt=dia; }
+      var gl=r.res==='L', gv=r.res==='A', tieneM=r.gl!=null&&r.gv!=null;
+      var eq=function(nom,sc,gano){ return el('div',{class:'eqA'+(gano?' gano':'')},[el('span',{text:nom}),el('b',{text:tieneM?String(sc):''})]); };
+      var est=f.anul?'Anulado':(f.fin?(r.res==='D'?'Empate':'Final'):('⏳ '+d.toLocaleTimeString('es-US',{hour:'numeric',minute:'2-digit',hour12:true})));
+      var pick=function(lab,fav,p,ok){
+        if(!fav) return el('span',{class:'pkA'},[lab+': sin precio']);
+        var nom=fav==='L'?r.local:r.visita;
+        return el('span',{class:'pkA'+(ok===true?' si':(ok===false?' no':''))},[(ok===true?'✅ ':(ok===false?'❌ ':''))+lab+': '+nom+(p!=null?' '+Math.round(p*100)+'%':'')]);
+      };
+      lista.appendChild(el('div',{class:'jA'},[
+        el('div',{class:'jAtop'},[el('div',{class:'eqs'},[eq(r.local,r.gl,gl),eq(r.visita,r.gv,gv)]),el('small',{class:'estA',text:est})]),
+        el('div',{class:'pksA'},[pick('🧠 Modelo',f.fm,f.pm,f.okM),pick('📈 Mercado',f.fk,f.pk,f.okK)]),
+        (V.dep==='fut'&&r.liga)?el('small',{class:'ligA',text:r.liga}):null]));
+    });
+    cuerpo.appendChild(lista);
+
+    /* lo técnico, plegado */
+    var o=A.resumir(items,V.dep), av=el('div',null,[el('div',{class:'flag '+(o.conMer<30?'ambar':'')},[A.veredicto(o)])]);
     var gr=o.grupos.filter(function(g){ return g.n>0; });
     if(gr.length){
-      var t=el('table',{class:'tab'},[el('tr',null,['Grupo','Juegos','Acierto (mercado)','ROI techo','ROI real'].map(function(h){ return el('th',{text:h}); }))]);
-      gr.forEach(function(g){
-        t.appendChild(el('tr',null,[el('td',{text:g.nombre}),el('td',{class:'n',text:String(g.n)}),
-          el('td',{class:'n',text:g.hit.toFixed(0)+'% ('+(g.esp==null?'—':g.esp.toFixed(0)+'%')+')'}),
-          el('td',{class:'n',text:signo(g.roi0,1)+'%'}),
-          el('td',{class:'n',text:signo(g.roi3,1)+'%'+(g.se3!=null?' ±'+g.se3.toFixed(1):'')})]));
-      });
-      caja.appendChild(t);
-      caja.appendChild(el('p',{class:'nota',text:'Se apuesta 1 unidad al favorito de la mezcla 50/50 modelo + mercado, al precio del mercado. «ROI techo» es a precio justo, sin margen de casa (nadie lo cobra así). «ROI real» descuenta un margen de 3%, que es más parecido a lo que pagan. Entre paréntesis, cuánto acertaba el mercado en promedio: si el acierto no pasa de ahí, no hay ventaja.'}));
-    }
-    var c=o.choque;
-    if(c.distintoFav>0){
-      caja.appendChild(el('div',{class:'flag'},['Cuando modelo y mercado eligieron favoritos distintos ('+c.distintoFav+' juegos): acertó el modelo '+c.gM+' veces y el mercado '+c.gK+(c.gN?' (y '+c.gN+' ninguno)':'')+'. '+
-        (c.distintoFav>=20?(c.gK>c.gM?'Por ahora el mercado tiene más razón: la regla de no jugar esos juegos se sostiene.':(c.gM>c.gK?'Por ahora el modelo le gana al mercado en esos choques, pero con tan pocos juegos puede ser suerte.':'Van empatados.')):'Muy poca muestra todavía.')]));
+      var tg=el('table',{class:'tab'},[el('tr',null,['Grupo','Juegos','Acierto (mercado)','ROI techo','ROI real'].map(function(h){ return el('th',{text:h}); }))]);
+      gr.forEach(function(g){ tg.appendChild(el('tr',null,[el('td',{text:g.nombre}),el('td',{class:'n',text:String(g.n)}),
+        el('td',{class:'n',text:g.hit.toFixed(0)+'% ('+(g.esp==null?'—':g.esp.toFixed(0)+'%')+')'}),el('td',{class:'n',text:signo(g.roi0,1)+'%'}),
+        el('td',{class:'n',text:signo(g.roi3,1)+'%'+(g.se3!=null?' ±'+g.se3.toFixed(1):'')})])); });
+      av.appendChild(tg);
+      av.appendChild(el('p',{class:'nota',text:'Se apuesta 1 unidad al favorito de la mezcla 50/50 modelo + mercado, al precio del mercado. «ROI techo» es sin margen de casa; «ROI real» descuenta un 3%. Entre paréntesis, cuánto acertaba el mercado en promedio: si el acierto no pasa de ahí, no hay ventaja.'}));
     }
     var b=o.brier;
-    if(b.n>=5&&b.mod!=null) caja.appendChild(el('p',{class:'nota',text:'Calibración (Brier, más bajo es mejor) en '+b.n+' juegos: modelo '+b.mod.toFixed(3)+' · mercado '+b.mer.toFixed(3)+' · mezcla '+b.mix.toFixed(3)+'.'}));
-    if(o.sinMer.n) caja.appendChild(el('p',{class:'nota',text:o.sinMer.n+' juegos resueltos sin precio de mercado (Pinnacle no los traía): el favorito del modelo acertó '+o.sinMer.hit.toFixed(0)+'%. Sin precio no hay ROI.'}));
-    var cp=A.comoPicks?A.comoPicks(items,a):[];
-    if(cp.length) caja.appendChild(bloquePeriodos(cp,'📅 Por semana y por mes','Como si hubieras apostado 1 unidad al favorito de la mezcla, a precio de mercado con margen de 3%.'));
-    var lst=items.filter(function(r){ return r&&r.app===a; }).sort(function(x,y){ return y.ts-x.ts; }).slice(0,40);
-    if(lst.length){
-      var pc=function(p){ return p&&p.L!=null?Math.round(p.L*100)+'%':'—'; };
-      var rs=function(r){ return r.res==='L'?'Local':(r.res==='A'?'Visita':(r.res==='D'?'Empate':(r.res==='X'?'Anulado':'⏳'))); };
-      var tl=el('table',{class:'tab'},[el('tr',null,['Juego','Modelo (local)','Mercado (local)','Ganó'].map(function(h){ return el('th',{text:h}); }))]);
-      lst.forEach(function(r){
-        tl.appendChild(el('tr',null,[el('td',{text:(r.fecha||'').slice(5)+' · '+r.local+' vs '+r.visita}),el('td',{class:'n',text:pc(r.m1||r.m0)}),
-          el('td',{class:'n',text:pc(r.k1||r.k0)}),el('td',{class:'n',text:rs(r)})]));
-      });
-      caja.appendChild(el('details',null,[el('summary',{text:'Ver los '+lst.length+' juegos más recientes'}),tl]));
-    }
-    cont.appendChild(caja);
-  });
-  if(hubo) cont.appendChild(el('p',{class:'nota',text:'Con menos de 30 juegos por grupo, los números bailan por pura suerte. Para distinguir de la suerte un ROI real de +3% hacen falta miles de juegos; por eso mira la calibración y los choques primero, que se mueven más rápido. Si el mercado no trae un juego, queda sin precio y no cuenta para el ROI.'}));
+    if(b.n>=5&&b.mod!=null) av.appendChild(el('p',{class:'nota',text:'Calibración (Brier, más bajo es mejor) en '+b.n+' juegos: modelo '+b.mod.toFixed(3)+' · mercado '+b.mer.toFixed(3)+' · mezcla '+b.mix.toFixed(3)+'.'}));
+    if(o.sinMer.n) av.appendChild(el('p',{class:'nota',text:o.sinMer.n+' juegos resueltos sin precio de mercado: el favorito del modelo acertó '+o.sinMer.hit.toFixed(0)+'%.'}));
+    av.appendChild(el('div',{class:'pie2'},[el('button',{type:'button',text:'📋 Copiar datos',onclick:function(){
+      var txt=A.exportar(items), nav=root.navigator||{};
+      function mostrar(){ var ta=el('textarea',{rows:'6',readonly:'readonly'}); ta.value=txt; av.appendChild(ta); try{ ta.focus(); ta.select(); }catch(e){} }
+      if(nav.clipboard&&nav.clipboard.writeText) nav.clipboard.writeText(txt).then(function(){ av.appendChild(el('p',{class:'nota',text:'Copiado ('+items.length+' juegos). Pégalo en Notas o en el chat.'})); },mostrar); else mostrar();
+    }})]));
+    cuerpo.appendChild(el('details',{class:'caja avA'},[el('summary',{text:'🔬 Datos avanzados (todo el historial)'}),av]));
+  }
+  pintar();
 }
 
 /* ----- Salud: qué tan frescos están los datos y qué lleva guardado cada app ----- */

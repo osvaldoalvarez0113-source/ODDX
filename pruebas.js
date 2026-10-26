@@ -1130,13 +1130,13 @@ sec('Registro automático: guarda ANTES del juego, resuelve solo y mide con prec
   const RA2=require(path.join(__dirname,'autoregistro.js'));
   const cp=RA2.comoPicks([{id:'a',app:'nba',ts:dia(2026,9,25),m1:{L:0.6,A:0.4},k1:{L:0.58,A:0.42},res:'L'},{id:'b',app:'nba',ts:dia(2026,9,25),m1:{L:0.6,A:0.4},k1:null,res:'L'},{id:'c',app:'mlb',ts:1,m1:{L:0.6,A:0.4},k1:{L:0.58,A:0.42},res:'A'}],'nba');
   ok('comoPicks: solo juegos resueltos con precio de mercado y de la app pedida; 1 unidad al favorito al precio con margen',cp.length===1&&cp[0].res==='G'&&Math.abs(cp[0].u-((1/0.58)/1.03-1))<1e-9);
-  ok('Marcador y Auto muestran el bloque «Por semana y por mes»',/bloquePeriodos\(items,'📅 Por semana y por mes'/.test(rd('herramientas.js'))&&/bloquePeriodos\(cp,'📅 Por semana y por mes'/.test(rd('herramientas.js')));
+  ok('Marcador y Auto muestran el bloque «Por semana y por mes»',/bloquePeriodos\(items,'📅 Por semana y por mes'/.test(rd('herramientas.js'))&&/Semana por semana/.test(rd('herramientas.js')));
  }
  ['index.html','futbol.html','nba.html'].forEach(f=>ok(f+' carga autoregistro.js después de asistente.js',rd(f).indexOf('<script src="autoregistro.js">')>rd(f).indexOf('<script src="asistente.js">')&&rd(f).indexOf('<script src="asistente.js">')>0));
  ok('herramientas.html lo carga antes de herramientas.js y el service worker lo guarda',rd('herramientas.html').indexOf('autoregistro.js')>0&&rd('herramientas.html').indexOf('autoregistro.js')<rd('herramientas.html').indexOf('herramientas.js')&&/'autoregistro\.js'/.test(rd('sw.js')));
  ok('las tres apps llaman al registro con try/catch y solo con juegos pendientes',/OVARegAuto\.registrar\('mlb'/.test(rd('index.html'))&&/OVARegAuto\.registrar\('fut'/.test(rd('futbol.html'))&&/OVARegAuto\.registrar\('nba'/.test(rd('nba.html')));
  ok('el respaldo (ovaextra.js) incluye ova_auto_v1 y lo mezcla sin duplicar',/'ova_auto_v1'\]/.test(rd('ovaextra.js'))&&/ova_auto_v1:1\}/.test(rd('ovaextra.js')));
- ok('la pestaña Auto lista los juegos guardados (los 40 más recientes) con modelo, mercado y quién ganó',/Ver los '\+lst\.length\+' juegos más recientes/.test(rd('herramientas.js')));
+ ok('la pestaña Auto lista los juegos por deporte y periodo con modelo, mercado y quién ganó',/🗓️ Juegos \(/.test(rd('herramientas.js'))&&/🧠 Modelo/.test(rd('herramientas.js')));
  ok('Herramientas tiene la pestaña 🤖 Auto',/\['auto','🤖 Auto'\]/.test(rd('herramientas.js'))&&/pantallaAuto\(cont,ls\)/.test(rd('herramientas.js')));
 }
 
