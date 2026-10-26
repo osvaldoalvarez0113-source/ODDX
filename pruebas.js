@@ -554,6 +554,7 @@ sec('Once diseños con cabecera propia: Historias, Duelo, Bento, Agenda, Radar d
  {const nb=rd('nba.html'), us=rd('usdeporte.js');
   ok('NBA: la columna «Modelo» del Veredicto es el modelo SOLO (igual que NHL/NFL), no la mezcla 95% mercado que siempre coincidía',/Modelo solo<\/div>/.test(nb)&&/row\(H\.n,pr\.pHMod,hit\)/.test(nb)&&/Math\.abs\(pr\.pHMod-hit\)/.test(nb));
   ok('el aviso «se separa X pts» ahora dice los dos números: lo que dice el mercado y lo que dice el modelo solo (NBA, NHL y NFL)',/el mercado dice <strong>'\+quien\(mer\)\+'<\/strong> y el modelo solo dice/.test(nb)&&/el mercado dice <strong>' \+ quien\(hayS \? mer : pmM\) \+ '<\/strong> y el modelo solo dice/.test(us));}
+ ok('fútbol: el aviso de diferencia dice el % del modelo y el % del mercado, no solo los puntos',/\(modelo '\+pc0\(mod\[mi\]\)\+', mercado '\+pc0\(f\[mi\]\)\+'\)/.test(rd('futbol.html')));
  ok('la cabecera nueva está oculta por defecto (Clásico y demás no la ven)',/\.nxT,\.nxProg,\.nxSum,\.nxPlot,\.nxAhora\{display:none\}/.test(I2.css));
  ok('diseno.js entrega el lector de tarjetas (OVALeerJuego) que usa interior2.js',/root\.OVALeerJuego=bzLeer/.test(rd('diseno.js')));
  ok('el marcador en vivo no queda pegado al reloj (el <br> se cambia por un separador al leer la etiqueta)',/function bzTxt\(e\)\{[\s\S]*?querySelectorAll\('br'\)[\s\S]*?createTextNode\(' · '\)/.test(rd('diseno.js'))&&/querySelectorAll\("br"\)/.test(rd('obsidiana.js')));

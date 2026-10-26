@@ -2127,8 +2127,8 @@ function resumenVeredictoF(p, base, id){
     var mx = 0, mi = 0; for(i=0;i<3;i++){ var d = Math.abs(mod[i]-f[i])*100; if(d>mx){ mx = d; mi = i; } }
     var mismo = (bm===best);
     if(mx<=4 && mismo) sig = '<span class="rvSig ok">✓ Modelo y mercado coinciden</span>';
-    else if(mx<=8) sig = '<span class="rvSig mid">≈ Diferencia de '+mx.toFixed(0)+' pts en «'+txtRes(mi)+'» · confía más en el mercado</span>';
-    else sig = '<span class="rvSig bad">✗ Discrepan '+mx.toFixed(0)+' pts en «'+txtRes(mi)+'» · créele al mercado</span>';
+    else if(mx<=8) sig = '<span class="rvSig mid">≈ Diferencia de '+mx.toFixed(0)+' pts en «'+txtRes(mi)+'» (modelo '+pc0(mod[mi])+', mercado '+pc0(f[mi])+') · confía más en el mercado</span>';
+    else sig = '<span class="rvSig bad">✗ Discrepan '+mx.toFixed(0)+' pts en «'+txtRes(mi)+'» (modelo '+pc0(mod[mi])+', mercado '+pc0(f[mi])+') · créele al mercado</span>';
     if(!mismo) sig += '<div class="rvP" style="margin-top:7px">Modelo: <b>'+txtRes(bm)+'</b> ('+pc0(mod[bm])+'). Mercado: <b>'+txtRes(best)+'</b> ('+pc0(f[best])+').</div>';
   } else sig = '<span class="rvSig mid">! Sin precios del mercado para este partido: pronóstico solo del modelo</span>';
   var pick = '<div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>'+cj(fuente[best])+'</b> por '+escR(txtRes(best))+(f?'':' (cuota del modelo, menos confiable)')+'. Escribe la que te dan:</div>'+
