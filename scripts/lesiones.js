@@ -98,7 +98,43 @@ function cambiosPortero(prev, ahora) {
 function mensajePortero(lista) {
   return { titulo: '🥅 NHL: cambió el portero (' + lista.length + ')', cuerpo: lista.slice(0, 10).map(c => '• ' + c.juego + ': ' + c.eq + ' ' + c.antes + ' → ' + c.ahora).join('\n') };
 }
-module.exports = { compactar, armar, juegosDe, nuevos, mensaje, recorta, cambiosPortero, mensajePortero };
+/* LINEAS DE ANTES DEL JUEGO. ESPN quita las cuotas del marcador en cuanto el juego empieza, y la app se quedaba «sin precio del mercado»
+   justo cuando mas la miras. El robot guarda la linea (cierre) de cada juego que aun no empieza y la conserva 3 dias.
+   recortaOdds deja solo lo que lee parseOdds de las apps (cuotas, linea, total) para que el archivo sea chico. */
+function recortaOdds(o) {
+  if (!o || typeof o !== 'object') return null;
+  const r = {};
+  ['details', 'overUnder', 'spread'].forEach(k => { if (o[k] !== undefined && o[k] !== null) r[k] = o[k]; });
+  ['homeTeamOdds', 'awayTeamOdds'].forEach(k => { if (o[k]) { const x = {}; if (o[k].favorite !== undefined) x.favorite = o[k].favorite; if (o[k].moneyLine !== undefined) x.moneyLine = o[k].moneyLine; r[k] = x; } });
+  ['moneyline', 'pointSpread', 'total'].forEach(k => {
+    if (!o[k]) return; const m = {};
+    ['home', 'away', 'over', 'under'].forEach(lado => {
+      const v = o[k][lado]; if (!v) return; const q = {};
+      ['close', 'current', 'open'].forEach(f => { if (v[f]) { const z = {}; if (v[f].odds !== undefined) z.odds = v[f].odds; if (v[f].line !== undefined) z.line = v[f].line; q[f] = z; } });
+      if (Object.keys(q).length) m[lado] = q;
+    });
+    if (Object.keys(m).length) r[k] = m;
+  });
+  return Object.keys(r).length ? r : null;
+}
+/* marcador de ESPN -> { idDelJuego: {t, o} } solo de los juegos que NO han empezado y traen cuotas */
+function snapOdds(j) {
+  const out = {};
+  ((j && j.events) || []).forEach(e => {
+    const st = e.status && e.status.type; if (!st || st.state !== 'pre') return;
+    const c = e.competitions && e.competitions[0]; const o = c && c.odds && c.odds[0] && recortaOdds(c.odds[0]);
+    if (o && e.id != null) out[String(e.id)] = { t: e.date, o: o };
+  });
+  return out;
+}
+/* lo guardado antes + lo nuevo; se queda con lo de los ultimos 3 dias (un juego que ya empezo conserva su linea hasta que termina el dia siguiente) */
+function unirOdds(prev, nuevo, ahora) {
+  const res = {};
+  Object.keys((prev && prev.juegos) || {}).forEach(id => { const v = prev.juegos[id]; if (v && Date.parse(v.t) > ahora - 3 * 864e5) res[id] = v; });
+  Object.keys(nuevo || {}).forEach(id => { res[id] = nuevo[id]; });
+  return res;
+}
+module.exports = { compactar, armar, juegosDe, nuevos, mensaje, recorta, cambiosPortero, mensajePortero, recortaOdds, snapOdds, unirOdds };
 if (require.main !== module) return;
 
 async function pedir(url, intentos) {
@@ -120,7 +156,16 @@ async function avisar(m) {
     if (!solo.includes(dep)) continue;
     const j = await pedir(BASE + DEPS[dep] + '/injuries'); if (!j) { console.log(dep + ': ESPN no devolvio lesionados; se deja el archivo anterior'); continue; }
     const eq = armar(j);
-    const juegan = []; for (const k of [0, 1, 2]) { const m = await pedir(BASE + DEPS[dep] + '/scoreboard?dates=' + diaStr(ahora + k * 864e5), 2); juegosDe(m).forEach(g => { if (Date.parse(g.t) <= ahora + 36 * 36e5) juegan.push(g); }); }
+    const juegan = []; let lineas = {};
+    for (const k of [0, 1, 2, 3, 4, 5, 6]) {
+      const m = await pedir(BASE + DEPS[dep] + '/scoreboard?dates=' + diaStr(ahora + k * 864e5), 2);
+      if (k <= 2) juegosDe(m).forEach(g => { if (Date.parse(g.t) <= ahora + 36 * 36e5) juegan.push(g); });
+      Object.assign(lineas, snapOdds(m));
+    }
+    const prevOdds = await pedir(PREV + 'odds-' + dep + '.json', 2);
+    const odds = unirOdds(prevOdds, lineas, ahora);
+    fs.writeFileSync('salida/odds-' + dep + '.json', JSON.stringify({ v: 1, dep: dep, generado: iso(ahora), juegos: odds }));
+    console.log(dep + ': ' + Object.keys(lineas).length + ' lineas nuevas · ' + Object.keys(odds).length + ' guardadas');
     const prev = await pedir(PREV + 'lesiones-' + dep + '.json', 2);
     const nu = nuevos(prev, eq, juegan);
     const cp = dep === 'nhl' ? cambiosPortero(prev && prev.juegan, juegan) : [];

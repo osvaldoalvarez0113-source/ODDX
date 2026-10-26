@@ -494,6 +494,22 @@ async function temporada(sk,prog){
   }
   return arr.map(unpack);
 }
+async function rellenarOdds(){
+  try{
+    const K='ova_odds_nba', ahora=Date.now(); let mem=LS.get(K)||{}, cambio=false;
+    Object.keys(mem).forEach(id=>{ if(!mem[id]||!(mem[id].t>ahora-3*864e5)){ delete mem[id]; cambio=true; } });
+    PEND.forEach(g=>{ if(g.odds&&!g.live&&g.ts>ahora){ mem[g.id]={t:g.ts,o:g.odds}; cambio=true; } });
+    let snap=null;
+    if(PEND.some(g=>!g.odds&&!mem[g.id])){ try{ snap=await getJSON('https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/datos/odds-nba.json?v='+Math.floor(ahora/36e5)); }catch(e){ snap=null; } }
+    PEND.forEach(g=>{
+      if(g.odds) return;
+      let o=mem[g.id]&&mem[g.id].o;
+      if(!o&&snap&&snap.juegos&&snap.juegos[g.id]) o=parseOdds({odds:[snap.juegos[g.id].o]},(TEAMS[g.h]||{}).ab);
+      if(o){ g.odds=o; g.oddsViejo=true; }
+    });
+    if(cambio) LS.set(K,mem);
+  }catch(e){}
+}
 async function cargarProximos(){
   const hoy=new Date(), dias=[];
   for(let k=0;k<=9;k++) dias.push(new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()+k));
@@ -501,6 +517,7 @@ async function cargarProximos(){
   const vistos=new Set(); PEND=[];
   [].concat(...arr).forEach(g=>{ if(vistos.has(g.id)||g.done||g.skip&&!g.pre) return; vistos.add(g.id); PEND.push(g); });
   PEND.sort((a,b)=>a.ts-b.ts);
+  await rellenarOdds();
 }
 async function lesiones(){
   if(INJ) return INJ;

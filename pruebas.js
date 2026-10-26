@@ -1301,6 +1301,27 @@ sec('Lesionados: robot de ESPN (scripts/lesiones.js) y avisos dentro del Escáne
  ok('asistente: juegoNhl encuentra el juego por equipos (visita, local) y trae porteros y cambios',(()=>{const l={equipos:{'Dallas Stars':{l:[]},'New York Islanders':{l:[]}},juegan:[{h:'Dallas Stars',a:'New York Islanders',gh:'J O',ga:'I S',cambios:[{eq:'Dallas Stars',antes:'X',ahora:'J O'}]}]};const g=AS.juegoNhl(l,'Islanders','Stars');return g&&g.gh==='J O'&&g.ga==='I S'&&g.cambios.length===1&&AS.juegoNhl(l,'Stars','Islanders')===null;})());
 }
 
+sec('Línea de antes del juego: ESPN la quita al empezar (KC@SEA en vivo salía «sin precio»)');
+{
+ const LE=require(path.join(__dirname,'scripts','lesiones.js'));
+ const evPre=(id,st,odds)=>({id:id,date:'2026-10-25T20:05Z',status:{type:{state:st}},competitions:[{odds:odds===undefined?[{details:'DEN -4.5',overUnder:43.5,spread:4.5,provider:{name:'x',priority:1},homeTeamOdds:{favorite:false},awayTeamOdds:{favorite:true},moneyline:{home:{close:{odds:'+195'},open:{odds:'+285'}},away:{close:{odds:'-238'},open:{odds:'-360'}}},pointSpread:{home:{close:{odds:'-105',line:'+4.5'}},away:{close:{odds:'-115',line:'-4.5'}}},total:{over:{close:{odds:'-110',line:'o43.5'}},under:{close:{odds:'-110',line:'u43.5'}}}}]:odds}]});
+ const sn=LE.snapOdds({events:[evPre('1','pre'),evPre('2','in'),evPre('3','post'),evPre('4','pre',null)]});
+ ok('odds robot: solo guarda juegos que NO han empezado y que traen cuotas',Object.keys(sn).join()==='1');
+ ok('odds robot: quita lo que las apps no leen (proveedor) y queda chico',!/provider/.test(JSON.stringify(sn))&&JSON.stringify(sn).length<1200);
+ const US=require(path.join(__dirname,'usdeporte.js'));
+ const po=US.parseOdds({odds:[sn['1'].o]});
+ ok('odds robot: lo guardado se lee igual con parseOdds de la app (ganador, hándicap y total)',po&&po.mlH===195&&po.mlA===-238&&po.spread===4.5&&po.total===43.5,JSON.stringify(po));
+ const ah=Date.parse('2026-10-26T12:00Z');
+ const un=LE.unirOdds({juegos:{v:{t:'2026-10-25T20:05Z',o:{overUnder:1}},viejo:{t:'2026-10-20T20:05Z',o:{overUnder:2}}}},{n:{t:'2026-10-27T20:05Z',o:{overUnder:3}}},ah);
+ ok('odds robot: conserva el juego que ya empezó, suma los nuevos y suelta lo de más de 3 días',un.v&&un.n&&!un.viejo);
+ ok('odds robot: si ESPN ya no trae la línea de un juego, se queda la guardada (no se pisa)',LE.unirOdds({juegos:{v:{t:'2026-10-25T20:05Z',o:{overUnder:1}}}},{},ah).v.o.overUnder===1);
+ const ls=rd('scripts/lesiones.js');
+ ok('odds robot: escribe salida/odds-<dep>.json y mira 7 días',/salida\/odds-/.test(ls)&&/\[0, 1, 2, 3, 4, 5, 6\]/.test(ls));
+ const us=rd('usdeporte.js'), nb=rd('nba.html');
+ ok('apps: NFL/NHL y NBA rellenan la línea con la guardada en el teléfono o la del robot',/function rellenarOdds/.test(us)&&/odds-' \+ DEP/.test(us)&&/ova_odds_/.test(us)&&/async function rellenarOdds/.test(nb)&&/odds-nba\.json/.test(nb)&&/ova_odds_nba/.test(nb));
+ ok('apps: rellenarOdds corre al terminar cargarProximos (antes de pintar)',/await rellenarOdds\(\);\s*\}\s*\/\/ lesionados/.test(us)&&/await rellenarOdds\(\);\s*\}\s*async function lesiones/.test(nb));
+}
+
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);

@@ -177,6 +177,27 @@
     }
     return [...mapa.values()].filter(g => g.done && !g.skip && g.ty !== 1).sort((a, b) => a.ts - b.ts);
   }
+  /* ESPN quita las cuotas del marcador cuando el juego empieza. Se rellenan con la linea de antes del juego:
+     1) la que este telefono vio cuando el juego aun no empezaba (localStorage)  2) la que guarda el robot (rama datos, odds-<dep>.json). */
+  async function rellenarOdds() {
+    try {
+      const K = 'ova_odds_' + DEP, ahora = Date.now(); let mem = LS.get(K) || {}; let cambio = false;
+      Object.keys(mem).forEach(id => { if (!mem[id] || !(mem[id].t > ahora - 3 * 864e5)) { delete mem[id]; cambio = true; } });
+      PEND.forEach(g => { if (g.odds && !g.live && g.ts > ahora) { mem[g.id] = { t: g.ts, o: g.odds }; cambio = true; } });
+      let snap = null;
+      const faltan = PEND.filter(g => !g.odds && !mem[g.id]);
+      if (faltan.length) {
+        try { snap = await getJSON('https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/datos/odds-' + DEP + '.json?v=' + Math.floor(ahora / 36e5)); } catch (e) { snap = null; }
+      }
+      PEND.forEach(g => {
+        if (g.odds) return;
+        let o = mem[g.id] && mem[g.id].o;
+        if (!o && snap && snap.juegos && snap.juegos[g.id]) o = parseOdds({ odds: [snap.juegos[g.id].o] });
+        if (o) { g.odds = o; g.oddsViejo = true; }
+      });
+      if (cambio) LS.set(K, mem);
+    } catch (e) { }
+  }
   async function cargarProximos() {
     const hoy = new Date(), dias = [];
     for (let k = 0; k <= SP.diasMax; k++) dias.push(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + k));
@@ -184,6 +205,7 @@
     const vistos = new Set(); PEND = [];
     [].concat(...arr).forEach(g => { if (vistos.has(g.id) || g.done || (g.skip && !g.pre)) return; vistos.add(g.id); PEND.push(g); });
     PEND.sort((a, b) => a.ts - b.ts);
+    await rellenarOdds();
   }
   // lesionados: archivo grande (hockey ~1.4 MB, NFL ~9 MB). Solo se baja cuando lo pides.
   function lesiones() {
@@ -398,7 +420,7 @@
     const L = (c, t) => `<div><i class="${c}">${c === 'ok' ? '✓' : (c === 'w' ? '!' : '✗')}</i><span>${t}</span></div>`;
     const li = [];
     if (mk && mk.src === 'pin') li.push(L('ok', `Precio de Pinnacle de hace ${pinTxt()}.`));
-    else if (mk) li.push(L('ok', 'Precio de ESPN (DraftKings) tomado del marcador; Pinnacle todavía no lo trae.'));
+    else if (mk) li.push(L('ok', g.oddsViejo ? 'Precio de ESPN (DraftKings) de antes de que empezara el juego (ESPN lo quita en vivo); Pinnacle todavía no lo trae.' : 'Precio de ESPN (DraftKings) tomado del marcador; Pinnacle todavía no lo trae.'));
     else li.push(L('w', 'Sin precio del mercado para este juego.'));
     descansoTxt(g, pr, H, A).forEach(x => li.push(L(x[0], x[1])));
     if (g.pre) li.push(L('w', 'Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
@@ -737,7 +759,7 @@
     L.push('Parámetros: ' + JSON.stringify(PARAMS));
     L.push('Partidos: ' + GAMES.length + ' · equipos: ' + Object.keys(TEAMS).length + ' · fuente: ' + DIAG.fuente + (DIAG.gen ? ' (archivo de ' + DIAG.gen.slice(0, 16).replace('T', ' ') + ' UTC)' : '') + ' · días completados directo de ESPN: ' + DIAG.topUp);
     if (ESTADO) L.push('Partidos en el modelo ' + ESTADO.n + ' · promedio de la liga ' + ESTADO.lg.toFixed(2) + ' ' + SP.uc + ' por juego');
-    L.push('Próximos: ' + PEND.length + ' juegos (' + PEND.filter(g => g.odds).length + ' con líneas de ESPN) · Pinnacle: ' + (PIN ? PIN.juegos.length + ' juegos (hace ' + pinTxt() + ')' : 'sin archivo'));
+    L.push('Próximos: ' + PEND.length + ' juegos (' + PEND.filter(g => g.odds).length + ' con líneas de ESPN'+(PEND.filter(g => g.oddsViejo).length?', '+PEND.filter(g => g.oddsViejo).length+' de antes del juego':'')+') · Pinnacle: ' + (PIN ? PIN.juegos.length + ' juegos (hace ' + pinTxt() + ')' : 'sin archivo'));
     if (DEP === 'nfl') L.push('Números clave: ' + (KW ? 'medidos con ' + GAMES.length + ' juegos' : 'sin datos suficientes'));
     L.push(DIAG.errores.length ? DIAG.errores.length + ' errores, ej: ' + DIAG.errores.slice(0, 3).join(' | ') : 'Sin errores de descarga.');
     return L.join('\n');
