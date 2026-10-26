@@ -1,0 +1,51 @@
+name: Patrones contra el mercado
+
+# Prueba la bateria de patrones (descanso, rachas, rebote, mes, tamano de la linea...) contra el precio de cierre de cada deporte
+# con los datos que ya guardaron los otros procesos, y mide los candidatos "en vigilancia" solo con juegos nuevos.
+# Corre a mano o el dia 1 de cada mes. Guarda el informe en la rama "resultados-patrones". No toca la app.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 9 1 * *"
+  push:
+    branches: [main]
+    paths:
+      - scripts/medicion/patrones.py
+      - .github/workflows/patrones.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: patrones
+  cancel-in-progress: true
+
+jobs:
+  patrones:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install numpy scipy
+      - name: Traer los datos de las otras ramas
+        run: |
+          mkdir -p /tmp/pat
+          get() { git fetch -q --depth=1 origin "$1" && git show "FETCH_HEAD:$2" > "/tmp/pat/$3" || echo "falta $1:$2"; }
+          get resultados-futbol-6t partidos_futbol.json fut.json
+          get resultados-nba-6t filas_nba.json nba.json
+          get datos-nhl-nfl datos-nhl.json dnhl.json
+          get datos-nhl-nfl datos-nfl.json dnfl.json
+          for y in 2021 2022 2023 2024 2025 2026; do get var-S$y variantes_S$y.json mlb$y.json; done
+          ls -la /tmp/pat
+      - name: Medir
+        run: python3 -I scripts/medicion/patrones.py /tmp/pat | tee /tmp/pat/salida.txt
+      - name: Guardar informe
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p /tmp/res && cp -f /tmp/pat/patrones-resultado.md /tmp/pat/patrones-resultado.json /tmp/res/ 2>/dev/null || true
+          cd /tmp/res && git init -q -b resultados-patrones && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "patrones" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" resultados-patrones

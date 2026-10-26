@@ -1330,6 +1330,16 @@ sec('Pestañas pegajosas dentro del juego (se quedaban flotando a media pantalla
  ok('interior.js: el juego abierto recorta con overflow:clip para que las pestañas puedan pegarse',/html\[data-ui\] \.game\.open\{overflow:clip!important\}/.test(it));
 }
 
+sec('Patrones contra el mercado (scripts/medicion/patrones.py + workflow mensual + informe)');
+{
+ const py=rd('scripts/medicion/patrones.py'), wf=rd('.github/workflows/patrones.yml'), doc=rd('docs/PATRONES-2026-10.md'), idx=rd('docs/INDICE.md');
+ ok('patrones: el script define los patrones de los 5 deportes y la corrección de Holm',/PAT_FUT/.test(py)&&/PAT_NHL/.test(py)&&/PAT_NFL/.test(py)&&/def correr_nba/.test(py)&&/def correr_mlb/.test(py)&&/def holm/.test(py));
+ ok('patrones: incluye el control con banderas al azar y la vigilancia fuera de muestra',/def control_azar/.test(py)&&/CORTE = /.test(py)&&/VIGILANCIA/.test(py));
+ ok('patrones: el workflow trae los datos de las otras ramas y guarda el informe sin tocar la app',/resultados-futbol-6t/.test(wf)&&/datos-nhl-nfl/.test(wf)&&/resultados-patrones/.test(wf)&&/cron/.test(wf));
+ ok('patrones: el informe dice el veredicto y está en el índice',/Ningún patrón demuestra/.test(doc)&&/PATRONES-2026-10/.test(idx));
+ ok('patrones: el script de Python compila',(()=>{try{require('child_process').execFileSync('python3',['-I','-m','py_compile',path.join(__dirname,'scripts','medicion','patrones.py')],{stdio:'pipe'});return true;}catch(e){return false;}})());
+}
+
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);
