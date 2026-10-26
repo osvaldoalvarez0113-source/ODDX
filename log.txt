@@ -1,0 +1,13 @@
+nfl: 106 mercados cerrados de moneyline
+nfl: 106 juegos terminados en ESPN
+nfl: 106 con línea de cierre
+nfl: 105 juegos con las tres cosas
+nhl: 176 mercados cerrados de moneyline
+nhl: 176 juegos terminados en ESPN
+nhl: 176 con línea de cierre
+nhl: 163 juegos con las tres cosas
+nba: 109 mercados cerrados de moneyline
+nba: 43 juegos terminados en ESPN
+nba: 43 con línea de cierre
+nba: 43 juegos con las tres cosas
+errores ESPN: 0
