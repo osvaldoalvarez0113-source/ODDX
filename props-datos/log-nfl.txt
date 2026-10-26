@@ -1,0 +1,10 @@
+nfl 2019: 267 juegos, 267 con total (0 pedidos al core) en 0 s
+nfl 2020: 269 juegos, 269 con total (0 pedidos al core) en 0 s
+nfl 2021: 286 juegos, 286 con total (0 pedidos al core) en 0 s
+nfl 2022: 284 juegos, 284 con total (0 pedidos al core) en 0 s
+nfl 2023: 285 juegos, 285 con total (0 pedidos al core) en 0 s
+nfl 2024: 285 juegos, 284 con total (0 pedidos al core) en 0 s
+nfl 2025: 286 juegos, 285 con total (0 pedidos al core) en 0 s
+nfl 2026: 106 juegos, 106 con total (11 pedidos al core) en 0 s
+Errores: 0
+Listo en 0 min

@@ -1,0 +1,21 @@
+  líneas nba 500/1163
+  líneas nba 1000/1163
+nba 2020: 1163 juegos, 1162 con total (1163 pedidos al core) en 5 s
+  líneas nba 500/1318
+  líneas nba 1000/1318
+nba 2021: 1318 juegos, 1318 con total (1318 pedidos al core) en 5 s
+  líneas nba 500/1315
+  líneas nba 1000/1315
+nba 2022: 1315 juegos, 1315 con total (1315 pedidos al core) en 5 s
+  líneas nba 500/1313
+  líneas nba 1000/1313
+nba 2023: 1313 juegos, 1313 con total (1313 pedidos al core) en 6 s
+  líneas nba 500/1315
+  líneas nba 1000/1315
+nba 2024: 1315 juegos, 1315 con total (1315 pedidos al core) en 6 s
+  líneas nba 500/1320
+  líneas nba 1000/1320
+nba 2025: 1320 juegos, 1316 con total (1320 pedidos al core) en 5 s
+nba 2026: 43 juegos, 43 con total (43 pedidos al core) en 0 s
+Errores: 0
+Listo en 1 min

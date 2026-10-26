@@ -1,0 +1,18 @@
+  líneas nhl 500/1404
+  líneas nhl 1000/1404
+nhl 2021: 1404 juegos, 1401 con total (1404 pedidos al core) en 15 s
+  líneas nhl 500/1403
+  líneas nhl 1000/1403
+nhl 2022: 1403 juegos, 1400 con total (0 pedidos al core) en 4 s
+  líneas nhl 500/1403
+  líneas nhl 1000/1403
+nhl 2023: 1403 juegos, 1400 con total (0 pedidos al core) en 2 s
+  líneas nhl 500/1405
+  líneas nhl 1000/1405
+nhl 2024: 1405 juegos, 1405 con total (0 pedidos al core) en 2 s
+  líneas nhl 500/1394
+  líneas nhl 1000/1394
+nhl 2025: 1394 juegos, 1394 con total (0 pedidos al core) en 2 s
+nhl 2026: 176 juegos, 176 con total (5 pedidos al core) en 0 s
+Errores: 0
+Listo en 0 min

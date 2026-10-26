@@ -1,0 +1,32 @@
+  líneas mlb 500/2466
+  líneas mlb 1000/2466
+  líneas mlb 1500/2466
+  líneas mlb 2000/2466
+mlb 2021: 2466 juegos, 2460 con total (2466 pedidos al core) en 18 s
+  líneas mlb 500/2470
+  líneas mlb 1000/2470
+  líneas mlb 1500/2470
+  líneas mlb 2000/2470
+mlb 2022: 2470 juegos, 2468 con total (2470 pedidos al core) en 18 s
+  líneas mlb 500/2471
+  líneas mlb 1000/2471
+  líneas mlb 1500/2471
+  líneas mlb 2000/2471
+mlb 2023: 2471 juegos, 2471 con total (2471 pedidos al core) en 16 s
+  líneas mlb 500/2472
+  líneas mlb 1000/2472
+  líneas mlb 1500/2472
+  líneas mlb 2000/2472
+mlb 2024: 2472 juegos, 2449 con total (2472 pedidos al core) en 9 s
+  líneas mlb 500/2477
+  líneas mlb 1000/2477
+  líneas mlb 1500/2477
+  líneas mlb 2000/2477
+mlb 2025: 2477 juegos, 2475 con total (2477 pedidos al core) en 11 s
+  líneas mlb 500/2466
+  líneas mlb 1000/2466
+  líneas mlb 1500/2466
+  líneas mlb 2000/2466
+mlb 2026: 2466 juegos, 2466 con total (2466 pedidos al core) en 10 s
+Errores: 0
+Listo en 1 min

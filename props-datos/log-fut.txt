@@ -1,0 +1,37 @@
+fut Premier League 1920: 380 partidos
+fut La Liga 1920: 380 partidos
+fut Serie A 1920: 380 partidos
+fut Bundesliga 1920: 306 partidos
+fut Ligue 1 1920: 279 partidos
+fut Premier League 2021: 380 partidos
+fut La Liga 2021: 380 partidos
+fut Serie A 2021: 380 partidos
+fut Bundesliga 2021: 306 partidos
+fut Ligue 1 2021: 380 partidos
+fut Premier League 2122: 380 partidos
+fut La Liga 2122: 380 partidos
+fut Serie A 2122: 380 partidos
+fut Bundesliga 2122: 306 partidos
+fut Ligue 1 2122: 380 partidos
+fut Premier League 2223: 380 partidos
+fut La Liga 2223: 380 partidos
+fut Serie A 2223: 380 partidos
+fut Bundesliga 2223: 306 partidos
+fut Ligue 1 2223: 380 partidos
+fut Premier League 2324: 380 partidos
+fut La Liga 2324: 380 partidos
+fut Serie A 2324: 380 partidos
+fut Bundesliga 2324: 306 partidos
+fut Ligue 1 2324: 306 partidos
+fut Premier League 2425: 380 partidos
+fut La Liga 2425: 380 partidos
+fut Serie A 2425: 380 partidos
+fut Bundesliga 2425: 305 partidos
+fut Ligue 1 2425: 306 partidos
+fut Premier League 2526: 380 partidos
+fut La Liga 2526: 380 partidos
+fut Serie A 2526: 380 partidos
+fut Bundesliga 2526: 306 partidos
+fut Ligue 1 2526: 306 partidos
+Errores: 0
+Listo en 0 min
