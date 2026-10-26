@@ -1,0 +1,44 @@
+name: Precios del mercado de prediccion
+
+# Baja de Polymarket (API publica, sin llave) el precio de quien gana de cada juego de NFL, NBA, NHL y MLB y deja un archivo chico
+# por deporte en la rama «pred». Las apps lo usan cuando no hay precio de Pinnacle ni de ESPN y para ver el precio EN VIVO
+# (ESPN borra su linea cuando el juego empieza). No usa OddsPapi.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"
+  push:
+    branches: [main]
+    paths:
+      - scripts/pred.js
+      - .github/workflows/pred.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pred
+  cancel-in-progress: true
+
+jobs:
+  pred:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Bajar precios
+        run: node scripts/pred.js
+      - name: Guardar en la rama pred
+        run: |
+          ls salida_pred/pred-*.json >/dev/null 2>&1 || { echo "Nada que guardar"; exit 0; }
+          URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          mkdir -p /tmp/pred && cd /tmp/pred && git init -q -b pred
+          # conserva los archivos de los deportes que esta corrida no trajo
+          git fetch -q --depth 1 "$URL" pred 2>/dev/null && git checkout -q FETCH_HEAD -- . 2>/dev/null || true
+          cp "$GITHUB_WORKSPACE"/salida_pred/pred-*.json "$GITHUB_WORKSPACE"/salida_pred/log.txt .
+          git config user.name "pred-ova" && git config user.email "pred-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "pred $(date -u +%FT%TZ)" || exit 0
+          git push -q -f "$URL" pred
