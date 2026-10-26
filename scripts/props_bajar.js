@@ -51,7 +51,9 @@ function parse(j, dep) {
     if (/all.?star|pro bowl|rising|skills|exhibition/i.test(nombre)) return;
     const ls = x => (x.linescores || []).map(q => numV(q)).map(v => v === null ? null : v);
     const lh = ls(h), la = ls(a);
-    if (!lh.length || lh.length !== la.length || lh.some(v => v === null) || la.some(v => v === null)) return;
+    /* en MLB el local no batea el 9º si va ganando: su lista trae un inning menos. Eso es normal y el juego sirve igual */
+    const difOk = dep === 'mlb' ? (la.length - lh.length === 0 || la.length - lh.length === 1) : lh.length === la.length;
+    if (!lh.length || !difOk || lh.some(v => v === null) || la.some(v => v === null)) return;
     const det = String(st.shortDetail || st.detail || '');
     out.push({ id: String(e.id), ts: Date.parse(e.date), ty, h: String(h.team.id), a: String(a.team.id), nh: h.team.displayName || '', na: a.team.displayName || '',
       hs: numV(h.score), as: numV(a.score), lh, la, det, neutral: c.neutralSite === true, ln: oddsScoreboard(c) });
@@ -101,7 +103,8 @@ function cacheNhlNfl(dep) {
   return m;
 }
 async function espn(dep, temporadas) {
-  const prev = leer(dep) || { dep, temps: {} };
+  let prev = leer(dep) || { dep, temps: {} };
+  if (prev.v !== 2) prev = { dep, v: 2, temps: {} };
   const cache = (dep === 'nhl' || dep === 'nfl') ? cacheNhlNfl(dep) : null;
   for (const sk of temporadas) {
     const ya = prev.temps[sk];
