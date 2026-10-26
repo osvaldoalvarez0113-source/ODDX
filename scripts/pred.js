@@ -136,7 +136,10 @@ async function main() {
   const fut = [];
   for (const lg of LIGAS_FUT) {
     const m = sp.find(x => String(x.sport).toLowerCase() === lg); if (!m || !m.primaryTagId) { log(lg + ': no aparece en /sports'); continue; }
-    const mk = await bajarFutbol(m.primaryTagId, ahora), js = parsearFutbol(mk, ahora);
+    // si la etiqueta principal no trae nada (Serie A, Champions), se prueban las otras etiquetas de la liga
+    const tags = [m.primaryTagId].concat(String(m.tags || '').split(',').map(x => +x.trim()).filter(x => x && x !== 1 && x !== 100639 && x !== 100350 && x !== m.primaryTagId));
+    let mk = [], js = [];
+    for (const tg of tags) { mk = await bajarFutbol(tg, ahora); js = parsearFutbol(mk, ahora); if (js.length) { if (tg !== m.primaryTagId) log('  ' + lg + ': la etiqueta ' + tg + ' sí trae partidos'); break; } }
     log(lg + ': ' + mk.length + ' mercados · ' + js.length + ' partidos con 1X2' + (js[0] ? ' · ejemplo ' + js[0].h + ' ' + Math.round(js[0].ph * 100) + '% / empate ' + Math.round(js[0].pd * 100) + '% / ' + js[0].a + ' ' + Math.round(js[0].pa * 100) + '%' : ''));
     fut.push(...js);
   }
