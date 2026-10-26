@@ -72,6 +72,50 @@ async function bajarDeporte(tag, ahora, log) {
   return todos;
 }
 
+/* ---------- FUTBOL (1X2): cada partido son 3 mercados "Will X win?" (local, empate, visita); se piden con sports_market_types=moneyline para no bajar los 30 MB de subeventos ---------- */
+const LIGAS_FUT = ['epl', 'lal', 'bun', 'sea', 'fl1', 'ucl'];
+const SLUG_FUT = /^(epl|lal|bun|sea|fl1|ucl)-([a-z0-9]+)-([a-z0-9]+)-(\d{4})-(\d{2})-(\d{2})$/;
+function precioSi(m) {
+  const pr = lista(m.outcomePrices), bb = num(m.bestBid), ba = num(m.bestAsk);
+  let p = pr ? num(pr[0]) : null;
+  if (bb !== null && ba !== null && ba >= bb && ba - bb <= 0.08) p = (bb + ba) / 2;
+  return p;
+}
+/* mercados moneyline de futbol -> [{slug, liga, h, a, ph, pd, pa, vol, liq, ini, upd}] (h = local, a = visita; el nombre sale del mercado del empate «Draw (Local vs. Visita)») */
+function parsearFutbol(mercados, ahora) {
+  const por = {};
+  (Array.isArray(mercados) ? mercados : []).forEach(m => {
+    if (!m || m.sportsMarketType !== 'moneyline' || m.closed === true) return;
+    const ev = (m.events && m.events[0]) || {}; const base = String(ev.slug || String(m.slug || '').replace(/-(draw|[a-z0-9]{2,4})$/, ''));
+    const sl = SLUG_FUT.exec(base); if (!sl) return;
+    (por[base] = por[base] || { sl: sl, ms: [] }).ms.push(m);
+  });
+  const out = [];
+  Object.keys(por).forEach(base => {
+    const { sl, ms } = por[base]; if (ms.length !== 3) return;
+    const dm = ms.find(m => /^draw/i.test(String(m.groupItemTitle || ''))); if (!dm) return;
+    const nn = /^draw\s*\((.+?)\s+vs\.?\s+(.+)\)\s*$/i.exec(String(dm.groupItemTitle)); if (!nn) return;
+    const h = nn[1], a = nn[2];
+    const mh = ms.find(m => m !== dm && String(m.groupItemTitle) === h), ma = ms.find(m => m !== dm && String(m.groupItemTitle) === a);
+    if (!mh || !ma) return;
+    const p = [precioSi(mh), precioSi(dm), precioSi(ma)]; if (p.some(x => x === null || x < 0)) return;
+    const s = p[0] + p[1] + p[2]; if (!(s > 0.8 && s < 1.3)) return;
+    const ini = Date.parse(String(dm.gameStartTime || '').replace(' ', 'T').replace(/\+00$/, 'Z')); if (!isFinite(ini) || ini < ahora - 6 * 36e5) return;
+    out.push({ slug: base, liga: sl[1], h, a, ph: +(p[0] / s).toFixed(4), pd: +(p[1] / s).toFixed(4), pa: +(p[2] / s).toFixed(4),
+      vol: Math.round(Math.min(...[mh, dm, ma].map(m => num(m.volumeNum) || 0))), liq: Math.round(Math.min(...[mh, dm, ma].map(m => num(m.liquidityNum) || 0))),
+      ini: new Date(ini).toISOString(), upd: dm.updatedAt || null });
+  });
+  return out.sort((x, y) => Date.parse(x.ini) - Date.parse(y.ini));
+}
+async function bajarFutbol(tag, ahora) {
+  const desde = new Date(ahora - 6 * 36e5).toISOString(), hasta = new Date(ahora + 8 * 864e5).toISOString(), todos = [];
+  for (let off = 0, pag = 0; pag < 6; off += 100, pag++) {
+    const j = await pedir('/markets?tag_id=' + tag + '&active=true&closed=false&limit=100&offset=' + off + '&sports_market_types=moneyline&end_date_min=' + encodeURIComponent(desde) + '&end_date_max=' + encodeURIComponent(hasta));
+    if (!Array.isArray(j)) break; todos.push(...j); if (j.length < 100) break;
+  }
+  return todos;
+}
+
 async function main() {
   const ahora = Date.now(); fs.mkdirSync('salida_pred', { recursive: true });
   const L = []; const log = s => { L.push(s); console.log(s); };
@@ -88,7 +132,16 @@ async function main() {
     fs.writeFileSync('salida_pred/pred-' + dep + '.json', JSON.stringify({ v: 1, dep, generado: new Date(ahora).toISOString(), juegos }));
     hubo++;
   }
+  // fútbol: todas las ligas juntas en pred-futbol.json
+  const fut = [];
+  for (const lg of LIGAS_FUT) {
+    const m = sp.find(x => String(x.sport).toLowerCase() === lg); if (!m || !m.primaryTagId) { log(lg + ': no aparece en /sports'); continue; }
+    const mk = await bajarFutbol(m.primaryTagId, ahora), js = parsearFutbol(mk, ahora);
+    log(lg + ': ' + mk.length + ' mercados · ' + js.length + ' partidos con 1X2' + (js[0] ? ' · ejemplo ' + js[0].h + ' ' + Math.round(js[0].ph * 100) + '% / empate ' + Math.round(js[0].pd * 100) + '% / ' + js[0].a + ' ' + Math.round(js[0].pa * 100) + '%' : ''));
+    fut.push(...js);
+  }
+  if (fut.length) { fs.writeFileSync('salida_pred/pred-futbol.json', JSON.stringify({ v: 1, dep: 'futbol', generado: new Date(ahora).toISOString(), juegos: fut })); hubo++; }
   fs.writeFileSync('salida_pred/log.txt', L.join('\n'));
   if (!hubo) log('Nada que guardar');
 }
-if (require.main === module) main(); else module.exports = { parsearEventos, precioLados, SLUG };
+if (require.main === module) main(); else module.exports = { parsearEventos, precioLados, SLUG, parsearFutbol };

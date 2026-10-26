@@ -1374,6 +1374,21 @@ sec('Mercado de predicción (Polymarket): robot pred.js, prediccion.js y las app
  ok('workflow pred.yml: cada 10 min, rama pred, conserva los deportes que no trajo',/\*\/10/.test(wf)&&/git push -q -f "\$URL" pred/.test(wf)&&/checkout -q FETCH_HEAD/.test(wf));
 }
 
+sec('Fútbol con Polymarket (1X2 en vivo y de respaldo)');
+{
+ const PR=require(path.join(__dirname,'scripts','pred.js'));
+ const mk=(slug,tit,q,pr,x)=>Object.assign({slug:slug,question:q,groupItemTitle:tit,sportsMarketType:'moneyline',closed:false,outcomes:'["Yes","No"]',outcomePrices:JSON.stringify([String(pr),String(1-pr)]),gameStartTime:'2026-10-26 20:00:00+00',volumeNum:2800,liquidityNum:120000,updatedAt:'2026-10-26T04:34:36Z',events:[{slug:'lal-sev-osa-2026-10-26'}]},x||{});
+ const M=[mk('lal-sev-osa-2026-10-26-sev','Sevilla FC','Will Sevilla FC win?',0.515,{bestBid:0.51,bestAsk:0.52}),mk('lal-sev-osa-2026-10-26-draw','Draw (Sevilla FC vs. CA Osasuna)',null,0.275,{bestBid:0.27,bestAsk:0.28}),mk('lal-sev-osa-2026-10-26-osa','CA Osasuna','Will CA Osasuna win?',0.215,{bestBid:0.21,bestAsk:0.22}),
+   mk('lal-xx-yy-2026-10-27-xx','Equipo X','q',0.5,{events:[{slug:'lal-xx-yy-2026-10-27'}]}),
+   mk('lal-sev-osa-2026-10-26-corners','Mas de 9','q',0.5,{sportsMarketType:'total_corners'})];
+ const r=PR.parsearFutbol(M,Date.parse('2026-10-26T04:40:00Z'));
+ ok('fútbol pred.js: arma 1X2 con los 3 mercados «Will X win?» y descarta los partidos incompletos y otros tipos de mercado',r.length===1&&r[0].h==='Sevilla FC'&&r[0].a==='CA Osasuna'&&r[0].liga==='lal');
+ ok('fútbol pred.js: local, empate y visita suman 100% (51.2 / 27.4 / 21.4) y vol/liq son el mínimo de los 3',Math.abs(r[0].ph+r[0].pd+r[0].pa-1)<1e-3&&Math.abs(r[0].ph-0.5124)<1e-3&&Math.abs(r[0].pd-0.2736)<1e-3&&r[0].vol===2800);
+ const fh=rd('futbol.html');
+ ok('futbol.html: en vivo manda Polymarket, antes del partido Pinnacle y, si no hay, Polymarket; avisa que en vivo no se compara con el modelo',/function buscarMkF/.test(fh)&&/if\(pr && pr\.vivo\) return pr;/.test(fh)&&/En vivo: el precio ya incluye el marcador/.test(fh)&&/prediccion\.js/.test(fh));
+ ok('futbol.html: el Más/Menos sigue usando Pinnacle (Polymarket aquí solo trae 1X2)',/mk2=buscarPinF\(p\)/.test(fh)&&/mk1=buscarMkF\(p\)/.test(fh));
+}
+
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);
