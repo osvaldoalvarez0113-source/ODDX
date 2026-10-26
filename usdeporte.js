@@ -537,6 +537,7 @@
        <div class="nota">Cada línea: probabilidad de que el local cubra / de que el total pase, y su cuota justa. El gol del shootout no cuenta para los totales. Con línea entera (5 ó 6) hay "push" y se muestra aparte.</div>`;
     }
     const forPane = `<h3>Forma reciente</h3>${formaHtml(g.a, A)}${formaHtml(g.h, H)}
+    <h3>Cara a cara</h3>${caraHtml(g.a, g.h, A, H)}
      <h3>Lesionados (ESPN)</h3><div data-k="les" class="nota">Archivo grande (${DEP === 'nfl' ? 'unos 9 MB' : 'más de 1 MB'}): solo se baja cuando tú lo pides.</div><button class="btnAncho sec" data-a="les" style="margin-top:6px">Cargar lesionados</button>
      <div class="nota">Rating del modelo: ${esc(A.ab)} ${(pr.ma >= 0 ? '+' : '') + pr.ma.toFixed(SP.dec + 1)} · ${esc(H.ab)} ${(pr.mh >= 0 ? '+' : '') + pr.mh.toFixed(SP.dec + 1)} (con arrastre de temporada si aplica).</div>`;
 
@@ -612,6 +613,18 @@
     <div class="pick${okM && okT ? '' : ' no'}"><b>${tit}</b>${av.join(' ')}</div>
     <table class="tabla-bt"><tr><th></th><th>Mercado</th><th>Modelo solo</th><th>La app usa</th></tr>${filas}</table>
     <div class="nota">«La app usa» es ${Math.round((1 - LAM_M) * 100)}% mercado y ${Math.round(LAM_M * 100)}% modelo en quién gana${LAM_T !== LAM_M ? ' y ' + Math.round((1 - LAM_T) * 100) + '% mercado / ' + Math.round(LAM_T * 100) + '% modelo en el total' : ''}: ${DEP === 'nfl' ? 'en 1,452 juegos medidos (7 temporadas) la línea acertó más que el modelo.' : 'en 4,577 juegos medidos (4 temporadas) la línea acertó más que el modelo en el ganador.'}</div></div>`;
+  }
+  function caraHtml(a, h, A, H) {
+    const js = GAMES.filter(x => (x.h === a && x.a === h) || (x.h === h && x.a === a)).sort((p, q) => q.ts - p.ts).slice(0, 8);
+    if (!js.length) return '<div class="nota">No se han enfrentado en los partidos cargados.</div>';
+    let wa = 0, wh = 0, dh = 0, filas = '';
+    js.forEach(x => {
+      const sh = x.h === h ? x.hs : x.as, sa = x.h === h ? x.as : x.hs; if (sh > sa) wh++; else if (sa > sh) wa++; dh += sh - sa;
+      const suf = (DEP === 'nhl' && (x.so || x.ot)) ? (x.so ? ' (SO)' : ' (OT)') : '';
+      filas += `<div class="linea"><span>${esc(T(x.a).ab || T(x.a).n)} @ ${esc(T(x.h).ab || T(x.h).n)}<br><small style="color:var(--mut2)">${hace(x.ts)}</small></span><b>${x.as}–${x.hs}${suf}</b></div>`;
+    });
+    const m = dh / js.length;
+    return `<div class="lineas">${filas}</div><div class="nota" style="margin-top:6px">Últimos ${js.length}: ${esc(H.ab)} ${wh} · ${esc(A.ab)} ${wa} · margen promedio ${esc(H.ab)} ${(m >= 0 ? '+' : '') + m.toFixed(SP.dec)} ${SP.uc}. Solo informativo: con tan pocos juegos no predice y no entra al modelo.</div>`;
   }
   function formaHtml(id, Tm) {
     const js = GAMES.filter(x => x.h === id || x.a === id).sort((a, b) => b.ts - a.ts).slice(0, DEP === 'nfl' ? 6 : 10);
