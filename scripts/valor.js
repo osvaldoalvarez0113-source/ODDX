@@ -301,7 +301,8 @@ async function bajarCasa(torneo,slug){
         t:new Date(f.t).toISOString(), n:f.n, fair:f.fair.map(x=>+x.toFixed(4)),
         tope:f.fair.map(x=>kalshiTope(x)),
         casas:Object.fromEntries(Object.keys(f.casas).map(sl=>[sl,{d:f.casas[sl].d.map(x=>+(+x).toFixed(3)),ev:f.casas[sl].ev.map(x=>+x.toFixed(4))}]))}))};
-      fs.writeFileSync(ENV.MERCADO_OUT||'pinnacle-datos.json',JSON.stringify(merc));
+      if(fixs.length) fs.writeFileSync(ENV.MERCADO_OUT||'pinnacle-datos.json',JSON.stringify(merc));   /* sin respuesta de OddsPapi no se pisa el archivo bueno */
+      else P('OddsPapi no devolvio juegos -> se conserva pinnacle-datos.json anterior');
     }catch(e){ P('No pude escribir mercado.json:',e.message); }
     try{ fs.writeFileSync('resultado.md',r.md); if(ENV.GITHUB_STEP_SUMMARY) fs.appendFileSync(ENV.GITHUB_STEP_SUMMARY,r.md+'\n'); }catch(e){}
     const mv=MOV.movimientos(cache.fairPrev,filas,MOV_PTS); cache.fairPrev=mv.nuevo; guardar();
