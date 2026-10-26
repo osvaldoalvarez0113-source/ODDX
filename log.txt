@@ -1,0 +1,22 @@
+200 · 156 KB · 173 ms · https://gamma-api.polymarket.com/sports
+200 · 561 KB · 303 ms · https://gamma-api.polymarket.com/markets?tag_id=899&closed=true&limit=100&sports_market_types=moneyline&end_date_min=2026-10-12T04:39:50.913Z&end_date_max=2026-10-26T04:39:50.913Z
+nhl: 97 mercados cerrados; ejemplo: [{"s":"nhl-fla-buf-2026-10-12","o":"[\"Panthers\", \"Sabres\"]","p":"[\"0\", \"1\"]","t":"2026-10-12 17:00:00+00","tok":"[\"3474113479814407596725147764871534263631997663011504125204","lp":0.017},{"s":"nhl-ott-nj-2026-10-12","o":"[\"Senators\", \"Devils\"]","p":"[\"1\", \"0\"]","t":"2026-10-12 23:00:00+00","tok":"[\"4115198058416023263730644385810594391524398072567998729037","lp":0.999}]
+nhl: probando historial de nhl-fla-buf-2026-10-12 inicio 2026-10-12T17:00:00.000Z
+200 · 1 KB · 138 ms · https://clob.polymarket.com/prices-history?market=34741134798144075967251477648715342636319976630115041252041585936821457453823&startTs=1791802800&endTs=1791828000&fidelity=10
+200 · 0 KB · 110 ms · https://clob.polymarket.com/prices-history?market=34741134798144075967251477648715342636319976630115041252041585936821457453823&startTs=1791802800&endTs=1791828000&fidelity=60
+200 · 11 KB · 181 ms · https://clob.polymarket.com/prices-history?market=34741134798144075967251477648715342636319976630115041252041585936821457453823&interval=max&fidelity=60
+200 · 11 KB · 179 ms · https://clob.polymarket.com/prices-history?market=34741134798144075967251477648715342636319976630115041252041585936821457453823&interval=all&fidelity=60
+200 · 518 KB · 201 ms · https://gamma-api.polymarket.com/markets?tag_id=450&closed=true&limit=100&sports_market_types=moneyline&end_date_min=2026-08-27T04:39:50.913Z&end_date_max=2026-10-26T04:39:50.913Z
+nfl: 100 mercados cerrados; ejemplo: [{"s":"nfl-pit-buf-2026-08-27","o":"[\"Steelers\", \"Bills\"]","p":"[\"0\", \"1\"]","t":"2026-08-27 23:00:00+00","tok":"[\"1949914768320535127123469473184761538365156722744629357486","lp":0.01},{"s":"nfl-ne-cle-2026-08-28","o":"[\"Patriots\", \"Browns\"]","p":"[\"0\", \"1\"]","t":"2026-08-28 00:00:00+00","tok":"[\"1065042076211948678491150495915675299772774538211040102604","lp":0.001}]
+nfl: probando historial de nfl-pit-buf-2026-08-27 inicio 2026-08-27T23:00:00.000Z
+200 · 1 KB · 148 ms · https://clob.polymarket.com/prices-history?market=19499147683205351271234694731847615383651567227446293574860244716773856445524&startTs=1787850000&endTs=1787875200&fidelity=10
+200 · 0 KB · 115 ms · https://clob.polymarket.com/prices-history?market=19499147683205351271234694731847615383651567227446293574860244716773856445524&startTs=1787850000&endTs=1787875200&fidelity=60
+200 · 0 KB · 180 ms · https://clob.polymarket.com/prices-history?market=19499147683205351271234694731847615383651567227446293574860244716773856445524&interval=max&fidelity=60
+200 · 0 KB · 149 ms · https://clob.polymarket.com/prices-history?market=19499147683205351271234694731847615383651567227446293574860244716773856445524&interval=all&fidelity=60
+200 · 567 KB · 240 ms · https://gamma-api.polymarket.com/markets?tag_id=780&closed=true&limit=100&sports_market_types=moneyline&end_date_min=2026-09-26T04:39:50.913Z&end_date_max=2026-10-26T04:39:50.913Z
+lal: 87 mercados cerrados; ejemplo: [{"s":"lal-lev-bil-2026-09-16-lev","g":"Levante UD","o":"[\"Yes\", \"No\"]","p":"[\"1\", \"0\"]","t":"2026-10-21 18:00:00+00","tok":"[\"2803371456217924810761935883644083064964700174510686935748","lp":0.999},{"s":"lal-lev-bil-2026-09-16-draw","g":"Draw (Levante UD vs. Athletic Club)","o":"[\"Yes\", \"No\"]","p":"[\"0\", \"1\"]","t":"2026-10-21 18:00:00+00","tok":"[\"1307530650720235957255305449499172134967271377613919091490","lp":0.05}]
+lal: probando historial de lal-lev-bil-2026-09-16-lev inicio 2026-10-21T18:00:00.000Z
+200 · 1 KB · 117 ms · https://clob.polymarket.com/prices-history?market=28033714562179248107619358836440830649647001745106869357485248197032568176815&startTs=1792584000&endTs=1792609200&fidelity=10
+200 · 0 KB · 115 ms · https://clob.polymarket.com/prices-history?market=28033714562179248107619358836440830649647001745106869357485248197032568176815&startTs=1792584000&endTs=1792609200&fidelity=60
+200 · 16 KB · 141 ms · https://clob.polymarket.com/prices-history?market=28033714562179248107619358836440830649647001745106869357485248197032568176815&interval=max&fidelity=60
+200 · 16 KB · 264 ms · https://clob.polymarket.com/prices-history?market=28033714562179248107619358836440830649647001745106869357485248197032568176815&interval=all&fidelity=60
