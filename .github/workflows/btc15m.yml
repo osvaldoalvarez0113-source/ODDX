@@ -1,0 +1,34 @@
+name: Experimento BTC 15 min (Kalshi)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [experimento-btc15m]
+
+permissions:
+  contents: write
+
+jobs:
+  bajar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Bajar mercados y velas
+        run: node scripts/btc15m.js 2>&1 | tee salida_btc15m.txt
+      - name: Guardar en la rama resultados-btc15m
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_btc15m.txt btc15m_datos.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-btc15m
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Datos del experimento BTC 15 min" || true
+          git push -f origin resultados-btc15m
