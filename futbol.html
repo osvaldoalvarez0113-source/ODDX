@@ -3148,11 +3148,12 @@ function cargarLiga(clave){
     var pendientes = todos.filter(function(p){ return !p.terminado; });
     pendientes.sort(function(a,b){ return compararFecha(a.fecha,b.fecha) || (a.hora||'').localeCompare(b.hora||''); });
     if(!LIGA_ES_COPA) EQUIPOS = extraerTabla(res[0]);
-    if(LIGA_ES_COPA && !todos.length){ throw new Error('no se encontraron partidos'); }
+    /* copas: si worldfootball viene vacio, NO cortar aqui; primero se prueba ESPN */
 
     var espPend = (!pendientes.length && ESPN_SLUG[clave]) ? pendientesDesdeESPN(ESPN_SLUG[clave]).catch(function(){ return []; }) : Promise.resolve([]);
     return espPend.then(function(pe){
       if(pe.length){ pendientes = pe; DIAG.pendientesESPN = pe.length; }
+      if(LIGA_ES_COPA && !todos.length && !pendientes.length){ throw new Error('no se encontraron partidos (ni en worldfootball ni en ESPN)'); }
       return completarResultados(clave, termWF);
     }).then(function(r){
       if(mio!==CARGA_ID) return;
