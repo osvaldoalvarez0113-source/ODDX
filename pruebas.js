@@ -1402,6 +1402,24 @@ sec('Polymarket contra la línea de cierre (divergencia)');
  ok('divergencia.js: una sola hipótesis escrita antes de mirar y corte fuera de muestra el 26-oct-2026',/H1:/.test(rd('scripts/divergencia.js'))&&/2026-10-26T00:00:00Z/.test(rd('scripts/divergencia.js')));
 }
 
+sec('Cuántas veces acierta este % (aciertos.js)');
+{
+ const AC=require(path.join(__dirname,'aciertos.js'));
+ const deps=['mlb','fut','nba','nhl','nfl'];
+ ok('trae tablas de las 5 apps, de mercado y de modelo, local y visitante',deps.every(d=>['mkL','mkV','modL','modV'].every(k=>Array.isArray(AC.T[d][k])&&AC.T[d][k].length>0)));
+ ok('cada tramo tiene 120 juegos o más, ganó ≤ jugó, y los tramos van seguidos sin huecos',deps.every(d=>['mkL','mkV','modL','modV'].every(k=>AC.T[d][k].every((f,i,a)=>f[2]>=120&&f[3]<=f[2]&&f[3]>=0&&f[0]<f[1]&&(i===0||a[i-1][1]===f[0])))));
+ ok('local + visitante del mercado suman los juegos medidos (NHL 4,577 · NFL 1,449, como el informe)',['nhl','nfl'].every(d=>AC.T[d].mkL.concat(AC.T[d].mkV).reduce((s,f)=>s+f[2],0)===AC.T[d].n)&&AC.T.nhl.n===4577&&AC.T.nfl.n===1449);
+ ok('lo que pasó se parece a lo que decía el mercado (ningún tramo de 300+ juegos se aleja más de 8 pts de su rango)',deps.every(d=>['mkL','mkV'].every(k=>AC.T[d][k].every(f=>f[2]<300||(f[3]/f[2]*100>=f[0]-8&&f[3]/f[2]*100<=f[1]+8)))));
+ const f=AC.fila('nba',0.72,false,true);
+ ok('encuentra el tramo correcto: NBA visitante con 72% del mercado cae en 70-75%',f&&f.desde===70&&f.hasta===75&&f.n===318&&f.w===225,JSON.stringify(f));
+ ok('100% y el borde de abajo caen en el primer y último tramo',!!AC.fila('nfl',1,true,true)&&!!AC.fila('mlb',0.5,true,true)&&!!AC.fila('fut',0.2,true,true));
+ ok('dato malo o deporte desconocido no rompe nada (null y cadena vacía)',AC.fila('xx',0.6,true,true)===null&&AC.fila('mlb',NaN,true,true)===null&&AC.html('mlb',0,true,true)===''&&AC.texto('xx',0.6,true,true)===null);
+ ok('el texto dice de dónde sale el % (mercado o modelo), el lado, ganó X de N y las temporadas',/el mercado le dio 70-75% al favorito visitante, ganó <b>225 de 318<\/b> juegos \(71%\) en 6 temporadas/.test(AC.texto('nba',0.72,false,true))&&/el modelo/.test(AC.texto('mlb',0.52,true,false))&&/empate cuenta como no ganó/.test(AC.texto('fut',0.5,true,true)));
+ ['index.html','futbol.html','nba.html','nhl.html','nfl.html'].forEach(h=>ok(h+' carga aciertos.js antes de autoregistro.js',rd(h).indexOf('<script src="aciertos.js">')>0&&rd(h).indexOf('<script src="aciertos.js">')<rd(h).indexOf('<script src="autoregistro.js">')));
+ ok('el service worker guarda aciertos.js',/'aciertos\.js'/.test(rd('sw.js')));
+ ok('las 4 pantallas de Veredicto ponen la línea con try/catch (MLB, fútbol, NBA, NHL/NFL) y no con el precio en vivo',/OVAAciertos\.html\('mlb',pf,!favA,!!mk\)/.test(rd('pinnacle.js'))&&/OVAAciertos\.html\('fut', fuente\[best\], best===0, !!f\)/.test(rd('futbol.html'))&&/!\(f && m\.vivo\)/.test(rd('futbol.html'))&&/OVAAciertos\.html\('nba',pf,local,mercado\)/.test(rd('nba.html'))&&/OVAAciertos\.html\(DEP, pf, favM, hit !== null\)/.test(rd('usdeporte.js'))&&/!\(mk && mk\.live\)/.test(rd('usdeporte.js')));
+}
+
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);

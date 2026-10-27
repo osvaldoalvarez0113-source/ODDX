@@ -681,6 +681,8 @@ function pinPH(g){
 }
 
 /* ---- Resumen completo del Veredicto: pronóstico, modelo contra mercado, líneas justas, qué tan confiable es y forma ---- */
+/* cuántas veces acierta este % (aciertos.js): solo antes del juego, no con el precio en vivo */
+function acN(pf,local,mercado,vivo){ try{ return (!vivo&&window.OVAAciertos)?window.OVAAciertos.html('nba',pf,local,mercado):''; }catch(e){ return ''; } }
 function resumenN(g,pr,H,A){
   const favH=pr.pHMod>=0.5, pmAbs=Math.abs(pr.pm);   /* «modelo» = el modelo SOLO (la app mezcla 95% mercado, y eso no es lo que el modelo opina) */
   const mk=mkPN(g); const hit=mk?mk.p:null;
@@ -693,7 +695,7 @@ function resumenN(g,pr,H,A){
     `<span class="rvSig bad">✗ Discrepan ${gap.toFixed(0)} pts de probabilidad${pctNf} · créele al mercado</span>`))+
     (favH!==favM?`<div class="rvP" style="margin-top:7px">Modelo solo: <b>${esc(favH?H.n:A.n)}</b> (${Math.round((favH?pr.pHMod:1-pr.pHMod)*100)}%). Mercado: <b>${esc(nf)}</b> (${Math.round(pf*100)}%).</div>`:'');
   const main=`<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf>=0.6?esc(nf)+' gana · '+Math.round(pf*100)+'%':'Juego parejo'}</div>
-   <div class="rvP">${pf>=0.6?'Es el favorito'+(hit!==null?' según el mercado ('+fuente+').':' según el modelo.'):'Ninguno pasa del 60%. Lo más probable: '+esc(nf)+' '+Math.round(pf*100)+'%.'}</div>${sig}
+   <div class="rvP">${pf>=0.6?'Es el favorito'+(hit!==null?' según el mercado ('+fuente+').':' según el modelo.'):'Ninguno pasa del 60%. Lo más probable: '+esc(nf)+' '+Math.round(pf*100)+'%.'}</div>${sig}${acN(pf,favM,hit!==null&&!(mk&&mk.live),mk&&mk.live)}
    <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amTxt(pf)}</b> por ${esc(nf)}${hit!==null?'':' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(nf)}</label><input type="number" inputmode="decimal" data-vl="o" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${hit!==null?1:0}"><div class="rvVal" data-vl="r"></div></div></div>`;
   const row=(n,m,k)=>`<div class="nm">${esc(n)} gana</div><div class="n md">${pct1(m)}</div><div class="n mk">${k===null?'—':pct1(k)}</div><div class="n">${amTxt(k===null?m:k)}</div>`;
   const tab=`<div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo solo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n,1-pr.pHMod,hit===null?null:1-hit)}${row(H.n,pr.pHMod,hit)}</div>
@@ -1173,6 +1175,7 @@ iniciar();
 <script src="ovaextra.js"></script>
 <script src="diseno.js"></script>
 <script src="asistente.js"></script>
+<script src="aciertos.js"></script>
 <script src="autoregistro.js"></script>
 <script src="envivo.js"></script>
 <script src="cierre.js"></script>

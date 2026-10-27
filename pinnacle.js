@@ -204,7 +204,8 @@
       } else pill='<span class="rvSig mid">! Sin precio del mercado para este juego: pronóstico solo de OVA</span>';
       var kal=mk?' <span style="opacity:.8">Kalshi: compra hasta '+mk.g.tope[favA?mk.iA:1-mk.iA]+'¢ por '+esc(nf)+'.</span>':'';
       var inp=function(k,nm,p){ return '<div class="rvIn"><label>Cuota que te pagan por '+esc(nm)+'</label><input type="text" inputmode="decimal" data-k="'+k+'" data-p="'+p+'" placeholder="-150 ó 55¢"><div class="rvVal" data-r="'+k+'"></div></div>'; };
-      var main='<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">'+head+'</div><div class="rvP">'+sub+'</div>'+pill+
+      var acH=''; try{ if(window.OVAAciertos) acH=window.OVAAciertos.html('mlb',pf,!favA,!!mk); }catch(e){}   /* cuántas veces acierta este % (aciertos.js) */
+      var main='<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">'+head+'</div><div class="rvP">'+sub+'</div>'+pill+acH+
         '<div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>'+am(pf)+'</b> por '+esc(nf)+(mk?'':' (cuota de OVA, menos confiable)')+'.'+kal+' Escribe la que te dan:</div>'+
         inp('a',nomA,fA)+inp('h',nomH,fH)+'</div>';
       var cell=function(v){ return v==null?'—':(v*100).toFixed(1)+'%'; };

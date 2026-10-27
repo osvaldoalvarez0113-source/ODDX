@@ -2180,7 +2180,8 @@ function resumenVeredictoF(p, base, id){
   } else sig = '<span class="rvSig mid">! Sin precios del mercado para este partido: pronóstico solo del modelo</span>';
   var pick = '<div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>'+cj(fuente[best])+'</b> por '+escR(txtRes(best))+(f?'':' (cuota del modelo, menos confiable)')+'. Escribe la que te dan:</div>'+
     '<div class="rvIn"><label>Cuota que te pagan por '+escR(txtRes(best))+'</label><input type="number" inputmode="decimal" id="'+id+'vlO" placeholder="-150 ó 37¢" data-p="'+fuente[best]+'" data-m="'+(f?'1':'0')+'"><div class="rvVal" id="'+id+'vlR"></div></div>';
-  var main = '<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">'+escR(h)+'</div><div class="rvP">'+escR(sub)+'</div>'+sig+pick+'</div>';
+  var acH = ''; try{ if(window.OVAAciertos && best!==1 && !(f && m.vivo)) acH = window.OVAAciertos.html('fut', fuente[best], best===0, !!f); }catch(e){}   /* cuántas veces acierta este % (aciertos.js) */
+  var main = '<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">'+escR(h)+'</div><div class="rvP">'+escR(sub)+'</div>'+sig+acH+pick+'</div>';
 
   var cell = function(v){ return v===null||v===undefined ? '<div class="n">—</div>' : '<div class="n">'+pc(v)+'</div>'; };
   var fila = function(t, vm, vk){ var ref = (vk!==null&&vk!==undefined)?vk:vm; return '<div class="nm">'+escR(t)+'</div>'+cell(vm).replace('class="n"','class="n md"')+'<div class="n mk">'+((vk===null||vk===undefined)?'—':pc(vk))+'</div><div class="n">'+(ref===null||ref===undefined?'—':cj(ref))+'</div>'; };
@@ -3669,6 +3670,7 @@ h3{display:flex;align-items:center;gap:6px}
 <script src="ovaextra.js"></script>
 <script src="diseno.js"></script>
 <script src="asistente.js"></script>
+<script src="aciertos.js"></script>
 <script src="autoregistro.js"></script>
 <script src="envivo.js"></script>
 <script src="cierre.js"></script>
