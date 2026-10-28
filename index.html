@@ -181,7 +181,7 @@ th .eq{justify-content:flex-end}
  background:var(--bg2);border:1px solid var(--line2);overflow:hidden;
  display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--mut2)}
 .cara img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
-.cabp{position:sticky;top:calc(var(--barra) + var(--headh,74px) + 50px);z-index:6;
+.cabp{position:relative;z-index:1;   /* v71: antes sticky; se quedaba pegada tapando la tabla al bajar */
  display:flex;align-items:center;gap:11px;background:var(--bg2);
  border:1px solid var(--line2);border-radius:var(--r);padding:9px 11px;margin:20px 0 2px}
 .cabp .nm{min-width:0}
@@ -998,7 +998,7 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
 <body>
 
 <div class="topbar"><div class="inner">
-  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v70</span></h1>
+  <h1 class="brand"><svg class="ic" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.2 5.2c2 4 2 9.6 0 13.6M15.8 5.2c-2 4-2 9.6 0 13.6"/></svg>OVA <span class="ver">v71</span></h1>
   <div class="sp"></div>
   <input type="date" id="fecha" style="max-width:170px">
   <button id="cargar">Cargar</button>
@@ -4819,7 +4819,7 @@ document.addEventListener('visibilitychange',function(){
 <script>
 /* OVA MLB · v44: arco de probabilidad y selector de tema. */
 (function(){
- var VER='v70';   /* etiqueta junto al título = última versión numerada de MLB en los commits (v70, 22 oct). La ponía historial.js (v47-v64, quitado el 21 oct) y quedó pegada en v46 */
+ var VER='v71';   /* etiqueta junto al título = última versión numerada de MLB en los commits (v70, 22 oct). La ponía historial.js (v47-v64, quitado el 21 oct) y quedó pegada en v46 */
  function $q(s,r){ return (r||document).querySelector(s); }
  function $$(s,r){ return [].slice.call((r||document).querySelectorAll(s)); }
  function fmtAm(p){ return (typeof american==='function') ? american(p) : String(Math.round(p)); }
