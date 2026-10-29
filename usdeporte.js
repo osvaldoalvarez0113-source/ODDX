@@ -342,7 +342,7 @@
       const pr = prediccion(g), pS = probFav(g, pr), favH = pS >= 0.5, f = T(favH ? g.h : g.a), r = T(favH ? g.a : g.h);
       return { f: f, r: r, loc: favH, p: Math.max(pS, 1 - pS), m: Math.abs(pr.pm), ts: g.ts, pre: g.pre, mk: !!pr.mk };
     }).sort((a, b) => b.p - a.p);
-    try { if (window.OVARegAuto) { OVARegAuto.registrar(DEP, PEND.map(g => { const pr = prediccion(g); return { ts: g.ts, local: T(g.h).n, visita: T(g.a).n, p: { L: pr.pH, A: 1 - pr.pH }, liga: SP.nombre + (g.pre ? ' pretemporada' : ''), ext: g.id }; })); } } catch (e) { }
+    try { if (window.OVARegAuto) { OVARegAuto.registrar(DEP, PEND.map(g => { const pr = prediccion(g); return { ts: g.ts, local: T(g.h).n, visita: T(g.a).n, p: { L: pr.pH, A: 1 - pr.pH }, k: (function () { const m = mkPk(g); return (m && !m.live && (m.src === 'pin' || m.src === 'espn')) ? { L: m.p, A: 1 - m.p, src: m.src } : null; })(), liga: SP.nombre + (g.pre ? ' pretemporada' : ''), ext: g.id }; })); } } catch (e) { }
     try { if (window.OVAHoy) window.OVAHoy.publicar(DEP, filas.slice(0, 10).map(x => ({ n: x.f.n + (x.loc ? ' vs ' : ' @ ') + x.r.n, p: x.p * 100, sub: etiquetaDia(x.ts) + ' · ' + horaTxt(x.ts) + (x.pre ? ' · pretemporada' : '') }))); } catch (e) { }
     cont.innerHTML = filas.map((x, i) => `<div class="fila-rank"><div class="pos">${i + 1}</div><img src="${esc(x.f.logo)}" alt="" onerror="this.style.display='none'"><div class="nom">${esc(x.f.n)} ${x.loc ? 'vs' : '@'} ${esc(x.r.n)}<small>${esc(etiquetaDia(x.ts))} · ${horaTxt(x.ts)} · margen esperado ${x.m.toFixed(SP.dec)}${x.mk ? ' · precio del mercado' : ''}${x.pre ? ' · pretemporada' : ''}</small></div><div class="pct">${pct1(x.p)}</div></div>`).join('');
   }
