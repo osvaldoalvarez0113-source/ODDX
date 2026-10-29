@@ -470,7 +470,7 @@ function pantallaAuto(cont,ls){
 
   cont.appendChild(el('div',{class:'caja'},[
     el('h3',{text:'🤖 ¿La app acierta?'}),
-    el('p',{class:'nota',text:'Cada juego se guarda solo antes de empezar. Aquí ves a quién eligió tu modelo, a quién el mercado (Pinnacle; en NHL y NFL la línea de ESPN sin margen mientras no haya Pinnacle) y quién ganó de verdad. No son tus picks: no tocan Mis picks, tu CLV ni tu banca.'}),
+    el('p',{class:'nota',text:'Cada juego se guarda solo antes de empezar. Aquí ves a quién eligió tu modelo, a quién el mercado (Pinnacle; si se acaban las llamadas, la línea de ESPN sin margen) y quién ganó de verdad. No son tus picks: no tocan Mis picks, tu CLV ni tu banca.'}),
     el('div',{class:'pie2'},[el('button',{type:'button',text:'↻ Buscar resultados nuevos',onclick:function(){ A.resolver(true).then(repintar,repintar); }})])]));
   if(!items.length){
     cont.appendChild(el('div',{class:'vacio'},[el('b',{text:'Todavía no hay juegos guardados'}),
