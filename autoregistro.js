@@ -102,6 +102,39 @@ function aplicarMercado(rec,k,generado,ahora){
  return true;
 }
 
+/* ---------- respaldo del mercado: la línea de ESPN (moneyline sin margen) cuando no hay Pinnacle ---------- */
+function amNum(v){ if(v==null) return null; var n=parseFloat(String(v).replace(/[−–—]/g,'-').replace(/[^0-9.+-]/g,'')); return (isFinite(n)&&Math.abs(n)>=100)?n:null; }
+function impl(am){ return am>0?100/(am+100):(-am)/(-am+100); }
+function blqO(x){ return x&&(x.close||x.current||x.open); }
+/* de una competencia de ESPN → {L,A,D} sin margen, o null */
+function lineaEspn(c){
+ var o=c&&c.odds&&c.odds[0]; if(!o) return null;
+ var h=null,a=null,d=null;
+ if(o.moneyline){ h=amNum(blqO(o.moneyline.home)&&blqO(o.moneyline.home).odds); a=amNum(blqO(o.moneyline.away)&&blqO(o.moneyline.away).odds); d=amNum(blqO(o.moneyline.draw)&&blqO(o.moneyline.draw).odds); }
+ if(h==null||a==null){ h=amNum(o.homeTeamOdds&&o.homeTeamOdds.moneyLine); a=amNum(o.awayTeamOdds&&o.awayTeamOdds.moneyLine); d=amNum(o.drawOdds&&o.drawOdds.moneyLine); }
+ if(h==null||a==null) return null;
+ var pL=impl(h), pA=impl(a), pD=d!=null?impl(d):0, s=pL+pA+pD;
+ if(!(s>0.98&&s<1.3)) return null;                                   /* margen absurdo: dato roto */
+ return trio({L:pL/s,A:pA/s,D:d!=null?pD/s:null});
+}
+function lineasEspn(sb){
+ var out=[];
+ ((sb&&sb.events)||[]).forEach(function(e){
+  var c=e.competitions&&e.competitions[0]; if(!c||!c.competitors) return;
+  var h=null,a=null; c.competitors.forEach(function(x){ if(x.homeAway==='home') h=x; else if(x.homeAway==='away') a=x; });
+  if(!h||!a||!h.team||!a.team) return;
+  var st=(e.status&&e.status.type)||{}; if(st.state&&st.state!=='pre') return;   /* solo antes de empezar */
+  var k=lineaEspn(c); if(k) out.push({ts:Date.parse(e.date),h:h.team,a:a.team,k:k});
+ });
+ return out;
+}
+function cruzarEspn(lineas,rec){
+ var ev=buscarEvento(lineas||[],rec); if(!ev) return null;
+ if(rec.app!=='fut'&&ev.k.D!=null) return null;
+ if(rec.app==='fut'&&ev.k.D==null) return null;                      /* fútbol sin empate = no es un 1X2 */
+ return ev.k;
+}
+
 /* ---------- resultado ---------- */
 function eventosDe(sb){
  var out=[];
@@ -245,7 +278,7 @@ function veredicto(o){
 }
 function exportar(items){ return JSON.stringify({app:'ova-auto',v:1,fecha:new Date().toISOString(),n:(items||[]).length,items:items||[]}); }
 
-var API={comoPicks:comoPicks,HORIZONTE:HORIZONTE,norm:norm,fechaLocal:fechaLocal,trio:trio,idDe:idDe,cruzar:cruzar,aplicarRegistro:aplicarRegistro,aplicarMercado:aplicarMercado,
+var API={lineaEspn:lineaEspn,lineasEspn:lineasEspn,cruzarEspn:cruzarEspn,comoPicks:comoPicks,HORIZONTE:HORIZONTE,norm:norm,fechaLocal:fechaLocal,trio:trio,idDe:idDe,cruzar:cruzar,aplicarRegistro:aplicarRegistro,aplicarMercado:aplicarMercado,
  eventosDe:eventosDe,esEq:esEq,ganadorDe:ganadorDe,buscarEvento:buscarEvento,derivar:derivar,brier:brier,resumir:resumir,veredicto:veredicto,
  exportar:exportar,precio0:precio0,precio3:precio3,KEY:KEY,MARGEN:MARGEN};
 root.OVARegAuto=API;
@@ -274,19 +307,34 @@ function registrar(app,lista){
   /* respaldo: la línea que la app ya trae (ESPN, sin margen) para cuando no hay archivo de Pinnacle (NHL/NFL sin cuota de OddsPapi) */
   var resp={}; (lista||[]).forEach(function(g){ if(g&&g.k&&g.local&&g.visita) resp[idDe(app,g.ts,g.local,g.visita)]=g.k; });
   return traerMercado(app).then(function(j){
-   var cur=leer(), n=0, t=Date.now(), hayJ=j&&Array.isArray(j.juegos);
+   var cur=leer(), n=0, t=Date.now(), hayJ=j&&Array.isArray(j.juegos), faltan=[];
    ap.tocados.forEach(function(x){
     var r=null, i; for(i=0;i<cur.length;i++){ if(cur[i]&&cur[i].id===x.id){ r=cur[i]; break; } }
     if(!r||r.res) return;
     var k=hayJ?cruzar(j.juegos,app,r):null;
     if(k){ if(aplicarMercado(r,k,j.generado,t)){ r.ksrc='pin'; n++; } return; }
-    var e=resp[r.id]; if(e&&(!r.ksrc||r.ksrc!=='pin')&&aplicarMercado(r,{L:e.L,A:e.A},e.src||'espn',t)){ r.ksrc=e.src||'espn'; n++; }
+    var e=resp[r.id]; if(e&&(!r.ksrc||r.ksrc!=='pin')&&aplicarMercado(r,{L:e.L,A:e.A},e.src||'espn',t)){ r.ksrc=e.src||'espn'; n++; return; }
+    if(!r.ksrc||r.ksrc!=='pin') faltan.push(r.id);
    });
    if(n) escribir(cur);
-   return ap.tocados.length;
+   if(!faltan.length) return ap.tocados.length;
+   /* ni Pinnacle ni línea de la app: se busca la de ESPN directo (cuando se acaban las llamadas de OddsPapi) */
+   var urls={};
+   ap.tocados.forEach(function(x){ if(faltan.indexOf(x.id)<0) return; var u=urlSB(x); if(u) [ymdUTC(x.ts-10*3600e3),ymdUTC(x.ts)].forEach(function(d){ urls[u+'/scoreboard?dates='+d+'&limit=300']=1; }); });
+   var lin=[];
+   return Promise.all(Object.keys(urls).map(function(u){ return getJSON(u).then(function(j){ lin=lin.concat(lineasEspn(j)); }).catch(function(){}); })).then(function(){
+    var cur2=leer(), m=0, t2=Date.now();
+    cur2.forEach(function(r){
+     if(!r||r.res||faltan.indexOf(r.id)<0||r.ksrc==='pin') return;
+     var k=cruzarEspn(lin,r); if(k&&aplicarMercado(r,k,'espn',t2)){ r.ksrc='espn'; m++; }
+    });
+    if(m) escribir(cur2);
+    return ap.tocados.length;
+   });
   }).catch(function(){ return ap.tocados.length; });
  }catch(e){ return Promise.resolve(0); }
 }
+function urlSB(r){ return r.app==='fut'?(r.slug?ESPN+'soccer/'+r.slug:null):(DEPORTE[r.app]?ESPN+DEPORTE[r.app]:null); }
 function getJSON(u){ return root.fetch(u).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }
 var ULT=0, CORRIENDO=false;
 function resolver(forzar){
