@@ -1,0 +1,38 @@
+name: Datos NHL por juego
+
+# Baja tiros, portero titular y power play de la API oficial de la NHL para medir si mejoran el modelo.
+# Guarda nhl-box.json en la rama "datos-nhl-box". No toca la app ni gasta llamadas de OddsPapi.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/bajar_nhl_box.js
+      - .github/workflows/datos-nhl-box.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: datos-nhl-box
+  cancel-in-progress: true
+
+jobs:
+  bajar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Recuperar lo ya bajado
+        continue-on-error: true
+        run: git fetch -q origin datos-nhl-box && git checkout FETCH_HEAD -- nhl-box.json || echo "sin cache"
+      - name: Bajar
+        run: node scripts/bajar_nhl_box.js
+      - name: Guardar
+        run: |
+          mkdir -p /tmp/dat && cp -f nhl-box.json /tmp/dat/
+          cd /tmp/dat && git init -q -b datos-nhl-box && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "datos nhl por juego" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" datos-nhl-box
