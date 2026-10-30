@@ -23,3 +23,9 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 | [`RONDA6-BOLETO.md`](RONDA6-BOLETO.md) | Ronda 6 — diseño «Boleto» |
 | [`medicion-nfl-detalle.md`](medicion-nfl-detalle.md) | NFL · medición contra el mercado |
 | [`medicion-nhl-detalle.md`](medicion-nhl-detalle.md) | NHL · medición contra el mercado |
+
+## Auditoría de Muse (30 oct 2026) — aplicado
+- P0: cuota OddsPapi (MLB 2 corridas, fútbol/NBA 1 → ≈222 llamadas/mes), escáner en rojo si no hay precio nuevo, XSS de Railway, moneyline de NBA, ranking MLB con la mezcla, «Valor mínimo» por debajo de +2% en NHL/NFL, empate a 60' de NHL (solo para mostrar).
+- Historia de precios: rama `historia-precios`, `historia/<archivo>-<AAAA-MM>.jsonl`, una línea por corrida (`scripts/historia_precios.sh`). Octubre relleno desde el historial de git.
+- Fútbol: piso 0.5 a la media de goles de liga (un arranque con 0-0 dejaba NaN).
+- Worker `ova-ia`: apagado por defecto (`ACTIVO = si` para encenderlo). Ninguna página lo llama. El cambio solo cuenta cuando se vuelve a publicar en Cloudflare.

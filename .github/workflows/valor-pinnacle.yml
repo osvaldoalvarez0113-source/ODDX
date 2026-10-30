@@ -63,6 +63,12 @@ jobs:
             echo "**No pude guardar pinnacle-datos.json en el repo.** Revisa Settings > Actions > General > Workflow permissions: Read and write." >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
+      - name: Guardar la historia de precios (no pisa nada)
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/historia_precios.sh pinnacle-datos.json
       - name: Guardar el informe del escaner (para poder leer el diagnostico)
         if: always()
         continue-on-error: true

@@ -45,6 +45,9 @@ export default {
       'Access-Control-Max-Age': '86400',
       'Vary': 'Origin'
     };
+    /* APAGADO por defecto (auditoría 30-oct-2026): ninguna página de OVA llama a este Worker, así que solo podía gastar tu clave.
+       Para volver a usarlo: en Cloudflare > Worker > Settings > Variables agrega ACTIVO = si. */
+    if (env.ACTIVO !== 'si') return json({ error: { message: 'Asistente de IA apagado' } }, 410, cors);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
     if (request.method !== 'POST') return json({ error: { message: 'Solo POST' } }, 405, cors);
     if (!permitido) return json({ error: { message: 'Origen no permitido' } }, 403, cors);

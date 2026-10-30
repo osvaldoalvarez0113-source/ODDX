@@ -1145,6 +1145,17 @@ sec('Registro automático: guarda ANTES del juego, resuelve solo y mide con prec
 
 /* ---------------- NHL y NFL (usdeporte.js + modelo-nhl.js + modelo-nfl.js + valor3.js) ---------------- */
 sec('NHL y NFL: núcleo compartido, modelos y lector de Pinnacle');
+{const HP=require(path.join(__dirname,'scripts/historia_precios.js')),os=require('os');const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'hp-'));
+ const f=path.join(tmp,'pinnacle-nba.json');fs.writeFileSync(f,JSON.stringify({generado:'2026-11-02T14:00:00Z',juegos:[{n:['A','B'],ml:[0.6,0.4]}]}));
+ const r1=HP.agregar(tmp,f),r2=HP.agregar(tmp,f);fs.writeFileSync(f,JSON.stringify({generado:'2026-11-02T22:00:00Z',juegos:[]}));const r3=HP.agregar(tmp,f);
+ const lin=fs.readFileSync(path.join(tmp,'historia','pinnacle-nba-2026-11.jsonl'),'utf8').trim().split('\n');
+ ok('Historia de precios: cada corrida agrega una línea por mes y no repite la misma corrida (archivo conservado)',/^agregado/.test(r1)&&/^ya estaba/.test(r2)&&/^agregado/.test(r3)&&lin.length===2&&JSON.parse(lin[0]).juegos[0].ml[0]===0.6);
+ ok('Historia de precios: los 3 escáneres la guardan después de sus datos',['valor-pinnacle','valor-futbol-nba','valor-nhl-nfl'].every(w=>/bash scripts\/historia_precios\.sh pinnacle-/.test(rd('.github/workflows/'+w+'.yml'))));
+ ok('Worker ova-ia: apagado salvo que ACTIVO = si (nadie en OVA lo llama)',/if \(env\.ACTIVO !== 'si'\) return json/.test(rd('worker/ova-ia.js')));}
+{const fh=rd('futbol.html');const i=fh.indexOf('function construirSemilla('),j=fh.indexOf('\n}\n',i)+3;const c={claveEq:x=>String(x)};vm.createContext(c);vm.runInContext(fh.slice(i,j),c);
+ const L=[];for(let k=0;k<12;k++)L.push({local:'A',visita:'B',golesLocal:0,golesVisita:0});
+ const r=c.construirSemilla(L);
+ ok('Fútbol: una liga que arranca con puro 0-0 ya no deja los ratings en NaN (piso 0.5 a la media de goles) y calcularBase tiene el mismo piso',r.A&&isFinite(r.A.att)&&isFinite(r.A.def)&&/var lp = totalPJ > 0 \? Math\.max\(totalGF \/ totalPJ, 0\.5\) : 1\.35;/.test(fh)&&/var lp = Math\.max\(gfTot\/pjTot, 0\.5\);/.test(fh));}
 ok('NHL/NFL Veredicto: un EV entre 0 y +2% sale como «Valor mínimo» (no pick); «Hay valor» pide +2% o más',/if \(ev > 0 && ev < 0\.02\)/.test(rd('usdeporte.js'))&&/Valor mínimo:/.test(rd('usdeporte.js')));
 ok('NBA: lee el moneyline donde ESPN lo pone ahora (odds[0].moneyline) y deja homeTeamOdds.moneyLine de respaldo',/if\(o\.moneyline\)\{ const h=amN\(blq\(o\.moneyline\.home\)/.test(rd('nba.html'))&&/if\(r\.mlH===undefined\)/.test(rd('nba.html')));
 ok('Railway: todo texto del servidor se escapa antes de pintarse (limpio) y también el mensaje de error',/d = limpio\(d\);/.test(rd('railway.js'))&&/limpio\(String\(e && e\.message\)\)/.test(rd('railway.js')));

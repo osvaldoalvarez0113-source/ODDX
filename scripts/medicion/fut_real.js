@@ -14,7 +14,7 @@ const norm=r=>r.filter(x=>x.F0&&x.F0[0]!==null);
 const R=norm(rows);
 const seasons=[...new Set(R.map(x=>x.t))].sort(), ligas=[...new Set(R.map(x=>x.lg))];
 const ll=(p,y)=>-Math.log(Math.max(p[y],1e-9));
-function semilla(ms){ const m={}; let gf=0,n=0; ms.forEach(p=>{gf+=p.gh+p.ga;n++; [[p.h,p.gh,p.ga],[p.a,p.ga,p.gh]].forEach(z=>{const e=m[z[0]]||(m[z[0]]={pj:0,gf:0,gc:0}); e.pj++; e.gf+=z[1]; e.gc+=z[2];});}); if(!n) return {}; const lp=gf/(2*n),o={}; Object.keys(m).forEach(k=>{ if(m[k].pj>=10) o[k]={att:m[k].gf/m[k].pj/lp,def:m[k].gc/m[k].pj/lp}; }); return o; }
+function semilla(ms){ const m={}; let gf=0,n=0; ms.forEach(p=>{gf+=p.gh+p.ga;n++; [[p.h,p.gh,p.ga],[p.a,p.ga,p.gh]].forEach(z=>{const e=m[z[0]]||(m[z[0]]={pj:0,gf:0,gc:0}); e.pj++; e.gf+=z[1]; e.gc+=z[2];});}); if(!n) return {}; const lp=Math.max(gf/(2*n),0.5),o={}; Object.keys(m).forEach(k=>{ if(m[k].pj>=10) o[k]={att:m[k].gf/m[k].pj/lp,def:m[k].gc/m[k].pj/lp}; }); return o; }
 // corre un juego de parametros en todas las ligas/temporadas; devuelve lista de {t,lg,y,p:[L,D,V],mk,o25,ou,tot}
 function correr(P, usarSemilla){
   const out=[];

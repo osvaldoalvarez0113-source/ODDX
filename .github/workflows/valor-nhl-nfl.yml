@@ -51,6 +51,12 @@ jobs:
           git commit -q -m "mercado: precios de Pinnacle (NHL y NFL)"
           git pull --rebase -q || true
           git push -q origin HEAD
+      - name: Guardar la historia de precios (no pisa nada)
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/historia_precios.sh pinnacle-nhl.json pinnacle-nfl.json
       - name: Guardar el informe
         if: always()
         continue-on-error: true

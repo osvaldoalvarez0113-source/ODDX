@@ -1676,7 +1676,7 @@ function construirSemilla(lista){
     });
   });
   if(!n) return {};
-  var lp = gf/(2*n), out = {};
+  var lp = Math.max(gf/(2*n), 0.5), out = {};   /* piso: una liga que arranca con 0-0 no puede dejar la media en 0 (dividía entre 0 → NaN) */
   Object.keys(m).forEach(function(k){
     if(m[k].pj >= 10) out[k] = {att:(m[k].gf/m[k].pj)/lp, def:(m[k].gc/m[k].pj)/lp};
   });
@@ -1728,7 +1728,7 @@ function calcularBase(eL, eV, P){
   P = P || PARAMS;
   var totalGF=0, totalPJ=0;
   EQUIPOS.forEach(function(e){ totalGF+=e.gf; totalPJ+=e.pj; });
-  var lp = totalGF / totalPJ;
+  var lp = totalPJ > 0 ? Math.max(totalGF / totalPJ, 0.5) : 1.35;   /* sin partidos (copa nueva) o puro 0-0: piso 0.5, sin datos 1.35 goles por equipo; antes salía NaN */
   var A = (P.A===undefined ? 1 : P.A), At = (P.At===undefined ? A : P.At);
   var aL0 = acumConTiros(eL), aV0 = acumConTiros(eV);
   var sL = buscarSemilla(SEMILLA, eL.nombre), sV = buscarSemilla(SEMILLA, eV.nombre);
@@ -2580,7 +2580,7 @@ function walkForward(prep, P, minPrev, opts){
     var real = m.gl>m.gv ? 'L' : (m.gl<m.gv ? 'V' : 'D');
     var conJuegos = (minPrev<=0) || (aL && aV && aL.pj>=minPrev && aV.pj>=minPrev);
     if(idx>=desde && idx<hasta && pjTot>=20 && conJuegos){
-      var lp = gfTot/pjTot;
+      var lp = Math.max(gfTot/pjTot, 0.5);
       var esc = xS>0 ? gS/xS : 0.30;
       var sL = sem ? sem[m.kL] : null, sV = sem ? sem[m.kV] : null;
       var eL = conSemilla(mezclaTiros(aL||CERO, A, esc), sL, P.S, lp);
