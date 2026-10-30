@@ -418,6 +418,18 @@
     if (g.indoor) li.push(['ok', 'Techo cerrado: el viento y el frío no pesan.']);
     return li;
   }
+  /* NHL · qué apostar y qué no, según lo medido (docs/MEDICION-NHL-NFL-2026-10.md y docs/NHL-REVISION-2026-10.md) */
+  function guiaNhl(g, pr, pf) {
+    if (DEP !== 'nhl' || (pr.mk && pr.mk.live)) return '';
+    const o = g.odds || {}, pin = pinDe(g), Lt = (o.total !== undefined && isFinite(o.total)) ? o.total : (pin && pin.tot ? pin.tot.l : null);
+    const L = (c, t) => `<div><i class="${c}">${c === 'ok' ? '✓' : (c === 'w' ? '!' : '✗')}</i><span>${t}</span></div>`;
+    const li = [L('w', 'El favorito <b>no es un pick</b>: apostarle siempre al favorito de 55% o más dejó <b>−8.7%</b> en 2025 (846 juegos). Solo hay valor si te pagan más que la cuota justa de arriba.')];
+    if (Lt !== null && isFinite(pr.ptMod) && pr.ptMod <= Lt - 0.5) li.push(L('ok', `🧪 <b>Señal en prueba: Menos de ${Lt}</b>. El modelo solo espera ${pr.ptMod.toFixed(1)} goles. En 2022–2025 esta señal dio +9% (364 juegos, margen ±10, una temporada negativa): no está probada, apuesta poco.`));
+    if (Lt === 6.5) li.push(L('x', '<b>Evita Más de 6.5</b>: perdió las cuatro temporadas 2022–2025 (−10% en 2,866 juegos).'));
+    li.push(L('x', '<b>Evita el favorito −1.5</b> (línea de gol): dejó −15% en 2025.'));
+    if (pf >= 0.65) li.push(L('x', '<b>No vayas al perro</b> de menos de 35%: dejó −13% en 2022–2025.'));
+    return `<h4>Qué apostar y qué no (medido)</h4><div class="rvLs">${li.join('')}</div>`;
+  }
   function resumenN(g, pr, H, A) {
     const favH = pr.pH >= 0.5, mk = pr.mk, hit = mk ? mk.p : null;
     const pH = (hit !== null) ? hit : pr.pH, favM = pH >= 0.5, pf = Math.max(pH, 1 - pH), nf = favM ? H.n : A.n;
@@ -448,7 +460,7 @@
     descansoTxt(g, pr, H, A).forEach(x => li.push(L(x[0], x[1])));
     if (g.pre) li.push(L('w', 'Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
     li.push(`<div data-inj><i class="w">!</i><span>Lesionados: toca «Cargar lesionados» abajo (archivo grande).</span></div>`);
-    return `<div class="rv"><h4>Pronóstico y pick</h4>${main}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
+    return `<div class="rv"><h4>Pronóstico y pick</h4>${main}${guiaNhl(g, pr, pf)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
   }
 
   function pintarCuerpo(body, g) {

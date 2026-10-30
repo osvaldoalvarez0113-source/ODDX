@@ -1142,6 +1142,7 @@ sec('Registro automático: guarda ANTES del juego, resuelve solo y mide con prec
 
 /* ---------------- NHL y NFL (usdeporte.js + modelo-nhl.js + modelo-nfl.js + valor3.js) ---------------- */
 sec('NHL y NFL: núcleo compartido, modelos y lector de Pinnacle');
+ok('NHL Veredicto: guía «Qué apostar y qué no» (favorito no es pick, señal Menos en prueba, evitar Más 6.5 y favorito −1.5), solo en NHL y no en vivo',(()=>{const u=rd('usdeporte.js');return /function guiaNhl\(g, pr, pf\)/.test(u)&&/DEP !== 'nhl' \|\| \(pr\.mk && pr\.mk\.live\)/.test(u)&&/pr\.ptMod <= Lt - 0\.5/.test(u)&&/Evita Más de 6\.5/.test(u)&&/Evita el favorito −1\.5/.test(u)&&/\$\{main\}\$\{guiaNhl\(g, pr, pf\)\}/.test(u);})());
 {
  const US=require(path.join(__dirname,'usdeporte.js')),MN=require(path.join(__dirname,'modelo-nhl.js')),MF=require(path.join(__dirname,'modelo-nfl.js'));
  const V3=(()=>{const src=rd('scripts/valor3.js');const m={exports:{}};new Function('module','require','process','console',src)(m,require,{env:{},argv:[],exit(){}},{log(){},error(){},warn(){}});return m.exports;})();
