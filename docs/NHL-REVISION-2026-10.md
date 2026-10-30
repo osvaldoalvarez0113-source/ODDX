@@ -37,3 +37,10 @@ Ojo: PDEF se eligió con estos mismos años, así que la señal Menos está algo
 
 ## Lo que falta para saber por qué pierde Osvaldo
 Sus apuestas viven en el teléfono (localStorage), no en el repo. Hace falta ver qué apostó (ganador, −1.5, Más/Menos, combinadas), a qué precio y dónde (Kalshi cobra comisión y diferencial).
+
+## Factores que le faltaban al modelo (30 oct 2026)
+Se bajaron de la API oficial de la NHL tiros a puerta, portero titular (tiros y goles recibidos) y power play de 5,461 juegos (2022-23 a hoy; workflow «Datos NHL por juego», rama `datos-nhl-box`) y se probó cada factor contra la línea de cierre, dejando una temporada afuera (`scripts/medicion/nhl_factores.py`, tablas en `docs/medicion-nhl-factores.md`).
+
+- **Ganador:** tiros, calidad del portero titular, portero suplente, power play, suerte (PDO) y 3 juegos en 4 noches: ninguno mejora el precio de cierre (z entre −2.0 y +1.1; hacía falta z > 2.6). El portero titular hasta empeora un poco: el mercado ya lo descuenta mejor.
+- **Total:** volumen de tiros, porteros, power play y goles recientes: ninguno mejora la línea; todos juntos la empeoran (z = −2.3). Apostar Menos/Más con ese modelo dio −3% a −11%.
+- **Decisión:** no se agrega nada al cálculo. El mercado ya trae esos datos.
