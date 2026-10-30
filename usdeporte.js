@@ -537,7 +537,7 @@
       for (let Lt = 4.5; Lt <= 7.5; Lt += 0.5) { const c = pr.over(Lt); esc2 += `<div class="linea"><span>Más de ${Lt}</span><b>${pct1(c.w)}${c.p > 0.001 ? ' <span style="color:var(--mut2);font-weight:500;font-size:11.5px">(devuelven ' + pct1(c.p) + ')</span>' : ''} · ${amTxt(c.p > 0.001 ? c.w / (1 - c.p) : c.w)}</b></div>`; }
       num = `
        <h3>Resultado a los 60 minutos</h3>
-       <div class="marcadores"><div><b>${pct1(D.regA)}</b><small>${esc(A.ab)} gana</small></div><div><b>${pct1(D.regE)}</b><small>empate → tiempo extra</small></div><div><b>${pct1(D.regH)}</b><small>${esc(H.ab)} gana</small></div></div>
+       <div class="marcadores"><div><b>${pct1((D.r60 || {}).A ?? D.regA)}</b><small>${esc(A.ab)} gana</small></div><div><b>${pct1((D.r60 || {}).E ?? D.regE)}</b><small>empate → tiempo extra</small></div><div><b>${pct1((D.r60 || {}).H ?? D.regH)}</b><small>${esc(H.ab)} gana</small></div></div>
        <div class="nota">Con empate a los 60 minutos hay tiempo extra y, si sigue igual, shootout: se decide casi a moneda (el mejor equipo apenas se lleva un poco más de la mitad). En 6,747 juegos medidos, 22% llegó a tiempo extra y en el 67% de esos hubo gol en OT.</div>
        <h3>Margen de victoria</h3>
        <div class="marcadores">
@@ -569,7 +569,9 @@
         const odd = normCuota(vi.value), p = parseFloat(vi.dataset.p), fm = vi.dataset.m === '1';
         if (odd === null) { vr.textContent = ''; vr.className = 'rvVal'; return; }
         const dec = decAm(odd), ev = p * dec - 1, dif2 = (p - impProb(odd)) * 100, jt = amTxt(p);
-        if (ev > 0) { vr.className = 'rvVal ok'; vr.innerHTML = `✓ <b>Hay valor:</b> te pagan más que la cuota justa (${jt}). Ganancia esperada: +${(ev * 100).toFixed(1)}% por cada $1 (${dif2.toFixed(1)} pts de ventaja).` + (fm ? '' : ' Ojo: sale del modelo, que no le gana al mercado; desconfía.'); }
+        /* +2% mínimo: por debajo cabe el error del precio de referencia (auditoría 30-oct-2026, C4) */
+        if (ev > 0 && ev < 0.02) { vr.className = 'rvVal'; vr.innerHTML = `≈ <b>Valor mínimo:</b> paga un poco más que la cuota justa (${jt}), pero +${(ev * 100).toFixed(1)}% está dentro del margen de error del precio de referencia. No cuenta como pick; busca +2% o más.`; }
+        else if (ev > 0) { vr.className = 'rvVal ok'; vr.innerHTML = `✓ <b>Hay valor:</b> te pagan más que la cuota justa (${jt}). Ganancia esperada: +${(ev * 100).toFixed(1)}% por cada $1 (${dif2.toFixed(1)} pts de ventaja).` + (fm ? '' : ' Ojo: sale del modelo, que no le gana al mercado; desconfía.'); }
         else { vr.className = 'rvVal no'; vr.innerHTML = `✗ <b>No hay valor:</b> la cuota justa es ${jt} y esta paga menos. Pérdida esperada: ${(ev * 100).toFixed(1)}% por cada $1.`; }
       });
     })();

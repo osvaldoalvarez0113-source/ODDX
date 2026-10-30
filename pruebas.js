@@ -997,6 +997,9 @@ sec('ovaedge.js: vig, Kelly, CLV, calibración y Monte Carlo, y su chequeo en el
    const v70=val(cE,70,'-110',0,50), v56=val(cE,56,'-110',0,50), vN=val(cN,70,'-110',0,50);
    ok('Stake: con 70% a -110 el ¼ Kelly sobre la mezcla con el mercado es ≈$14.6, no los ≈$92.5 de tu número crudo',cl(v70.stake,14.6,.6)&&cl(v70.stakeCrudo,92.5,.8)&&v70.stake<v70.stakeCrudo/5);
    ok('Stake: con 56% a -110 hay ventaja de tu número pero la mezcla la borra: no hay stake y avisa (sinStake)',v56.ev>0&&v56.stake===null&&v56.sinStake===true&&v56.stakeCrudo>15);
+   {const c5=mkC(true);vm.runInContext('W_MODELO=0.05',c5);const v62=val(c5,62,'-110',0,50),v0=val(cN,62,'-110',0,50);
+    ok('Ranking MLB: valor() trae la ventaja y el EV de la MEZCLA (62% vs mercado 50/50 a -110, peso 5%: EV crudo +18% pero mezcla negativa) para etiquetar igual que el Veredicto',v62.ev>0.15&&v62.evMix<0&&v62.ventajaMix<2&&v0.evMix===null);
+    ok('Ranking MLB: la etiqueta y el filtro usan la mezcla (evU/vtU) y el precio imposible se sigue avisando con el crudo',/var nv=\(m\.v\.ev>EV_IMPOSIBLE\)\?nivel\(m\.v\.ventaja,m\.v\.ev\):nivel\(vtU\(m\),evU\(m\)\);/.test(ix)&&/return \(evU\(m\)>0 && vtU\(m\)>=2\) \|\| m\.v\.ev>EV_IMPOSIBLE;/.test(ix));}
    ok('Stake: si ovaedge.js no cargó se queda el cálculo de siempre (sin tocar nada)',cl(vN.stake,vN.stakeCrudo,1e-9)&&vN.sinStake===false);
    ok('Stake: el ranking (valor con el sin-vig del par) y el Veredicto dan el MISMO ¼ Kelly para el mismo pick',(()=>{const h=V(62,'-110','-110'),m=/¼ Kelly \$(\d+\.\d\d)/.exec(h);return m&&cl(+m[1],val(cE,62,'-110',0,50).stake,.006);})());
    ok('Stake: con un solo precio (totales, F5…) el ancla es el precio entre 1.045 y el stake queda por debajo del crudo',(()=>{const a=val(cE,62,'-110',0,undefined);return a.stake>0&&a.stake<a.stakeCrudo;})());
@@ -1142,6 +1145,13 @@ sec('Registro automático: guarda ANTES del juego, resuelve solo y mide con prec
 
 /* ---------------- NHL y NFL (usdeporte.js + modelo-nhl.js + modelo-nfl.js + valor3.js) ---------------- */
 sec('NHL y NFL: núcleo compartido, modelos y lector de Pinnacle');
+ok('NHL/NFL Veredicto: un EV entre 0 y +2% sale como «Valor mínimo» (no pick); «Hay valor» pide +2% o más',/if \(ev > 0 && ev < 0\.02\)/.test(rd('usdeporte.js'))&&/Valor mínimo:/.test(rd('usdeporte.js')));
+ok('NBA: lee el moneyline donde ESPN lo pone ahora (odds[0].moneyline) y deja homeTeamOdds.moneyLine de respaldo',/if\(o\.moneyline\)\{ const h=amN\(blq\(o\.moneyline\.home\)/.test(rd('nba.html'))&&/if\(r\.mlH===undefined\)/.test(rd('nba.html')));
+ok('Railway: todo texto del servidor se escapa antes de pintarse (limpio) y también el mensaje de error',/d = limpio\(d\);/.test(rd('railway.js'))&&/limpio\(String\(e && e\.message\)\)/.test(rd('railway.js')));
+ok('Escáneres: si no sale ningún precio nuevo la corrida queda en ROJO (exitCode 1) en fútbol/NBA y NHL/NFL',/if\(!salio\)\{[^}]*process\.exitCode=1;/.test(rd('scripts/valor2.js'))&&/if \(!salio\) \{[^}]*process\.exitCode = 1;/.test(rd('scripts/valor3.js')));
+ok('Cuota OddsPapi: MLB 2 corridas al día y fútbol/NBA 1 (≈222 llamadas al mes, dentro del plan de 250)',(rd('.github/workflows/valor-pinnacle.yml').match(/- cron:/g)||[]).length===2&&(rd('.github/workflows/valor-futbol-nba.yml').match(/- cron:/g)||[]).length===1);
+{const MN3=require(path.join(__dirname,'modelo-nhl.js'));const D=MN3.dist(0.2,6.1,MN3.PDEF),D1=MN3.dist(0.2,6.1,Object.assign({},MN3.PDEF,{E:1}));
+ ok('NHL 60 min: el empate que se muestra sube de ~16% a ~22% (E = 1.5, medido 22.6%) y suma 1; ganador, línea y total NO cambian',D.r60.E>0.20&&D.r60.E<0.24&&Math.abs(D.r60.H+D.r60.E+D.r60.A-1)<1e-9&&Math.abs(D.pH-D1.pH)<1e-12&&MN3.pCoverM(D,-1.5).w===MN3.pCoverM(D1,-1.5).w&&/D\.r60 \|\| \{\}\)\.E/.test(rd('usdeporte.js')));}
 {const MN2=require(path.join(__dirname,'modelo-nhl.js')),US2=require(path.join(__dirname,'usdeporte.js'));
  const u=US2.unpack(['9',1,'1','2',3,2,2,0,0,35,22]);ok('NHL tiros: unpack lee los tiros a puerta (columnas 10 y 11) y sin ellos quedan en null',u.sh===35&&u.sa===22&&US2.unpack(['9',1,'1','2',3,2,2,0,0]).sh===null);
  ok('NHL tiros: PDEF trae el rating de tiros medido (kS 0.06, Ws 0.1, Hs 1.5)',MN2.PDEF.kS===0.06&&MN2.PDEF.Ws===0.1&&MN2.PDEF.Hs===1.5);

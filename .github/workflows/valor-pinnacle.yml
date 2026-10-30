@@ -6,7 +6,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "30 15 * * *"
-    - cron: "30 18 * * *"
     - cron: "30 21 * * *"
 
 permissions:
@@ -46,7 +45,6 @@ jobs:
         run: node scripts/valor.js
       - name: Guardar los datos en la app
         if: always()
-        continue-on-error: true
         run: |
           if [ ! -f pinnacle-datos.json ]; then echo "Sin pinnacle-datos.json: nada que guardar"; exit 0; fi
           git config user.name "escaner-ova"

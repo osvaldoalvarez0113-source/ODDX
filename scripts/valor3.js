@@ -82,7 +82,7 @@ const nm = (f, i) => f['participant' + i + 'Name'] || (cache.nom && cache.nom[f[
 
 (async () => {
   if (!KEY) { P('Falta ODDSPAPI_KEY'); process.exit(1); }
-  const ahora = Date.now(); const solo = (ENV.SOLO || 'nhl,nfl').split(',');
+  const ahora = Date.now(); const solo = (ENV.SOLO || 'nhl,nfl').split(','); let salio = 0;
   for (const dep of ['nhl', 'nfl']) {
     if (!solo.includes(dep)) { P(dep.toUpperCase() + ': omitido en esta corrida'); continue; }
     try {
@@ -101,10 +101,12 @@ const nm = (f, i) => f['participant' + i + 'Name'] || (cache.nom && cache.nom[f[
       juegos.sort((p, q) => Date.parse(p.t) - Date.parse(q.t));
       P(dep.toUpperCase() + ' usable: ' + juegos.length + ' · descartados ' + JSON.stringify(rz));
       P('Muestra: ' + juegos.slice(0, 6).map(x => x.n.join(' (local) vs ') + ' ml ' + x.ml.join('/') + (x.sp ? ' sp ' + x.sp.l : '') + (x.tot ? ' tot ' + x.tot.l : '')).join(' | '));
-      if (juegos.length) fs.writeFileSync('pinnacle-' + dep + '.json', JSON.stringify({ generado: new Date().toISOString(), ventanaH: DEP[dep].horas, juegos }));
+      if (juegos.length) { fs.writeFileSync('pinnacle-' + dep + '.json', JSON.stringify({ generado: new Date().toISOString(), ventanaH: DEP[dep].horas, juegos })); salio++; }
       else P('Sin juegos: se deja el archivo anterior (si lo hay).');
     } catch (e) { P(dep.toUpperCase() + ' ERROR: ' + String(e.message).replace(KEY, '***')); }
   }
+  /* sin un solo archivo nuevo: la corrida sale en ROJO (antes quedaba verde con datos viejos) */
+  if (!salio) { P('FALLO: no salio ningun precio nuevo; se conserva lo anterior.'); process.exitCode = 1; }
   P('Llamadas este mes (este escaner): ' + (cache.uso[mes] || 0) + ' de ' + MAX_MES);
   try { fs.writeFileSync('resultado3.md', out.join('\n')); } catch (e) { }
   guardar();

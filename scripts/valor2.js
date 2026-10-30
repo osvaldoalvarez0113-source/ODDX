@@ -126,6 +126,8 @@ async function mercadoNba(){
       else P('NBA: OddsPapi no devolvio partidos -> se conserva pinnacle-nba.json anterior');
     }catch(e){ P('NBA ERROR: '+String(e.message).replace(KEY,'***')); }
   }catch(e){ P('ERROR: '+String(e.message).replace(KEY,'***')); process.exitCode=1; }
+  /* sin un solo archivo nuevo (cuota agotada, tope propio, API caida): la corrida sale en ROJO, no verde con datos viejos */
+  if(!salio){ P('FALLO: no salio ningun precio nuevo; se conservan los archivos anteriores.'); process.exitCode=1; }
   P('Llamadas este mes (este escaner): '+(cache.uso[mes]||0)+' de '+MAX_MES);
   try{ fs.writeFileSync('resultado2.md',out.join('\n')); }catch(e){}
   guardar();

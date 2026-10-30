@@ -26,6 +26,7 @@ try{
       .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
       .then(function(d){
         if(corte) clearTimeout(corte);
+        d = limpio(d);   /* todo texto que manda el servidor se escapa antes de pintarlo (evita meter HTML o scripts) */
         cacheServidor = d; cacheFecha = fechaISO;
         return d;
       }, function(e){
@@ -35,6 +36,13 @@ try{
       });
   }
 
+  var ESC_MAP = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+  function limpio(x){
+    if(typeof x === 'string') return x.replace(/[&<>"']/g, function(ch){ return ESC_MAP[ch]; });
+    if(Array.isArray(x)) return x.map(limpio);
+    if(x && typeof x === 'object'){ var o = {}; Object.keys(x).forEach(function(k){ o[k] = limpio(x[k]); }); return o; }
+    return x;
+  }
   function americana(p){
     if(p==null||p<=0||p>=100) return '—';
     if(p>=50) return '-'+Math.round(p/(100-p)*100);
@@ -195,7 +203,7 @@ try{
       ligarChip(caja);
       caja.dataset.listo = '1';
     }).catch(function(e){
-      caja.innerHTML = '<b style="color:#F1F5FB">☁️ Servidor Railway</b><br><span style="color:#F87171">No se pudo conectar (' + e.message + '). Revisa tu internet o si el servidor está caido. Se muestran los números propios de OVA.</span>';
+      caja.innerHTML = '<b style="color:#F1F5FB">☁️ Servidor Railway</b><br><span style="color:#F87171">No se pudo conectar (' + limpio(String(e && e.message)) + '). Revisa tu internet o si el servidor está caido. Se muestran los números propios de OVA.</span>';
     }).then(function(){ el.__srvBusy = false; });
   }
 

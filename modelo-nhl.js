@@ -10,7 +10,7 @@
    =================================================================== */
 (function (root) {
   'use strict';
-  const PDEF = { kM: 0.008, kT: 0.008, carry: 0.7, H: 0.2, R: 0.25, Q: 0.25, KT: 0.023, Z: 1, kS: 0.06, Ws: 0.1, Hs: 1.5 };
+  const PDEF = { kM: 0.008, kT: 0.008, carry: 0.7, H: 0.2, R: 0.25, Q: 0.25, KT: 0.023, Z: 1, kS: 0.06, Ws: 0.1, Hs: 1.5, E: 1.5 };
   // kS/Ws/Hs = rating de TIROS A PUERTA: kS cuanto aprende de cada juego, Ws cuantos goles de margen vale 1 tiro de rating, Hs tiros de ventaja del local.
   // Medido (docs/NHL-REVISION-2026-10.md): con tiros el modelo solo baja su pérdida de 0.672 a 0.666 fuera de muestra, en las 4 temporadas; kM bajó a 0.008 porque los tiros explican parte de lo que antes daban los goles. Con Ws = 0 vuelve a ser el de solo goles. Los tiros vienen del archivo diario (hist-nhl.json, columnas 10 y 11); si faltan, ese juego no mueve el rating de tiros.
   // Q = cuanto inclina el tiempo extra hacia el mejor equipo (logit por gol de margen esperado).
@@ -36,7 +36,7 @@
     const mu = Math.max(0.6, pt), d = Math.max(-mu + 0.4, Math.min(mu - 0.4, pm));
     const lh = (mu + d) / 2, la = (mu - d) / 2;
     const ph = pois(lh), pa = pois(la);
-    const q = sig((P && P.Q !== undefined ? P.Q : PDEF.Q) * d);
+    const q = sig((P && P.Q !== undefined ? P.Q : PDEF.Q) * d), EMP = (P && P.E !== undefined) ? P.E : PDEF.E;
     const M = new Array(2 * NMAX + 1).fill(0), T = new Array(2 * NMAX + 3).fill(0);
     let regH = 0, regE = 0, regA = 0, tot = 0;
     for (let i = 0; i <= NMAX; i++) for (let j = 0; j <= NMAX; j++) {
@@ -55,7 +55,11 @@
       for (let k = 0; k < T.length; k++) T[k] /= sw;
     }
     regH *= s; regE *= s; regA *= s;
-    return { pH: regH + regE * q, pA: regA + regE * (1 - q), regH: regH, regE: regE, regA: regA, M: M, T: T, lh: lh, la: la, q: q };
+    /* Resultado a los 60' para MOSTRAR (1X2): el Poisson da 16% de empates y en 2022-26 fueron 22.6%. Inflar el empate (E = 1.5)
+       lo deja en 22% y baja la pérdida del 1X2 de 1.053 a 1.037; pero si se mete en la distribución completa empeora la línea -1.5
+       (los goles a puerta vacía separan los juegos de 1 gol), así que ganador, hándicap y total siguen con el Poisson de siempre. */
+    const zE = regE * EMP, sE = regH + regA + zE, r60 = { H: regH / sE, E: zE / sE, A: regA / sE };
+    return { pH: regH + regE * q, pA: regA + regE * (1 - q), regH: regH, regE: regE, regA: regA, r60: r60, M: M, T: T, lh: lh, la: la, q: q };
   }
   // el local recibe la linea L (ej. -1.5 / +1.5): cubre si margen + L > 0
   function pCoverM(D, L) { let w = 0, p = 0; for (let k = -NMAX; k <= NMAX; k++) { const x = k + L; if (x > 1e-9) w += D.M[k + NMAX]; else if (Math.abs(x) <= 1e-9) p += D.M[k + NMAX]; } return { w: w, p: p }; }

@@ -424,8 +424,11 @@ function parseOdds(c,abH){
   }
   if(sp===null&&isFinite(+o.spread)&&o.homeTeamOdds&&o.homeTeamOdds.favorite!==undefined){ const v=Math.abs(+o.spread); sp=o.homeTeamOdds.favorite?-v:v; }
   if(sp!==null) r.spread=sp;
-  const mh=o.homeTeamOdds&&o.homeTeamOdds.moneyLine, ma=o.awayTeamOdds&&o.awayTeamOdds.moneyLine;
-  if(isFinite(+mh)&&+mh) r.mlH=+mh; if(isFinite(+ma)&&+ma) r.mlA=+ma;
+  /* moneyline: ESPN lo manda ahora en odds[0].moneyline.home/away (close > current > open); el campo viejo homeTeamOdds.moneyLine queda de respaldo */
+  const amN=v=>{ if(v==null) return null; const n=parseFloat(String(v).replace(/[−–—]/g,'-').replace(/[^0-9.+-]/g,'')); return (isFinite(n)&&Math.abs(n)>=100)?n:null; };
+  const blq=x=>x&&(x.close||x.current||x.open);
+  if(o.moneyline){ const h=amN(blq(o.moneyline.home)&&blq(o.moneyline.home).odds), a=amN(blq(o.moneyline.away)&&blq(o.moneyline.away).odds); if(h&&a){ r.mlH=h; r.mlA=a; } }
+  if(r.mlH===undefined){ const mh=amN(o.homeTeamOdds&&o.homeTeamOdds.moneyLine), ma=amN(o.awayTeamOdds&&o.awayTeamOdds.moneyLine); if(mh&&ma){ r.mlH=mh; r.mlA=ma; } }
   return (r.total!==undefined||r.spread!==undefined||r.mlH!==undefined)?r:null;
 }
 function parseEventos(j){
