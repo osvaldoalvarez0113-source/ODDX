@@ -7,6 +7,7 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 | [`AUDITORIA-2-2026-10.md`](AUDITORIA-2-2026-10.md) | Segunda auditoría (octubre 2026) |
 | [`AUDITORIA-2026-10.md`](AUDITORIA-2026-10.md) | Auditoría de octubre 2026 |
 | [`MEDICION-6-TEMPORADAS-2026-10.md`](MEDICION-6-TEMPORADAS-2026-10.md) | Medición con 6 temporadas — MLB, fútbol y NBA (octubre 2026) |
+| [`MEDICION-DIFERENCIA-CUOTAS-2026-10.md`](MEDICION-DIFERENCIA-CUOTAS-2026-10.md) | Diferencia de cuotas: ¿cuántas veces gana el favorito? (MLB, octubre 2026) |
 | [`MEDICION-FIP-2026-10.md`](MEDICION-FIP-2026-10.md) | FIP del abridor: medición de octubre 2026 |
 | [`MEDICION-FUTBOL-LOCAL-ELO-2026-10.md`](MEDICION-FUTBOL-LOCAL-ELO-2026-10.md) | Fútbol: ¿mejoran el modelo los ratings local/visita, el Elo, la mezcla con el mercado o el descanso? |
 | [`MEDICION-MERCADO-MLB-2026-10.md`](MEDICION-MERCADO-MLB-2026-10.md) | MLB contra el mercado: medición de octubre 2026 |

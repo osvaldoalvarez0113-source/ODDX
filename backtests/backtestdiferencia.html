@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1620">
+<title>OVA · Diferencia de cuotas</title>
+<style>
+:root{--fondo:#0b1620;--panel:#132534;--panel2:#0f1e2b;--borde:#1e3547;--texto:#e8eef4;--tenue:#8ba3b8;--oro:#f5c24c;--verde:#4ade80;--rojo:#f87171;--azul:#60a5fa}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--texto);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.5;padding-bottom:60px}
+header{position:sticky;top:0;z-index:10;background:rgba(11,22,32,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--borde);padding:14px 16px}
+header a{color:var(--azul);text-decoration:none;font-size:14px}
+header h1{margin:4px 0 0;font-size:20px}
+header p{margin:4px 0 0;color:var(--tenue);font-size:13px}
+main{padding:16px;max-width:760px;margin:0 auto}
+.caja{background:var(--panel);border:1px solid var(--borde);border-radius:14px;padding:16px;margin-bottom:14px}
+h2{font-size:17px;margin:0 0 10px}
+label{display:block;font-size:13px;color:var(--tenue);margin:0 0 4px}
+input,select{font:inherit;width:100%;background:var(--panel2);color:var(--texto);border:1px solid var(--borde);border-radius:10px;padding:10px 12px}
+.fila{display:flex;gap:10px}.fila>div{flex:1}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0}
+th,td{padding:6px 3px;border-bottom:1px solid var(--borde);text-align:right}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--tenue);font-weight:600;font-size:11.5px}
+tr.sel td{background:rgba(245,194,76,.12)}
+.nota{font-size:13px;color:var(--tenue);margin:8px 0}
+.res{border-radius:12px;padding:12px 14px;margin-top:12px;background:var(--panel2);border:1px solid var(--borde);font-size:15px}
+.big{font-size:26px;font-weight:800;color:var(--oro)}
+.ok{color:var(--verde)}.mal{color:var(--rojo)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tabs button{font:inherit;font-size:13px;background:var(--panel2);color:var(--texto);border:1px solid var(--borde);border-radius:99px;padding:6px 12px}
+.tabs button.on{background:var(--oro);color:#0b1620;border-color:var(--oro);font-weight:700}
+</style>
+</head>
+<body>
+<header><a href="index.html">‹ Backtests</a><h1>Diferencia de cuotas</h1><p>MLB 2024-2026 · 6,171 juegos · cierre de DraftKings sin vig · ganador del juego</p></header>
+<main>
+<div class="caja">
+<h2>Calculadora</h2>
+<div class="fila"><div><label>Cuota equipo A</label><input id="a" inputmode="text" placeholder="-145 o 1.69"></div><div><label>Cuota equipo B</label><input id="b" inputmode="text" placeholder="+125 o 2.25"></div></div>
+<div id="out" class="res nota">Escribe las dos cuotas (americana o decimal).</div>
+</div>
+
+<div class="caja">
+<h2>Cuántas veces gana el favorito</h2>
+<div class="tabs" id="tabs"></div>
+<table><thead><tr><th>Diferencia</th><th>Juegos</th><th>Ganó fav.</th><th>Decía la cuota</th><th>ROI fav.</th><th>ROI no fav.</th></tr></thead><tbody id="tb"></tbody></table>
+<p class="nota">«Diferencia» = puntos entre la probabilidad del favorito y la del no favorito ya sin el margen de la casa (59-41 = 18). ROI = apostando 1 unidad a todos los de ese rango al precio real de cierre.</p>
+</div>
+
+<div class="caja">
+<h2>Veredicto</h2>
+<p>La cuota ya dice cuántas veces gana el favorito, y lo dice casi exacto: en las 3 temporadas juntas el favorito ganó <b>57.4%</b> y la cuota decía <b>57.4%</b>. Ningún rango se separa más de lo que da el azar (|z| &lt; 2 juntando todo).</p>
+<p><b class="mal">No sirve como sistema.</b> Apostar a todos los favoritos o a todos los no favoritos de cualquier rango pierde más o menos el margen de la casa (−4%). Los rangos que salen en verde en una temporada se voltean en otra (ej. 16-20 pts: no favorito +9.9% en 2025, −10.0% en 2026).</p>
+<p>Lo único que se repite un poco: con <b>30+ puntos</b> de diferencia el favorito gana algo más de lo que dice la cuota y el no favorito pierde mucho (−12% a −23%). Es el sesgo clásico de favorito/no favorito, pero ni así el favorito deja ganancia (≈0% a +1%). Sirve como regla para <b>no</b> jugar no favoritos grandes, no para jugar el favorito.</p>
+</div>
+</main>
+<script>
+var R={"junto":[{"a":0,"b":4,"n":922,"gana":53.3,"esp":50.8,"z":1.49,"roiF":0.3,"roiD":-9.0},{"a":4,"b":8,"n":1016,"gana":53.5,"esp":52.8,"z":0.5,"roiF":-2.7,"roiD":-5.8},{"a":8,"b":12,"n":949,"gana":52.4,"esp":54.8,"z":-1.51,"roiF":-8.3,"roiD":1.2},{"a":12,"b":16,"n":859,"gana":55.9,"esp":56.9,"z":-0.6,"roiF":-5.8,"roiD":-1.9},{"a":16,"b":20,"n":784,"gana":57.8,"esp":59.1,"z":-0.73,"roiF":-5.9,"roiD":-0.8},{"a":20,"b":25,"n":597,"gana":60.5,"esp":61.4,"z":-0.45,"roiF":-5.4,"roiD":-1.8},{"a":25,"b":30,"n":399,"gana":63.2,"esp":63.6,"z":-0.2,"roiF":-4.6,"roiD":-2.5},{"a":30,"b":40,"n":431,"gana":69.8,"esp":67.2,"z":1.19,"roiF":-0.0,"roiD":-11.6},{"a":40,"b":100,"n":214,"gana":77.6,"esp":73.6,"z":1.34,"roiF":1.3,"roiD":-23.0}],"2024":[{"a":0,"b":4,"n":259,"gana":50.6,"esp":50.7,"z":-0.05,"roiF":-4.8,"roiD":-4.2},{"a":4,"b":8,"n":359,"gana":52.6,"esp":52.7,"z":-0.01,"roiF":-4.3,"roiD":-4.2},{"a":8,"b":12,"n":286,"gana":53.1,"esp":54.8,"z":-0.56,"roiF":-6.8,"roiD":-0.5},{"a":12,"b":16,"n":280,"gana":53.9,"esp":56.9,"z":-1.02,"roiF":-9.1,"roiD":2.8},{"a":16,"b":20,"n":246,"gana":59.3,"esp":59.2,"z":0.06,"roiF":-3.5,"roiD":-4.3},{"a":20,"b":25,"n":209,"gana":63.2,"esp":61.4,"z":0.51,"roiF":-1.3,"roiD":-8.3},{"a":25,"b":30,"n":145,"gana":65.5,"esp":63.6,"z":0.47,"roiF":-1.2,"roiD":-9.0},{"a":30,"b":40,"n":164,"gana":69.5,"esp":67.1,"z":0.66,"roiF":-0.4,"roiD":-10.8},{"a":40,"b":100,"n":79,"gana":78.5,"esp":75.7,"z":0.58,"roiF":-0.3,"roiD":-25.7}],"2025":[{"a":0,"b":4,"n":284,"gana":51.1,"esp":50.7,"z":0.11,"roiF":-3.8,"roiD":-5.0},{"a":4,"b":8,"n":326,"gana":52.5,"esp":52.7,"z":-0.09,"roiF":-4.7,"roiD":-3.7},{"a":8,"b":12,"n":301,"gana":54.2,"esp":54.8,"z":-0.24,"roiF":-5.3,"roiD":-2.7},{"a":12,"b":16,"n":287,"gana":55.7,"esp":56.9,"z":-0.41,"roiF":-6.4,"roiD":-1.7},{"a":16,"b":20,"n":291,"gana":53.3,"esp":59.1,"z":-2.02,"roiF":-13.4,"roiD":9.9},{"a":20,"b":25,"n":203,"gana":57.6,"esp":61.5,"z":-1.14,"roiF":-10.2,"roiD":5.4},{"a":25,"b":30,"n":121,"gana":59.5,"esp":63.6,"z":-0.95,"roiF":-10.2,"roiD":7.0},{"a":30,"b":40,"n":163,"gana":71.2,"esp":67.3,"z":1.06,"roiF":1.6,"roiD":-15.4},{"a":40,"b":100,"n":91,"gana":76.9,"esp":72.3,"z":1.0,"roiF":2.0,"roiD":-21.4}],"2026":[{"a":0,"b":4,"n":379,"gana":56.7,"esp":50.9,"z":2.26,"roiF":6.9,"roiD":-15.3},{"a":4,"b":8,"n":331,"gana":55.6,"esp":52.9,"z":0.98,"roiF":0.9,"roiD":-9.5},{"a":8,"b":12,"n":362,"gana":50.3,"esp":54.8,"z":-1.74,"roiF":-12.0,"roiD":5.9},{"a":12,"b":16,"n":292,"gana":57.9,"esp":56.8,"z":0.37,"roiF":-2.1,"roiD":-6.4},{"a":16,"b":20,"n":247,"gana":61.5,"esp":59.0,"z":0.83,"roiF":0.4,"roiD":-10.0},{"a":20,"b":25,"n":185,"gana":60.5,"esp":61.2,"z":-0.18,"roiF":-4.9,"roiD":-2.5},{"a":25,"b":30,"n":133,"gana":63.9,"esp":63.7,"z":0.06,"roiF":-3.3,"roiD":-4.0},{"a":30,"b":40,"n":104,"gana":68.3,"esp":67.1,"z":0.26,"roiF":-1.9,"roiD":-7.1},{"a":40,"b":100,"n":44,"gana":77.3,"esp":72.4,"z":0.72,"roiF":2.8,"roiD":-21.5}],"favLocal":[{"a":0,"b":4,"n":588,"gana":53.2,"esp":50.7,"z":1.24,"roiF":0.5,"roiD":-9.2},{"a":4,"b":8,"n":597,"gana":53.1,"esp":52.8,"z":0.16,"roiF":-3.6,"roiD":-4.9},{"a":8,"b":12,"n":601,"gana":52.7,"esp":54.8,"z":-1.02,"roiF":-7.6,"roiD":0.4},{"a":12,"b":16,"n":571,"gana":56.9,"esp":56.9,"z":0.01,"roiF":-4.0,"roiD":-4.2},{"a":16,"b":20,"n":531,"gana":57.4,"esp":59.1,"z":-0.77,"roiF":-6.5,"roiD":-0.0},{"a":20,"b":25,"n":430,"gana":58.4,"esp":61.4,"z":-1.28,"roiF":-8.7,"roiD":3.4},{"a":25,"b":30,"n":291,"gana":62.9,"esp":63.6,"z":-0.27,"roiF":-5.0,"roiD":-1.8},{"a":30,"b":40,"n":334,"gana":69.8,"esp":67.2,"z":0.98,"roiF":-0.2,"roiD":-11.2},{"a":40,"b":100,"n":182,"gana":77.5,"esp":73.0,"z":1.37,"roiF":1.9,"roiD":-22.6}],"favVisita":[{"a":0,"b":4,"n":334,"gana":53.3,"esp":51.0,"z":0.82,"roiF":0.0,"roiD":-8.6},{"a":4,"b":8,"n":419,"gana":54.2,"esp":52.7,"z":0.59,"roiF":-1.5,"roiD":-7.1},{"a":8,"b":12,"n":348,"gana":51.7,"esp":54.8,"z":-1.16,"roiF":-9.5,"roiD":2.6},{"a":12,"b":16,"n":288,"gana":53.8,"esp":56.9,"z":-1.06,"roiF":-9.2,"roiD":2.9},{"a":16,"b":20,"n":253,"gana":58.5,"esp":59.0,"z":-0.17,"roiF":-4.7,"roiD":-2.5},{"a":20,"b":25,"n":167,"gana":65.9,"esp":61.3,"z":1.2,"roiF":3.0,"roiD":-15.4},{"a":25,"b":30,"n":108,"gana":63.9,"esp":63.7,"z":0.05,"roiF":-3.6,"roiD":-4.2},{"a":30,"b":40,"n":97,"gana":70.1,"esp":66.8,"z":0.68,"roiF":0.8,"roiD":-13.3},{"a":40,"b":100,"n":32,"gana":78.1,"esp":76.9,"z":0.17,"roiF":-2.3,"roiD":-25.5}]};
+var vista='junto';
+var NOM={junto:'3 temporadas','2024':'2024','2025':'2025','2026':'2026',favLocal:'Fav. local',favVisita:'Fav. visitante'};
+function pct(x){return (x>0?'+':'')+x.toFixed(1)+'%'}
+function dec(s){s=String(s||'').trim().replace(',','.');if(!s)return null;var n=parseFloat(s);if(isNaN(n))return null;
+ if(/^[+-]/.test(s)||Math.abs(n)>=100){if(Math.abs(n)<100)return null;return n>0?1+n/100:1+100/-n}
+ return n>1?n:null}
+var selDif=null;
+function pinta(){var t='';Object.keys(NOM).forEach(function(k){t+='<button class="'+(k==vista?'on':'')+'" onclick="vista=\''+k+'\';pinta()">'+NOM[k]+'</button>'});
+ document.getElementById('tabs').innerHTML=t;
+ document.getElementById('tb').innerHTML=R[vista].map(function(f){var s=selDif!=null&&selDif>=f.a&&selDif<f.b;
+  return '<tr class="'+(s?'sel':'')+'"><td>'+f.a+(f.b>=100?'+':'-'+f.b)+'</td><td>'+f.n+'</td><td>'+f.gana.toFixed(1)+'%</td><td>'+f.esp.toFixed(1)+'%</td><td class="'+(f.roiF>0?'ok':'mal')+'">'+pct(f.roiF)+'</td><td class="'+(f.roiD>0?'ok':'mal')+'">'+pct(f.roiD)+'</td></tr>'}).join('')}
+function calc(){var da=dec(document.getElementById('a').value),db=dec(document.getElementById('b').value),o=document.getElementById('out');
+ if(!da||!db){selDif=null;o.className='res nota';o.innerHTML='Escribe las dos cuotas (americana o decimal).';pinta();return}
+ var ia=1/da,ib=1/db,s=ia+ib,pa=ia/s,pb=ib/s,pf=Math.max(pa,pb),dif=(2*pf-1)*100;selDif=dif;
+ var f=R.junto.filter(function(x){return dif>=x.a&&dif<x.b})[0];
+ var fav=pa>=pb?'A':'B';
+ var h='Sin margen: A <b>'+(pa*100).toFixed(1)+'%</b> · B <b>'+(pb*100).toFixed(1)+'%</b> (margen de la casa '+((s-1)*100).toFixed(1)+'%)<br>Diferencia: <span class="big">'+dif.toFixed(1)+' pts</span> · favorito '+fav;
+ if(f)h+='<br><br>En ese rango ('+f.a+(f.b>=100?'+':'-'+f.b)+' pts) hubo <b>'+f.n+'</b> juegos: el favorito ganó <b>'+f.gana.toFixed(1)+'%</b> (la cuota decía '+f.esp.toFixed(1)+'%), el no favorito <b>'+(100-f.gana).toFixed(1)+'%</b>.<br>Apostando todos: favorito <span class="'+(f.roiF>0?'ok':'mal')+'">'+pct(f.roiF)+'</span>, no favorito <span class="'+(f.roiD>0?'ok':'mal')+'">'+pct(f.roiD)+'</span>.'+(Math.abs(f.z)<2?'<br><span class="nota">Diferencia con la cuota dentro del azar (z '+f.z.toFixed(1)+'): la cuota ya lo sabe.</span>':'');
+ o.className='res';o.innerHTML=h;pinta()}
+document.getElementById('a').oninput=calc;document.getElementById('b').oninput=calc;
+pinta();
+</script>
+</body>
+</html>
