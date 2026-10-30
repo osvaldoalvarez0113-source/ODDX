@@ -1,4 +1,4 @@
-# Diferencia de cuotas: ¿cuántas veces gana el favorito? (MLB, octubre 2026)
+# Diferencia de cuotas: ¿cuántas veces gana el favorito? (MLB y fútbol, octubre 2026)
 
 Idea de Osvaldo: si la cuota dice 59-41 (18 puntos de diferencia), ¿cuántas veces gana el favorito? ¿Hay rangos donde gane más (o menos) de lo que dice la cuota?
 
@@ -27,3 +27,25 @@ Script: `scripts/medicion/diferencia_cuotas.py`. Página con calculadora: `backt
 - Favorito local o visitante: mismo patrón, nada.
 - Lo único que se repite: con 30+ pts el no favorito pierde mucho (-11% a -26% en las 3 temporadas). Regla útil para **no** jugar no favoritos grandes; el favorito tampoco deja ganancia.
 - **No se agrega al cálculo de las apps.** Queda como página de consulta en Backtests.
+
+## Fútbol (agregado el mismo día)
+
+Datos: 9,884 partidos de Premier, La Liga, Serie A, Bundesliga y Ligue 1, de 2020-21 a 2025-26, cierre 1X2 de Pinnacle sin margen
+(rama `resultados-futbol-6t`, `partidos_futbol.json`). Script: `scripts/medicion/diferencia_cuotas_futbol.py`.
+Diferencia = probabilidad del favorito menos la del no favorito (el empate no cuenta).
+
+| Dif. | Partidos | Fav. (cuota) | Empate (cuota) | No fav. (cuota) | ROI fav. | ROI emp. | ROI no fav. |
+|---|---|---|---|---|---|---|---|
+| 0-10 | 1864 | 38.2 (37.8) | 31.2 (29.4) | 30.6 (32.8) | -1.4% | +3.6% | -8.9% |
+| 10-20 | 1847 | 45.3 (43.1) | 28.3 (28.7) | 26.4 (28.2) | +2.7% | -3.5% | -9.0% |
+| 20-30 | 1564 | 47.7 (48.7) | 29.0 (27.3) | 23.3 (23.9) | -4.7% | +3.1% | -4.7% |
+| 30-40 | 1457 | 56.5 (54.8) | 24.4 (25.4) | 19.1 (19.8) | +0.3% | -6.7% | -5.6% |
+| 40-50 | 1140 | 63.1 (60.9) | 23.2 (23.0) | 13.8 (16.2) | +0.7% | -2.2% | -17.1% |
+| 50-60 | 913 | 70.3 (67.4) | 18.9 (19.9) | 10.7 (12.7) | +1.3% | -7.2% | -18.7% |
+| 60+ | 1099 | 78.1 (77.5) | 14.6 (14.5) | 7.4 (8.0) | -2.3% | -3.2% | -7.8% |
+| Total | 9884 | 54.0 (52.9) | 25.4 (25.1) | 20.6 (22.1) | -0.5% | -1.7% | -9.5% |
+
+- El no favorito pierde en las 6 temporadas (-1.3%, -2.9%, -6.3%, -24.7%, -9.6%, -16.2%). Regla firme: no jugar la hembra a ganador.
+- El favorito no deja ganancia: -0.5% a precio de Pinnacle, -1.9% al promedio de las casas.
+- Favorito visitante: +2.5% junto, pero sale de 2 temporadas (23-24 +10.1%, 24-25 +9.4%); las otras 4 dan -3.1% a +0.3%. No se repite.
+- Por rango y por liga los positivos se voltean entre temporadas. **Tampoco se agrega al cálculo de las apps.**
