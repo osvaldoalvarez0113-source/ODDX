@@ -1142,6 +1142,15 @@ sec('Registro automático: guarda ANTES del juego, resuelve solo y mide con prec
 
 /* ---------------- NHL y NFL (usdeporte.js + modelo-nhl.js + modelo-nfl.js + valor3.js) ---------------- */
 sec('NHL y NFL: núcleo compartido, modelos y lector de Pinnacle');
+{const MN2=require(path.join(__dirname,'modelo-nhl.js')),US2=require(path.join(__dirname,'usdeporte.js'));
+ const u=US2.unpack(['9',1,'1','2',3,2,2,0,0,35,22]);ok('NHL tiros: unpack lee los tiros a puerta (columnas 10 y 11) y sin ellos quedan en null',u.sh===35&&u.sa===22&&US2.unpack(['9',1,'1','2',3,2,2,0,0]).sh===null);
+ ok('NHL tiros: PDEF trae el rating de tiros medido (kS 0.06, Ws 0.1, Hs 1.5)',MN2.PDEF.kS===0.06&&MN2.PDEF.Ws===0.1&&MN2.PDEF.Hs===1.5);
+ const G=[];let t=Date.UTC(2025,9,10);for(let i=0;i<40;i++){G.push({id:'x'+i,ts:t+i*2*864e5,h:i%2?'1':'2',a:i%2?'2':'1',hs:2,as:2-(i%2?0:0),so:false,ot:false,ty:2,done:true,sh:i%2?40:20,sa:i%2?20:40});}
+ G.forEach(g=>{g.hs=3;g.as=3;});
+ const Sc=MN2.correr(G,MN2.PDEF),Sn=MN2.correr(G.map(g=>Object.assign({},g,{sh:null,sa:null})),MN2.PDEF);
+ const q={h:'1',a:'2',ts:t+90*864e5};
+ ok('NHL tiros: con goles iguales, el equipo que tira más sube de probabilidad; sin tiros en el archivo queda igual que antes',MN2.predecir(Sc,MN2.PDEF,q).pH>MN2.predecir(Sn,MN2.PDEF,q).pH+0.05&&Math.abs(MN2.predecir(Sn,MN2.PDEF,q).pH-MN2.predecir(Sn,Object.assign({},MN2.PDEF,{Ws:0,kS:0}),q).pH)<1e-12);
+ ok('archivo NHL: agrega los tiros desde nhl-box.json y el workflow diario los baja (API oficial de la NHL)',/function tiros\(c, todos\)/.test(rd('scripts/archivo_nhl_nfl.js'))&&/bajar_nhl_box\.js/.test(rd('.github/workflows/archivo-nhl-nfl.yml')));}
 ok('NHL Veredicto: guía «Qué apostar y qué no» (favorito no es pick, señal Menos en prueba, evitar Más 6.5 y favorito −1.5), solo en NHL y no en vivo',(()=>{const u=rd('usdeporte.js');return /function guiaNhl\(g, pr, pf\)/.test(u)&&/DEP !== 'nhl' \|\| \(pr\.mk && pr\.mk\.live\)/.test(u)&&/pr\.ptMod <= Lt - 0\.5/.test(u)&&/Evita Más de 6\.5/.test(u)&&/Evita el favorito −1\.5/.test(u)&&/\$\{main\}\$\{guiaNhl\(g, pr, pf\)\}/.test(u);})());
 {
  const US=require(path.join(__dirname,'usdeporte.js')),MN=require(path.join(__dirname,'modelo-nhl.js')),MF=require(path.join(__dirname,'modelo-nfl.js'));
@@ -1203,7 +1212,7 @@ ok('NHL Veredicto: guía «Qué apostar y qué no» (favorito no es pick, señal
  const mkG=(i,h,a,hs,as,extra)=>Object.assign({id:String(i),ts:T0+i*DIA/6,h:h,a:a,hs:hs,as:as,ty:2,done:true,so:false,ot:false,neutral:false},extra||{});
  const eq=['1','2','3','4','5','6'];
  const juegosH=[];for(let i=0;i<400;i++){const h=eq[i%6],a=eq[(i*5+1)%6===i%6?(i+2)%6:(i*5+1)%6];juegosH.push(mkG(i,h,a,(h<a?4:2)+(i%3===0?1:0),(h<a?2:3)));}
- ok('NHL: PDEF trae las constantes medidas (kM 0.015, kT 0.008, H 0.2, Q 0.25, KT 0.023) y 67% de los goles de tiempo extra',MN.PDEF.kM===0.015&&MN.PDEF.kT===0.008&&MN.PDEF.H===0.2&&MN.PDEF.Q===0.25&&MN.PDEF.KT===0.023&&Math.abs(MN.OTG-0.67)<1e-9);
+ ok('NHL: PDEF trae las constantes medidas (kM 0.008 con tiros, kT 0.008, H 0.2, Q 0.25, KT 0.023) y 67% de los goles de tiempo extra',MN.PDEF.kM===0.008&&MN.PDEF.kT===0.008&&MN.PDEF.H===0.2&&MN.PDEF.Q===0.25&&MN.PDEF.KT===0.023&&Math.abs(MN.OTG-0.67)<1e-9);
  const SN=MN.correr(juegosH,MN.PDEF);
  const prN=MN.predecir(SN,MN.PDEF,mkG(999,'1','2',0,0),{});
  ok('NHL: predecir da probabilidad entre 0 y 1 y total razonable (4 a 8 goles)',prN.pH>0&&prN.pH<1&&prN.pt>4&&prN.pt<8,JSON.stringify([prN.pH,prN.pt]));

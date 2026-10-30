@@ -47,8 +47,10 @@ async function juego(id) {
 }
 (async function () {
   let viejo = {}; try { (JSON.parse(fs.readFileSync(OUT, 'utf8')).g || []).forEach(g => { if (g.fin) viejo[g.id] = g; }); } catch (e) { }
-  const ids = [];
-  TEMPS.forEach(t => { for (let n = 1; n <= 1312; n++) ids.push(t * 1e6 + 20000 + n); });
+  const ids = [], maxFin = {};
+  Object.keys(viejo).forEach(id => { const t = Math.floor(id / 1e6), n = id % 10000; if (!(maxFin[t] >= n)) maxFin[t] = n; });
+  /* temporada en curso: solo un poco más allá del último juego terminado (así no pregunta por los ~1,000 que faltan cada día) */
+  TEMPS.forEach(t => { const tope = maxFin[t] ? Math.min(1312, maxFin[t] + 120) : 1312; for (let n = 1; n <= tope; n++) ids.push(t * 1e6 + 20000 + n); });
   const out = []; let i = 0, nuevos = 0, vacios = 0;
   async function obrero() {
     while (i < ids.length) {

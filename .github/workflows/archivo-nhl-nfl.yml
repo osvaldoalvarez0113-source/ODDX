@@ -10,6 +10,7 @@ on:
     branches: [main]
     paths:
       - scripts/archivo_nhl_nfl.js
+      - scripts/bajar_nhl_box.js
       - .github/workflows/archivo-nhl-nfl.yml
 
 permissions:
@@ -31,6 +32,12 @@ jobs:
       - name: Recuperar datos ya bajados
         continue-on-error: true
         run: git fetch -q origin datos-nhl-nfl && git checkout FETCH_HEAD -- datos-nhl.json datos-nfl.json || echo "sin cache todavia"
+      - name: Tiros a puerta NHL (API oficial de la NHL, solo lo nuevo)
+        continue-on-error: true
+        run: |
+          (git fetch -q origin datos-nhl-box && git show FETCH_HEAD:nhl-box.json > nhl-box.json) || echo "sin cache de tiros"
+          node scripts/bajar_nhl_box.js
+          mkdir -p /tmp/box && cp -f nhl-box.json /tmp/box/ && cd /tmp/box && git init -q -b datos-nhl-box && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com" && git add -A && git commit -q -m "datos nhl por juego" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" datos-nhl-box
       - name: Actualizar y escribir el archivo
         run: node scripts/archivo_nhl_nfl.js
       - name: Guardar el archivo en la app

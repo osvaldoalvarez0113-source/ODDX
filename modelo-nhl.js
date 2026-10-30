@@ -10,7 +10,9 @@
    =================================================================== */
 (function (root) {
   'use strict';
-  const PDEF = { kM: 0.015, kT: 0.008, carry: 0.7, H: 0.2, R: 0.25, Q: 0.25, KT: 0.023, Z: 1 };
+  const PDEF = { kM: 0.008, kT: 0.008, carry: 0.7, H: 0.2, R: 0.25, Q: 0.25, KT: 0.023, Z: 1, kS: 0.06, Ws: 0.1, Hs: 1.5 };
+  // kS/Ws/Hs = rating de TIROS A PUERTA: kS cuanto aprende de cada juego, Ws cuantos goles de margen vale 1 tiro de rating, Hs tiros de ventaja del local.
+  // Medido (docs/NHL-REVISION-2026-10.md): con tiros el modelo solo baja su pérdida de 0.672 a 0.666 fuera de muestra, en las 4 temporadas; kM bajó a 0.008 porque los tiros explican parte de lo que antes daban los goles. Con Ws = 0 vuelve a ser el de solo goles. Los tiros vienen del archivo diario (hist-nhl.json, columnas 10 y 11); si faltan, ese juego no mueve el rating de tiros.
   // Q = cuanto inclina el tiempo extra hacia el mejor equipo (logit por gol de margen esperado).
   // KT = los goles totales varian MENOS que un Poisson puro (medido: varianza 0.88 de la media en 6,747 juegos 2021-26); se aprieta la curva de totales con un peso exp(-KT*(s-media)^2/2).
   // OTG = fraccion de empates a 60' que se deciden con gol en OT (medido: 67%; el resto es shootout).
@@ -19,7 +21,7 @@
   function seasonOf(ts) { const d = new Date(ts - 10 * 3600e3); const m = d.getUTCMonth(), y = d.getUTCFullYear(); return m >= 7 ? y : y - 1; }
   function dayKey(ts) { return Math.floor((ts - 10 * 3600e3) / 864e5); }
   const sig = z => 1 / (1 + Math.exp(-z));
-  function nuevoEstado() { return { m: {}, t: {}, last: {}, cnt: {}, lg: LG0, season: null, n: 0, nn: 0, sseM: 0, sseT: 0 }; }
+  function nuevoEstado() { return { m: {}, t: {}, s: {}, last: {}, cnt: {}, lg: LG0, season: null, n: 0, nn: 0, sseM: 0, sseT: 0 }; }
 
   // poisson hasta NMAX
   function pois(l) { const o = new Array(NMAX + 1); let p = Math.exp(-l); o[0] = p; for (let i = 1; i <= NMAX; i++) { p *= l / i; o[i] = p; } return o; }
@@ -73,21 +75,26 @@
     if (S.season !== null && sk !== S.season) {
       for (const k in S.m) S.m[k] *= P.carry;
       for (const k in S.t) S.t[k] *= P.carry;
+      for (const k in S.s) S.s[k] *= P.carry;
       S.cnt = {};
     }
     S.season = sk;
     const dk = dayKey(g.ts);
-    const mh = S.m[g.h] || 0, ma = S.m[g.a] || 0, th = S.t[g.h] || 0, ta = S.t[g.a] || 0;
+    const mh = S.m[g.h] || 0, ma = S.m[g.a] || 0, th = S.t[g.h] || 0, ta = S.t[g.a] || 0, sh = S.s[g.h] || 0, sa = S.s[g.a] || 0, Ws = P.Ws || 0;
     const bH = S.last[g.h] !== undefined && dk - S.last[g.h] === 1, bA = S.last[g.a] !== undefined && dk - S.last[g.a] === 1;
-    const pm = mh - ma + (g.neutral ? 0 : P.H) + (bA ? P.R : 0) - (bH ? P.R : 0);
+    const pm = mh - ma + Ws * (sh - sa) + (g.neutral ? 0 : P.H) + (bA ? P.R : 0) - (bH ? P.R : 0);
     const pt = S.lg + th + ta;
     // shootout: el marcador de ESPN le suma 1 al ganador; aqui es empate (margen 0) y el total pierde ese gol
     const mar = g.so ? 0 : g.hs - g.as, tot = g.hs + g.as - (g.so ? 1 : 0);
-    if (cb) cb(g, { pm: pm, pt: pt, mar: mar, tot: tot, cH: S.cnt[g.h] || 0, cA: S.cnt[g.a] || 0, S: S, lg: S.lg, rd: mh - ma, b0: pm - (mh - ma), bH: bH, bA: bA });
+    if (cb) cb(g, { pm: pm, pt: pt, mar: mar, tot: tot, cH: S.cnt[g.h] || 0, cA: S.cnt[g.a] || 0, S: S, lg: S.lg, rd: mh - ma + Ws * (sh - sa), b0: pm - (mh - ma) - Ws * (sh - sa), bH: bH, bA: bA });
     const e = Math.max(-4, Math.min(4, mar - pm));
     S.m[g.h] = mh + P.kM * e; S.m[g.a] = ma - P.kM * e;
     const eT = Math.max(-5, Math.min(5, tot - pt));
     S.t[g.h] = th + P.kT * eT; S.t[g.a] = ta + P.kT * eT;
+    if (P.kS && isFinite(g.sh) && isFinite(g.sa) && g.sh + g.sa > 0) {
+      const eS = Math.max(-25, Math.min(25, (g.sh - g.sa) - (sh - sa + (g.neutral ? 0 : P.Hs))));
+      S.s[g.h] = sh + P.kS * eS; S.s[g.a] = sa - P.kS * eS;
+    }
     S.lg += 0.004 * (tot - S.lg);
     S.last[g.h] = dk; S.last[g.a] = dk;
     S.cnt[g.h] = (S.cnt[g.h] || 0) + 1; S.cnt[g.a] = (S.cnt[g.a] || 0) + 1;
@@ -101,11 +108,12 @@
     const sk = seasonOf(g.ts), esc = (S.season !== null && sk > S.season) ? P.carry : 1, dk = dayKey(g.ts);
     const bH = rest.dH !== undefined && dk - rest.dH === 1, bA = rest.dA !== undefined && dk - rest.dA === 1;
     const mh = (S.m[g.h] || 0) * esc, ma = (S.m[g.a] || 0) * esc, th = (S.t[g.h] || 0) * esc, ta = (S.t[g.a] || 0) * esc;
+    const sdif = (P.Ws || 0) * ((S.s[g.h] || 0) - (S.s[g.a] || 0)) * esc;
     const Zc = (P.Z === undefined ? 1 : P.Z);
-    const pm = (mh - ma) * Zc + (g.neutral ? 0 : P.H) + (bA ? P.R : 0) - (bH ? P.R : 0) + (g.adjH || 0) - (g.adjA || 0);
+    const pm = (mh - ma + sdif) * Zc + (g.neutral ? 0 : P.H) + (bA ? P.R : 0) - (bH ? P.R : 0) + (g.adjH || 0) - (g.adjA || 0);
     const pt = S.lg + th + ta;
     const D = dist(pm, pt, P);
-    return { pm: pm, pt: pt, bH: bH, bA: bA, pH: D.pH, D: D, mh: mh, ma: ma };
+    return { pm: pm, pt: pt, bH: bH, bA: bA, pH: D.pH, D: D, mh: mh, ma: ma, sdif: sdif };
   }
 
   /* ---------- medicion ---------- */
@@ -147,7 +155,7 @@
   // la rejilla se evalua con la perdida (log-loss) del ganador: es lo que mas importa en hockey
   function gridMargen(games, sk, filtro, base) {
     let best = null;
-    [0.015, 0.025, 0.04, 0.06].forEach(function (kM) { [0.5, 0.7, 0.85].forEach(function (carry) { [0.08, 0.14, 0.20].forEach(function (H) { [0, 0.12, 0.25].forEach(function (R) {
+    [0.008, 0.015, 0.025, 0.04].forEach(function (kM) { [0.5, 0.7, 0.85].forEach(function (carry) { [0.08, 0.14, 0.20].forEach(function (H) { [0, 0.12, 0.25].forEach(function (R) {
       const P = Object.assign({}, base, { kM: kM, carry: carry, H: H, R: R });
       const r = evaluar(games, P, sk, { filtro: filtro });
       if (r.n && (!best || r.ll < best.r.ll)) best = { P: P, r: r };

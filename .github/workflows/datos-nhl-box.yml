@@ -28,7 +28,7 @@ jobs:
           node-version: "22"
       - name: Recuperar lo ya bajado
         continue-on-error: true
-        run: git fetch -q origin datos-nhl-box && git checkout FETCH_HEAD -- nhl-box.json || echo "sin cache"
+        run: (git fetch -q origin datos-nhl-box && git show FETCH_HEAD:nhl-box.json > nhl-box.json) || echo "sin cache"
       - name: Bajar
         run: node scripts/bajar_nhl_box.js
       - name: Guardar

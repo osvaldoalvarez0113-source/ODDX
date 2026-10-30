@@ -44,3 +44,18 @@ Se bajaron de la API oficial de la NHL tiros a puerta, portero titular (tiros y 
 - **Ganador:** tiros, calidad del portero titular, portero suplente, power play, suerte (PDO) y 3 juegos en 4 noches: ninguno mejora el precio de cierre (z entre −2.0 y +1.1; hacía falta z > 2.6). El portero titular hasta empeora un poco: el mercado ya lo descuenta mejor.
 - **Total:** volumen de tiros, porteros, power play y goles recientes: ninguno mejora la línea; todos juntos la empeoran (z = −2.3). Apostar Menos/Más con ese modelo dio −3% a −11%.
 - **Decisión:** no se agrega nada al cálculo. El mercado ya trae esos datos.
+
+## Tiros a puerta en el modelo (30 oct 2026)
+El modelo solo (sin mercado) sí mejora con un rating de tiros a puerta. Parámetros elegidos solo con temporadas anteriores:
+
+| Temporada probada | Solo goles | Goles + tiros |
+|---|---|---|
+| 2023 | 0.6610 | 0.6545 |
+| 2024 | 0.6666 | 0.6611 |
+| 2025 | 0.6877 | 0.6819 |
+| 2026 (53 juegos) | 0.6885 | 0.6637 |
+| **Total** | **0.6720** | **0.6658** |
+
+- Constantes nuevas en `modelo-nhl.js`: `kS 0.06`, `Ws 0.1`, `Hs 1.5`, y `kM` baja de 0.015 a 0.008.
+- Contra el mercado (3,568 juegos con línea, 2023 a hoy): modelo 0.6658, mercado 0.6650. Casi empata. La mezcla con λ ≈ 0.4 mejora 0.68 milésimas fuera de muestra, z = 0.97: no se distingue del mercado solo. Por eso `LAM_M` sigue en 0.05.
+- Datos: el workflow diario «Archivo de partidos NHL y NFL» corre `scripts/bajar_nhl_box.js` (solo lo nuevo) y `archivo_nhl_nfl.js` agrega los tiros a `hist-nhl.json` (columnas 10 y 11). Los juegos de los últimos días que la app baja directo de ESPN no traen tiros hasta el archivo del día siguiente; esos juegos no mueven el rating de tiros.
