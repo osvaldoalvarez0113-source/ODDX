@@ -1,0 +1,34 @@
+name: Precios de Kalshi
+
+# Baja de la API publica de Kalshi el precio de quien gana en NBA, NHL y NFL y lo deja en la rama «kalshi». No usa OddsPapi.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15,45 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kalshi
+  cancel-in-progress: true
+
+jobs:
+  kalshi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Traer precios
+        run: node scripts/kalshi.js
+      - name: Guardar en la rama kalshi
+        run: |
+          ls salida-kalshi/*.json >/dev/null 2>&1 || { echo "Nada que guardar"; exit 0; }
+          URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          cd salida-kalshi && git init -q -b kalshi
+          git config user.name "kalshi-ova" && git config user.email "kalshi-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "kalshi $(date -u +%FT%TZ)"
+          git push -q -f "$URL" kalshi
