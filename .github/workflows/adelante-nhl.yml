@@ -1,0 +1,42 @@
+name: Prueba hacia adelante NHL
+
+# Mide con juegos nuevos las reglas de Menos de NHL fijadas el 3-nov-2026 (scripts/adelante.js). No gasta llamadas de OddsPapi.
+# Guarda la linea de ESPN de antes de cada juego y el resultado en la rama "adelante"; la pantalla Auto de NHL lo lee de ahi.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "20 12 * * *"
+    - cron: "50 23 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: adelante-nhl
+  cancel-in-progress: false
+
+jobs:
+  adelante:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Medir
+        run: |
+          URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          mkdir -p /tmp/adelante /tmp/datos
+          (cd /tmp/adelante && git init -q -b adelante && git fetch -q --depth 1 "$URL" adelante && git checkout -q FETCH_HEAD -- . ) || echo "primera corrida"
+          (cd /tmp/datos && git init -q -b datos && git fetch -q --depth 1 "$URL" datos && git checkout -q FETCH_HEAD -- odds-nhl.json) || echo "sin cuotas guardadas"
+          cp /tmp/datos/odds-nhl.json /tmp/adelante/odds-nhl.json 2>/dev/null || true
+          node scripts/adelante.js /tmp/adelante
+          rm -f /tmp/adelante/odds-nhl.json
+      - name: Guardar en la rama adelante
+        run: |
+          URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          cd /tmp/adelante
+          git config user.name "adelante-ova" && git config user.email "adelante-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "prueba NHL $(date -u +%FT%TZ)" || exit 0
+          git push -q "$URL" HEAD:adelante

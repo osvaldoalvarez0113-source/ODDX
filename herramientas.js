@@ -459,6 +459,20 @@ function autoStats(fs){
   return s;
 }
 function pct0(w,n){ return n?Math.round(w/n*100)+'%':'—'; }
+/* prueba hacia adelante del Menos de NHL (scripts/adelante.js): reglas fijas, solo juegos desde el 3-nov-2026. Solo lee. */
+function cajaAdelante(){
+  var c=el('div',{class:'caja'},[el('h3',{text:'🧪 Prueba del Menos (juegos nuevos)'}),el('p',{class:'nota',text:'Cargando…'})]);
+  pedirJson('https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/adelante/adelante-nhl.json').then(function(j){
+    var A=j&&j.reglas&&j.reglas.A, B=j&&j.reglas&&j.reglas.B;
+    while(c.children.length>1) c.removeChild(c.lastChild);
+    if(!A){ c.appendChild(el('p',{class:'nota',text:'Todavía sin datos. La regla se mide sola desde el 3 de noviembre de 2026.'})); return; }
+    var f=function(x){ return x.g+'-'+x.p+(x.e?'-'+x.e:'')+(x.n?' · '+(x.roi>0?'+':'')+x.roi+'% ±'+x.err:''); };
+    c.appendChild(el('div',{class:'linA'},[el('span',{text:'Modelo 0.5+ goles bajo la línea ('+A.n+')'}),el('b',{text:f(A)})]));
+    c.appendChild(el('div',{class:'linA'},[el('span',{text:'Modelo 0.25+ goles bajo la línea ('+B.n+')'}),el('b',{text:f(B)})]));
+    c.appendChild(el('p',{class:'nota',text:(A.veredicto?A.veredicto.t+'. ':'')+'Las reglas no se cambian. Antes de empezar la prueba, en 2023–2026: +1.7% ±11 en 281 juegos.'}));
+  });
+  return c;
+}
 function pantallaAuto(cont,ls){
   limpiar(cont);
   var A=root.OVARegAuto;
@@ -531,6 +545,7 @@ function pantallaAuto(cont,ls){
     lin.forEach(function(x){ caja.appendChild(x); });
     if(s.n&&s.n<30) caja.appendChild(el('p',{class:'nota',text:'Con '+s.n+' juego'+(s.n===1?'':'s')+' terminado'+(s.n===1?'':'s')+' esto todavía es casi pura suerte. Mira el «Todo» cuando pase de 100.'}));
     cuerpo.appendChild(caja);
+    if(V.dep==='nhl') cuerpo.appendChild(cajaAdelante());
 
     /* resumen de todas las semanas o meses */
     if(V.tipo!=='todo'){

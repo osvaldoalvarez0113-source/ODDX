@@ -424,7 +424,7 @@
     const o = g.odds || {}, pin = pinDe(g), Lt = (o.total !== undefined && isFinite(o.total)) ? o.total : (pin && pin.tot ? pin.tot.l : null);
     const L = (c, t) => `<div><i class="${c}">${c === 'ok' ? '✓' : (c === 'w' ? '!' : '✗')}</i><span>${t}</span></div>`;
     const li = [L('w', 'El favorito <b>no es un pick</b>: apostarle siempre al favorito de 55% o más dejó <b>−8.7%</b> en 2025 (846 juegos). Solo hay valor si te pagan más que la cuota justa de arriba.')];
-    if (Lt !== null && isFinite(pr.ptMod) && pr.ptMod <= Lt - 0.5) li.push(L('ok', `🧪 <b>Señal en prueba: Menos de ${Lt}</b>. El modelo solo espera ${pr.ptMod.toFixed(1)} goles. En 2022–2025 esta señal dio +9% (364 juegos, margen ±10, una temporada negativa): no está probada, apuesta poco.`));
+    if (Lt !== null && isFinite(pr.ptMod) && pr.ptMod <= Lt - 0.5) li.push(L('ok', `🧪 <b>Señal en prueba: Menos de ${Lt}</b>. El modelo solo espera ${pr.ptMod.toFixed(1)} goles. Con el modelo actual dio +1.7% en 2023–2026 (281 juegos, margen ±11, 2025 negativa): no está probada y se está midiendo con juegos nuevos. Apuesta poco.`));
     if (Lt === 6.5) li.push(L('x', '<b>Evita Más de 6.5</b>: perdió las cuatro temporadas 2022–2025 (−10% en 2,866 juegos).'));
     li.push(L('x', '<b>Evita el favorito −1.5</b> (línea de gol): dejó −15% en 2025.'));
     if (pf >= 0.65) li.push(L('x', '<b>No vayas al perro</b> de menos de 35%: dejó −13% en 2022–2025.'));
