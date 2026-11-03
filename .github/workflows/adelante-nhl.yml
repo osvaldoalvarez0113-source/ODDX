@@ -1,7 +1,7 @@
-name: Prueba hacia adelante NHL
+name: Prueba hacia adelante NHL y NFL
 
-# Mide con juegos nuevos las reglas de Menos de NHL fijadas el 3-nov-2026 (scripts/adelante.js). No gasta llamadas de OddsPapi.
-# Guarda la linea de ESPN de antes de cada juego y el resultado en la rama "adelante"; la pantalla Auto de NHL lo lee de ahi.
+# Mide con juegos nuevos las reglas de totales de NHL y NFL fijadas el 3-nov-2026 (scripts/adelante.js). No gasta llamadas de OddsPapi.
+# Guarda la linea de ESPN de antes de cada juego y el resultado en la rama "adelante"; la pantalla Auto de NHL y NFL lo lee de ahi.
 on:
   workflow_dispatch:
   schedule:
@@ -29,10 +29,10 @@ jobs:
           URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
           mkdir -p /tmp/adelante /tmp/datos
           (cd /tmp/adelante && git init -q -b adelante && git fetch -q --depth 1 "$URL" adelante && git checkout -q FETCH_HEAD -- . ) || echo "primera corrida"
-          (cd /tmp/datos && git init -q -b datos && git fetch -q --depth 1 "$URL" datos && git checkout -q FETCH_HEAD -- odds-nhl.json) || echo "sin cuotas guardadas"
-          cp /tmp/datos/odds-nhl.json /tmp/adelante/odds-nhl.json 2>/dev/null || true
+          (cd /tmp/datos && git init -q -b datos && git fetch -q --depth 1 "$URL" datos && git checkout -q FETCH_HEAD -- odds-nhl.json odds-nfl.json) || echo "sin cuotas guardadas"
+          cp /tmp/datos/odds-*.json /tmp/adelante/ 2>/dev/null || true
           node scripts/adelante.js /tmp/adelante
-          rm -f /tmp/adelante/odds-nhl.json
+          rm -f /tmp/adelante/odds-*.json
       - name: Guardar en la rama adelante
         run: |
           URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"

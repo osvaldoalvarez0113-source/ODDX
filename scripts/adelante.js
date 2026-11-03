@@ -1,6 +1,8 @@
 'use strict';
 /* ===================================================================
-   OVA · PRUEBA HACIA ADELANTE DEL MENOS EN NHL (corre en GitHub Actions; no gasta llamadas de OddsPapi)
+   OVA · PRUEBA HACIA ADELANTE DE TOTALES EN NHL Y NFL (corre en GitHub Actions; no gasta llamadas de OddsPapi)
+   NFL (mismas condiciones, fijadas el 3-nov-2026; sin modelo y sin mínimo de juegos): A Más con techo cerrado, B Menos al aire libre, C control Más siempre.
+   NHL:
    Reglas fijadas el 3-nov-2026, antes de ver ningún juego de la prueba. NO se cambian: si se quiere otra regla, es otra prueba.
      A (la que se prueba)  Menos si el modelo espera 0.5 goles o más por debajo de la línea
      B                     Menos si el modelo espera 0.25 goles o más por debajo de la línea
@@ -17,6 +19,11 @@ const REGLAS = {
   B: { nombre: 'Menos si el modelo espera 0.25+ goles menos', lado: 'U', pasa: (pt, l) => pt <= l - 0.25 },
   C: { nombre: 'Control: Menos siempre en total de 6 o más', lado: 'U', pasa: (pt, l) => l >= 6 },
   D: { nombre: 'Control: Más siempre en total de 6.5', lado: 'O', pasa: (pt, l) => l === 6.5 }
+};
+const REGLAS_NFL = {
+  A: { nombre: 'Más con techo cerrado', lado: 'O', pasa: (pt, l, g) => !!g.indoor },
+  B: { nombre: 'Menos al aire libre', lado: 'U', pasa: (pt, l, g) => !g.indoor },
+  C: { nombre: 'Control: Más siempre', lado: 'O', pasa: () => true }
 };
 const num = v => { if (v == null) return null; const n = parseFloat(String(v).replace(/[−–—]/g, '-').replace(/[^0-9.+-]/g, '')); return isFinite(n) ? n : null; };
 const am = v => { const n = num(v); return (n !== null && Math.abs(n) >= 100) ? n : null; };
@@ -43,43 +50,51 @@ function veredicto(r) {
   return { c: 'dudosa', t: 'Sin decidir: todavía no se distingue de cero' };
 }
 /* corre el modelo por todos los juegos en orden; por cada juego con línea, anota sus apuestas */
+function filaDe(g, pt, li, reglas) {
+  const f = { id: g.id, ts: g.ts, l: li.l, pt: pt == null ? null : +pt.toFixed(3), total: g.hs + g.as, r: {} };
+  Object.keys(reglas).forEach(k => {
+    const R = reglas[k]; if (!R.pasa(pt, li.l, g)) return;
+    const c = R.lado === 'O' ? li.o : li.u, v = resultado(R.lado, f.total, li.l);
+    f.r[k] = { c: c, v: v, u: +pago(c, v).toFixed(4) };
+  });
+  return f;
+}
+function evaluarNfl(juegos, lineas, desde) {
+  return juegos.filter(g => lineas[g.id] && g.ts >= desde && g.ty === 2).map(g => filaDe(g, null, lineas[g.id], REGLAS_NFL));
+}
 function evaluar(M, juegos, lineas, desde) {
   const P = Object.assign({}, M.PDEF), filas = [];
   M.correr(juegos, P, function (g, x) {
     const li = lineas[g.id];
     if (!li || g.ts < desde || g.ty !== 2 || x.cH < MIN_J || x.cA < MIN_J) return;
-    const f = { id: g.id, ts: g.ts, l: li.l, pt: +x.pt.toFixed(3), total: g.hs + g.as, r: {} };
-    Object.keys(REGLAS).forEach(k => {
-      const R = REGLAS[k]; if (!R.pasa(x.pt, li.l)) return;
-      const c = R.lado === 'O' ? li.o : li.u, v = resultado(R.lado, f.total, li.l);
-      f.r[k] = { c: c, v: v, u: +pago(c, v).toFixed(4) };
-    });
-    filas.push(f);
+    filas.push(filaDe(g, x.pt, li, REGLAS));
   });
   return filas;
 }
-function informe(filas) {
-  const o = {}; Object.keys(REGLAS).forEach(k => { const l = filas.filter(f => f.r[k]).map(f => f.r[k]); o[k] = Object.assign({ nombre: REGLAS[k].nombre }, resumen(l)); });
+function informe(filas, reglas) {
+  reglas = reglas || REGLAS;
+  const o = {}; Object.keys(reglas).forEach(k => { const l = filas.filter(f => f.r[k]).map(f => f.r[k]); o[k] = Object.assign({ nombre: reglas[k].nombre }, resumen(l)); });
   o.A.veredicto = veredicto(o.A);
   return o;
 }
-const unpack = r => ({ id: String(r[0]), ts: r[1], h: String(r[2]), a: String(r[3]), hs: r[4], as: r[5], ty: r[6], so: !!(r[7] & 1), ot: !!(r[7] & 2), neutral: !!(r[7] & 4), sh: r[9] == null ? null : r[9], sa: r[10] == null ? null : r[10] });
-module.exports = { REGLAS, INICIO, lineaDe, resultado, pago, resumen, veredicto, evaluar, informe, unpack };
+const unpack = r => ({ id: String(r[0]), ts: r[1], h: String(r[2]), a: String(r[3]), hs: r[4], as: r[5], ty: r[6], so: !!(r[7] & 1), ot: !!(r[7] & 2), neutral: !!(r[7] & 4), indoor: !!(r[7] & 8), sh: r[9] == null ? null : r[9], sa: r[10] == null ? null : r[10] });
+module.exports = { REGLAS, REGLAS_NFL, INICIO, lineaDe, resultado, pago, resumen, veredicto, evaluar, evaluarNfl, informe, unpack };
 if (require.main !== module) return;
 
-/* uso: node scripts/adelante.js [carpeta con adelante-nhl.json y odds-nhl.json] */
+/* uso: node scripts/adelante.js [carpeta con adelante-<dep>.json y odds-<dep>.json] */
 const dir = process.argv[2] || 'salida-adelante', raiz = path.join(__dirname, '..');
 const leer = (f, d) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return d; } };
-const M = require('../modelo-nhl.js');
-const previo = leer(path.join(dir, 'adelante-nhl.json'), { lineas: {} }), lineas = previo.lineas || {};
-const snap = leer(path.join(dir, 'odds-nhl.json'), { juegos: {} });
+fs.mkdirSync(dir, { recursive: true });
+['nhl', 'nfl'].forEach(dep => {
+const previo = leer(path.join(dir, 'adelante-' + dep + '.json'), { lineas: {} }), lineas = previo.lineas || {};
+const snap = leer(path.join(dir, 'odds-' + dep + '.json'), { juegos: {} });
 let nuevas = 0;
 Object.keys(snap.juegos || {}).forEach(id => { const v = snap.juegos[id], t = Date.parse(v.t), li = lineaDe(v.o); if (li && t >= INICIO) { lineas[id] = Object.assign({ t: t }, li); nuevas++; } });
-const hist = JSON.parse(fs.readFileSync(path.join(raiz, 'hist-nhl.json'), 'utf8'));
+const hist = JSON.parse(fs.readFileSync(path.join(raiz, 'hist-' + dep + '.json'), 'utf8'));
 const juegos = hist.g.map(unpack).sort((a, b) => a.ts - b.ts);
-const filas = evaluar(M, juegos, lineas, INICIO);
-const salida = { v: 1, inicio: new Date(INICIO).toISOString(), generado: new Date().toISOString(), archivo: hist.generado, reglas: informe(filas), lineas: lineas, juegos: filas };
-fs.mkdirSync(dir, { recursive: true });
-fs.writeFileSync(path.join(dir, 'adelante-nhl.json'), JSON.stringify(salida));
-console.log('Líneas guardadas: ' + Object.keys(lineas).length + ' (' + nuevas + ' vistas ahora) · juegos terminados en la prueba: ' + filas.length);
-console.log(JSON.stringify(salida.reglas, null, 1));
+const filas = dep === 'nhl' ? evaluar(require('../modelo-nhl.js'), juegos, lineas, INICIO) : evaluarNfl(juegos, lineas, INICIO);
+const salida = { v: 1, dep: dep, inicio: new Date(INICIO).toISOString(), generado: new Date().toISOString(), archivo: hist.generado, reglas: informe(filas, dep === 'nhl' ? REGLAS : REGLAS_NFL), lineas: lineas, juegos: filas };
+fs.writeFileSync(path.join(dir, 'adelante-' + dep + '.json'), JSON.stringify(salida));
+console.log(dep + ' · líneas guardadas: ' + Object.keys(lineas).length + ' (' + nuevas + ' vistas ahora) · juegos terminados en la prueba: ' + filas.length);
+console.log(JSON.stringify(salida.reglas));
+});

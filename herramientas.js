@@ -460,16 +460,34 @@ function autoStats(fs){
 }
 function pct0(w,n){ return n?Math.round(w/n*100)+'%':'—'; }
 /* prueba hacia adelante del Menos de NHL (scripts/adelante.js): reglas fijas, solo juegos desde el 3-nov-2026. Solo lee. */
-function cajaAdelante(){
-  var c=el('div',{class:'caja'},[el('h3',{text:'🧪 Prueba del Menos (juegos nuevos)'}),el('p',{class:'nota',text:'Cargando…'})]);
-  pedirJson('https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/adelante/adelante-nhl.json').then(function(j){
+/* ¿sus porcentajes se cumplen? Juegos terminados, por rango de lo que dijo cada uno sobre su favorito. Solo lee. */
+var RANGOS=[[0,0.5,'Menos de 50%'],[0.5,0.55,'50–55%'],[0.55,0.6,'55–60%'],[0.6,0.7,'60–70%'],[0.7,1.01,'70% o más']];
+function autoCalib(fs,campoP,campoOk){
+  return RANGOS.map(function(r){
+    var n=0,w=0,s=0;
+    fs.forEach(function(f){ var p=f[campoP], ok=f[campoOk]; if(!f.fin||p==null||ok==null||p<r[0]||p>=r[1]) return; n++; s+=p; if(ok) w++; });
+    return {et:r[2],n:n,dijo:n?s/n:null,paso:n?w/n:null};
+  });
+}
+function cajaCalibracion(todas){
+  var mo=autoCalib(todas,'pm','okM'), me=autoCalib(todas,'pk','okK'), t=el('table',{class:'tab'},[el('tr',null,['Dijo','Modelo','Mercado'].map(function(h){ return el('th',{text:h}); }))]);
+  var cel=function(x){ return x.n?Math.round(x.paso*100)+'% ('+x.n+')':'—'; }, nT=0;
+  mo.forEach(function(x,i){ nT+=x.n; if(!x.n&&!me[i].n) return; t.appendChild(el('tr',null,[el('td',{text:x.et}),el('td',{class:'n',text:cel(x)}),el('td',{class:'n',text:cel(me[i])})])); });
+  return el('details',{class:'caja avA'},[el('summary',{text:'🎯 ¿Se cumplen sus porcentajes? ('+nT+' juegos)'}),t,
+    el('p',{class:'nota',text:'Todo lo guardado. Cada celda: cuántas veces ganó su favorito cuando dijo ese rango, y entre paréntesis cuántos juegos. Si dijo 55–60%, debería salir cerca de eso. Con menos de 100 juegos en un rango, casi todo es suerte.'})]);
+}
+var ADEL={nhl:{t:'🧪 Prueba del Menos (juegos nuevos)',a:'Modelo 0.5+ goles bajo la línea',b:'Modelo 0.25+ goles bajo la línea',h:'Antes de empezar la prueba, en 2023–2026: +1.7% ±11 en 281 juegos.'},
+  nfl:{t:'🧪 Prueba de totales (juegos nuevos)',a:'Más con techo cerrado',b:'Menos al aire libre',h:'Antes de empezar la prueba, en 2019–2026: Más con techo +4.1% ±9 en 545 juegos; Menos al aire libre +2.2% ±5 en 1,433.'}};
+function cajaAdelante(dep){
+  var D=ADEL[dep], c=el('div',{class:'caja'},[el('h3',{text:D.t}),el('p',{class:'nota',text:'Cargando…'})]);
+  pedirJson('https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/adelante/adelante-'+dep+'.json').then(function(j){
     var A=j&&j.reglas&&j.reglas.A, B=j&&j.reglas&&j.reglas.B;
     while(c.children.length>1) c.removeChild(c.lastChild);
     if(!A){ c.appendChild(el('p',{class:'nota',text:'Todavía sin datos. La regla se mide sola desde el 3 de noviembre de 2026.'})); return; }
     var f=function(x){ return x.g+'-'+x.p+(x.e?'-'+x.e:'')+(x.n?' · '+(x.roi>0?'+':'')+x.roi+'% ±'+x.err:''); };
-    c.appendChild(el('div',{class:'linA'},[el('span',{text:'Modelo 0.5+ goles bajo la línea ('+A.n+')'}),el('b',{text:f(A)})]));
-    c.appendChild(el('div',{class:'linA'},[el('span',{text:'Modelo 0.25+ goles bajo la línea ('+B.n+')'}),el('b',{text:f(B)})]));
-    c.appendChild(el('p',{class:'nota',text:(A.veredicto?A.veredicto.t+'. ':'')+'Las reglas no se cambian. Antes de empezar la prueba, en 2023–2026: +1.7% ±11 en 281 juegos.'}));
+    c.appendChild(el('div',{class:'linA'},[el('span',{text:D.a+' ('+A.n+')'}),el('b',{text:f(A)})]));
+    c.appendChild(el('div',{class:'linA'},[el('span',{text:D.b+' ('+B.n+')'}),el('b',{text:f(B)})]));
+    c.appendChild(el('p',{class:'nota',text:(A.veredicto?A.veredicto.t+'. ':'')+'Las reglas no se cambian. '+D.h}));
   });
   return c;
 }
@@ -545,7 +563,8 @@ function pantallaAuto(cont,ls){
     lin.forEach(function(x){ caja.appendChild(x); });
     if(s.n&&s.n<30) caja.appendChild(el('p',{class:'nota',text:'Con '+s.n+' juego'+(s.n===1?'':'s')+' terminado'+(s.n===1?'':'s')+' esto todavía es casi pura suerte. Mira el «Todo» cuando pase de 100.'}));
     cuerpo.appendChild(caja);
-    if(V.dep==='nhl') cuerpo.appendChild(cajaAdelante());
+    if(ADEL[V.dep]) cuerpo.appendChild(cajaAdelante(V.dep));
+    cuerpo.appendChild(cajaCalibracion(todas));
 
     /* resumen de todas las semanas o meses */
     if(V.tipo!=='todo'){
@@ -710,7 +729,7 @@ function arrancar(){
   ir((root.location.hash||'').replace('#','')||'marcador');
 }
 
-var API={aDecimal:aDecimal,aAmericana:aAmericana,quitarMargen:quitarMargen,compararCasas:compararCasas,normalizar:normalizar,resumir:resumir,
+var API={autoCalib:autoCalib,aDecimal:aDecimal,aAmericana:aAmericana,quitarMargen:quitarMargen,compararCasas:compararCasas,normalizar:normalizar,resumir:resumir,
   curva:curva,ventana:ventana,porPeriodo:porPeriodo,racha:racha,clvDe:clvDe,impPctTxt:impPctTxt,pagoMlb:pagoMlb,numero:numero,arrancar:arrancar,TABS:TABS};
 root.OVAHerr=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;

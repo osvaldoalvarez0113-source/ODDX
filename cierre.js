@@ -2,8 +2,8 @@
    Cuando un pick tiene el juego ya terminado y NO tiene «Cierre», busca en ESPN la linea de cierre del moneyline
    (ganador; en futbol el 1X2), le quita el margen de la casa y la escribe en el mismo formato que el pick
    (centavos de Kalshi o americana). NUNCA pisa un cierre que escribiste tu ni inventa nada: si ESPN no trae
-   cierre, el pick se queda sin CLV y el panel dice cuantos faltan. Toca picks de ganador (ML / 1X2) y, en NHL,
-   tambien total y linea de gol, pero solo si la linea de cierre es la misma que tomaste (si se movio, comparar
+   cierre, el pick se queda sin CLV y el panel dice cuantos faltan. Toca picks de ganador (ML / 1X2) y, en NHL, NBA y NFL,
+   tambien total y hándicap, pero solo si la linea de cierre es la misma que tomaste (si se movio, comparar
    precios de lineas distintas daria un CLV falso, asi que se deja vacio). */
 (function(root){
 'use strict';
@@ -120,10 +120,10 @@ function infoPick(app,p,extra){
     var lado=mismoNombre(mm[1],{displayName:pr[0]})?'a':(mismoNombre(mm[1],{displayName:pr[1]})?'h':null); if(!lado) return null;
     return {liga:'baseball/mlb',fecha:new Date(+f[1],+f[2]-1,+f[3],12).getTime(),away:pr[0],home:pr[1],lado:lado,ref:p.am,kalshi:(p.plat==='kalshi')};
   }
-  if(app==='nhl'&&(p.mercado==='TOT'||p.mercado==='SPR')){
+  if((app==='nhl'||app==='nba'||app==='nfl')&&(p.mercado==='TOT'||p.mercado==='SPR')){
     if(!p.ts||!p.aN||!p.hN||!isFinite(+p.linea)||p.linea===null||p.linea==='') return null;
     var l2=p.mercado==='TOT'?{O:'o',U:'u'}[p.side]:{H:'h',A:'a'}[p.side]; if(!l2) return null;
-    return {liga:'hockey/nhl',fecha:+p.ts,away:p.aN,home:p.hN,lado:l2,ref:p.cuota,exacta:true,mercado:p.mercado,linea:+p.linea};
+    return {liga:{nba:'basketball/nba',nhl:'hockey/nhl',nfl:'football/nfl'}[app],fecha:+p.ts,away:p.aN,home:p.hN,lado:l2,ref:p.cuota,exacta:true,mercado:p.mercado,linea:+p.linea};
   }
   if(app==='nba'||app==='nhl'||app==='nfl'){
     if(p.mercado!=='ML'||(p.side!=='H'&&p.side!=='A')||!p.ts||!p.aN||!p.hN) return null;
@@ -235,7 +235,7 @@ function notaTxt(est){
   if(est.noEncontrado) partes.push(est.noEncontrado+' no encontrado'+(est.noEncontrado===1?'':'s')+' (doble jornada o nombre distinto)');
   if(est.lineaMovida) partes.push(est.lineaMovida+' con la línea movida al cierre (sin CLV: no se comparan líneas distintas)');
   if(!partes.length) return '';
-  return t+partes.join(' · ')+(est.app==='nhl'?'. Ganador, total y línea de gol; el resto, escribe el cierre a mano.':'. Solo picks de ganador (ML / 1X2); el resto, escribe el cierre a mano.');
+  return t+partes.join(' · ')+(/^(nhl|nba|nfl)$/.test(est.app)?'. Ganador, total y hándicap; el resto, escribe el cierre a mano.':'. Solo picks de ganador (ML / 1X2); el resto, escribe el cierre a mano.');
 }
 function correr(silencioso){
   if(CORRIENDO) return Promise.resolve(null);

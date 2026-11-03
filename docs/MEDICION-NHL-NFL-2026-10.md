@@ -54,3 +54,14 @@ Misma prueba que se le hizo a MLB, fútbol y NBA: el modelo de cada deporte se c
 - ESPN solo guarda líneas desde 2019 (NFL) y 2022 (NHL): no hay más historia de mercado gratis.
 - El archivo de partidos de la NFL cubre las últimas 3 temporadas completas y la actual.
 - Las líneas de DraftKings no son el cierre de Pinnacle; Pinnacle se usa solo hacia adelante, desde el escáner.
+
+## Prueba hacia adelante en NFL (3 nov 2026)
+`scripts/adelante.js`, reglas fijadas el 3-nov-2026 y solo juegos desde esa fecha. Antes de empezar, con cierres de 2019 a 2026 y sumando todos los puntos:
+
+| Regla | Juegos | ROI |
+|---|---|---|
+| Más con techo cerrado | 545 | +4.1% ± 8.6 |
+| Menos al aire libre | 1,433 | +2.2% ± 5.1 |
+| Más al aire libre (no entra a la prueba) | 1,433 | −10.5% ± 5.1 |
+
+Ninguna se distingue de cero, y el +4.1% con techo depende mucho de 2020 (+26.5%). Con 200+ apuestas de la regla A: confirmada si ROI > 0 y z ≥ 2; descartada si ROI ≤ −10% o z ≤ −2.
