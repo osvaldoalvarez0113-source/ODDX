@@ -945,6 +945,19 @@ sec('Cierre automático (cierre.js): CLV sin escribir la cuota a mano');
   ok('adelante NFL: techo cerrado y aire libre van separados y no cuenta pretemporada',FN.length===2&&RN.A.n===1&&RN.A.g===1&&RN.B.n===1&&RN.B.g===1&&RN.C.n===2&&RN.A.veredicto.c==='espera');
   const HC=require(path.join(__dirname,'herramientas.js')).autoCalib([{fin:true,pm:0.57,okM:true},{fin:true,pm:0.58,okM:false},{fin:true,pm:0.72,okM:true},{fin:false,pm:0.57,okM:null},{fin:true,pm:null,okM:null}],'pm','okM');
   ok('calibración: cuenta por rango solo juegos terminados',HC[2].n===2&&HC[2].paso===0.5&&Math.abs(HC[2].dijo-0.575)<1e-9&&HC[4].n===1&&HC[0].n===0);
+  { const Kp=require(path.join(__dirname,'scripts','kalshi.js')), OP=require(path.join(__dirname,'prediccion.js')).kalshi;
+    ok('kalshi robot: fecha, sigla y centavos desde la API',Kp.fechaTicker('KXNHLGAME-26NOV03COLCBJ')==='2026-11-03'&&Kp.siglaTicker('KXNHLGAME-26NOV03COLCBJ-CBJ')==='CBJ'&&Kp.centavos({yes_ask_dollars:'0.4600'},'yes_ask')===46&&Kp.centavos({yes_ask:46},'yes_ask')===46&&Kp.centavos({},'yes_ask')===null);
+    const pj=Kp.parsear([{event_ticker:'KXNHLGAME-26NOV03COLCBJ',markets:[{status:'active',ticker:'X-26NOV03COLCBJ-CBJ',yes_sub_title:'Columbus',yes_ask_dollars:'0.46',yes_bid_dollars:'0.45'},{status:'active',ticker:'X-26NOV03COLCBJ-COL',yes_sub_title:'Colorado',yes_ask_dollars:'0.55',yes_bid_dollars:'0.54'}]},{event_ticker:'KXNHLGAME-26NOV03AB',markets:[{status:'active',ticker:'X-A',yes_ask_dollars:'1.00'},{status:'active',ticker:'X-B',yes_ask_dollars:'0.40'}]}]);
+    ok('kalshi robot: solo juegos con dos lados y precio real',pj.length===1&&pj[0].e[0].s==='CBJ'&&pj[0].e[0].c===46);
+    const arch={generado:new Date().toISOString(),juegos:[{d:'2026-11-03',e:[{s:'WAS',c:40},{s:'GSW',c:61}]}]},ts=Date.parse('2026-11-04T00:00:00Z'),kb=OP.buscar(arch,'GS','WSH',ts);
+    ok('kalshi app: empareja siglas distintas de ESPN y orienta local/visita; otro día no',kb&&kb.cH===61&&kb.cA===40&&OP.buscar(arch,'GS','WSH',ts+2*864e5)===null&&OP.buscar(arch,'GS','BOS',ts)===null);
+    const r1=OP.leer(0.60,55),r2=OP.leer(0.50,55);
+    ok('kalshi app: entra solo con 3% después de la comisión',r1.entra===true&&r2.entra===false&&r1.tope>=55&&r2.tope<50&&r1.ev>0.03);
+    ok('kalshi app: bloque con los dos lados; sin precio, viejo o sin mercado no muestra nada',/Kalshi/.test(OP.html(kb,'GS','WSH',0.6))&&/61¢/.test(OP.html(kb,'GS','WSH',0.6))&&OP.html(null,'a','b',0.6)===''&&OP.html(kb,'a','b',null)===''&&OP.html({cH:50,cA:50,gen:'2026-01-01T00:00:00Z'},'a','b',0.5)==='');
+    ok('kalshi app: limpia los nombres',!/<img/.test(OP.html(kb,'<img src=x>','b',0.6)));
+    ok('el robot de Kalshi no usa OddsPapi',!/ODDSPAPI/.test(rd('.github/workflows/kalshi.yml')));
+    ok('NBA, NHL y NFL muestran Kalshi en el Veredicto',/\$\{kalshiN\(g, mk, H, A\)\}/.test(rd('usdeporte.js'))&&/\$\{kalshiN\(g,mk,H,A\)\}/.test(rd('nba.html')));
+  }
   ok('adelante: el workflow no usa OddsPapi',!/ODDSPAPI/.test(rd('.github/workflows/adelante-nhl.yml')));
  }
  ok('escáneres: MLB descansa en invierno, Champions solo lunes a miércoles y NHL corre 2 veces',/\* 3-10 \*/.test(rd('.github/workflows/valor-pinnacle.yml'))&&/n>=1&&n<=3/.test(rd('scripts/valor2.js'))&&(rd('.github/workflows/valor-nhl-nfl.yml').match(/- cron: "\d/g)||[]).length===3);

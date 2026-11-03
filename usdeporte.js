@@ -29,7 +29,8 @@
   function parseOdds(c) {
     const o = c && c.odds && c.odds[0]; if (!o) return null;
     const r = {};
-    if (o.moneyline) { const h = amOdd(blq(o.moneyline.home) && blq(o.moneyline.home).odds), a = amOdd(blq(o.moneyline.away) && blq(o.moneyline.away).odds); if (h && a) { r.mlH = h; r.mlA = a; } }
+    if (o.moneyline) { const h = amOdd(blq(o.moneyline.home) && blq(o.moneyline.home).odds), a = amOdd(blq(o.moneyline.away) && blq(o.moneyline.away).odds); if (h && a) { r.mlH = h; r.mlA = a; }
+      const oh = o.moneyline.home.open && amOdd(o.moneyline.home.open.odds), oa = o.moneyline.away && o.moneyline.away.open && amOdd(o.moneyline.away.open.odds); if (oh && oa) { r.mlHo = oh; r.mlAo = oa; } }
     if (o.pointSpread) {
       const h = blq(o.pointSpread.home), a = blq(o.pointSpread.away), ln = amNum(h && h.line);
       if (ln !== null && Math.abs(ln) <= 45) { r.spread = ln; const oh = amOdd(h && h.odds), oa = amOdd(a && a.odds); if (oh && oa) { r.spH = oh; r.spA = oa; } }
@@ -418,6 +419,31 @@
     if (g.indoor) li.push(['ok', 'Techo cerrado: el viento y el frío no pesan.']);
     return li;
   }
+  /* bajas del robot (rama datos): mariscales en NFL y cambio de portero en NHL. Solo informa: no entra a ningún cálculo. */
+  let LES = null;
+  try { fetch('https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/datos/lesiones-' + DEP + '.json?v=' + Math.floor(Date.now() / 36e5)).then(r => r.ok ? r.json() : null).then(j => { if (j) LES = j; }).catch(() => { }); } catch (e) { }
+  try { if (window.OVAKalshi) window.OVAKalshi.cargar(DEP); } catch (e) { }
+  function bajasTxt(g, H, A) {
+    const li = []; if (!LES) return li;
+    if (DEP === 'nfl' && LES.equipos) {
+      const qb = n => ((LES.equipos[n] && LES.equipos[n].l) || []).filter(x => x.p === 'QB' && !/decisi/i.test(x.s)).map(x => esc(x.n) + ' (' + esc(x.s) + ')');
+      const a = qb(A.n), h = qb(H.n);
+      if (a.length || h.length) li.push(['w', '<b>Mariscales en la lista de lesionados</b> · ' + [a.length ? esc(A.ab) + ': ' + a.join(', ') : '', h.length ? esc(H.ab) + ': ' + h.join(', ') : ''].filter(Boolean).join(' · ') + '. Puede ser un suplente: confirma quién abre.']);
+      else li.push(['ok', 'Ningún mariscal en la lista de lesionados.']);
+    }
+    if (DEP === 'nhl' && Array.isArray(LES.juegan)) {
+      const j = LES.juegan.find(x => x.h === H.n && x.a === A.n && Math.abs(Date.parse(x.t) - g.ts) < 12 * 36e5);
+      ((j && j.cambios) || []).forEach(c => li.push(['w', '<b>Cambió el portero de ' + esc(c.eq) + '</b>: ' + esc(c.antes) + ' → ' + esc(c.ahora) + '. Mira si la línea ya lo reflejó.']));
+    }
+    return li;
+  }
+  /* cuánto se movió el ganador desde que abrió (ESPN, sin margen) */
+  function movidaTxt(g, H, A) {
+    const o = g.odds; if (!o || !o.mlH || !o.mlA || !o.mlHo || !o.mlAo) return null;
+    const nv = (x, y) => { const a = impProb(x), b = impProb(y); return a / (a + b); }, p0 = nv(o.mlHo, o.mlAo), p1 = nv(o.mlH, o.mlA), d = (p1 - p0) * 100;
+    if (Math.abs(d) < 2) return ['ok', 'La línea casi no se ha movido desde que abrió (' + esc(H.ab) + ' ' + pct1(p0) + ' → ' + pct1(p1) + ').'];
+    return ['w', '<b>La línea se movió ' + Math.abs(d).toFixed(1) + ' pts hacia ' + esc(d > 0 ? H.ab : A.ab) + '</b> desde que abrió (' + esc(H.ab) + ' ' + pct1(p0) + ' → ' + pct1(p1) + '). El precio de ahora ya incluye esa noticia.'];
+  }
   /* NHL · qué apostar y qué no, según lo medido (docs/MEDICION-NHL-NFL-2026-10.md y docs/NHL-REVISION-2026-10.md) */
   function guiaNhl(g, pr, pf) {
     if (DEP !== 'nhl' || (pr.mk && pr.mk.live)) return '';
@@ -429,6 +455,9 @@
     li.push(L('x', '<b>Evita el favorito −1.5</b> (línea de gol): dejó −15% en 2025.'));
     if (pf >= 0.65) li.push(L('x', '<b>No vayas al perro</b> de menos de 35%: dejó −13% en 2022–2025.'));
     return `<h4>Qué apostar y qué no (medido)</h4><div class="rvLs">${li.join('')}</div>`;
+  }
+  function kalshiN(g, mk, H, A) {
+    try { if (!window.OVAKalshi || !mk || mk.live || g.ts < Date.now()) return ''; return window.OVAKalshi.html(window.OVAKalshi.buscar(window.OVAKalshi.arch(DEP), H.ab, A.ab, g.ts), H.n, A.n, mk.p); } catch (e) { return ''; }
   }
   function resumenN(g, pr, H, A) {
     const favH = pr.pH >= 0.5, mk = pr.mk, hit = mk ? mk.p : null;
@@ -458,9 +487,10 @@
     else li.push(L('w', 'Sin precio del mercado para este juego.'));
     if (mk && !mk.live && mk.src !== 'pred' && g.pred) { const d = Math.abs(g.pred.pH - mk.p) * 100; li.push(L(d <= 3 ? 'ok' : 'w', `Mercado de predicción (Polymarket): ${esc(H.ab)} ${pct1(g.pred.pH)}${d <= 3 ? ', coincide con el precio principal.' : ' (' + d.toFixed(0) + ' pts de diferencia con el precio principal; el principal suele tener razón).'}`)); }
     descansoTxt(g, pr, H, A).forEach(x => li.push(L(x[0], x[1])));
+    if (!(mk && mk.live)) { const mv = movidaTxt(g, H, A); if (mv) li.push(L(mv[0], mv[1])); bajasTxt(g, H, A).forEach(x => li.push(L(x[0], x[1]))); }
     if (g.pre) li.push(L('w', 'Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
     li.push(`<div data-inj><i class="w">!</i><span>Lesionados: toca «Cargar lesionados» abajo (archivo grande).</span></div>`);
-    return `<div class="rv"><h4>Pronóstico y pick</h4>${main}${guiaNhl(g, pr, pf)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
+    return `<div class="rv"><h4>Pronóstico y pick</h4>${main}${guiaNhl(g, pr, pf)}${kalshiN(g, mk, H, A)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
   }
 
   function pintarCuerpo(body, g) {

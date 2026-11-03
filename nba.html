@@ -686,6 +686,10 @@ function pinPH(g){
 /* ---- Resumen completo del Veredicto: pronóstico, modelo contra mercado, líneas justas, qué tan confiable es y forma ---- */
 /* cuántas veces acierta este % (aciertos.js): solo antes del juego, no con el precio en vivo */
 function acN(pf,local,mercado,vivo){ try{ return (!vivo&&window.OVAAciertos)?window.OVAAciertos.html('nba',pf,local,mercado):''; }catch(e){ return ''; } }
+try{ if(window.OVAKalshi) window.OVAKalshi.cargar('nba'); }catch(e){}
+function kalshiN(g,mk,H,A){
+  try{ if(!window.OVAKalshi||!mk||mk.live||g.ts<Date.now()) return ''; return window.OVAKalshi.html(window.OVAKalshi.buscar(window.OVAKalshi.arch('nba'),H.ab,A.ab,g.ts),H.n,A.n,mk.p); }catch(e){ return ''; }
+}
 function resumenN(g,pr,H,A){
   const favH=pr.pHMod>=0.5, pmAbs=Math.abs(pr.pm);   /* «modelo» = el modelo SOLO (la app mezcla 95% mercado, y eso no es lo que el modelo opina) */
   const mk=mkPN(g); const hit=mk?mk.p:null;
@@ -715,7 +719,7 @@ function resumenN(g,pr,H,A){
   li.push(pr.bH||pr.bA?L('ok','Back-to-back: '+[pr.bA?A.n:'',pr.bH?H.n:''].filter(Boolean).map(esc).join(' y ')+' jugó ayer (ya descontado).'):L('ok','Sin back-to-back.'));
   if(g.pre) li.push(L('w','Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
   li.push(`<div data-inj><i class="w">!</i><span>Buscando lesionados…</span></div>`);
-  return `<div class="rv"><h4>Pronóstico y pick</h4>${main}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
+  return `<div class="rv"><h4>Pronóstico y pick</h4>${main}${kalshiN(g,mk,H,A)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
 }
 function pintarCuerpo(body,g){
   const pr=prediccion(g), H=T(g.h), A=T(g.a);
