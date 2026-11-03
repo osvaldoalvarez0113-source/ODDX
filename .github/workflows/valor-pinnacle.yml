@@ -1,12 +1,12 @@
 name: Valor vs Pinnacle
 
-# Tres corridas al dia (hora UTC). El script vive en scripts/valor.js (antes estaba pegado dentro de este archivo y se
+# Dos corridas al dia (hora UTC), solo de marzo a octubre: en invierno no hay juegos de MLB y cada corrida gastaria 2 llamadas de OddsPapi. A mano sigue funcionando. El script vive en scripts/valor.js (antes estaba pegado dentro de este archivo y se
 # reescribia solo en cada corrida, junto con pinnacle.js e index.html). Ahora solo se guarda pinnacle-datos.json.
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 15 * * *"
-    - cron: "30 21 * * *"
+    - cron: "30 15 * 3-10 *"
+    - cron: "30 21 * 3-10 *"
 
 permissions:
   contents: write

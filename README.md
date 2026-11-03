@@ -14,7 +14,7 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 | `futbol.html` | App de **fútbol**: Poisson / Dixon-Coles, ligas de clubes, copas y (vía `selecciones.js`) selecciones. |
 | `nba.html` | App de **NBA**: rating tipo Elo de margen, márgenes y totales. |
 | `nhl.html` + `nfl.html` + `usdeporte.js` | Apps de **NHL** y **NFL**. Comparten `usdeporte.js` (partidos de `hist-<dep>.json` + ESPN, mercado de Pinnacle o DraftKings, picks y cierre); cada una trae su modelo: `modelo-nhl.js` (Poisson de goles, tiempo extra/shootout, back-to-back) y `modelo-nfl.js` (Elo de margen, números clave 3 y 7, descanso). Medidas en `docs/MEDICION-NHL-NFL-2026-10.md`: el mercado manda, el modelo pesa 5%. |
-| `scripts/valor3.js` + `.github/workflows/valor-nhl-nfl.yml` | Escáner de Pinnacle para NHL y NFL (`pinnacle-nhl.json`, `pinnacle-nfl.json`), con su propio tope de 60 llamadas al mes (MLB 100 + fútbol/NBA 80 + NHL/NFL 60 = 240 de las 250 del plan de OddsPapi). |
+| `scripts/valor3.js` + `.github/workflows/valor-nhl-nfl.yml` | Escáner de Pinnacle para NHL y NFL (`pinnacle-nhl.json`, `pinnacle-nfl.json`), con su propio tope de 70 llamadas al mes (MLB 100 + fútbol/NBA 80 + NHL/NFL 70 = 250, el plan de OddsPapi). |
 | `scripts/correr_nhl_nfl.js`, `datos_nhl_nfl.js`, `archivo_nhl_nfl.js`, `lib_medir.js` | Medición contra el mercado (workflow *Medir NHL y NFL*, resultado en la rama `resultados-nhl-nfl`) y archivo diario de partidos (`hist-nhl.json`, `hist-nfl.json`). |
 | `panel.html` | Panel de respaldo y resumen del día. No está enlazado desde el hub a propósito. |
 | `sw.js`, `manifest.json`, `icon-*.png` | Service worker (red primero, sin internet usa copia), manifest e iconos de la app instalada. |
@@ -81,14 +81,14 @@ Las páginas de `backtests/` y `scripts/ova_formula.py` **replican** estas const
 
 ## Workflows de GitHub Actions
 
-Todos en `.github/workflows/`. «OddsPapi» = gasta llamadas del plan (250 al mes en total para toda la cuenta; los topes por escáner suman 240).
+Todos en `.github/workflows/`. «OddsPapi» = gasta llamadas del plan (250 al mes en total para toda la cuenta; los topes por escáner suman 250).
 
 | Workflow | Cuándo corre | Qué hace | OddsPapi |
 |---|---|---|---|
 | `pruebas.yml` | en cada subida a `main` y en pull requests | corre `pruebas.js` (sintaxis, nombres, modelos, hub, respaldo…). Una X roja = algo se rompió | no |
-| `valor-pinnacle.yml` | 3 veces al día | escáner MLB → `pinnacle-datos.json` (tope 100 al mes) | sí |
-| `valor-futbol-nba.yml` | 2 veces al día | escáner fútbol y NBA → `pinnacle-futbol.json`, `pinnacle-nba.json` (tope 80) | sí |
-| `valor-nhl-nfl.yml` | NHL cada noche, NFL jueves/domingo/lunes | escáner NHL y NFL → `pinnacle-nhl.json`, `pinnacle-nfl.json` (tope 60) | sí |
+| `valor-pinnacle.yml` | 2 veces al día, de marzo a octubre | escáner MLB → `pinnacle-datos.json` (tope 100 al mes) | sí |
+| `valor-futbol-nba.yml` | 1 vez al día; lunes a miércoles también Champions | escáner fútbol y NBA → `pinnacle-futbol.json`, `pinnacle-nba.json` (tope 80) | sí |
+| `valor-nhl-nfl.yml` | NHL 2 veces al día, NFL jueves/domingo/lunes | escáner NHL y NFL → `pinnacle-nhl.json`, `pinnacle-nfl.json` (tope 70) | sí |
 | `lesiones.yml` | cada 3 horas | `scripts/lesiones.js` baja los lesionados de ESPN (NBA, NHL, NFL) a archivos chicos en la rama `datos` (`lesiones-<dep>.json`); el Escáner de cada app los muestra y marca 🆕 lo nuevo. Si existe `NTFY_TOPIC` manda un aviso con los Out/Doubtful nuevos | no |
 | `avisos-mlb.yml` | cada 30 min en horas de juego, marzo a noviembre | avisos por ntfy: abridor cambiado, lineup, clima | no |
 | `archivo-espn.yml` | 4 veces al día | archivo de partidos de fútbol/NBA/MLB desde ESPN | no |

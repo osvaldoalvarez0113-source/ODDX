@@ -446,13 +446,13 @@ function autoFila(r,A){
   return o;
 }
 function autoStats(fs){
-  var s={n:0,pend:0,mN:0,mW:0,kN:0,kW:0,u:0,uN:0,choque:0,chM:0,chK:0};
+  var s={n:0,pend:0,mN:0,mW:0,kN:0,kW:0,u:0,uN:0,choque:0,chM:0,chK:0,cN:0,cW:0};   /* c = el modelo solo en los juegos que también tienen mercado: lo único comparable */
   fs.forEach(function(f){
     if(f.anul) return;
     if(!f.fin){ s.pend++; return; }
     s.n++;
     if(f.okM!=null){ s.mN++; if(f.okM) s.mW++; }
-    if(f.okK!=null){ s.kN++; if(f.okK) s.kW++; }
+    if(f.okK!=null){ s.kN++; if(f.okK) s.kW++; if(f.okM!=null){ s.cN++; if(f.okM) s.cW++; } }
     if(f.u!=null){ s.u+=f.u; s.uN++; }
     if(f.fm&&f.fk&&f.fm!==f.fk){ s.choque++; if(f.okM) s.chM++; if(f.okK) s.chK++; }
   });
@@ -521,10 +521,11 @@ function pantallaAuto(cont,ls){
     /* marcador */
     var caja=el('div',{class:'caja'});
     caja.appendChild(el('div',{class:'duelo'},[
-      el('div',{class:'lado'+(s.mN&&s.kN&&s.mW/s.mN>s.kW/s.kN?' gana':'')},[el('span',{text:'🧠 Tu modelo'}),el('b',{text:pct0(s.mW,s.mN)}),el('small',{text:s.mN?'acertó '+s.mW+' de '+s.mN:'sin juegos terminados'})]),
-      el('div',{class:'lado'+(s.mN&&s.kN&&s.kW/s.kN>s.mW/s.mN?' gana':'')},[el('span',{text:'📈 Mercado'}),el('b',{text:pct0(s.kW,s.kN)}),el('small',{text:s.kN?'acertó '+s.kW+' de '+s.kN:'sin precio todavía'})])]));
+      el('div',{class:'lado'+(s.cN&&s.cW>s.kW?' gana':'')},[el('span',{text:'🧠 Tu modelo'}),el('b',{text:s.cN?pct0(s.cW,s.cN):pct0(s.mW,s.mN)}),el('small',{text:s.cN?'acertó '+s.cW+' de '+s.cN:(s.mN?'acertó '+s.mW+' de '+s.mN:'sin juegos terminados')})]),
+      el('div',{class:'lado'+(s.cN&&s.kW>s.cW?' gana':'')},[el('span',{text:'📈 Mercado'}),el('b',{text:pct0(s.kW,s.kN)}),el('small',{text:s.kN?'acertó '+s.kW+' de '+s.kN:'sin precio todavía'})])]));
     var lin=[];
-    if(s.uN) lin.push(el('div',{class:'linA'},[el('span',{text:'💵 Si apostabas 1 unidad a lo que dice la app'}),el('b',{class:s.u>0.005?'g':(s.u<-0.005?'p':''),text:signo(s.u,1)+' u'})]));
+    if(s.mN>s.cN) lin.push(el('div',{class:'linA'},[el('span',{text:'🚫 Sin precio de mercado, fuera de la comparación ('+(s.mN-s.cN)+')'}),el('b',{text:'modelo '+(s.mW-s.cW)+'-'+(s.mN-s.cN-(s.mW-s.cW))})]));
+    if(s.uN) lin.push(el('div',{class:'linA'},[el('span',{text:'💵 1 unidad al favorito (mitad modelo, mitad mercado)'}),el('b',{class:s.u>0.005?'g':(s.u<-0.005?'p':''),text:signo(s.u,1)+' u'})]));
     if(s.choque) lin.push(el('div',{class:'linA'},[el('span',{text:'⚔️ No coincidieron ('+s.choque+')'}),el('b',{text:'modelo '+s.chM+' · mercado '+s.chK})]));
     lin.push(el('div',{class:'linA'},[el('span',{text:'⏳ Por jugarse o sin resultado'}),el('b',{text:String(s.pend)})]));
     lin.forEach(function(x){ caja.appendChild(x); });
@@ -543,13 +544,13 @@ function pantallaAuto(cont,ls){
           while(x.getTime()>k&&off<120){ if(V.tipo==='mes') x.setMonth(x.getMonth()-1); else x.setDate(x.getDate()-7); off++; }
           var tr=el('tr',{class:off===V.off?'sel':'',style:'cursor:pointer',onclick:function(){ V.off=off; pintar(); }},[
             el('td',{text:etiquetaPeriodo(d,V.tipo)}),
-            el('td',{class:'n',text:st.mN?st.mW+'-'+(st.mN-st.mW):'—'}),
+            el('td',{class:'n',text:st.cN?st.cW+'-'+(st.cN-st.cW):'—'}),
             el('td',{class:'n',text:st.kN?st.kW+'-'+(st.kN-st.kW):'—'}),
             el('td',{class:'n '+(st.u>0.005?'g':(st.u<-0.005?'p':'')),text:st.uN?signo(st.u,1):'—'})]);
           t.appendChild(tr);
         });
         cuerpo.appendChild(el('div',{class:'caja'},[el('h3',{text:V.tipo==='mes'?'📅 Mes por mes':'📅 Semana por semana'}),t,
-          el('p',{class:'nota',text:'Ganados-perdidos de cada uno. Toca una fila para ver sus juegos.'})]));
+          el('p',{class:'nota',text:'Ganados-perdidos de cada uno, solo en juegos con precio de mercado. Toca una fila para ver sus juegos.'})]));
       }
     }
 

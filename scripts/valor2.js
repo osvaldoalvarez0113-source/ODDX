@@ -9,7 +9,10 @@ const OP='https://api.oddspapi.io/v4';
 const HORAS_F=parseFloat(ENV.HORAS_FUTBOL||'72'), HORAS_N=parseFloat(ENV.HORAS_NBA||'48');
 const MAX_MES=parseInt(ENV.MAX_MES||'80',10);
 const LIGAS={ /* id de OddsPapi -> nombre que usa la app */
-  17:'Premier League', 8:'La Liga', 23:'Serie A', 35:'Bundesliga', 34:'Ligue 1' };   /* 5 ligas = 1 llamada; con Champions/MLS serian 2 */
+  17:'Premier League', 8:'La Liga', 23:'Serie A', 35:'Bundesliga', 34:'Ligue 1' };   /* 5 ligas = 1 llamada */
+const CHAMPIONS={id:'7',nombre:'Champions League'};
+/* la Champions va en su propia llamada y solo la vispera y los dias de jornada (lunes a miercoles, UTC), para no gastar las otras semanas */
+function diaChampions(d){ const n=d.getUTCDay(); return n>=1&&n<=3; }
 const NBA_ID='132';
 const CDIR='.cache', CF=CDIR+'/valor2.json';
 const out=[]; const P=(...a)=>{ const s=a.join(' '); out.push(s); console.log(s); };
@@ -85,6 +88,12 @@ async function mercadoNba(){
     /* ---- futbol ---- */
     await nombres(10);
     const fx=await pinnacle(Object.keys(LIGAS));
+    if(diaChampions(new Date())){
+      LIGAS[CHAMPIONS.id]=CHAMPIONS.nombre;
+      const cl=await pinnacle([CHAMPIONS.id]);
+      P('Champions: OddsPapi devolvio '+cl.length+' partidos');
+      cl.forEach(f=>fx.push(f));
+    }
     P('Futbol: OddsPapi devolvio '+fx.length+' partidos');
     const fut=[]; const razon={lejos:0,empezado:0,sinPin:0,sinPrecio:0};
     fx.forEach(f=>{

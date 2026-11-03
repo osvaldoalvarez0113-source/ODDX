@@ -932,6 +932,8 @@ sec('Cierre automático (cierre.js): CLV sin escribir la cuota a mano');
  const eN=await C.procesar('nhl'), gN=JSON.parse(mem['ova_nhl_registro_v1']);
  ok('cierre NHL: Menos 6.5 y visita +1.5 reciben su cierre sin margen; el ganador también (solo si ESPN lo trae)',gN[0].cierre==='-114'&&gN[0].cierreAuto===true&&/DraftKings/.test(gN[0].cierreFuente)&&gN[2].cierre==='-152'&&gN[4].cierre&&gN[4].cierreAuto===true,JSON.stringify(gN));
  ok('cierre NHL: si la línea se movió NO hay CLV y se cuenta aparte; no pisa lo que escribiste',(gN[1].cierre==null)&&eN.lineaMovida===1&&gN[3].cierre==='+120'&&gN[3].cierreAuto===undefined,JSON.stringify(eN));
+ ok('auto: cierreCore lee solo el cierre, prefiere DraftKings y descarta precios en vivo',(()=>{const R=require(path.join(__dirname,'autoregistro.js'));const k=R.cierreCore({items:[{provider:{name:'X'},homeTeamOdds:{close:{moneyLine:{american:'-110'}}},awayTeamOdds:{close:{moneyLine:{american:'-110'}}}},{provider:{name:'DraftKings'},homeTeamOdds:{close:{moneyLine:{american:'-180'}}},awayTeamOdds:{close:{moneyLine:{american:'+150'}}}}]});return k&&k.L>0.6&&k.L<0.62&&Math.abs(k.L+k.A-1)<1e-9&&R.cierreCore({items:[{homeTeamOdds:{current:{moneyLine:{american:'-180'}}},awayTeamOdds:{current:{moneyLine:{american:'+150'}}}}]})===null&&R.cierreCore({items:[{homeTeamOdds:{close:{moneyLine:{american:'-90000'}}},awayTeamOdds:{close:{moneyLine:{american:'+9000'}}}}]})===null&&R.cierreCore({items:[{homeTeamOdds:{close:{moneyLine:{american:'-180'}}},awayTeamOdds:{close:{moneyLine:{american:'+150'}}}}]},true)===null;})());
+ ok('escáneres: MLB descansa en invierno, Champions solo lunes a miércoles y NHL corre 2 veces',/\* 3-10 \*/.test(rd('.github/workflows/valor-pinnacle.yml'))&&/n>=1&&n<=3/.test(rd('scripts/valor2.js'))&&(rd('.github/workflows/valor-nhl-nfl.yml').match(/- cron: "\d/g)||[]).length===3);
  ok('cierre NHL: el texto del panel dice qué cubre y avisa la línea movida',/línea movida/.test(C.notaTxt(eN))&&/total y línea de gol/.test(C.notaTxt(eN)));
  globalThis.fetch=finNhl;
  globalThis.fetch=async()=>{ throw new Error('sin red'); };
@@ -1282,7 +1284,7 @@ ok('NHL Veredicto: guía «Qué apostar y qué no» (favorito no es pick, señal
  ['ovaextra.js','herramientas.js','autoregistro.js','cierre.js','asistente.js','envivo.js','diseno.js'].forEach(f=>ok(f+' reconoce NHL y NFL',/nhl/.test(rd(f))&&/nfl/.test(rd(f))));
  ok('el respaldo incluye las claves de NHL y NFL (ova_nhl_… / ova_nfl_…)',/ova_nhl_registro_v1/.test(rd('ovaextra.js'))&&/ova_nfl_registro_v1/.test(rd('ovaextra.js')));
  ok('los workflows de NHL/NFL existen: medición, archivo diario y escáner de Pinnacle',['medir-nhl-nfl.yml','archivo-nhl-nfl.yml','valor-nhl-nfl.yml'].every(f=>fs.existsSync(path.join(__dirname,'.github','workflows',f))));
- ok('el escáner de Pinnacle de NHL/NFL tiene su propio tope mensual (no gasta la cuota del de MLB / NBA / fútbol)',/MAX_MES\s*=\s*parseInt\(ENV\.MAX_MES \|\| '60'/.test(rd('scripts/valor3.js')));
+ ok('el escáner de Pinnacle de NHL/NFL tiene su propio tope mensual (no gasta la cuota del de MLB / NBA / fútbol)',/MAX_MES\s*=\s*parseInt\(ENV\.MAX_MES \|\| '70'/.test(rd('scripts/valor3.js')));
 }
 
 /* ---------------- Auditoría 3: Salud, canchas por deporte, cuota de OddsPapi ---------------- */
