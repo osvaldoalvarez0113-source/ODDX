@@ -59,3 +59,12 @@ El modelo solo (sin mercado) sí mejora con un rating de tiros a puerta. Paráme
 - Constantes nuevas en `modelo-nhl.js`: `kS 0.06`, `Ws 0.1`, `Hs 1.5`, y `kM` baja de 0.015 a 0.008.
 - Contra el mercado (3,568 juegos con línea, 2023 a hoy): modelo 0.6658, mercado 0.6650. Casi empata. La mezcla con λ ≈ 0.4 mejora 0.68 milésimas fuera de muestra, z = 0.97: no se distingue del mercado solo. Por eso `LAM_M` sigue en 0.05.
 - Datos: el workflow diario «Archivo de partidos NHL y NFL» corre `scripts/bajar_nhl_box.js` (solo lo nuevo) y `archivo_nhl_nfl.js` agrega los tiros a `hist-nhl.json` (columnas 10 y 11). Los juegos de los últimos días que la app baja directo de ESPN no traen tiros hasta el archivo del día siguiente; esos juegos no mueven el rating de tiros.
+
+## Mercado como base: revisión del plan (3 nov 2026)
+Se propuso usar el mercado sin margen como base, mezclar 75% mercado y 25% modelo, y dar pick solo cuando modelo y mercado difieran bastante. Al revisar el código y las mediciones:
+
+- **Mercado sin margen como base:** ya estaba (Pinnacle, y DraftKings vía ESPN si no hay Pinnacle).
+- **Mezcla:** se queda en 95/5 (`LAM_M = 0.05`). Con tiros a puerta, λ ≈ 0.4 mejora 0.68 milésimas con z = 0.97: no se distingue del mercado solo, así que no hay base para subir a 25%.
+- **Pick cuando el modelo discrepa:** **no se implementa**. Esa regla es la que pierde: −7.4% a 2 pts, −14.7% a 5 pts y −22.4% a 8 pts (`medicion-nhl-detalle.md`, sección 4).
+- **Cierre automático:** era lo único que faltaba para medir fuera del moneyline. `cierre.js` ahora llena también total y línea de gol en NHL, solo si la línea de cierre es la misma que se tomó.
+- **Por verificar con picks reales:** la forma de `close` en total y línea de gol se dedujo de `open` y `current`; desde aquí ESPN no devolvió un juego terminado con `close`. Si no llega, el pick queda «sin dato» y no se inventa nada.

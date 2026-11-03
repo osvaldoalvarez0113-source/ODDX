@@ -2,7 +2,9 @@
    Cuando un pick tiene el juego ya terminado y NO tiene «Cierre», busca en ESPN la linea de cierre del moneyline
    (ganador; en futbol el 1X2), le quita el margen de la casa y la escribe en el mismo formato que el pick
    (centavos de Kalshi o americana). NUNCA pisa un cierre que escribiste tu ni inventa nada: si ESPN no trae
-   cierre, el pick se queda sin CLV y el panel dice cuantos faltan. Solo toca picks de ganador (ML / 1X2). */
+   cierre, el pick se queda sin CLV y el panel dice cuantos faltan. Toca picks de ganador (ML / 1X2) y, en NHL,
+   tambien total y linea de gol, pero solo si la linea de cierre es la misma que tomaste (si se movio, comparar
+   precios de lineas distintas daria un CLV falso, asi que se deja vacio). */
 (function(root){
 'use strict';
 var DIAS_BUSQUEDA=[0,-1,1];
@@ -57,6 +59,31 @@ function leerCierreML(j){
   });
   return mejor;
 }
+/* total y linea de gol de cierre, ya sin margen. Solo el CIERRE, igual que el ganador.
+   tot.nv = {o,u} (mas/menos); sp.l = linea del local (negativa = local favorito); sp.nv = {h,a}. */
+function leerCierreLineas(j){
+  var items=(j&&j.items)||[], mejor=null;
+  items.forEach(function(it){
+    var prov=(it.provider&&it.provider.name)||'?', c={prov:prov,dk:/draftkings/i.test(prov),tot:null,sp:null};
+    var cl=it.close||{}, hC=(it.homeTeamOdds&&it.homeTeamOdds.close)||{}, aC=(it.awayTeamOdds&&it.awayTeamOdds.close)||{};
+    var val=function(x){ return x?(x.american!==undefined?x.american:x.alternateDisplayValue):null; };
+    var lT=num(val(cl.total)), o=americano(val(cl.over)), u=americano(val(cl.under));
+    if(lT!==null&&lT>0&&o!==null&&u!==null){ var nt=sinMargen({h:o,a:u}); if(nt) c.tot={l:lT,nv:{o:nt.h,u:nt.a}}; }
+    var lS=num(val(hC.pointSpread)), h=americano(val(hC.spread)), a=americano(val(aC.spread));
+    if(lS!==null&&Math.abs(lS)<=45&&h!==null&&a!==null){ var ns=sinMargen({h:h,a:a}); if(ns) c.sp={l:lS,nv:{h:ns.h,a:ns.a}}; }
+    if(!c.tot&&!c.sp) return;
+    var pts=function(x){ return (x.tot?1:0)+(x.sp?1:0)+(x.dk?0.5:0); };
+    if(!mejor||pts(c)>pts(mejor)) mejor=c;
+  });
+  return mejor;
+}
+/* probabilidad de cierre del lado del pick, o {movida:true} si la linea cambio, o null si no hay dato */
+function cierreDeLinea(info,cl){
+  if(!cl) return null;
+  var m=info.mercado==='TOT'?cl.tot:cl.sp; if(!m) return null;
+  if(Math.abs(m.l-info.linea)>1e-9) return {movida:true};
+  var p=m.nv[info.lado]; return (p>0&&p<1)?{p:p}:null;
+}
 function mismoNombre(app,t,extra){
   var a=norm(app); if(!a) return false;
   var cs=[t&&t.displayName,t&&t.shortDisplayName,t&&t.name,t&&t.location,t&&t.abbreviation];
@@ -93,6 +120,11 @@ function infoPick(app,p,extra){
     var lado=mismoNombre(mm[1],{displayName:pr[0]})?'a':(mismoNombre(mm[1],{displayName:pr[1]})?'h':null); if(!lado) return null;
     return {liga:'baseball/mlb',fecha:new Date(+f[1],+f[2]-1,+f[3],12).getTime(),away:pr[0],home:pr[1],lado:lado,ref:p.am,kalshi:(p.plat==='kalshi')};
   }
+  if(app==='nhl'&&(p.mercado==='TOT'||p.mercado==='SPR')){
+    if(!p.ts||!p.aN||!p.hN||!isFinite(+p.linea)||p.linea===null||p.linea==='') return null;
+    var l2=p.mercado==='TOT'?{O:'o',U:'u'}[p.side]:{H:'h',A:'a'}[p.side]; if(!l2) return null;
+    return {liga:'hockey/nhl',fecha:+p.ts,away:p.aN,home:p.hN,lado:l2,ref:p.cuota,exacta:true,mercado:p.mercado,linea:+p.linea};
+  }
   if(app==='nba'||app==='nhl'||app==='nfl'){
     if(p.mercado!=='ML'||(p.side!=='H'&&p.side!=='A')||!p.ts||!p.aN||!p.hN) return null;
     return {liga:{nba:'basketball/nba',nhl:'hockey/nhl',nfl:'football/nfl'}[app],fecha:+p.ts,away:p.aN,home:p.hN,lado:p.side==='H'?'h':'a',ref:p.cuota,exacta:true};
@@ -128,7 +160,7 @@ function scoreboard(liga,fecha){
 function cierreDe(liga,id){
   var k=liga+'|'+id; if(CACHE.core[k]) return CACHE.core[k];
   var par=liga.split('/'), url=CORE+par[0]+'/leagues/'+par[1]+'/events/'+id+'/competitions/'+id+'/odds';
-  return (CACHE.core[k]=getJSON(url).then(leerCierreML).catch(function(e){ delete CACHE.core[k]; throw e; }));
+  return (CACHE.core[k]=getJSON(url).then(function(j){ return {ml:leerCierreML(j),lin:leerCierreLineas(j)}; }).catch(function(e){ delete CACHE.core[k]; throw e; }));
 }
 function eventoDe(info,extra){
   var fs=fechasEspn(info), i=0;
@@ -150,7 +182,7 @@ function nombreExtra(){ return (typeof root.mismoEquipo==='function')?function(a
 function procesar(app){
   var extra=app==='fut'?nombreExtra():null;
   var todos=leer(app), cand=[];
-  var est={rellenados:0,espera:0,sinDato:0,noEncontrado:0,yaTienen:0,total:0};
+  var est={rellenados:0,espera:0,sinDato:0,noEncontrado:0,yaTienen:0,total:0,lineaMovida:0,app:app};
   todos.forEach(function(p){
     var info=infoPick(app,p,extra); if(!info) return;
     est.total++;
@@ -163,7 +195,17 @@ function procesar(app){
       return eventoDe(c.info,extra).then(function(ev){
         if(!ev||ev.doble){ est.noEncontrado++; return; }
         if(ev.estado!=='post'){ est.espera++; return; }
-        return cierreDe(c.info.liga,ev.id).then(function(cl){
+        return cierreDe(c.info.liga,ev.id).then(function(res){
+          if(c.info.mercado){
+            var q=cierreDeLinea(c.info,res.lin);
+            if(!q){ est.sinDato++; return; }
+            if(q.movida){ est.lineaMovida++; return; }
+            var tx=formato(q.p,c.info.ref);
+            if(!tx){ est.sinDato++; return; }
+            cambios.push([c.p.id,{cierre:tx,cierreAuto:true,cierreFuente:'ESPN · '+res.lin.prov+' (sin margen)'}]); est.rellenados++;
+            return;
+          }
+          var cl=res.ml;
           if(!cl){ est.sinDato++; return; }
           if(c.info.lado==='d'&&cl.nv.d==null){ est.sinDato++; return; }
           var pr=cl.nv[c.info.lado], txt=formato(pr,c.info.ref,c.info.kalshi);
@@ -191,8 +233,9 @@ function notaTxt(est){
   if(est.espera) partes.push(est.espera+' esperan a que termine el juego');
   if(est.sinDato) partes.push(est.sinDato+' sin dato en ESPN (puedes escribirlo tú)');
   if(est.noEncontrado) partes.push(est.noEncontrado+' no encontrado'+(est.noEncontrado===1?'':'s')+' (doble jornada o nombre distinto)');
+  if(est.lineaMovida) partes.push(est.lineaMovida+' con la línea movida al cierre (sin CLV: no se comparan líneas distintas)');
   if(!partes.length) return '';
-  return t+partes.join(' · ')+'. Solo picks de ganador (ML / 1X2); el resto, escribe el cierre a mano.';
+  return t+partes.join(' · ')+(est.app==='nhl'?'. Ganador, total y línea de gol; el resto, escribe el cierre a mano.':'. Solo picks de ganador (ML / 1X2); el resto, escribe el cierre a mano.');
 }
 function correr(silencioso){
   if(CORRIENDO) return Promise.resolve(null);
@@ -227,7 +270,7 @@ function armar(){
   setInterval(function(){ pronto(500); },180000);
 }
 
-var API={norm:norm,num:num,americano:americano,impAm:impAm,aAmericano:aAmericano,aCentavos:aCentavos,formato:formato,sinMargen:sinMargen,leerCierreML:leerCierreML,buscarEvento:buscarEvento,infoPick:infoPick,fechasEspn:fechasEspn,notaTxt:notaTxt,procesar:procesar,correr:correr,nota:nota,CLAVES:CLAVES,appActual:appActual};
+var API={norm:norm,num:num,americano:americano,impAm:impAm,aAmericano:aAmericano,aCentavos:aCentavos,formato:formato,sinMargen:sinMargen,leerCierreML:leerCierreML,leerCierreLineas:leerCierreLineas,cierreDeLinea:cierreDeLinea,buscarEvento:buscarEvento,infoPick:infoPick,fechasEspn:fechasEspn,notaTxt:notaTxt,procesar:procesar,correr:correr,nota:nota,CLAVES:CLAVES,appActual:appActual};
 root.OVACierre=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
 if(root.document) armar();
