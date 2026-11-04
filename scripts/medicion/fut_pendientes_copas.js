@@ -9,6 +9,7 @@ const lin = (t, n) => { const m = t.match(new RegExp('var ' + n + '\\s*=\\s*\\{[
 const src = 'var MAXG=8;\n' + cut(html, 'function pmf(lambda)', 'var CLAVES_1X2') + "var CLAVES_1X2=['pL','pD','pV'],CLAVES_GOLES=['o15','o25','o35','btts'];\n" + cut(html, 'function mezclar(d, d0, w, claves)', '// ---------- historial') + cut(html, 'function conSemilla(a, s, S, lp)', 'function cargarSemillaCache') + lin(html, 'PARAMS_DEFECTO') + cut(sel, 'function probsDe(dr, d0)', 'function construirElo') + lin(sel, 'KT') + lin(sel, 'HA');
 const ctx = { Math, Object, console, isFinite }; vm.createContext(ctx); vm.runInContext(src, ctx);
 const X = JSON.parse(fs.readFileSync(process.argv[2]));
+const aTemp = {}; X.forEach(x => { const k = x.tipo + ' ' + (x.cu ? x.cu.prov : 'sin cuota'); aTemp[k] = (aTemp[k] || 0) + 1; }); console.log('partidos por tipo y fuente de cuota', JSON.stringify(aTemp));
 const P0 = ctx.PARAMS_DEFECTO, devig = o => { const i = o.map(v => 1 / v), s = i.reduce((a, b) => a + b, 0); return i.map(v => v / s); }, LOG = p => -Math.log(Math.max(p, 1e-9)), prom = a => a.reduce((x, y) => x + y, 0) / (a.length || 1), est = a => { const m = prom(a), s = Math.sqrt(prom(a.map(v => (v - m) ** 2)) / (a.length || 1)); return { m, s, z: s ? m / s : 0, n: a.length }; };
 const pc = e => (100 * e.m).toFixed(1) + '% ±' + (200 * e.s).toFixed(1) + ' (' + e.n + ')';
 const res90 = x => /AET|PEN|EXTRA|SHOOT/i.test(x.est || '') ? 1 : (x.gh > x.ga ? 0 : x.gh === x.ga ? 1 : 2);
@@ -51,9 +52,11 @@ for (const [conS, etq] of [[false, 'sin historial (lo normal en el teléfono)'],
 }
 // --- Copas nacionales: la app no pronostica; solo el mercado
 { const q = X.filter(x => x.tipo === 'copa').map(x => conMk(x, { y: res90(x), x })); mercado('Copas nacionales (la app no da pronóstico)', q); }
+// --- Control: la misma cuota de ESPN en la Premier; debe parecerse a Pinnacle
+{ const q = X.filter(x => x.tipo === 'control').map(x => conMk(x, { y: res90(x), x })); mercado('Control Premier con cuotas de ESPN (Pinnacle 2023-26 da ≈0.96 de pérdida)', q); const m = q.filter(r => r.mk); console.log('    margen', (100 * prom(m.map(r => r.o.reduce((a, v) => a + 1 / v, 0) - 1))).toFixed(1) + '%'); [[0, .3], [.3, .5], [.5, .7], [.7, 1]].forEach(([a, b]) => { const z = [].concat(...m.map(r => r.mk.map((v, i) => ({ v, ok: r.y === i ? 1 : 0 })))).filter(c => c.v >= a && c.v < b); console.log(`    calibración ${a * 100}-${b * 100}%: n=${z.length} dice ${(100 * prom(z.map(c => c.v))).toFixed(1)} pasó ${(100 * prom(z.map(c => c.ok))).toFixed(1)}`); }); }
 // --- Selecciones: Elo real de selecciones.js
 {
-  const ms = X.filter(x => x.tipo !== 'europa' && x.tipo !== 'copa').sort((a, b) => a.d - b.d);
+  const ms = X.filter(x => !['europa', 'copa', 'control'].includes(x.tipo)).sort((a, b) => a.d - b.d);
   const emp = ms.filter(m => m.gh === m.ga).length, d0 = Math.max(.15, Math.min(.32, emp / ms.length)); console.log('\nSelecciones: partidos', ms.length, 'd0', d0.toFixed(3));
   const R = {}, frc = [1, 1, 1]; let nf = 3; const out = [];
   for (const m of ms) {
