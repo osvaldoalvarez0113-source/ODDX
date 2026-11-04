@@ -331,6 +331,7 @@ function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u
    } else {
     nota = 'Todavía no hay suficientes partidos para chequear qué tan bien acierta este Elo.';
    }
+   nota += ' Contra las cuotas (2,197 partidos) el mercado le gana: error 0.829 contra 0.904, y apostar donde el Elo se separa perdió −21%. Es referencia, no valor.';
    h += '<div class="nota" style="margin-top:6px">'+nota+' '+(ha ? 'Incluye ventaja de local (+'+ha+') por ser '+TIPO_TXT[tipoComp]+'.' : 'Sin ventaja de local (amistosos y torneos suelen ser en cancha neutral).')+
     ' No sabe de lesiones, alineaciones ni de lo que se juega cada equipo: úsalo como referencia, no como pick.</div>';
    return h;

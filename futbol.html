@@ -2201,7 +2201,7 @@ function resumenVeredictoF(p, base, id){
 
   var v = leerVeredictos(LIGA_ACTUAL), li = [];
   var L = function(c, t){ return '<div><i class="'+c+'">'+(c==='ok'?'✓':(c==='w'?'!':'✗'))+'</i><span>'+t+'</span></div>'; };
-  if(!r.dc) li.push(L('w','Modelo básico (copas o ligas menores): sin medir contra el mercado.'));
+  if(!r.dc) li.push(L('w','Modelo básico: en copas europeas (1,143 partidos) el mercado le gana por mucho, error 0.928 contra 0.998. Solo referencia, no valor.'));
   if(f && m.src==='pred'){ li.push(L(m.fino?'w':'ok', m.vivo ? 'Precio EN VIVO de Polymarket (se actualiza cada pocos minutos).'+(m.fino?' Ojo: hay poco dinero en este mercado.':'') : 'Precio de Polymarket: no hay Pinnacle para este partido.'+(m.fino?' Ojo: hay poco dinero en este mercado.':''))); }
   else if(f){ var mn = Math.max(0, Math.round((Date.now()-Date.parse(PIN_F.generado))/60000)); li.push(L(mn>180?'w':'ok','Precios de Pinnacle de hace '+(mn<90?mn+' min':Math.round(mn/60)+' h')+'.')); }
   else li.push(L('w','Sin precios de Pinnacle ni de Polymarket para este partido.'));
@@ -2210,7 +2210,7 @@ function resumenVeredictoF(p, base, id){
   if(v && v.ou!==undefined && v.bt!==undefined){
     var gan = veredictoDe(v.ou).t==='✓ le gana' && veredictoDe(v.bt).t==='✓ le gana';
     li.push(gan ? L('ok','Más/Menos y Ambos anotan le ganan a la frecuencia de la liga.') : L('w','Más/Menos y Ambos anotan no le ganan a la frecuencia de la liga: solo referencia.'));
-  } else li.push(L('w','Más/Menos y Ambos anotan: no medidos en este teléfono (en tu backtest no le ganaron a la frecuencia de la liga). Solo referencia.'));
+  } else li.push(L('w','Más/Menos y Ambos anotan: no medidos en este teléfono. En las 5 grandes ligas Ambos anotan sí le gana a la frecuencia (error 0.684 contra 0.688), pero no hay cuota real con qué compararlo. Solo referencia.'));
   try{
     var pocos = [];
     if(DCFIT && DCFIT.eq && !LIGA_ES_COPA) [p.local, p.visita].forEach(function(nm){ var e = DCFIT.eq[claveEq(nm)]; if(e && e.n < 20) pocos.push(nm+' ('+e.n+' partidos)'); });
@@ -2231,7 +2231,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
     '<b>Qué tan confiable es:</b> probado en 5,708 partidos de las 5 grandes ligas (2023-24 a hoy) contra las cuotas de cierre, el mercado acierta más que este modelo (error 0.963 contra 0.986). '+
     'Así que es una referencia, no una ventaja. No sabe de lesiones ni de alineaciones.' :
     '<b>Cómo se calcula:</b> con los goles que cada equipo lleva a favor y en contra en la tabla de esta competencia. '+
-    '<b>Qué tan confiable es:</b> menos que en las 5 grandes ligas. Con pocos partidos jugados los números se mueven mucho, y este modo no se ha medido contra las cuotas del mercado. '+
+    '<b>Qué tan confiable es:</b> menos que en las 5 grandes ligas. Con pocos partidos jugados los números se mueven mucho, y en copas europeas el mercado acierta bastante más que este modo (error 0.928 contra 0.998). '+
     'Úsalo solo como referencia, no como ventaja. No sabe de lesiones ni de alineaciones.'+
     '<br><br><b>Detalles técnicos:</b> '+'Modelo Poisson con encogimiento (K='+PARAMS.K+'), localía (h='+PARAMS.h+') y corrección de marcadores bajos (ρ='+PARAMS.rho+')'+(PARAMS.w<1?', confianza reducida (w='+PARAMS.w+')':'')+(PARAMS.S&&Object.keys(SEMILLA).length?', con historial de la temporada pasada (S='+PARAMS.S+')':'')+'. Más/Menos y Ambos anotan usan su propio encogimiento fuerte (K='+PARAMS.Kt+', w='+PARAMS.wt+'). Parámetros: '+estadoParams+'. Sin lesiones ni alineaciones. Datos en vivo de worldfootball.net.';
 

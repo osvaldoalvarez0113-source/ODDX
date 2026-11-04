@@ -66,10 +66,7 @@ Por temporada, ≥2 pts a Pinnacle: −9.6%, −3.6%, −8.4%, −14.5%, −11.6
 
 ## Qué no se midió
 
-- Lesiones y alineaciones: no hay histórico de bajas.
-- Champions, copas y selecciones: football-data no las trae con este formato, así que el modelo básico sigue sin medirse contra el mercado.
-- Ambos anotan: no hay cuota histórica en esta fuente.
-- Los picks reales de «Mis picks»: viven en el teléfono, no en el repo. Son la única medida de cuotas que se toman antes del cierre.
+Ya está medido en [`MEDICION-FUTBOL-PENDIENTES-2026-11.md`](MEDICION-FUTBOL-PENDIENTES-2026-11.md): Ambos anotan, alineaciones, copas, selecciones y cuota previa. Sigue faltando lo que allí se detalla, como los picks reales.
 
 ## Cómo repetirlo
 

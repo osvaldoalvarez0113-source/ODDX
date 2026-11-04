@@ -41,6 +41,7 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 | `docs/AUDITORIA-2-2026-10.md` | Segunda auditoría: nombres de ESPN limpios en el origen, peticiones compartidas en MLB, botones tocables. |
 | `docs/MEDICION-PICKS-APP-2026-10.md` | **Qué habría dicho la app en 2024-2026 y cuánto habría rendido** (6,171 juegos de MLB, cuota de cierre): ningún titular gana de forma comprobable, el número de la app dice más de lo que pasa (50.5% vs 45.8%) y el stake sobre el número crudo hundía la banca ($1,000 → $524; sobre la mezcla con el mercado, $981). Scripts en `scripts/medicion/picks_app.js` y `analisis_picks.py`. |
 | `docs/MEDICION-MESA-2026-10.md` | Medición con datos reales de las reglas de la Mesa (cortes, coincidencia con el mercado, mezcla modelo+mercado). Scripts en `scripts/medicion/`. |
+| `docs/MEDICION-FUTBOL-PENDIENTES-2026-11.md` | Fútbol: Ambos anotan, cuota previa, alineaciones, copas y selecciones. |
 | `docs/MEDICION-FUTBOL-MOTOR-REAL-2026-11.md` | **Medición vigente de fútbol**: motor real de `futbol.html`, datos hasta 2026-27. Se repite con el workflow «Medir futbol con el motor real». |
 | `docs/MEDICION-FUTBOL-LOCAL-ELO-2026-10.md` | Medición de ratings local/visita, Elo, mezcla con el mercado y descanso en fútbol (ninguno aporta lo suficiente). Se repite con el workflow «Experimento de futbol». |
 | `.github/workflows/` | Ver la tabla «Workflows de GitHub Actions» más abajo. |
@@ -88,6 +89,7 @@ Todos en `.github/workflows/`. «OddsPapi» = gasta llamadas del plan (250 al me
 
 | Workflow | Cuándo corre | Qué hace | OddsPapi |
 |---|---|---|---|
+| `futbol-pendientes.yml` | a mano o al subir a la rama `medir-pendientes` | mide Ambos anotan, cuota previa, alineaciones, copas y selecciones (resultado en `resultados-futbol-pendientes`) | no |
 | `futbol-actual.yml` | a mano o al subir a la rama `futbol-actual` | mide fútbol con el motor real y datos al día (resultado en `resultados-futbol-actual`) | no |
 | `pruebas.yml` | en cada subida a `main` y en pull requests | corre `pruebas.js` (sintaxis, nombres, modelos, hub, respaldo…). Una X roja = algo se rompió | no |
 | `valor-pinnacle.yml` | 2 veces al día, de marzo a octubre | escáner MLB → `pinnacle-datos.json` (tope 100 al mes) | sí |
