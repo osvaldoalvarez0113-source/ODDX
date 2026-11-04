@@ -2,13 +2,20 @@
 // Piezas comunes de las pruebas de jugadores (MLB, NBA, fútbol): bajar datos, estadística y formato.
 const dormir = ms => new Promise(r => setTimeout(r, ms));
 const errores = [];
+// Ritmo suave para no cargar a ESPN: PAUSA_MS entre pedidos. Si el servidor rechaza muchos seguidos, se detiene en vez de insistir.
+const PAUSA = parseInt(process.env.PAUSA_MS || '0', 10); let siguiente = 0, rechazos = 0, detenido = false;
+const LIMITE = parseInt(process.env.LIMITE_RECHAZOS || '40', 10);
+async function turno() { if (!PAUSA) return; const ahora = Date.now(), t = Math.max(ahora, siguiente); siguiente = t + PAUSA; if (t > ahora) await dormir(t - ahora); }
 async function pedir(url, opts) {
   opts = opts || {};
+  if (detenido) throw new Error('detenido: el servidor sigue rechazando');
   for (let i = 0; i < 5; i++) {
-    let r;
+    let r; await turno();
     try { r = await fetch(url, { headers: { accept: 'application/json', 'user-agent': 'Mozilla/5.0 (ova-experimento-jugadores)' } }); }
     catch (e) { if (i === 4) throw e; await dormir(800 * (i + 1)); continue; }
+    if (r.status === 403 && PAUSA) { if (++rechazos >= LIMITE) { detenido = true; console.log('DETENIDO tras ' + rechazos + ' rechazos seguidos (403)'); throw new Error('detenido: 403 repetido'); } await dormir(15000 * (i + 1)); continue; }
     if (r.status === 429 || r.status === 503 || r.status === 502) { await dormir(1200 * (i + 1)); continue; }
+    rechazos = 0;
     if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + url.slice(0, 120));
     return opts.texto ? r.text() : r.json();
   }

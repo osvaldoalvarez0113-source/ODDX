@@ -29,10 +29,12 @@ function cuotas(pc) {
       ev.set(sl + e.id, { id: String(e.id), sl, tipo: todos[sl], d: Date.parse(e.date), h: h.team.displayName, a: v.team.displayName, gh, ga, est: st.name, neutral: !!c.neutralSite, nota: (c.notes && c.notes[0] && c.notes[0].headline) || (e.season && e.season.slug) || '' });
     } catch (x) {} });
   })));
-  await pool(tareas, 8, (h, t) => { if (h % 200 === 0) console.log('calendario ' + h + '/' + t); });
+  await pool(tareas, 2, (h, t) => { if (h % 200 === 0) console.log('calendario ' + h + '/' + t); });
   const lista = [...ev.values()]; console.log('partidos', lista.length);
   let muestra = null;
-  await pool(lista.map(x => async () => { const j = await pedir(ESPN + x.sl + '/summary?event=' + x.id); const pc = j && j.pickcenter && j.pickcenter[0]; if (pc) { if (!muestra) muestra = pc; x.cu = cuotas(pc); } }), 8, (h, t) => { if (h % 1000 === 0) console.log('cuotas ' + h + '/' + t); });
+  // cuotas: todo desde 2023; antes, 1 de cada 40 solo para ver si ESPN las guardaba
+  const pedirCuota = lista.filter((x, i) => x.d >= Date.UTC(2023, 0, 1) || i % 40 === 0); console.log('cuotas a pedir', pedirCuota.length);
+  await pool(pedirCuota.map(x => async () => { const j = await pedir(ESPN + x.sl + '/summary?event=' + x.id); const pc = j && j.pickcenter && j.pickcenter[0]; if (pc) { if (!muestra) muestra = pc; x.cu = cuotas(pc); } }), 2, (h, t) => { if (h % 1000 === 0) console.log('cuotas ' + h + '/' + t); });
   console.log('muestra pickcenter:', JSON.stringify(muestra).slice(0, 1200));
   const res = {}; lista.forEach(x => { const a = new Date(x.d).getUTCFullYear(), k = x.sl + ' ' + a; const r = res[k] || (res[k] = [0, 0, 0]); r[0]++; if (x.cu && x.cu.c) r[1]++; if (x.cu && x.cu.o) r[2]++; });
   Object.keys(res).sort().forEach(k => console.log(k, 'partidos', res[k][0], 'con cierre', res[k][1], 'con apertura', res[k][2]));

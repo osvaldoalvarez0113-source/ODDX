@@ -24,12 +24,16 @@ jobs:
         run: DUMP=partidos_v22.json node scripts/medicion/fut_pendientes_ligas.js partidos_actual.json 2>&1 | tee salida_ligas.txt
       - name: Bajar copas y selecciones
         continue-on-error: true
+        env:
+          PAUSA_MS: "250"
         run: node scripts/medicion/bajar_copas.js partidos_copas.json 2>&1 | tee salida_bajar_copas.txt
       - name: Copas y selecciones
         continue-on-error: true
         run: node scripts/medicion/fut_pendientes_copas.js partidos_copas.json 2>&1 | tee salida_copas.txt
       - name: Alineaciones
         continue-on-error: true
+        env:
+          PAUSA_MS: "250"
         run: DATOS_FUTBOL=partidos_v22.json node scripts/medicion/jugadores/futbol.js 2>&1 | tee salida_alineaciones.txt
       - name: Guardar el resultado en la rama resultados-futbol-pendientes
         if: always()

@@ -70,7 +70,7 @@ async function main() {
   // 1) calendario ESPN por liga y fecha
   const claves = [...new Set(datos.map(x => LIGAS[x.lg] + '|' + ymd(new Date(x.d))))];
   console.log('calendarios a bajar: ' + claves.length);
-  await pool(claves.map(k => () => { const [lg, fch] = k.split('|'); return eventosDe(lg, fch); }), 8, (h, t) => { if (h % 500 === 0) console.log('  calendario ' + h + '/' + t); });
+  await pool(claves.map(k => () => { const [lg, fch] = k.split('|'); return eventosDe(lg, fch); }), 2, (h, t) => { if (h % 500 === 0) console.log('  calendario ' + h + '/' + t); });
   // 2) cruzar por fecha + marcador + nombre
   const buscar = async (x, desp) => {
     const lg = LIGAS[x.lg], d = new Date(x.d + desp * 864e5), ev = await eventosDe(lg, ymd(d)).catch(() => []);
@@ -89,7 +89,7 @@ async function main() {
   say('Cruzados con ESPN: ' + cruz.length + ' de ' + datos.length + ' (sin par ' + sinPar + ', ambiguos/nombres distintos ' + ambiguo + ')');
   // 3) alineaciones
   console.log('Bajando alineaciones de ' + cruz.length + ' partidos...');
-  const sums = await pool(cruz.map(c => async () => leerAlineacion(await pedir(ESPN + c.ev.lg + '/summary?event=' + c.ev.id))), 8, (h, t) => { if (h % 500 === 0) console.log('  alineaciones ' + h + '/' + t); });
+  const sums = await pool(cruz.map(c => async () => leerAlineacion(await pedir(ESPN + c.ev.lg + '/summary?event=' + c.ev.id))), 2, (h, t) => { if (h % 500 === 0) console.log('  alineaciones ' + h + '/' + t); });
   const P = []; let sinAl = 0, sinOnce = 0, conGA = 0;
   cruz.forEach((c, i) => {
     const al = sums[i]; sums[i] = null; if (!al) { sinAl++; return; }
