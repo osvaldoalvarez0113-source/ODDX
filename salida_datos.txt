@@ -1,0 +1,46 @@
+1819 E0 380 partidos {"Pinnacle cierre":380} último 2019-05-12
+1819 SP1 380 partidos {"Pinnacle cierre":380} último 2019-05-19
+1819 I1 380 partidos {"Pinnacle cierre":380} último 2019-05-26
+1819 D1 306 partidos {"Pinnacle cierre":305,"Bet365 previo":1} último 2019-05-18
+1819 F1 380 partidos {"Pinnacle cierre":380} último 2019-05-24
+1920 E0 380 partidos {"Pinnacle cierre":380} último 2020-07-26
+1920 SP1 380 partidos {"Pinnacle cierre":380} último 2020-07-19
+1920 I1 380 partidos {"Pinnacle cierre":380} último 2020-08-02
+1920 D1 306 partidos {"Pinnacle cierre":306} último 2020-06-27
+1920 F1 279 partidos {"Pinnacle cierre":279} último 2020-03-08
+2021 E0 380 partidos {"Pinnacle cierre":380} último 2021-05-23
+2021 SP1 380 partidos {"Pinnacle cierre":380} último 2021-05-23
+2021 I1 380 partidos {"Pinnacle cierre":380} último 2021-05-23
+2021 D1 306 partidos {"Pinnacle cierre":306} último 2021-05-22
+2021 F1 380 partidos {"Pinnacle cierre":380} último 2021-05-23
+2122 E0 380 partidos {"Pinnacle cierre":380} último 2022-05-22
+2122 SP1 380 partidos {"Pinnacle cierre":380} último 2022-05-22
+2122 I1 380 partidos {"Pinnacle cierre":380} último 2022-05-22
+2122 D1 306 partidos {"Pinnacle cierre":306} último 2022-05-14
+2122 F1 380 partidos {"Pinnacle cierre":380} último 2022-05-21
+2223 E0 380 partidos {"Pinnacle cierre":380} último 2023-05-28
+2223 SP1 380 partidos {"Pinnacle cierre":380} último 2023-06-04
+2223 I1 380 partidos {"Pinnacle cierre":380} último 2023-06-04
+2223 D1 306 partidos {"Pinnacle cierre":306} último 2023-05-27
+2223 F1 380 partidos {"Pinnacle cierre":380} último 2023-06-03
+2324 E0 380 partidos {"Pinnacle cierre":380} último 2024-05-19
+2324 SP1 380 partidos {"Pinnacle cierre":380} último 2024-05-26
+2324 I1 380 partidos {"Pinnacle cierre":380} último 2024-06-02
+2324 D1 306 partidos {"Pinnacle cierre":306} último 2024-05-18
+2324 F1 306 partidos {"Pinnacle cierre":306} último 2024-05-19
+2425 E0 380 partidos {"Pinnacle cierre":380} último 2025-05-25
+2425 SP1 380 partidos {"Pinnacle cierre":380} último 2025-05-25
+2425 I1 380 partidos {"Pinnacle cierre":380} último 2025-05-25
+2425 D1 306 partidos {"Pinnacle cierre":306} último 2025-05-17
+2425 F1 306 partidos {"Pinnacle cierre":306} último 2025-05-17
+2526 E0 380 partidos {"Pinnacle cierre":210,"Promedio cierre":170} último 2026-05-24
+2526 SP1 380 partidos {"Pinnacle cierre":188,"Promedio cierre":192} último 2026-05-24
+2526 I1 380 partidos {"Pinnacle cierre":198,"Promedio cierre":182} último 2026-05-24
+2526 D1 306 partidos {"Pinnacle cierre":149,"Promedio cierre":157} último 2026-05-16
+2526 F1 306 partidos {"Pinnacle cierre":153,"Promedio cierre":153} último 2026-05-17
+2627 E0 90 partidos {"Promedio cierre":90} último 2026-11-02
+2627 SP1 109 partidos {"Promedio cierre":109} último 2026-11-02
+2627 I1 100 partidos {"Promedio cierre":100} último 2026-11-02
+2627 D1 72 partidos {"Promedio cierre":72} último 2026-11-01
+2627 F1 81 partidos {"Promedio cierre":81} último 2026-11-02
+total 14737

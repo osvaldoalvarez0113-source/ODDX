@@ -1,0 +1,151 @@
+temporadas 1819 1920 2021 2122 2223 2324 2425 2526 2627 | config app {"xi":1,"Kp":5,"rho":-0.06,"promo":1,"wt":0.5,"win":1100,"ligas":{"pl":1,"laliga":1,"seriea":1,"bundesliga":1,"ligue1":1}}
+ajuste xi=0.3                      n=3652 1X2 0.9967 mercado 0.9753 dif 0.0214 z6.9 | M/M 0.6825 mercado 0.6729 (3652)
+ajuste xi=0.5                      n=3652 1X2 0.9961 mercado 0.9753 dif 0.0207 z6.9 | M/M 0.6825 mercado 0.6729 (3652)
+ajuste xi=0.8                      n=3652 1X2 0.9955 mercado 0.9753 dif 0.0201 z6.8 | M/M 0.6826 mercado 0.6729 (3652)
+ajuste xi=1                        n=3652 1X2 0.9953 mercado 0.9753 dif 0.0199 z6.8 | M/M 0.6827 mercado 0.6729 (3652)
+ajuste xi=1.2                      n=3652 1X2 0.9953 mercado 0.9753 dif 0.0199 z6.8 | M/M 0.6828 mercado 0.6729 (3652)
+ajuste xi=1.6                      n=3652 1X2 0.9957 mercado 0.9753 dif 0.0204 z6.8 | M/M 0.6831 mercado 0.6729 (3652)
+ajuste xi=2.2                      n=3652 1X2 0.9973 mercado 0.9753 dif 0.0219 z7.1 | M/M 0.6837 mercado 0.6729 (3652)
+ajuste wt=0.3 M/M 0.6840
+ajuste wt=0.5 M/M 0.6827
+ajuste wt=0.7 M/M 0.6829
+ajuste wt=0.85 M/M 0.6841
+ajuste wt=1 M/M 0.6862
+elegidos en 2021-23: xi 1.2 wt 0.5
+ANTERIOR (todas)                   n=12911 1X2 0.9934 mercado 0.9697 dif 0.0237 z14.5 | M/M 0.6792 mercado 0.6674 (12911)
+ANTERIOR (prueba)                  n=5708 1X2 0.9897 mercado 0.9629 dif 0.0267 z11.3 | M/M 0.6773 mercado 0.6643 (5708)
+xi/wt nuevos (prueba)              n=5708 1X2 0.9887 mercado 0.9629 dif 0.0258 z11.0 | M/M 0.6770 mercado 0.6643 (5708)
+  app 1920                         n=1725 1X2 0.9904 mercado 0.9724 dif 0.0180 z3.5 | M/M 0.6729 mercado 0.6584 (1725)
+  nuevo 1920                       n=1725 1X2 0.9891 mercado 0.9724 dif 0.0167 z3.3 | M/M 0.6730 mercado 0.6584 (1725)
+  app 2021                         n=1826 1X2 1.0037 mercado 0.9773 dif 0.0263 z6.0 | M/M 0.6835 mercado 0.6749 (1826)
+  nuevo 2021                       n=1826 1X2 1.0028 mercado 0.9773 dif 0.0255 z5.9 | M/M 0.6829 mercado 0.6749 (1826)
+  app 2122                         n=1826 1X2 0.9976 mercado 0.9758 dif 0.0218 z5.0 | M/M 0.6833 mercado 0.6719 (1826)
+  nuevo 2122                       n=1826 1X2 0.9964 mercado 0.9758 dif 0.0207 z4.8 | M/M 0.6830 mercado 0.6719 (1826)
+  app 2223                         n=1826 1X2 0.9939 mercado 0.9749 dif 0.0189 z4.7 | M/M 0.6830 mercado 0.6739 (1826)
+  nuevo 2223                       n=1826 1X2 0.9941 mercado 0.9749 dif 0.0192 z4.8 | M/M 0.6827 mercado 0.6739 (1826)
+  app 2324                         n=1752 1X2 0.9814 mercado 0.9525 dif 0.0289 z7.0 | M/M 0.6707 mercado 0.6586 (1752)
+  nuevo 2324                       n=1752 1X2 0.9808 mercado 0.9525 dif 0.0283 z6.9 | M/M 0.6703 mercado 0.6586 (1752)
+  app 2425                         n=1752 1X2 0.9872 mercado 0.9606 dif 0.0266 z6.2 | M/M 0.6783 mercado 0.6649 (1752)
+  nuevo 2425                       n=1752 1X2 0.9863 mercado 0.9606 dif 0.0257 z6.0 | M/M 0.6779 mercado 0.6649 (1752)
+  app 2526                         n=1752 1X2 1.0029 mercado 0.9780 dif 0.0250 z5.9 | M/M 0.6849 mercado 0.6733 (1752)
+  nuevo 2526                       n=1752 1X2 1.0021 mercado 0.9780 dif 0.0242 z5.7 | M/M 0.6846 mercado 0.6733 (1752)
+  app 2627                         n=452 1X2 0.9795 mercado 0.9542 dif 0.0253 z2.8 | M/M 0.6697 mercado 0.6487 (452)
+  nuevo 2627                       n=452 1X2 0.9766 mercado 0.9542 dif 0.0224 z2.5 | M/M 0.6704 mercado 0.6487 (452)
+nuevo - app, prueba: 1X2 -0.00096 z -3.32 | M/M -0.00029 z -2.04
+   2324 1X2 -0.00060 M/M -0.00036
+   2425 1X2 -0.00097 M/M -0.00041
+   2526 1X2 -0.00079 M/M -0.00036
+   2627 1X2 -0.00298 M/M 0.00070
+ajuste hist=2 xi=0.8               n=3652 1X2 0.9927 mercado 0.9753 dif 0.0174 z6.2 | M/M 0.6824 mercado 0.6729 (3652)
+ajuste hist=2 xi=1                 n=3652 1X2 0.9927 mercado 0.9753 dif 0.0173 z6.2 | M/M 0.6825 mercado 0.6729 (3652)
+ajuste hist=2 xi=1.2               n=3652 1X2 0.9929 mercado 0.9753 dif 0.0176 z6.3 | M/M 0.6826 mercado 0.6729 (3652)
+ajuste hist=2 xi=1.6               n=3652 1X2 0.9939 mercado 0.9753 dif 0.0185 z6.5 | M/M 0.6829 mercado 0.6729 (3652)
+ajuste hist=2 xi=2.2               n=3652 1X2 0.9962 mercado 0.9753 dif 0.0209 z6.9 | M/M 0.6836 mercado 0.6729 (3652)
+elegida hist=2: xi 1
+hist=2 (prueba)                    n=5708 1X2 0.9858 mercado 0.9629 dif 0.0228 z10.4 | M/M 0.6761 mercado 0.6643 (5708)
+hist2 - app, prueba: 1X2 -0.00389 z -4.62 | M/M -0.00118 z -2.80
+   2324 -0.00379
+   2425 -0.00219
+   2526 -0.00465
+   2627 -0.00787
+hist2 - xi nuevo con hist1: -0.00293 z -4.14
+--- ANTERIOR, todas ---
+hasta 4  n= 4078 (31.6%) | modelo 0.9752 mercado 0.9729 | lado del modelo: dice 35.7% mercado 33.6% pasó 33.4% | ROI Pinnacle -2.3% ±5.7 (3599)
+4 a 8    n= 4230 (32.8%) | modelo 1.0033 mercado 0.9935 | lado del modelo: dice 35.9% mercado 30.8% pasó 29.8% | ROI Pinnacle -7.2% ±5.5 (3828)
+8 a 12   n= 2593 (20.1%) | modelo 1.0028 mercado 0.9704 | lado del modelo: dice 35.2% mercado 27.0% pasó 25.5% | ROI Pinnacle -7.7% ±7.8 (2351)
+12+      n= 2010 (15.6%) | modelo 0.9977 mercado 0.9125 | lado del modelo: dice 36.2% mercado 23.4% pasó 21.3% | ROI Pinnacle -10.5% ±9.7 (1827)
+ROI apostando donde modelo > mercado: ≥2: -7.0% ±3.6 (9936) | ≥4: -7.3% ±4.3 (7201) | ≥6: -8.9% ±5.1 (4847) | ≥8: -8.3% ±6.5 (3057) | ≥10: -6.7% ±8.2 (1846)
+ROI ≥2 por temporada: 1920:5.1%(1498) 2021:-6.9%(1583) 2122:-5.9%(1574) 2223:-5.9%(1537) 2324:-13.8%(1462) 2425:-11.6%(1508) 2526:-12.7%(774) 2627:0.0%(0)
+ROI ≥2 a cuota promedio, por temporada: 1920:2.2%(1498) 2021:-10.6%(1583) 2122:-9.2%(1574) 2223:-8.6%(1537) 2324:-16.0%(1462) 2425:-14.1%(1508) 2526:-14.4%(1470) 2627:-15.4%(387)
+ROI a cuota promedio: ≥2: -10.3% ±3.3 (11019) | ≥4: -10.4% ±3.9 (7953) | ≥6: -12.4% ±4.7 (5316) | ≥8: -11.7% ±5.9 (3366) | ≥10: -10.7% ±7.5 (2027)
+--- ANTERIOR, prueba ---
+hasta 4  n= 1877 (32.9%) | modelo 0.9753 mercado 0.9725 | lado del modelo: dice 35.7% mercado 33.6% pasó 32.4% | ROI Pinnacle -5.3% ±9.1 (1398)
+4 a 8    n= 1888 (33.1%) | modelo 1.0009 mercado 0.9880 | lado del modelo: dice 36.0% mercado 30.9% pasó 28.9% | ROI Pinnacle -9.8% ±8.7 (1486)
+8 a 12   n= 1107 (19.4%) | modelo 0.9831 mercado 0.9491 | lado del modelo: dice 35.1% mercado 27.0% pasó 25.2% | ROI Pinnacle -17.1% ±11.1 (865)
+12+      n=  836 (14.6%) | modelo 1.0053 mercado 0.9030 | lado del modelo: dice 36.3% mercado 23.5% pasó 20.3% | ROI Pinnacle -20.9% ±13.8 (653)
+ROI apostando donde modelo > mercado: ≥2: -12.7% ±5.4 (3744) | ≥4: -14.8% ±6.3 (2685) | ≥6: -15.9% ±7.7 (1785) | ≥8: -16.0% ±9.8 (1082) | ≥10: -12.2% ±12.9 (652)
+ROI ≥2 por temporada: 2324:-13.8%(1462) 2425:-11.6%(1508) 2526:-12.7%(774) 2627:0.0%(0)
+ROI ≥2 a cuota promedio, por temporada: 2324:-16.0%(1462) 2425:-14.1%(1508) 2526:-14.4%(1470) 2627:-15.4%(387)
+ROI a cuota promedio: ≥2: -14.9% ±4.6 (4827) | ≥4: -16.3% ±5.4 (3437) | ≥6: -18.4% ±6.6 (2254) | ≥8: -17.8% ±8.3 (1391) | ≥10: -16.1% ±10.9 (833)
+--- nuevos, prueba ---
+hasta 4  n= 1910 (33.5%) | modelo 0.9655 mercado 0.9631 | lado del modelo: dice 35.6% mercado 33.5% pasó 32.3% | ROI Pinnacle -5.7% ±8.4 (1427)
+4 a 8    n= 1921 (33.7%) | modelo 1.0058 mercado 0.9955 | lado del modelo: dice 36.0% mercado 30.9% pasó 29.7% | ROI Pinnacle -6.8% ±9.2 (1510)
+8 a 12   n= 1073 (18.8%) | modelo 0.9837 mercado 0.9477 | lado del modelo: dice 35.7% mercado 27.5% pasó 24.5% | ROI Pinnacle -22.8% ±11.0 (830)
+12+      n=  804 (14.1%) | modelo 1.0095 mercado 0.9051 | lado del modelo: dice 37.1% mercado 24.2% pasó 21.0% | ROI Pinnacle -18.9% ±14.1 (635)
+ROI apostando donde modelo > mercado: ≥2: -11.4% ±5.5 (3717) | ≥4: -15.0% ±6.3 (2684) | ≥6: -16.6% ±7.6 (1746) | ≥8: -13.7% ±10.0 (1064) | ≥10: -12.8% ±12.9 (633)
+ROI ≥2 por temporada: 2324:-12.4%(1450) 2425:-10.2%(1500) 2526:-11.9%(767) 2627:0.0%(0)
+ROI ≥2 a cuota promedio, por temporada: 2324:-14.7%(1450) 2425:-12.9%(1500) 2526:-15.3%(1473) 2627:-16.8%(387)
+ROI a cuota promedio: ≥2: -14.5% ±4.6 (4810) | ≥4: -16.5% ±5.4 (3427) | ≥6: -18.5% ±6.5 (2209) | ≥8: -16.8% ±8.5 (1356) | ≥10: -16.4% ±11.0 (802)
+--- M/M 2.5 APP ---
+0-3 n=4259 ROI -4.1% ±3.1
+3-6 n=3285 ROI -3.1% ±3.8
+6-10 n=2613 ROI -8.6% ±4.5
+10-100 n=1377 ROI -8.6% ±6.8
+--- M/M 2.5 nuevos prueba ---
+0-3 n=1655 ROI -7.1% ±5.0
+3-6 n=1267 ROI -5.0% ±6.1
+6-10 n=948 ROI -5.1% ±7.6
+10-100 n=486 ROI -14.2% ±11.3
+=== FINAL (2 temporadas de historial, xi 1.0) ===
+FINAL (todas)                      n=11186 1X2 0.9906 mercado 0.9693 dif 0.0213 z13.3 | M/M 0.6793 mercado 0.6688 (11186)
+FINAL (prueba)                     n=5708 1X2 0.9858 mercado 0.9629 dif 0.0228 z10.4 | M/M 0.6761 mercado 0.6643 (5708)
+  final 2021                       n=1826 1X2 1.0016 mercado 0.9773 dif 0.0242 z5.8 | M/M 0.6826 mercado 0.6749 (1826)
+  final 2122                       n=1826 1X2 0.9928 mercado 0.9758 dif 0.0170 z4.1 | M/M 0.6820 mercado 0.6719 (1826)
+  final 2223                       n=1826 1X2 0.9926 mercado 0.9749 dif 0.0177 z4.7 | M/M 0.6830 mercado 0.6739 (1826)
+  final 2324                       n=1752 1X2 0.9776 mercado 0.9525 dif 0.0251 z6.5 | M/M 0.6698 mercado 0.6586 (1752)
+  final 2425                       n=1752 1X2 0.9851 mercado 0.9606 dif 0.0245 z6.1 | M/M 0.6772 mercado 0.6649 (1752)
+  final 2526                       n=1752 1X2 0.9983 mercado 0.9780 dif 0.0203 z5.2 | M/M 0.6827 mercado 0.6733 (1752)
+  final 2627                       n=452 1X2 0.9717 mercado 0.9542 dif 0.0175 z2.1 | M/M 0.6710 mercado 0.6487 (452)
+--- FINAL, todas ---
+hasta 4  n= 3967 (35.5%) | modelo 0.9733 mercado 0.9708 | lado del modelo: dice 35.6% mercado 33.6% pasó 32.9% | ROI Pinnacle -5.0% ±5.7 (3461)
+4 a 8    n= 3845 (34.4%) | modelo 0.9935 mercado 0.9828 | lado del modelo: dice 35.4% mercado 30.4% pasó 29.8% | ROI Pinnacle -6.6% ±5.8 (3408)
+8 a 12   n= 2060 (18.4%) | modelo 1.0058 mercado 0.9738 | lado del modelo: dice 35.3% mercado 27.1% pasó 25.0% | ROI Pinnacle -13.0% ±8.6 (1844)
+12+      n= 1314 (11.7%) | modelo 1.0104 mercado 0.9184 | lado del modelo: dice 36.9% mercado 24.3% pasó 21.5% | ROI Pinnacle -12.2% ±11.3 (1167)
+ROI apostando donde modelo > mercado: ≥2: -10.0% ±3.8 (8199) | ≥4: -10.0% ±4.6 (5666) | ≥6: -11.6% ±5.7 (3569) | ≥8: -10.7% ±7.2 (2176) | ≥10: -11.1% ±9.4 (1222)
+ROI ≥2 por temporada: 2021:-9.6%(1526) 2122:-3.6%(1502) 2223:-8.4%(1523) 2324:-14.5%(1422) 2425:-11.6%(1474) 2526:-14.8%(752) 2627:0.0%(0)
+ROI ≥2 a cuota promedio, por temporada: 2021:-13.1%(1526) 2122:-7.0%(1502) 2223:-11.0%(1523) 2324:-16.8%(1422) 2425:-14.1%(1474) 2526:-15.7%(1432) 2627:-4.8%(376)
+ROI a cuota promedio: ≥2: -12.5% ±3.4 (9255) | ≥4: -12.4% ±4.2 (6369) | ≥6: -15.3% ±5.2 (3996) | ≥8: -14.4% ±6.5 (2422) | ≥10: -14.5% ±8.6 (1364)
+--- FINAL, prueba ---
+hasta 4  n= 2062 (36.1%) | modelo 0.9690 mercado 0.9664 | lado del modelo: dice 35.4% mercado 33.3% pasó 31.8% | ROI Pinnacle -11.6% ±7.6 (1556)
+4 a 8    n= 1962 (34.4%) | modelo 0.9938 mercado 0.9803 | lado del modelo: dice 35.2% mercado 30.2% pasó 28.5% | ROI Pinnacle -12.0% ±8.4 (1525)
+8 a 12   n= 1026 (18.0%) | modelo 0.9975 mercado 0.9672 | lado del modelo: dice 35.0% mercado 26.9% pasó 25.2% | ROI Pinnacle -15.4% ±12.5 (810)
+12+      n=  658 (11.5%) | modelo 0.9962 mercado 0.8937 | lado del modelo: dice 36.6% mercado 24.2% pasó 21.3% | ROI Pinnacle -14.1% ±16.1 (511)
+ROI apostando donde modelo > mercado: ≥2: -13.4% ±5.5 (3648) | ≥4: -15.4% ±6.6 (2508) | ≥6: -16.0% ±8.3 (1533) | ≥8: -12.3% ±10.7 (934) | ≥10: -10.0% ±13.8 (545)
+ROI ≥2 por temporada: 2324:-14.5%(1422) 2425:-11.6%(1474) 2526:-14.8%(752) 2627:0.0%(0)
+ROI ≥2 a cuota promedio, por temporada: 2324:-16.8%(1422) 2425:-14.1%(1474) 2526:-15.7%(1432) 2627:-4.8%(376)
+ROI a cuota promedio: ≥2: -14.6% ±4.7 (4704) | ≥4: -15.8% ±5.7 (3211) | ≥6: -19.0% ±7.0 (1960) | ≥8: -15.8% ±9.1 (1180) | ≥10: -13.6% ±11.9 (687)
+--- M/M 2.5 FINAL todas ---
+0-3 n=3715 ROI -2.3% ±3.4
+3-6 n=2897 ROI -3.7% ±4.1
+6-10 n=2181 ROI -5.4% ±5.0
+10-100 n=1016 ROI -7.8% ±8.0
+--- M/M 2.5 FINAL prueba ---
+0-3 n=1662 ROI -6.3% ±5.0
+3-6 n=1286 ROI -3.7% ±6.1
+6-10 n=963 ROI -7.3% ±7.6
+10-100 n=445 ROI -9.2% ±12.2
+diferencia FINAL: mediana 5.4 p90 12.6 p99 20.5
+mezcla peso modelo 0 dif con mercado -0.00000 z -15.1
+mezcla peso modelo 0.05 dif con mercado 0.00045 z 4.2
+mezcla peso modelo 0.1 dif con mercado 0.00097 z 4.5
+mezcla peso modelo 0.2 dif con mercado 0.00221 z 5.1
+mezcla peso modelo 0.3 dif con mercado 0.00375 z 5.8
+  con Elo                          n=5708 1X2 0.9856 mercado 0.9629 dif 0.0227 z10.5 | M/M 0.6761 mercado 0.6643 (5708)
+Elo 0.1 0.9856 contra final -0.00018 z -1.06
+  con Elo                          n=5708 1X2 0.9856 mercado 0.9629 dif 0.0226 z10.6 | M/M 0.6761 mercado 0.6643 (5708)
+Elo 0.2 0.9856 contra final -0.00020 z -0.59
+  con Elo                          n=5708 1X2 0.9857 mercado 0.9629 dif 0.0228 z10.8 | M/M 0.6761 mercado 0.6643 (5708)
+Elo 0.3 0.9857 contra final -0.00006 z -0.12
+ajuste hist=3 xi=0.6               n=1826 1X2 0.9946 mercado 0.9749 dif 0.0196 z5.0 | M/M 0.6846 mercado 0.6739 (1826)
+ajuste hist=3 xi=0.8               n=1826 1X2 0.9933 mercado 0.9749 dif 0.0183 z4.8 | M/M 0.6840 mercado 0.6739 (1826)
+ajuste hist=3 xi=1                 n=1826 1X2 0.9925 mercado 0.9749 dif 0.0176 z4.7 | M/M 0.6836 mercado 0.6739 (1826)
+hist=3 xi=1 (prueba)               n=5708 1X2 0.9849 mercado 0.9629 dif 0.0220 z10.2 | M/M 0.6760 mercado 0.6643 (5708)
+hist3 contra final -0.00089 z -4.11
+liga E0                          n=2750 modelo 0.9878 mercado 0.9658 dif medio 7.4 pts
+liga SP1                         n=2769 modelo 0.9924 mercado 0.9666 dif medio 6.9 pts
+liga I1                          n=2760 modelo 0.9828 mercado 0.9597 dif medio 7.0 pts
+liga D1                          n=2214 modelo 0.9997 mercado 0.9751 dif medio 6.8 pts
+liga F1                          n=2418 modelo 1.0075 mercado 0.9845 dif medio 7.3 pts
+con ascendido                    n=3455 modelo 0.9759 mercado 0.9479 dif medio 7.6 pts
+sin ascendido                    n=9456 modelo 0.9999 mercado 0.9777 dif medio 6.9 pts
+diferencia típica: mediana 6.0 p90 14.0 p99 22.0
