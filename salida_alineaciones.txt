@@ -1,0 +1,94 @@
+Partidos con cuota de cierre de Pinnacle: 9880
+calendarios a bajar: 3220
+  calendario 500/3220
+  calendario 1000/3220
+  calendario 1500/3220
+  calendario 2000/3220
+  calendario 2500/3220
+  calendario 3000/3220
+Cruzados con ESPN: 9875 de 9880 (sin par 5, ambiguos/nombres distintos 0)
+Bajando alineaciones de 9875 partidos...
+  alineaciones 500/9875
+  alineaciones 1000/9875
+  alineaciones 1500/9875
+  alineaciones 2000/9875
+  alineaciones 2500/9875
+  alineaciones 3000/9875
+  alineaciones 3500/9875
+  alineaciones 4000/9875
+  alineaciones 4500/9875
+  alineaciones 5000/9875
+  alineaciones 5500/9875
+  alineaciones 6000/9875
+  alineaciones 6500/9875
+  alineaciones 7000/9875
+  alineaciones 7500/9875
+  alineaciones 8000/9875
+  alineaciones 8500/9875
+  alineaciones 9000/9875
+  alineaciones 9500/9875
+### Datos
+```
+con alineacion completa (11 titulares por lado): 9874 · sin alineacion 0 · sin 11 titulares 1 · con datos de goles/asistencias 9874
+errores de descarga: 0
+muestra de la estructura de ESPN: {"claves":["boxscore","format","gameInfo","lastFiveGames","leaders","broadcasts","pickcenter","odds","hasOdds","rosters","news","seasonseries","article","videos","header","keyEvents","commentary","wallclockAvailable","meta","standings"],"roster0":[{"active":true,"starter":true,"jersey":"12","athlete":{"id":"194970","uid":"s:600~a:194970","guid":"d617a9d6-3f40-59df-5b5b-d9adee03be8a","lastName":"Rodák","fullName":"Marek Rodák","displayName":"Marek Rodák","shortName":"M. Rodák","links":[{"language":"en-US","rel":["playercard","desktop","athlete"],"href":"https://www.espn.com/soccer/player/_/id/194970/marek-rodak","text":"Player Card","shortText":"Player Card","isExternal":false,"isPremium":false}],"jerseyImages":[{"href":"https://stitcher.espn.com/sports/soccer/leagues/eng.1/events/578653/athletes/194970/jersey.png?darkMode=false","rel":["full","default"],"width":1440,"height":1440},{"href":"https://stitcher.espn.com/sports/soccer/leagues/eng.1/events/578653/athletes/194970/jersey.png?darkMode=true","rel":["full","dark"],"width":1440,"height":1440}]},"position":{"name":"Goalkeeper","displayName":"Goalkeeper","abbreviation":"G"},"subbedIn":false,"subbedOut":false,"formationPlace":"1","media":{},"stats":[{"name":"appearances","displayName":"Appearances","shortDisplayName":"APP","description":"The number of times a player has made an appearance in a match.","abbreviation":"APP","value":1,"displayValue":"1"},{"name":"foulsCommitted","displayName":"Fouls Committed","shortDisplayName":"FC","description":"The number of fouls comitted by a player or team.","abbreviation":"FC","value":0,"displayValue":"0"},{"name":"foulsSuffered","displayName":"Fouls Suffered","shortDisplayName":"FA","description":"The number of fouls suffered by a player or team.","abbreviation":"FA","value":0,"displayValue":"0"},{"name":"ownGoals","displayName":"Own Goals","shortDisplayName":"OG","description":"The number of own goals conceded.","abbreviation":"OG","value":0,"displayValue":"0"},{"name":"redCards","displayName":"Red Cards","shortDisplayName":"RC","description":"The number of red cards that have been issued.","abbreviation":"RC","value":0,"displayValue":"0"},{"name":"subIns","displayName":"Substitute Appearances","shortDisplayName":"SUBIN","description":"The number of times a player has come on a sub in a match.","abbreviation":"SUB","value":0,"displayValue":"0"},{"name":"yellowCards","displayName":"Yellow Cards","shortDisplayName":"YC","description":"The number of yellow cards accum
+```
+Partidos medibles (ambos equipos con >=8 partidos previos en la temporada): 7530. Titulares habituales ausentes por equipo: media 3.33 de 11.
+### 0) Sanidad: ¿importan los titulares ausentes por si solos? (puntos del local = a + c·(ausentes local − visita), SIN mirar la linea)
+c = -0.040 ± 0.015 puntos por titular habitual que falta (negativo = perjudica al que le faltan).
+### 1) Encima de la linea de cierre: puntos reales del local − puntos que esperaba el mercado = a + c·(variable)
+c = 0 → el mercado ya lo sabia.
+
+| Variable (local − visita) | c ± 2·se | z |
+|---|---|---|
+| Titulares habituales ausentes (cantidad) | -0.009 ± 0.014 | -1.3 |
+| % de goles+asistencias recientes que se ausenta (por cada punto %) | -0.000 ± 0.001 | -0.0 |
+| Cambio de portero (0/1) | -0.024 ± 0.053 | -0.9 |
+| Cambios respecto al partido anterior (cantidad) | -0.003 ± 0.012 | -0.5 |
+
+### 2) ¿Se repite por temporada? (titulares habituales ausentes)
+| Temporada | Partidos | c ± 2·se | z |
+|---|---|---|---|
+| 2021 | 1425 | 0.004 ± 0.031 | 0.3 |
+| 2122 | 1431 | -0.006 ± 0.031 | -0.4 |
+| 2223 | 1427 | -0.015 ± 0.032 | -0.9 |
+| 2324 | 1366 | 0.001 ± 0.031 | 0.1 |
+| 2425 | 1367 | -0.034 ± 0.033 | -2.1 |
+| 2526 | 514 | 0.009 ± 0.056 | 0.3 |
+
+### 3) Por liga (titulares habituales ausentes)
+| Liga | Partidos | c ± 2·se | z |
+|---|---|---|---|
+| F1 | 1446 | 0.005 ± 0.033 | 0.3 |
+| SP1 | 1595 | 0.002 ± 0.028 | 0.2 |
+| E0 | 1626 | -0.039 ± 0.029 | -2.7 |
+| D1 | 1247 | -0.031 ± 0.037 | -1.7 |
+| I1 | 1616 | 0.012 ± 0.028 | 0.9 |
+
+### 1b) Las mismas variables contra otras referencias
+dN = titulares habituales ausentes, dS = % de goles+asistencias ausente, dCamb = cambios respecto al partido anterior (local − visita)
+
+| Referencia · variable | Partidos | c ± 2·se | z |
+|---|---|---|---|
+| Encima de la cuota previa de Pinnacle · dN | 7528 | -0.020 ± 0.014 | -3.0 |
+| Encima de la cuota previa de Pinnacle · dS | 7528 | -0.001 ± 0.001 | -1.7 |
+| Encima de la cuota previa de Pinnacle · dCamb | 7528 | -0.009 ± 0.012 | -1.5 |
+| Movimiento de la línea (cierre − previa) · dN | 7528 | -0.011 ± 0.001 | -25.2 |
+| Movimiento de la línea (cierre − previa) · dS | 7528 | -0.001 ± 0.000 | -25.0 |
+| Movimiento de la línea (cierre − previa) · dCamb | 7528 | -0.006 ± 0.001 | -14.4 |
+| Encima del modelo v22 · dN | 7530 | -0.032 ± 0.014 | -4.6 |
+| Encima del modelo v22 · dS | 7530 | -0.003 ± 0.001 | -3.5 |
+| Encima del modelo v22 · dCamb | 7530 | -0.017 ± 0.012 | -2.7 |
+
+### 4) Apostar por el equipo con el once mas completo (a la cuota de cierre de Pinnacle)
+| Diferencia de titulares ausentes | Apuestas | % ganadas | ROI ± 2·se |
+|---|---|---|---|
+| 1+ | 5987 | 40.3% | -2.7% ± 4.0% |
+| 2+ | 3369 | 40.6% | -2.9% ± 5.2% |
+| 3+ | 1567 | 42.0% | -0.8% ± 7.7% |
+
+### Resumen
+```
+c (titulares habituales ausentes, encima de la linea) = -0.009 ± 0.014 puntos por titular (z -1.3)
+Si el intervalo incluye 0, el mercado ya descuenta las alineaciones y no hay ventaja en usarlas.
+```

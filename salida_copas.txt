@@ -1,0 +1,164 @@
+partidos por tipo y fuente de cuota {"europa sin cuota":2790,"europa ESPN BET":1090,"europa DraftKings":430,"copa sin cuota":2841,"copa ESPN BET":805,"copa DraftKings":238,"amistoso sin cuota":2125,"amistoso ESPN BET":341,"amistoso DraftKings":212,"liga de naciones sin cuota":797,"liga de naciones ESPN BET":311,"liga de naciones DraftKings":156,"eliminatoria sin cuota":1428,"eliminatoria ESPN BET":797,"eliminatoria DraftKings":12,"mundial sin cuota":128,"mundial DraftKings":104,"torneo sin cuota":357,"torneo ESPN BET":213,"torneo DraftKings":52,"control sin cuota":2178,"control ESPN BET":783,"control DraftKings":340}
+
+--- uefa.champions · sin historial (lo normal en el teléfono): n=951 | modelo 0.9952 frecuencia 1.0534 dif -58.2 mil. z -6.2 | acierta 52.1%
+    con cuota n=419 | modelo 0.9761 mercado 0.9121 dif 64.0 mil. z 4.0 | diferencia mediana 11.1 pts, p90 26.2 | margen mediano 6.0%
+    modelo ≥2 pts sobre el mercado: ROI -10.6% ±19.2 (384) | dice 35.3% mercado 24.0% pasó 23.2%
+    modelo ≥5 pts sobre el mercado: ROI -9.0% ±21.9 (318) | dice 35.6% mercado 22.6% pasó 22.3%
+    modelo ≥8 pts sobre el mercado: ROI -2.0% ±27.0 (237) | dice 36.6% mercado 21.4% pasó 22.4%
+    modelo ≥12 pts sobre el mercado: ROI 9.8% ±38.1 (154) | dice 37.4% mercado 19.2% pasó 20.8%
+    mezcla 10% modelo: dif con mercado 0.99 mil. z 0.6
+    mezcla 30% modelo: dif con mercado 6.25 mil. z 1.3
+
+--- uefa.champions · sin historial (lo normal en el teléfono) · ambos con 4+ partidos: n=605 | modelo 1.0015 frecuencia 1.0578 dif -56.2 mil. z -4.6 | acierta 51.2%
+    con cuota n=293 | modelo 0.9836 mercado 0.9391 dif 44.4 mil. z 2.4 | diferencia mediana 10.3 pts, p90 24.6 | margen mediano 6.0%
+    modelo ≥2 pts sobre el mercado: ROI -5.2% ±23.1 (265) | dice 35.9% mercado 25.3% pasó 25.3%
+    modelo ≥5 pts sobre el mercado: ROI -1.1% ±27.3 (210) | dice 36.4% mercado 23.8% pasó 24.8%
+    modelo ≥8 pts sobre el mercado: ROI 16.0% ±35.6 (151) | dice 37.5% mercado 22.6% pasó 26.5%
+    modelo ≥12 pts sobre el mercado: ROI 37.9% ±51.4 (95) | dice 38.1% mercado 20.2% pasó 27.4%
+    mezcla 10% modelo: dif con mercado -0.25 mil. z -0.1
+    mezcla 30% modelo: dif con mercado 2.14 mil. z 0.4
+
+--- uefa.europa · sin historial (lo normal en el teléfono): n=1234 | modelo 1.0246 frecuencia 1.0577 dif -33.1 mil. z -4.4 | acierta 48.8%
+    con cuota n=409 | modelo 0.9951 mercado 0.9197 dif 75.4 mil. z 4.9 | diferencia mediana 11.5 pts, p90 24.8 | margen mediano 5.9%
+    modelo ≥2 pts sobre el mercado: ROI -10.2% ±17.9 (381) | dice 35.3% mercado 24.4% pasó 24.4%
+    modelo ≥5 pts sobre el mercado: ROI -10.5% ±20.1 (300) | dice 36.3% mercado 23.4% pasó 24.0%
+    modelo ≥8 pts sobre el mercado: ROI -15.4% ±22.5 (229) | dice 37.5% mercado 22.6% pasó 22.7%
+    modelo ≥12 pts sobre el mercado: ROI -11.2% ±29.0 (147) | dice 39.6% mercado 21.9% pasó 23.1%
+    mezcla 10% modelo: dif con mercado 2.48 mil. z 1.7
+    mezcla 30% modelo: dif con mercado 10.64 mil. z 2.4
+
+--- uefa.europa · sin historial (lo normal en el teléfono) · ambos con 4+ partidos: n=719 | modelo 1.0257 frecuencia 1.0567 dif -31.0 mil. z -3.0 | acierta 48.5%
+    con cuota n=290 | modelo 0.9939 mercado 0.9376 dif 56.3 mil. z 3.3 | diferencia mediana 10.9 pts, p90 23.2 | margen mediano 5.8%
+    modelo ≥2 pts sobre el mercado: ROI -1.1% ±22.2 (268) | dice 35.0% mercado 24.7% pasó 26.5%
+    modelo ≥5 pts sobre el mercado: ROI -3.3% ±24.9 (203) | dice 36.2% mercado 23.7% pasó 25.6%
+    modelo ≥8 pts sobre el mercado: ROI -13.1% ±27.2 (154) | dice 37.4% mercado 23.1% pasó 23.4%
+    modelo ≥12 pts sobre el mercado: ROI -5.1% ±34.7 (96) | dice 40.6% mercado 23.4% pasó 26.0%
+    mezcla 10% modelo: dif con mercado 1.32 mil. z 0.8
+    mezcla 30% modelo: dif con mercado 6.72 mil. z 1.4
+
+--- uefa.europa.conf · sin historial (lo normal en el teléfono): n=513 | modelo 1.0259 frecuencia 1.0677 dif -41.8 mil. z -3.8 | acierta 47.6%
+    con cuota n=315 | modelo 1.0290 mercado 0.9612 dif 67.8 mil. z 3.3 | diferencia mediana 14.0 pts, p90 28.4 | margen mediano 6.1%
+    modelo ≥2 pts sobre el mercado: ROI -1.9% ±22.5 (299) | dice 34.8% mercado 22.7% pasó 25.1%
+    modelo ≥5 pts sobre el mercado: ROI -9.5% ±24.5 (259) | dice 35.4% mercado 21.9% pasó 22.0%
+    modelo ≥8 pts sobre el mercado: ROI -14.6% ±27.5 (203) | dice 36.5% mercado 21.3% pasó 19.7%
+    modelo ≥12 pts sobre el mercado: ROI -12.5% ±34.6 (142) | dice 37.3% mercado 19.8% pasó 19.0%
+    mezcla 10% modelo: dif con mercado 0.09 mil. z 0.0
+    mezcla 30% modelo: dif con mercado 4.38 mil. z 0.7
+
+--- uefa.europa.conf · sin historial (lo normal en el teléfono) · ambos con 4+ partidos: n=319 | modelo 1.0293 frecuencia 1.0693 dif -40.0 mil. z -2.9 | acierta 46.7%
+    con cuota n=208 | modelo 1.0226 mercado 0.9452 dif 77.4 mil. z 3.1 | diferencia mediana 14.0 pts, p90 29.2 | margen mediano 5.8%
+    modelo ≥2 pts sobre el mercado: ROI -6.5% ±29.1 (197) | dice 35.1% mercado 23.1% pasó 22.8%
+    modelo ≥5 pts sobre el mercado: ROI -9.7% ±32.3 (170) | dice 35.6% mercado 22.3% pasó 20.6%
+    modelo ≥8 pts sobre el mercado: ROI -19.6% ±35.9 (130) | dice 36.9% mercado 21.6% pasó 17.7%
+    modelo ≥12 pts sobre el mercado: ROI -11.2% ±47.0 (91) | dice 37.0% mercado 19.5% pasó 17.6%
+    mezcla 10% modelo: dif con mercado 0.99 mil. z 0.4
+    mezcla 30% modelo: dif con mercado 7.11 mil. z 1.0
+
+--- TODAS las copas europeas · sin historial (lo normal en el teléfono): n=2698 | modelo 1.0145 frecuencia 1.0581 dif -43.6 mil. z -8.4 | acierta 49.7%
+    con cuota n=1143 | modelo 0.9975 mercado 0.9283 dif 69.1 mil. z 7.0 | diferencia mediana 12.0 pts, p90 26.0 | margen mediano 6.0%
+    modelo ≥2 pts sobre el mercado: ROI -8.0% ±11.4 (1064) | dice 35.2% mercado 23.8% pasó 24.2%
+    modelo ≥5 pts sobre el mercado: ROI -9.7% ±12.7 (877) | dice 35.8% mercado 22.7% pasó 22.8%
+    modelo ≥8 pts sobre el mercado: ROI -10.4% ±14.8 (669) | dice 36.9% mercado 21.8% pasó 21.7%
+    modelo ≥12 pts sobre el mercado: ROI -4.3% ±19.8 (443) | dice 38.1% mercado 20.3% pasó 21.0%
+    mezcla 10% modelo: dif con mercado 1.27 mil. z 1.3
+    mezcla 30% modelo: dif con mercado 7.30 mil. z 2.6
+    casas {"ESPN BET":1090,"DraftKings":430}
+    con cuota por temporada {"2023":312,"2024":526,"2025":531,"2026":151}
+
+--- uefa.champions · con la temporada pasada de esa copa (si ya abriste Backtest): n=951 | modelo 0.9705 frecuencia 1.0534 dif -82.9 mil. z -6.9 | acierta 54.5%
+    con cuota n=419 | modelo 0.9566 mercado 0.9121 dif 44.5 mil. z 2.8 | diferencia mediana 10.5 pts, p90 24.9 | margen mediano 6.0%
+    modelo ≥2 pts sobre el mercado: ROI -2.8% ±18.7 (391) | dice 38.0% mercado 27.0% pasó 28.4%
+    modelo ≥5 pts sobre el mercado: ROI -0.9% ±21.7 (310) | dice 39.6% mercado 26.8% pasó 28.1%
+    modelo ≥8 pts sobre el mercado: ROI 10.4% ±27.2 (223) | dice 42.3% mercado 27.0% pasó 30.0%
+    modelo ≥12 pts sobre el mercado: ROI 22.5% ±37.6 (137) | dice 43.3% mercado 24.5% pasó 29.9%
+    mezcla 10% modelo: dif con mercado -0.53 mil. z -0.3
+    mezcla 30% modelo: dif con mercado 1.51 mil. z 0.3
+
+--- uefa.europa · con la temporada pasada de esa copa (si ya abriste Backtest): n=1234 | modelo 1.0207 frecuencia 1.0577 dif -37.0 mil. z -4.6 | acierta 48.6%
+    con cuota n=409 | modelo 0.9963 mercado 0.9197 dif 76.6 mil. z 5.0 | diferencia mediana 11.5 pts, p90 25.2 | margen mediano 5.9%
+    modelo ≥2 pts sobre el mercado: ROI -15.3% ±17.5 (379) | dice 35.9% mercado 24.9% pasó 23.7%
+    modelo ≥5 pts sobre el mercado: ROI -17.4% ±19.6 (292) | dice 37.0% mercado 23.7% pasó 22.9%
+    modelo ≥8 pts sobre el mercado: ROI -16.5% ±22.8 (223) | dice 38.3% mercado 23.0% pasó 22.9%
+    modelo ≥12 pts sobre el mercado: ROI -17.5% ±28.1 (145) | dice 40.5% mercado 22.3% pasó 22.1%
+    mezcla 10% modelo: dif con mercado 2.44 mil. z 1.7
+    mezcla 30% modelo: dif con mercado 10.64 mil. z 2.4
+
+--- uefa.europa.conf · con la temporada pasada de esa copa (si ya abriste Backtest): n=513 | modelo 1.0235 frecuencia 1.0677 dif -44.1 mil. z -3.7 | acierta 48.5%
+    con cuota n=315 | modelo 1.0264 mercado 0.9612 dif 65.2 mil. z 3.2 | diferencia mediana 13.1 pts, p90 28.7 | margen mediano 6.1%
+    modelo ≥2 pts sobre el mercado: ROI -5.4% ±22.6 (297) | dice 36.0% mercado 23.7% pasó 23.9%
+    modelo ≥5 pts sobre el mercado: ROI -6.6% ±25.1 (255) | dice 36.5% mercado 22.8% pasó 22.4%
+    modelo ≥8 pts sobre el mercado: ROI -11.6% ±28.1 (199) | dice 37.9% mercado 22.2% pasó 20.6%
+    modelo ≥12 pts sobre el mercado: ROI -10.7% ±32.8 (133) | dice 39.4% mercado 20.8% pasó 21.1%
+    mezcla 10% modelo: dif con mercado -0.20 mil. z -0.1
+    mezcla 30% modelo: dif con mercado 3.55 mil. z 0.6
+
+--- Copas nacionales (la app no da pronóstico): n=3884 con cuota 1043 | mercado 0.8878 | favorito ROI -7.6% ±5.1 (1043) | perro ROI -18.5% ±12.6 (1043)
+
+--- Control Premier con cuotas de ESPN (Pinnacle 2023-26 da ≈0.96 de pérdida): n=3301 con cuota 1123 | mercado 0.9729 | favorito ROI -3.8% ±5.6 (1123) | perro ROI -16.2% ±10.4 (1123)
+    margen 5.9%
+    calibración 0-30%: n=1939 dice 21.9 pasó 21.7
+    calibración 30-50%: n=836 dice 39.0 pasó 39.7
+    calibración 50-70%: n=459 dice 58.7 pasó 57.5
+    calibración 70-100%: n=135 dice 76.2 pasó 79.3
+
+Selecciones: partidos 7033 d0 0.233
+
+--- Selecciones, todas: n=6328 | modelo 0.9385 frecuencia 1.0615 dif -123.0 mil. z -21.6 | acierta 55.0%
+    con cuota n=2197 | modelo 0.9037 mercado 0.8293 dif 74.4 mil. z 10.6 | diferencia mediana 9.3 pts, p90 24.4 | margen mediano 8.2%
+    modelo ≥2 pts sobre el mercado: ROI -20.8% ±6.4 (1989) | dice 49.1% mercado 37.5% pasó 35.7%
+    modelo ≥5 pts sobre el mercado: ROI -20.1% ±7.4 (1514) | dice 51.1% mercado 37.0% pasó 35.5%
+    modelo ≥8 pts sobre el mercado: ROI -23.1% ±8.4 (1144) | dice 52.1% mercado 35.5% pasó 33.0%
+    modelo ≥12 pts sobre el mercado: ROI -23.2% ±10.5 (752) | dice 54.2% mercado 34.1% pasó 31.1%
+    mezcla 10% modelo: dif con mercado 1.97 mil. z 2.9
+    mezcla 30% modelo: dif con mercado 9.42 mil. z 4.6
+
+--- Selecciones · amistoso: n=2168 | modelo 0.9985 frecuencia 1.0486 dif -50.1 mil. z -5.3 | acierta 50.1%
+    con cuota n=553 | modelo 0.9445 mercado 0.8569 dif 87.6 mil. z 5.4 | diferencia mediana 11.4 pts, p90 29.7 | margen mediano 8.7%
+    modelo ≥2 pts sobre el mercado: ROI -20.3% ±13.0 (504) | dice 48.6% mercado 35.5% pasó 33.9%
+    modelo ≥5 pts sobre el mercado: ROI -18.8% ±14.9 (406) | dice 50.2% mercado 34.7% pasó 33.7%
+    modelo ≥8 pts sobre el mercado: ROI -25.2% ±15.8 (319) | dice 50.5% mercado 32.5% pasó 30.4%
+    modelo ≥12 pts sobre el mercado: ROI -24.3% ±19.5 (228) | dice 51.7% mercado 30.5% pasó 28.5%
+    mezcla 10% modelo: dif con mercado 1.26 mil. z 0.7
+    mezcla 30% modelo: dif con mercado 8.53 mil. z 1.7
+
+--- Selecciones · liga de naciones: n=1175 | modelo 0.9784 frecuencia 1.0724 dif -94.1 mil. z -7.5 | acierta 53.1%
+    con cuota n=467 | modelo 0.9314 mercado 0.8428 dif 88.6 mil. z 5.6 | diferencia mediana 9.8 pts, p90 24.6 | margen mediano 8.3%
+    modelo ≥2 pts sobre el mercado: ROI -23.5% ±12.9 (423) | dice 50.7% mercado 38.8% pasó 35.7%
+    modelo ≥5 pts sobre el mercado: ROI -20.0% ±15.2 (327) | dice 52.7% mercado 38.3% pasó 36.4%
+    modelo ≥8 pts sobre el mercado: ROI -16.0% ±17.8 (252) | dice 54.1% mercado 37.4% pasó 36.9%
+    modelo ≥12 pts sobre el mercado: ROI -15.9% ±22.1 (178) | dice 56.4% mercado 36.8% pasó 36.0%
+    mezcla 10% modelo: dif con mercado 3.38 mil. z 2.3
+    mezcla 30% modelo: dif con mercado 13.71 mil. z 3.1
+
+--- Selecciones · eliminatoria: n=2187 | modelo 0.8389 frecuencia 1.0558 dif -216.9 mil. z -21.4 | acierta 61.9%
+    con cuota n=808 | modelo 0.8369 mercado 0.7726 dif 64.4 mil. z 6.0 | diferencia mediana 8.5 pts, p90 22.5 | margen mediano 8.8%
+    modelo ≥2 pts sobre el mercado: ROI -18.8% ±10.4 (724) | dice 51.2% mercado 40.3% pasó 39.8%
+    modelo ≥5 pts sobre el mercado: ROI -21.3% ±11.3 (539) | dice 53.9% mercado 40.5% pasó 39.3%
+    modelo ≥8 pts sobre el mercado: ROI -25.1% ±13.4 (393) | dice 54.6% mercado 38.5% pasó 35.6%
+    modelo ≥12 pts sobre el mercado: ROI -21.3% ±18.9 (244) | dice 56.6% mercado 36.6% pasó 32.4%
+    mezcla 10% modelo: dif con mercado 1.71 mil. z 1.7
+    mezcla 30% modelo: dif con mercado 8.17 mil. z 2.7
+
+--- Selecciones · torneo: n=582 | modelo 0.9922 frecuencia 1.1039 dif -111.8 mil. z -6.5 | acierta 52.1%
+    con cuota n=265 | modelo 0.9720 mercado 0.9160 dif 56.0 mil. z 3.6 | diferencia mediana 8.1 pts, p90 20.6 | margen mediano 6.6%
+    modelo ≥2 pts sobre el mercado: ROI -23.2% ±20.0 (238) | dice 44.8% mercado 34.8% pasó 30.3%
+    modelo ≥5 pts sobre el mercado: ROI -16.3% ±26.5 (168) | dice 46.3% mercado 33.7% pasó 29.8%
+    modelo ≥8 pts sobre el mercado: ROI -27.2% ±29.1 (124) | dice 49.1% mercado 34.2% pasó 26.6%
+    modelo ≥12 pts sobre el mercado: ROI -32.5% ±29.4 (71) | dice 52.8% mercado 34.4% pasó 28.2%
+    mezcla 10% modelo: dif con mercado 2.17 mil. z 1.4
+    mezcla 30% modelo: dif con mercado 8.76 mil. z 1.9
+
+--- Selecciones · mundial: n=216 | modelo 0.9824 frecuencia 1.0756 dif -93.2 mil. z -3.3 | acierta 52.8%
+    con cuota n=104 | modelo 0.9064 mercado 0.8422 dif 64.2 mil. z 2.2 | diferencia mediana 10.3 pts, p90 26.9 | margen mediano 4.5%
+    modelo ≥2 pts sobre el mercado: ROI -21.2% ±34.3 (100) | dice 39.4% mercado 28.5% pasó 29.0%
+    modelo ≥5 pts sobre el mercado: ROI -25.9% ±35.8 (74) | dice 39.6% mercado 26.2% pasó 25.7%
+    modelo ≥8 pts sobre el mercado: ROI -20.1% ±44.1 (56) | dice 41.4% mercado 25.7% pasó 26.8%
+    modelo ≥12 pts sobre el mercado: ROI -50.8% ±41.2 (31) | dice 44.4% mercado 24.0% pasó 19.4%
+    mezcla 10% modelo: dif con mercado 0.97 mil. z 0.4
+    mezcla 30% modelo: dif con mercado 6.33 mil. z 0.8
+Calibración Elo (resultado más probable):
+  0-35%: n=0 dice 0.0% pasó 0.0%
+  35-50%: n=2510 dice 42.5% pasó 40.0%
+  50-65%: n=1918 dice 56.9% pasó 54.0%
+  65-80%: n=1249 dice 72.2% pasó 70.0%
+  80-100%: n=651 dice 86.8% pasó 87.3%
