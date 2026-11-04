@@ -9,7 +9,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', '..', 'futbol.html'), 'u
 const cut = (a, b) => { const i = html.indexOf(a), j = html.indexOf(b, i); if (i < 0 || j < 0) throw new Error('no encuentro ' + a); return html.slice(i, j); };
 const lineaVar = n => { const m = html.match(new RegExp('^\\s*(var ' + n + '\\s*=.*)$', 'm')); if (!m) throw new Error('no encuentro var ' + n); return m[1] + '\n'; };
 function bloqueVar(n) { const i = html.search(new RegExp('var ' + n + '\\s*=')); const j = html.indexOf(';', html.indexOf('}', i)); return html.slice(i, j + 1) + '\n'; }
-const src = 'var localStorage={getItem:function(){return null;}};var MAXG=8;\n'
+const src = 'var ELOV=0;var localStorage={getItem:function(k){return k===\'ova_futbol_elo_mix\'?String(ELOV):null;}};var MAXG=8;\n'
   + cut('function pmf(lambda)', 'var CLAVES_1X2') + "var CLAVES_1X2=['pL','pD','pV'],CLAVES_GOLES=['o15','o25','o35','btts'];\n"
   + cut('function mezclar(d, d0, w, claves)', '// Todas las probabilidades del modelo')
   + cut('function buscarEnMapa(mapa, nombre)', 'var buscarSemilla')
@@ -66,11 +66,12 @@ for (const wt of gridWt) { const c = { ...APP, wt }; memoW[wt] = correr(c, TUNE)
 const mejorWt = gridWt.slice().sort((a, b) => prom(memoW[a].filter(x => x.ou != null).map(lOU)) - prom(memoW[b].filter(x => x.ou != null).map(lOU)))[0];
 console.log('elegidos en 2021-23: xi', mejorXi, 'wt', mejorWt);
 // 2) prueba fuera de muestra
-const oApp = correr(APP, temps.slice(1));
+const ANT = { ...APP, xi: 1.6, wt: 0.5 };   // lo que tenía la app antes de esta medición (1 temporada de historial)
+const oApp = correr(ANT, temps.slice(1));
 const oNew = correr({ ...APP, xi: mejorXi, wt: mejorWt }, temps.slice(1));
 const pr = o => o.filter(x => PRUEBA.includes(x.t));
-res.todas = resumen('APP actual (todas)', oApp);
-res.pruebaApp = resumen('APP actual (prueba)', pr(oApp));
+res.todas = resumen('ANTERIOR (todas)', oApp);
+res.pruebaApp = resumen('ANTERIOR (prueba)', pr(oApp));
 res.pruebaNew = resumen('xi/wt nuevos (prueba)', pr(oNew));
 for (const t of temps.slice(1)) { resumen('  app ' + t, oApp.filter(x => x.t === t)); resumen('  nuevo ' + t, oNew.filter(x => x.t === t)); }
 const pa = pr(oApp), pn = pr(oNew);
@@ -108,9 +109,11 @@ function tramos(o, etq) {
   console.log('ROI ≥2 por temporada:', porT.join(' '));
   const porA = [...new Set(o.map(x => x.t))].map(t => { const q = o.filter(x => x.t === t && x.mk && x.avg).map(x => { const dif = x.p.map((v, i) => (v - x.mk[i]) * 100), l = dif.indexOf(Math.max(...dif)); return { ...x, l, dl: dif[l] }; }).filter(x => x.dl >= 2), ret = q.map(x => x.y === x.l ? x.avg[x.l] - 1 : -1); return t + ':' + (100 * prom(ret)).toFixed(1) + '%(' + ret.length + ')'; });
   console.log('ROI ≥2 a cuota promedio, por temporada:', porA.join(' '));
+  const roiA = (min) => { const q = o.filter(x => x.mk && x.avg).map(x => { const dif = x.p.map((v, i) => (v - x.mk[i]) * 100), l = dif.indexOf(Math.max(...dif)); return { ...x, l, dl: dif[l] }; }).filter(x => x.dl >= min), ret = q.map(x => x.y === x.l ? x.avg[x.l] - 1 : -1), s = Math.sqrt(prom(ret.map(v => (v - prom(ret)) ** 2)) / (ret.length || 1)); return `≥${min}: ${(100 * prom(ret)).toFixed(1)}% ±${(200 * s).toFixed(1)} (${ret.length})`; };
+  console.log('ROI a cuota promedio:', [2, 4, 6, 8, 10].map(roiA).join(' | '));
 }
-tramos(oApp, 'APP actual, todas');
-tramos(pr(oApp), 'APP actual, prueba');
+tramos(oApp, 'ANTERIOR, todas');
+tramos(pr(oApp), 'ANTERIOR, prueba');
 tramos(pr(oNew), 'nuevos, prueba');
 // 4) Más/Menos: diferencia contra mercado
 function tramosOU(o, etq) {
@@ -122,6 +125,22 @@ function tramosOU(o, etq) {
   }
 }
 tramosOU(oApp, 'APP'); tramosOU(pr(oNew), 'nuevos prueba');
+// 4b) Configuración final: 2 temporadas de historial, xi 1.0, wt 0.5
+const FINAL = { ...APP, xi: 1.0, wt: 0.5 }, oF = correr(FINAL, temps.slice(2), 2), pF = pr(oF);
+console.log('=== FINAL (2 temporadas de historial, xi 1.0) ===');
+res.todasFinal = resumen('FINAL (todas)', oF); res.pruebaFinal = resumen('FINAL (prueba)', pF);
+for (const t of temps.slice(2)) { resumen('  final ' + t, oF.filter(x => x.t === t)); }
+tramos(oF, 'FINAL, todas'); tramos(pF, 'FINAL, prueba'); tramosOU(oF, 'FINAL todas'); tramosOU(pF, 'FINAL prueba');
+const gf = oF.filter(x => x.mk).map(x => Math.max(...x.p.map((v, i) => Math.abs(v - x.mk[i]) * 100))).sort((a, b) => a - b);
+console.log('diferencia FINAL: mediana', gf[gf.length >> 1].toFixed(1), 'p90', gf[Math.floor(gf.length * .9)].toFixed(1), 'p99', gf[Math.floor(gf.length * .99)].toFixed(1));
+// mezcla con el mercado (peso del modelo)
+for (const w of [0, 0.05, 0.1, 0.2, 0.3]) { const q = pF.filter(x => x.mk), d = zDif(q.map(x => { const m = x.p.map((v, i) => Math.pow(x.mk[i], 1 - w) * Math.pow(v, w)), s = m[0] + m[1] + m[2]; return LOG(m[x.y] / s) - LOG(x.mk[x.y]); })); console.log('mezcla peso modelo', w, 'dif con mercado', d.m.toFixed(5), 'z', d.z.toFixed(1)); }
+// Elo opcional sobre la configuración final
+for (const e of [0.1, 0.2, 0.3]) { ctx.ELOV = e; const o = correr(FINAL, PRUEBA, 2); ctx.ELOV = 0; const m = idx(o), q = pF.filter(x => x.mk && m.has(x.lg + x.t + x.j)), d = zDif(q.map(x => LOG(m.get(x.lg + x.t + x.j).p[x.y]) - LOG(x.p[x.y]))); console.log('Elo', e, resumen('  con Elo', o).x12.toFixed(4), 'contra final', d.m.toFixed(5), 'z', d.z.toFixed(2)); }
+// ¿3 temporadas de historial?
+{ const gr = [0.6, 0.8, 1.0], mm = {}; for (const xi of gr) { mm[xi] = correr({ ...APP, xi }, ['2223'], 3); resumen('ajuste hist=3 xi=' + xi, mm[xi]); }
+  const b = gr.slice().sort((a, c) => prom(ll1(mm[a]).map(x => LOG(x.p[x.y]))) - prom(ll1(mm[c]).map(x => LOG(x.p[x.y]))))[0];
+  const o3 = correr({ ...APP, xi: b, wt: 0.5 }, PRUEBA, 3), m3 = idx(o3), q = pF.filter(x => x.mk && m3.has(x.lg + x.t + x.j)), d = zDif(q.map(x => LOG(m3.get(x.lg + x.t + x.j).p[x.y]) - LOG(x.p[x.y]))); resumen('hist=3 xi=' + b + ' (prueba)', o3); console.log('hist3 contra final', d.m.toFixed(5), 'z', d.z.toFixed(2)); }
 // 5) Equipos sin historial en la liga (ascendidos), por liga, y primeros partidos
 const sub = (o, f, n) => { const q = o.filter(x => x.mk && f(x)); console.log(n.padEnd(32) + ' n=' + q.length + ' modelo ' + prom(q.map(x => LOG(x.p[x.y]))).toFixed(4) + ' mercado ' + prom(q.map(x => LOG(x.mk[x.y]))).toFixed(4) + ' dif medio ' + prom(q.map(x => Math.max(...x.p.map((v, i) => Math.abs(v - x.mk[i]) * 100)))).toFixed(1) + ' pts'); };
 ligas.forEach(l => sub(oApp, x => x.lg === l, 'liga ' + l));

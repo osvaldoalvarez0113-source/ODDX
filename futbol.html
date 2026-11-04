@@ -670,7 +670,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL <span class="ver">v21</span></h1>
+  <h1>⚽ FÚTBOL <span class="ver">v22</span></h1>
   <select id="ligaSel">
    <optgroup label="Ligas">
     <option value="pl">Premier League</option>
@@ -739,7 +739,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 
 
 <script>
-var VERSION = 'v21';
+var VERSION = 'v22';
 var EQUIPOS = null;
 var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
@@ -1743,12 +1743,12 @@ function calcularBase(eL, eV, P){
 
 
 // ---------- v4: Dixon-Coles con peso por antigüedad ----------
-// Medido contra las cuotas de cierre de Pinnacle (5,256 partidos de PL, La Liga, Serie A, Bundesliga y Ligue 1, 2023-24 a 2025-26):
-//   pérdida 1X2: modelo anterior 1.0059 -> Dixon-Coles 0.9888 (mercado 0.9637) | Más/Menos 2.5: 0.6855 -> 0.6774 (mercado 0.6656)
-// El mercado sigue ganando (z=11): esto acerca el modelo, no lo pone por encima. Mezclar con la cuota no aportó nada (peso 0).
-// Cada equipo tiene ataque y defensa ajustados con TODOS sus partidos (esta temporada + la pasada), pesando más los recientes
+// Medido corriendo ESTE motor igual que en el teléfono (docs/MEDICION-FUTBOL-MOTOR-REAL-2026-11.md), 5 ligas, 2023-24 a 2026-27 (5,708 partidos, fuera de muestra):
+//   pérdida 1X2: v21 (1 temporada de historial, xi 1.6) 0.9897 -> v22 (2 temporadas, xi 1.0) 0.9858 (mercado 0.9629) | Más/Menos 2.5: 0.6773 -> 0.6761 (mercado 0.6643)
+// El mercado sigue ganando (z=10): esto acerca el modelo, no lo pone por encima. Mezclar con la cuota no aportó nada (peso 0).
+// Cada equipo tiene ataque y defensa ajustados con TODOS sus partidos (esta temporada + las dos anteriores), pesando más los recientes
 // (xi = caída por año), y un empujón hacia el promedio (Kp partidos de "creencia"). Los ascendidos arrancan con un prior más flojo.
-var DC_CFG = {xi:1.6, Kp:5, rho:-0.06, promo:1, wt:0.5, win:1100, ligas:{pl:1, laliga:1, seriea:1, bundesliga:1, ligue1:1}};
+var DC_CFG = {xi:1.0, Kp:5, rho:-0.06, promo:1, wt:0.5, win:1100, ligas:{pl:1, laliga:1, seriea:1, bundesliga:1, ligue1:1}};
 var DCFIT = null;   // {liga, eq:{claveEq:{att,def}}, c, gam, hAvg, aAvg, n}
 function dcAjustar(lista, hoyDia, cfg){
   var tr = [];
@@ -1789,8 +1789,8 @@ function dcAjustar(lista, hoyDia, cfg){
   return {eq:eq, c:c, gam:gam, hAvg:sh/sw, aAvg:sa/sw, n:L, elo:eloAjustar(tr)};
 }
 // ---------- Elo opcional (Ajustes → Mezcla con Elo; apagada por defecto) ----------
-// Medido (docs/MEDICION-FUTBOL-LOCAL-ELO-2026-10.md): mezclar 10-20% de un Elo con el Dixon-Coles baja la pérdida 1X2 de 0.9888 a 0.9881-0.9884
-// (z de -2.0 a -2.5, mejora en las tres temporadas). Es un cambio chico: el mercado sigue en 0.9637. Por eso viene apagado y solo toca el 1X2.
+// Medido sobre la v22 (docs/MEDICION-FUTBOL-MOTOR-REAL-2026-11.md): mezclar 10-20% de un Elo deja la pérdida 1X2 en 0.9856 contra 0.9858 (z -0.6 a -1.1),
+// no se distingue de cero. El mercado sigue en 0.9629. Por eso viene apagado y solo toca el 1X2.
 var ELO_TH = {ha:60, s:200, c:0.6};
 function eloAjustar(tr){
   var R = {}, ord = tr.slice().sort(function(a,b){ return a.day-b.day; }), ult = null, i, m;
@@ -1834,16 +1834,18 @@ function calcular(eL, eV, P){
   }
   return calcularBase(eL, eV, P);
 }
-// Arma el ajuste con la temporada pasada (de la memoria del teléfono o de ESPN) + lo que va de esta. Mientras se prepara, el modelo anterior responde.
+// Arma el ajuste con las dos temporadas anteriores (de la memoria del teléfono o de ESPN) + lo que va de esta. Mientras se prepara, el modelo básico responde.
+// Si la más vieja no baja, sigue con la pasada sola.
 function prepararDC(clave, mio){
   DCFIT = null;
   if(LIGA_ES_COPA || !DC_CFG.ligas[clave] || !ESPN_SLUG[clave] || !TERMINADOS || !TERMINADOS.length) return;
   var actuales = TERMINADOS.slice();
-  obtenerTemporada(1, null).then(function(l1){ return l1; }, function(){ return []; }).then(function(l1){
+  var nada = function(){ return []; };
+  Promise.all([obtenerTemporada(1, null).catch(nada), obtenerTemporada(2, null).catch(nada)]).then(function(ls){
     if(mio!==CARGA_ID) return;
-    var fit = null;
-    try{ fit = dcAjustar((l1||[]).concat(actuales), Math.floor(Date.now()/864e5)+1, DC_CFG); }catch(e){ fit = null; }
-    DIAG.dc = fit ? {partidos:fit.n, equipos:Object.keys(fit.eq).length, pasada:(l1||[]).length} : {partidos:0, equipos:0, pasada:(l1||[]).length};
+    var l1 = ls[0]||[], l2 = ls[1]||[], fit = null;
+    try{ fit = dcAjustar(l2.concat(l1, actuales), Math.floor(Date.now()/864e5)+1, DC_CFG); }catch(e){ fit = null; }
+    DIAG.dc = fit ? {partidos:fit.n, equipos:Object.keys(fit.eq).length, pasada:l1.length, anterior:l2.length} : {partidos:0, equipos:0, pasada:l1.length, anterior:l2.length};
     if(!fit) return;
     fit.liga = clave; DCFIT = fit;
     try{ pintarEstado(LIGAS[clave]); aplicarSelectorDias(); }catch(e){}
@@ -2095,7 +2097,7 @@ function pintarFilasValor(filas, out, p){
     var diff = (f.modelo - ref)*100;
     if(panelR) panelR._rank[f.mercado].push({mercado:f.mercado, sel:f.sel, odd:f.odd, modelo:f.modelo, imp:imp, ref:ref, diff:diff, ev:f.modelo/imp-1, conf:f.mk?null:confiable, mk:!!f.mk});
     var hayValor = f.mk ? (f.modelo/imp-1) > 0 : diff >= 3;
-    // medido en 5,256 partidos contra Pinnacle: apostar donde el modelo difiere del mercado perdio (ROI -14% con 2+ pts), asi que ya no se pinta como "valor"
+    // medido en 11,186 partidos: apostar donde el modelo difiere del mercado perdio (ROI -10% ±4 a cuota Pinnacle con 2+ pts), asi que ya no se pinta como "valor"
     var etiquetaValor = f.mk ? (hayValor ? '<span style="color:var(--good)">✓ paga más que la cuota justa: ganancia esperada +'+(f.modelo/imp*100-100).toFixed(1)+'% por cada $1</span>' : '<span class="no">✗ sin valor: paga igual o menos que la cuota justa ('+(f.modelo/imp*100-100).toFixed(1)+'% por cada $1)</span>') :
       hayValor ? '<span class="no">el modelo ve +'+diff.toFixed(1)+' (no es valor: apostar así perdió en la medición)</span>' :
       '<span class="no">sin diferencia '+diff.toFixed(1)+'</span>';
@@ -2105,7 +2107,7 @@ function pintarFilasValor(filas, out, p){
       '<button class="btnChico guardarPick" data-mercado="'+f.mercado+'" data-sel="'+f.sel+'" data-odd="'+f.odd+'" data-prob="'+f.modelo+'">💾</button>'+
       '</div>';
   });
-  if(!filas[0].mk) html += '<div class="nota" style="margin-top:6px">Medido en 5,256 partidos de 5 ligas contra Pinnacle: cuando el modelo difería del mercado por 2+ puntos y se apostaba, el resultado fue −14% (±5%) con cuota Pinnacle y −16% con cuota promedio; con 8+ puntos, −17%. Una diferencia grande suele ser error del modelo (lesiones, rotaciones), no una oportunidad.</div>';
+  if(!filas[0].mk) html += '<div class="nota" style="margin-top:6px">Medido en 11,186 partidos de 5 ligas (2020-21 a 2026-27): cuando el modelo difería del mercado por 2+ puntos y se apostaba, el resultado fue −10% (±4%) con cuota Pinnacle y −12.5% (±3%) con cuota promedio; con 8+ puntos, −11% (±7%) y −14% (±6.5%). Una diferencia grande suele ser error del modelo (lesiones, rotaciones), no una oportunidad.</div>';
   if(completo){
     html += '<div class="nota" style="margin-top:6px">Margen de la casa ≈ '+((sumaImp-1)*100).toFixed(1)+'%; la comparación ya lo descuenta.</div>';
   } else if(filas.length>1){
@@ -2128,7 +2130,7 @@ function pintarFilasValor(filas, out, p){
 
 /* Ranking del juego: junta lo que calculaste en 1X2, Más/Menos y Ambos anotan y lo ordena por puntos
    de diferencia contra el mercado (sin margen de la casa si metiste todas las cuotas). A diferencia
-   de MLB aqui NADIE lleva medalla ni se llama «valor»: medido en 5,256 partidos contra Pinnacle,
+   de MLB aqui NADIE lleva medalla ni se llama «valor»: medido en 11,186 partidos contra el cierre,
    apostar donde el modelo difiere del mercado perdio. Es un orden de lectura, no una senal. */
 function pintarRankingFutbol(panel, p){
   var box = panel.querySelector('.rankbox'); if(!box) return;
@@ -2138,7 +2140,7 @@ function pintarRankingFutbol(panel, p){
   var fa = function(a){ a=Math.round(+a); return (a>0?'+':'')+a; };
   var tag = function(c){ return c===true ? 'el backtest dice que el modelo le gana a la liga en este mercado' : (c===false ? 'el backtest no le ve ventaja al modelo en este mercado' : 'este mercado no está medido'); };
   var h = '<h3>Ranking del juego</h3>' +
-    '<div class="pick no"><b>Ninguna es valor comprobado</b>Está ordenado por cuánto se separa el modelo del mercado, de mayor a menor. En 5,256 partidos medidos contra Pinnacle, apostar donde el modelo difería del mercado perdió, así que aquí no hay medallas.</div>';
+    '<div class="pick no"><b>Ninguna es valor comprobado</b>Está ordenado por cuánto se separa el modelo del mercado, de mayor a menor. En 11,186 partidos medidos contra el cierre, apostar donde el modelo difería del mercado perdió, así que aquí no hay medallas.</div>';
   lista.forEach(function(f,i){
     h += '<div class="pick no"><div class="filaCuota"><div class="txt"><b>'+(i+1)+'. '+f.sel+' '+fa(f.odd)+'</b>' +
       (f.mk?'Pinnacle ':'modelo ')+(f.modelo*100).toFixed(1)+'% contra '+(f.ref*100).toFixed(1)+'% del mercado · '+(f.diff>=0?'+':'')+f.diff.toFixed(1)+' puntos · EV '+(f.ev>=0?'+':'')+(f.ev*100).toFixed(1)+'% por dólar<br><span style="color:var(--mut2);font-size:11.5px">'+tag(f.conf)+'</span></div>' +
@@ -2224,8 +2226,8 @@ function pintarGameBody(bodyEl, p, eL, eV){
   var estadoParams = PARAMS.calibrado ? 'calibrados con datos reales' : 'valores de arranque, aún sin calibrar (ve a Backtest)';
   /* texto de «Cómo se lee»: el modelo de las 5 ligas grandes está medido; el básico (Champions, Europa, Conference o si faltan datos) no */
   var comoCalc = base.r.dc ?
-    '<b>Cómo se calcula:</b> con los goles que cada equipo ha metido y recibido esta temporada y la pasada (los partidos recientes pesan más). '+
-    '<b>Qué tan confiable es:</b> probado en 5,256 partidos de las 5 grandes ligas contra las cuotas de cierre de Pinnacle, el mercado acierta más que este modelo (error 0.964 contra 0.989). '+
+    '<b>Cómo se calcula:</b> con los goles que cada equipo ha metido y recibido esta temporada y las dos anteriores (los partidos recientes pesan más). '+
+    '<b>Qué tan confiable es:</b> probado en 5,708 partidos de las 5 grandes ligas (2023-24 a hoy) contra las cuotas de cierre, el mercado acierta más que este modelo (error 0.963 contra 0.986). '+
     'Así que es una referencia, no una ventaja. No sabe de lesiones ni de alineaciones.' :
     '<b>Cómo se calcula:</b> con los goles que cada equipo lleva a favor y en contra en la tabla de esta competencia. '+
     '<b>Qué tan confiable es:</b> menos que en las 5 grandes ligas. Con pocos partidos jugados los números se mueven mucho, y este modo no se ha medido contra las cuotas del mercado. '+
@@ -3097,7 +3099,7 @@ function armarDiag(){
     L.push('ESPN temporada pasada: modo '+DIAG.pasada.modo+' · '+DIAG.pasada.nota);
     L.push('  '+DIAG.pasada.leidos+' leídos, '+DIAG.pasada.terminados+' terminados'+(DIAG.pasada.errores.length?' · '+DIAG.pasada.errores.length+' errores, ej: '+DIAG.pasada.errores.slice(0,2).join(' | '):''));
   }
-  L.push('Modelo v4 Dixon-Coles: '+(DCFIT&&DCFIT.liga===LIGA_ACTUAL ? 'activo con '+DCFIT.n+' partidos, '+Object.keys(DCFIT.eq).length+' equipos (temporada pasada: '+(DIAG.dc?DIAG.dc.pasada:0)+' partidos)' : 'no activo (se usa el modelo anterior)')+' · xi '+DC_CFG.xi+' Kp '+DC_CFG.Kp+' rho '+DC_CFG.rho);
+  L.push('Modelo v4 Dixon-Coles: '+(DCFIT&&DCFIT.liga===LIGA_ACTUAL ? 'activo con '+DCFIT.n+' partidos, '+Object.keys(DCFIT.eq).length+' equipos (temporada pasada: '+(DIAG.dc?DIAG.dc.pasada:0)+' partidos, la anterior: '+(DIAG.dc?DIAG.dc.anterior:0)+')' : 'no activo (se usa el modelo anterior)')+' · xi '+DC_CFG.xi+' Kp '+DC_CFG.Kp+' rho '+DC_CFG.rho);
   L.push('Fuente usada para terminados: '+FUENTE_TERM+' ('+TERMINADOS.length+')');
   L.push('Tiros de ESPN guardados: '+Object.keys(TIROS).length+' partidos de esta liga'+(DIAG.tirosMuestra ? '\n  '+DIAG.tirosMuestra : ''));
   if(DIAG.tablaDeResultados) L.push('La tabla de posiciones de worldfootball no se pudo leer: se armó con los resultados.');
@@ -3289,7 +3291,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
 /* OVA Fútbol · v10: anillo de probabilidad, doble oportunidad, selector de tema, pulido (atenuar
    porcentajes de goles no medidos, apagar Kalshi tras un 429, verificar picks al abrir Registro). */
 (function(){
- var VER='v20';
+ var VER='v22';
  function $q(s,r){ return (r||document).querySelector(s); }
  function pct(x){ return (x*100).toFixed(1)+'%'; }
  function am(p){

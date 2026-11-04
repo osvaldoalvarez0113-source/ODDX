@@ -9,6 +9,7 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 | [`MEDICION-6-TEMPORADAS-2026-10.md`](MEDICION-6-TEMPORADAS-2026-10.md) | Medición con 6 temporadas — MLB, fútbol y NBA (octubre 2026) |
 | [`MEDICION-DIFERENCIA-CUOTAS-2026-10.md`](MEDICION-DIFERENCIA-CUOTAS-2026-10.md) | Diferencia de cuotas: ¿cuántas veces gana el favorito? (MLB y fútbol, octubre 2026) |
 | [`MEDICION-FIP-2026-10.md`](MEDICION-FIP-2026-10.md) | FIP del abridor: medición de octubre 2026 |
+| [`MEDICION-FUTBOL-MOTOR-REAL-2026-11.md`](MEDICION-FUTBOL-MOTOR-REAL-2026-11.md) | **Fútbol con el motor real y datos al día, hasta 2026-27**: qué pasa cuando modelo y mercado discrepan, y cambio a v22 |
 | [`MEDICION-FUTBOL-LOCAL-ELO-2026-10.md`](MEDICION-FUTBOL-LOCAL-ELO-2026-10.md) | Fútbol: ¿mejoran el modelo los ratings local/visita, el Elo, la mezcla con el mercado o el descanso? |
 | [`MEDICION-MERCADO-MLB-2026-10.md`](MEDICION-MERCADO-MLB-2026-10.md) | MLB contra el mercado: medición de octubre 2026 |
 | [`MEDICION-MESA-2026-10.md`](MEDICION-MESA-2026-10.md) | Medición de las reglas de la Mesa (octubre 2026) |

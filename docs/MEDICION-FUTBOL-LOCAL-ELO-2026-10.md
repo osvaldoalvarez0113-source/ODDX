@@ -16,3 +16,5 @@ Control: el modelo actual da 0.9888 de pérdida 1X2 y el mercado 0.9637, igual q
 
 Conclusión: ninguna de las ideas cambia los picks de forma útil. La mejor (Elo al 10-20 %) gana 0.0004-0.0006 de pérdida, mientras el mercado le saca 0.025; no justifica añadir una pieza más al modelo. No se tocó `futbol.html`.
 Lesionados y alineaciones no se pudieron medir: no hay datos históricos de bajas.
+
+**Actualizado en noviembre 2026:** las cifras vigentes y el efecto del Elo sobre la v22 están en [`MEDICION-FUTBOL-MOTOR-REAL-2026-11.md`](MEDICION-FUTBOL-MOTOR-REAL-2026-11.md).

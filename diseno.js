@@ -243,7 +243,7 @@ function mezclaElo(vista){
  var v='0'; try{ v=localStorage.getItem('ova_futbol_elo_mix')||'0'; }catch(e){}
  var b=el('div','dsElo','<label>🧮 Mezcla con Elo</label><select><option value="0">Apagada — como estaba</option><option value="0.1">10% Elo</option><option value="0.15">15% Elo</option><option value="0.2">20% Elo</option></select><small></small>');
  var sel=$('select',b), sm=$('small',b);
- sm.textContent='Medido en 5,256 partidos: baja la pérdida del 1X2 de 0.9888 a 0.9881 (el mercado está en 0.9637). Mejora real pero chica. Solo cambia victoria/empate/derrota; vuelve a abrir la liga para verlo.';
+ sm.textContent='Medido en 5,708 partidos: deja la pérdida del 1X2 en 0.9856 contra 0.9858 sin Elo (el mercado está en 0.9629). No se distingue de cero. Solo cambia victoria/empate/derrota; vuelve a abrir la liga para verlo.';
  if(!$('option[value="'+v+'"]',sel)) v='0';
  sel.value=v;
  sel.addEventListener('change',function(){ try{ localStorage.setItem('ova_futbol_elo_mix',sel.value); }catch(e){} });
