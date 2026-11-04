@@ -1217,7 +1217,8 @@ function espnJSON(url){
   });
 }
 function descubrirModoESPN(slug){
-  if(!ESPN_MODO){ try{ var mg = localStorage.getItem('ova_futbol_espn_modo'); if(mg==='dia' || mg==='rango') ESPN_MODO = mg; }catch(e){} }
+  /* ESPN dejó de aceptar rangos de fechas (HTTP 400). «rango» guardado de antes no se cree: se vuelve a probar una vez por sesión. */
+  if(!ESPN_MODO){ try{ if(localStorage.getItem('ova_futbol_espn_modo')==='dia') ESPN_MODO = 'dia'; }catch(e){} }
   if(ESPN_MODO) return Promise.resolve({modo:ESPN_MODO, nota:'(modo guardado)'});
   var fin = new Date(); fin.setDate(fin.getDate()-8);
   var ini = new Date(); ini.setDate(ini.getDate()-21);
