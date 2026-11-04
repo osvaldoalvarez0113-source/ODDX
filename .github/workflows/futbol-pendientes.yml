@@ -1,0 +1,46 @@
+name: Medir pendientes de futbol (solo mide)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [medir-pendientes]
+
+permissions:
+  contents: write
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Bajar partidos de ligas
+        run: node scripts/medicion/bajar_futbol.js partidos_actual.json 2>&1 | tee salida_datos.txt
+      - name: Ambos anotan y cuota previa
+        continue-on-error: true
+        run: DUMP=partidos_v22.json node scripts/medicion/fut_pendientes_ligas.js partidos_actual.json 2>&1 | tee salida_ligas.txt
+      - name: Bajar copas y selecciones
+        continue-on-error: true
+        run: node scripts/medicion/bajar_copas.js partidos_copas.json 2>&1 | tee salida_bajar_copas.txt
+      - name: Copas y selecciones
+        continue-on-error: true
+        run: node scripts/medicion/fut_pendientes_copas.js partidos_copas.json 2>&1 | tee salida_copas.txt
+      - name: Alineaciones
+        continue-on-error: true
+        run: DATOS_FUTBOL=partidos_v22.json node scripts/medicion/jugadores/futbol.js 2>&1 | tee salida_alineaciones.txt
+      - name: Guardar el resultado en la rama resultados-futbol-pendientes
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_*.txt resultado_*.txt resultado_*.json partidos_copas.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-futbol-pendientes
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado pendientes de futbol" || true
+          git push -f origin resultados-futbol-pendientes

@@ -31,7 +31,7 @@ function fecha(s) { const m = String(s || '').match(/^(\d{1,2})\/(\d{1,2})\/(\d{
       const m = { t, lg, d, h: r.HomeTeam, a: r.AwayTeam, gh, ga, y: gh > ga ? 0 : (gh === ga ? 1 : 2) };
       for (const [p, nom] of F1X2) { const o = trio(r, p); if (o) { m.mk = devig(o); m.src = nom; break; } }
       for (const [a, b, nom] of FOU) { const o = par(r, a, b); if (o) { m.ou = devig(o)[0]; m.ouSrc = nom; break; } }
-      m.ps = trio(r, 'PSC'); m.avg = trio(r, 'AvgC') || trio(r, 'Avg');
+      m.pe = trio(r, 'PS'); m.oue = par(r, 'P>2.5', 'P<2.5'); m.ps = trio(r, 'PSC'); m.avg = trio(r, 'AvgC') || trio(r, 'Avg');
       m.ouPs = par(r, 'PC>2.5', 'PC<2.5'); m.ouAvg = par(r, 'AvgC>2.5', 'AvgC<2.5');
       out.push(m); n++; src[m.src || 'sin cuota'] = (src[m.src || 'sin cuota'] || 0) + 1; ultimo = Math.max(ultimo, d);
     }
