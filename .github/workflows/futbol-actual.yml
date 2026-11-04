@@ -1,0 +1,36 @@
+name: Medir futbol con el motor real (solo mide)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [futbol-actual]
+
+permissions:
+  contents: write
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Bajar partidos
+        run: node scripts/medicion/bajar_futbol.js partidos_actual.json 2>&1 | tee salida_datos.txt
+      - name: Medir
+        run: SALIDA_JSON=resultado_futbol_actual.json node scripts/medicion/fut_dc_real.js partidos_actual.json 2>&1 | tee salida_medicion.txt
+      - name: Guardar el resultado en la rama resultados-futbol-actual
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_datos.txt salida_medicion.txt resultado_futbol_actual.json partidos_actual.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-futbol-actual
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado medicion futbol motor real" || true
+          git push -f origin resultados-futbol-actual
