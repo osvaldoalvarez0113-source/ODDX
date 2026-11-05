@@ -1,0 +1,101 @@
+
+## NBA: viaje y altura contra la línea (7156 juegos). Margen real − línea, en puntos.
+
+| Variable | c ± 2·se | z |
+|---|---|---|
+| km visitante − km local (miles) | 0.121 ± 0.287 | 0.8 |
+| km del visitante (miles) | -0.297 ± 0.395 | -1.5 |
+| Husos hacia el este, visitante | 0.274 ± 0.537 | 1.0 |
+| Husos hacia el oeste, visitante | -0.552 ± 0.545 | -2.0 |
+| Visita a altura | 0.769 ± 1.272 | 1.2 |
+| km del visitante si jugó ayer | 0.586 ± 0.870 | 1.3 |
+
+| Viaje por temporada, z de km visitante − local |
+|---|
+| 2020: z 0.4 (1062) |
+| 2021: z 0.6 (1226) |
+| 2022: z -0.7 (1220) |
+| 2023: z 0.6 (1217) |
+| 2024: z 0.3 (1215) |
+| 2025: z 0.8 (1216) |
+
+| Local en altura, a −110 | -3.7% ±8.6 (487) |
+MLB 2021: eventos ESPN 2512, con línea 2441
+MLB 2021: juegos con línea y clima acumulados 2318
+MLB 2022: eventos ESPN 2479, con línea 2409
+MLB 2022: juegos con línea y clima acumulados 4610
+MLB 2023: eventos ESPN 2474, con línea 1837
+MLB 2023: juegos con línea y clima acumulados 6401
+MLB 2024: eventos ESPN 2493, con línea 0
+MLB 2024: juegos con línea y clima acumulados 6401
+MLB 2025: eventos ESPN 2487, con línea 0
+MLB 2025: juegos con línea y clima acumulados 6401
+MLB 2026: eventos ESPN 2459, con línea 2432
+MLB 2026: juegos con línea y clima acumulados 8781
+
+## MLB: total real − línea (7151 juegos abiertos). c en carreras por mph o por °F.
+
+| Variable | c ± 2·se | z |
+|---|---|---|
+| Viento hacia afuera (mph) | 0.032 ± 0.022 | 2.9 |
+| Viento hacia adentro (mph) | -0.002 ± 0.031 | -0.2 |
+| Temperatura (°F sobre 70) | 0.012 ± 0.010 | 2.5 |
+
+| Temporada | Juegos | Viento afuera z | Viento adentro z | Temp z |
+|---|---|---|---|---|
+| 2021 | 1913 | 1.0 | -0.9 | 1.3 |
+| 2022 | 1860 | 2.2 | -0.6 | 2.6 |
+| 2023 | 1458 | 1.1 | 1.5 | 0.4 |
+| 2026 | 1920 | 1.6 | -0.1 | 0.4 |
+
+ROI a −110, ajustando en las otras temporadas (dejando una afuera):
+
+| Regla | ROI |
+|---|---|
+| Efecto esperado ≥0.25 carreras | -0.9% ±3.9 (2264) |
+| Efecto esperado ≥0.5 carreras | 3.7% ±8.6 (465) |
+| Efecto esperado ≥0.75 carreras | 22.2% ±29.6 (36) |
+| Efecto esperado ≥1 carreras | 90.9% ±0.0 (1) |
+| Viento afuera 10+ mph → Más | -0.9% ±5.7 (1082) |
+| Viento afuera 15+ mph → Más | -5.5% ±10.5 (315) |
+| Viento adentro 10+ mph → Menos | -5.1% ±9.5 (396) |
+| Viento adentro 15+ mph → Menos | -3.3% ±21.5 (79) |
+
+NFL: juegos con línea 1978, con resumen 1978, sedes-temporada con clima 172 de 186.
+
+## NFL: cambio de mariscal contra su habitual (1593 juegos; casos local 258, visita 244). Margen real − línea.
+
+| Variable | c ± 2·se (puntos) | z |
+|---|---|---|
+| Mariscal distinto (local − visita) | -0.627 ± 1.224 | -1.0 |
+
+| Regla, a −110 | ROI |
+|---|---|
+| Contra el equipo que cambia de mariscal | -6.2% ±9.1 (426) |
+
+## NFL: clima abierto (1319 juegos). Total real − línea.
+
+| Variable | c ± 2·se (puntos) | z |
+|---|---|---|
+| Viento (mph) | -0.205 ± 0.149 | -2.8 |
+| Temperatura (°F sobre 60) | -0.003 ± 0.041 | -0.1 |
+| Lluvia o nieve | -2.388 ± 2.491 | -1.9 |
+
+| Regla, a −110 | ROI |
+|---|---|
+| Viento 15+ → Menos | 3.8% ±16.9 (126) |
+| Viento 20+ → Menos | 14.5% ±37.4 (25) |
+| Frío <32°F → Menos | -5.9% ±23.0 (69) |
+
+| Techo cerrado → Más, a −110 | 2.5% ±8.1 (545) |
+
+| Techo cerrado por temporada | ROI del Más |
+|---|---|
+| 2019 | -4.5% ±23.9 (64) |
+| 2020 | 26.1% ±20.7 (75) |
+| 2021 | -3.2% ±22.3 (73) |
+| 2022 | 0.5% ±21.6 (77) |
+| 2023 | 0.6% ±21.9 (75) |
+| 2024 | -8.3% ±21.7 (77) |
+| 2025 | -0.7% ±22.0 (75) |
+| 2026 | 18.5% ±34.4 (29) |
