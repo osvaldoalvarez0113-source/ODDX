@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','prediccion.js','modelo-nhl.js','modelo-nfl.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','prediccion.js','modelo-nhl.js','modelo-nfl.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -1526,6 +1526,37 @@ sec('Huecos del modelo: selecciones y clima de NFL');
  ok('el clima de NFL solo informa: va con textContent y no toca margen, total ni probabilidad',/e\.textContent = i >= 0/.test(us)&&!/pr\.(pm|pt|pH)[^;]*wind_speed/.test(us));
  ok('clima de NFL: techo cerrado y cancha neutral no lo piden',/if \(g\.indoor\)[^\n]*\n\s*else if \(!g\.neutral && CLIMA_NFL\[H\.ab\]/.test(us));
  ok('hay coordenadas para los 32 equipos de NFL',(us.match(/CLIMA_NFL = \{[^}]*\}/)[0].match(/[A-Z]{2,3}: \[/g)||[]).length===32);
+}
+
+sec('Picks ganadores');
+{
+ const G=require(path.join(__dirname,'ganadores.js')), AC=require(path.join(__dirname,'aciertos.js')), gj=rd('ganadores.js');
+ const AH=Date.UTC(2026,10,5,12), H=36e5, it=[
+  {id:'a',app:'nba',cr:1,fecha:'2026-11-05',ts:AH+H,local:'Celtics',visita:'Nets',m1:{L:.6,A:.4},k1:{L:.8,A:.2},ksrc:'pin'},
+  {id:'b',app:'nba',cr:1,fecha:'2026-11-05',ts:AH+2*H,local:'Lakers',visita:'Suns',m1:{L:.45,A:.55},k1:{L:.4,A:.6},ksrc:'pin'},
+  {id:'c',app:'nba',cr:1,fecha:'2026-11-05',ts:AH+3*H,local:'Heat',visita:'Bulls',m1:{L:.7,A:.3}},
+  {id:'d',app:'nba',fecha:'2026-11-05',ts:AH+H,local:'Vieja',visita:'Sinmodelo',m1:{L:.9,A:.1},k1:{L:.7,A:.3}},
+  {id:'e',app:'nba',cr:1,fecha:'2026-11-05',ts:AH-H,local:'Empezado',visita:'X',m1:{L:.9,A:.1},k1:{L:.9,A:.1}},
+  {id:'f',app:'nhl',cr:1,fecha:'2026-11-05',ts:AH+H,local:'Otra',visita:'App',m1:{L:.9,A:.1},k1:{L:.9,A:.1}}];
+ const L=G.lista(it,'nba',AH,AC);
+ ok('ordena por el % del mercado y no incluye juegos empezados ni de otra app',L.map(x=>x.id).join()==='a,d,b,c');
+ ok('el ⭐ es el más probable con mercado; el visitante favorito sale como favorito',L[0].top===true&&!L[2].top&&L[2].fav==='Suns'&&L[2].local===false);
+ ok('sin mercado va al final, marcado, con el % del modelo',L[3].conMercado===false&&Math.abs(L[3].p-.7)<1e-9);
+ ok('la alerta usa el corte del deporte: 20 pts en NBA sí, 5 pts no',L[0].alerta===true&&L[2].alerta===false);
+ ok('registro viejo de NBA: usa el mercado y no finge tener modelo',L[1].modelo===null&&L[1].alerta===false&&L[1].conMercado===true);
+ ok('una derrota borra p/(1−p) victorias y el precio justo es la americana',Math.abs(G.borra(.8)-4)<1e-9&&G.americana(.8)==='−400'&&G.americana(.4)==='+150');
+ ok('trae el historial del tramo de aciertos.js',L[0].hist&&L[0].hist.n>100);
+ const res=[{app:'nba',fecha:'2026-11-01',res:'L',k1:{L:.7,A:.3}},{app:'nba',fecha:'2026-11-01',res:'A',k1:{L:.6,A:.4}},{app:'nba',fecha:'2026-11-02',res:'A',k1:{L:.8,A:.2}},{app:'nba',fecha:'2026-10-02',res:'L',k1:{L:.8,A:.2}}];
+ const ml=G.marcadorLista(res,'nba','2026-11');
+ ok('marcador de la lista: un solo ⭐ por día, solo el mes pedido y una derrota es −1',ml.g===1&&ml.p===1&&Math.abs(ml.u-((1/.7/1.03-1)-1))<1e-9);
+ const mm=G.marcadorMio([{fecha:'2026-11-03',estado:'ganado',cuota:'-150'},{fecha:'2026-11-03',estado:'perdido',cuota:'+120'},{fecha:'2026-10-03',estado:'ganado',cuota:'-150'},{fecha:'2026-11-03',cuota:'-110'}],'nba','2026-11');
+ ok('marcador de tus picks: cuenta ganados, perdidos y unidades del mes; pendientes fuera',mm.g===1&&mm.p===1&&Math.abs(mm.u-(1/1.5-1))<1e-9);
+ const mb=G.marcadorMio([{f:'2026-11-03',res:'G',am:'60',plat:'kalshi'},{f:'2026-11-03',res:'G',am:'-120'}],'mlb','2026-11');
+ ok('marcador de MLB: entiende centavos de Kalshi y americana',Math.abs(mb.u-((40/60)+(100/120)))<1e-9&&mb.g===2);
+ ok('fútbol con decimal',Math.abs(G.marcadorMio([{fecha:'2026-11-03',estado:'ganado',cuota:'1.85'}],'fut','2026-11').u-.85)<1e-9);
+ ok('no usa innerHTML ni eval: los nombres entran como texto',!/innerHTML|eval\(|new Function/.test(gj));
+ ['index.html','futbol.html','nba.html','nhl.html','nfl.html'].forEach(h=>ok(h+' carga ganadores.js después de autoregistro.js',rd(h).indexOf('<script src="ganadores.js">')>rd(h).indexOf('<script src="autoregistro.js">')&&rd(h).indexOf('<script src="autoregistro.js">')>0));
+ ok('el service worker guarda ganadores.js',/'ganadores\.js'/.test(rd('sw.js')));
 }
 
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
