@@ -11,13 +11,17 @@ permissions:
 jobs:
   medir:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Clima y mariscales
+      - name: Traer filas de NBA
+        run: |
+          git fetch -q --depth 1 origin resultados-nba-6t
+          git show FETCH_HEAD:filas_nba.json > filas_nba.json
+      - name: Clima, mariscales y viaje
         run: node scripts/medicion/huecos_clima.js 2>&1 | tee salida_huecos.txt
       - name: Guardar el resultado en la rama resultados-huecos
         if: always()
