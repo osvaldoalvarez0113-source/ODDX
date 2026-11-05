@@ -1,0 +1,57 @@
+Juegos 7293, con boxscore 7285
+Juegos medibles 6525
+
+## Encima de la línea y encima del modelo (puntos de margen, local − visita)
+
+| Variable | Sobre la línea, c ± 2·se | z | Sobre el modelo, c | z |
+|---|---|---|---|---|
+| Regresos de estrella (ausente 3+ juegos) | 0.078 ± 1.352 | 0.1 | 1.219 | 1.7 |
+| Producción que regresa | 0.003 ± 0.043 | 0.1 | 0.042 | 1.9 |
+| Producción llegada por traspaso (10 juegos) | 0.002 ± 0.021 | 0.2 | 0.011 | 1.0 |
+| Producción que se fue por traspaso (10 juegos) | -0.006 ± 0.015 | -0.8 | -0.009 | -1.1 |
+| Continuidad del plantel (% minutos) | 2.172 ± 1.439 | 3.0 | 4.568 | 6.1 |
+| Producción de los que juegan hoy | 0.002 ± 0.018 | 0.2 | 0.119 | 13.1 |
+
+| Inicio de temporada, continuidad |  |  |  |  |
+|---|---|---|---|---|
+| Continuidad, primeros 12 juegos | -0.211 ± 4.642 | -0.1 | 0.957 | 0.4 |
+
+## Por temporada (z sobre la línea)
+
+| Temporada | Juegos | Regreso | Traspaso llegada | Traspaso ida | Presentes |
+|---|---|---|---|---|---|
+| 2020 | 954 | 0.8 | -1.6 | -1.8 | 0.8 |
+| 2021 | 1120 | -0.1 | 0.1 | -2.0 | 0.2 |
+| 2022 | 1115 | -0.0 | -0.5 | 0.3 | -0.2 |
+| 2023 | 1108 | -1.3 | 1.0 | 0.9 | -0.1 |
+| 2024 | 1117 | 0.3 | 0.1 | -0.7 | -0.8 |
+| 2025 | 1111 | 0.4 | 0.5 | 0.7 | 0.7 |
+
+## ¿Cuánto mejora el modelo? Margen real con el modelo solo y sumando presentes y regresos (RMSE fuera de muestra: ajuste en temporadas anteriores)
+
+RMSE modelo 14.21 · modelo + jugadores 13.98 · línea 13.69
+
+| Regla, a −110, contra la línea | ROI |
+|---|---|
+| Al equipo con estrella que regresa | 0.4% ±9.6 (388) |
+| Al equipo con traspaso reciente (15+ de producción) | -2.8% ±6.0 (989) |
+| Contra el equipo con traspaso reciente (15+) | -6.1% ±6.0 (989) |
+
+## Continuidad por temporada y ROI dejando una temporada afuera
+
+| Temporada | Juegos | c | z |
+|---|---|---|---|
+| 2020 | 954 | sin temporada anterior | |
+| 2021 | 1120 | 3.77 | 2.2 |
+| 2022 | 1115 | -0.28 | -0.2 |
+| 2023 | 1108 | 1.85 | 1.3 |
+| 2024 | 1117 | 3.81 | 2.2 |
+| 2025 | 1111 | 2.10 | 1.1 |
+| Al equipo con 10+ pts más de continuidad | -1.8% ±3.1 (3796) |
+| Al equipo con 20+ pts más de continuidad | -1.2% ±3.9 (2376) |
+| Al equipo con 30+ pts más de continuidad | -1.1% ±5.3 (1309) |
+| Al equipo con 40+ pts más de continuidad | -1.3% ±7.4 (656) |
+Continuidad: media 0.005 desviación 0.254
+Juegos 8-30 de temporada: c 1.34 z 0.9 (1666)
+Juegos 30-50 de temporada: c 2.40 z 1.7 (1501)
+Juegos 50-90 de temporada: c 2.45 z 2.4 (2352)

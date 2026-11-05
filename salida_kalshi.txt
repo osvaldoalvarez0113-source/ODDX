@@ -1,0 +1,136 @@
+Pinnacle en historia: mlb 35, nba 159, nfl 34, nhl 63
+
+nba: eventos resueltos 1636
+nba: sin mercados en la lista 1448; se piden uno por uno
+nba: viejos en historial 1445
+nba: mercados completos 1633, cruzados 1632, sin ESPN 1, sin precio 0, con línea ESPN 1235, con Pinnacle 76
+
+nhl: eventos resueltos 1847
+nhl: sin mercados en la lista 1538; se piden uno por uno
+nhl: viejos en historial 1537
+nhl: mercados completos 1846, cruzados 1614, sin ESPN 232, sin precio 0, con línea ESPN 1095, con Pinnacle 22
+
+nfl: eventos resueltos 502
+nfl: sin mercados en la lista 371; se piden uno por uno
+nfl: viejos en historial 364
+nfl: mercados completos 495, cruzados 491, sin ESPN 3, sin precio 1, con línea ESPN 255, con Pinnacle 13
+
+mlb: eventos resueltos 4684
+mlb: sin mercados en la lista 4227; se piden uno por uno
+mlb: viejos en historial 4216
+mlb: mercados completos 4673, cruzados 4647, sin ESPN 2, sin precio 24, con línea ESPN 2455, con Pinnacle 13
+
+## todos (8384 juegos)
+Diferencial al comprar los dos lados (mediana): 1.0 centavos
+Error Kalshi 0.6569
+Con línea ESPN (5040): Kalshi 0.6518 línea 0.6515 | distancia mediana 0.7 pts
+Por temporada del favorito (compra 60+ centavos) y del perro (menos de 40): 2025 fav -7.9% ±3.3 (1811) perro -1.7% ±7.9 (1392) · 2026 fav -2.4% ±3.0 (1990) perro -13.1% ±7.6 (1527)
+| Regla, al precio de compra y con comisión | ROI |
+|---|---|
+| Todo (referencia) | -4.6% ±1.6 (16768) |
+| Compra entre 1 y 25 centavos: ganó 16.6% | -15.9% ±16.0 (592) |
+| Compra entre 25 y 40 centavos: ganó 33.8% | -5.6% ±5.5 (2327) |
+| Compra entre 40 y 50 centavos: ganó 46.5% | 0.0% ±3.1 (4819) |
+| Compra entre 50 y 60 centavos: ganó 52.2% | -6.8% ±2.5 (5229) |
+| Compra entre 60 y 75 centavos: ganó 62.7% | -5.9% ±2.6 (3059) |
+| Compra entre 75 y 99 centavos: ganó 82.2% | -1.5% ±3.4 (741) |
+| Kalshi 0+ centavos más barato que la línea ESPN sin margen | -3.3% ±4.5 (2774) |
+| Kalshi 1+ centavos más barato que la línea ESPN sin margen | 0.9% ±10.3 (720) |
+| Kalshi 2+ centavos más barato que la línea ESPN sin margen | -3.1% ±19.2 (196) |
+| Kalshi 3+ centavos más barato que la línea ESPN sin margen | 12.9% ±31.8 (64) |
+| Kalshi 5+ centavos más barato que la línea ESPN sin margen | 69.0% ±83.9 (16) |
+| Kalshi 0+ centavos más barato que Pinnacle sin margen | -21.0% ±23.3 (80) |
+| Kalshi 1+ centavos más barato que Pinnacle sin margen | -35.7% ±37.2 (35) |
+| Kalshi 2+ centavos más barato que Pinnacle sin margen | -63.7% ±49.1 (12) |
+| Kalshi 3+ centavos más barato que Pinnacle sin margen | -49.7% ±100.5 (4) |
+
+## nba (1632 juegos)
+Diferencial al comprar los dos lados (mediana): 1.0 centavos
+Error Kalshi 0.5847
+Con línea ESPN (1235): Kalshi 0.5804 línea 0.5799 | distancia mediana 0.9 pts
+Por temporada del favorito (compra 60+ centavos) y del perro (menos de 40): 2025 fav -8.5% ±5.8 (485) perro 2.8% ±15.8 (445) · 2026 fav -1.4% ±4.3 (748) perro -17.3% ±12.8 (666)
+| Regla, al precio de compra y con comisión | ROI |
+|---|---|
+| Todo (referencia) | -5.8% ±4.1 (3264) |
+| Compra entre 1 y 25 centavos: ganó 15.3% | -19.5% ±17.9 (478) |
+| Compra entre 25 y 40 centavos: ganó 33.6% | -1.6% ±11.1 (633) |
+| Compra entre 40 y 50 centavos: ganó 46.4% | 0.1% ±9.9 (481) |
+| Compra entre 50 y 60 centavos: ganó 52.2% | -7.9% ±8.4 (439) |
+| Compra entre 60 y 75 centavos: ganó 63.4% | -6.8% ±5.5 (672) |
+| Compra entre 75 y 99 centavos: ganó 83.4% | -1.1% ±3.8 (560) |
+| Kalshi 0+ centavos más barato que la línea ESPN sin margen | -5.0% ±10.1 (839) |
+| Kalshi 1+ centavos más barato que la línea ESPN sin margen | -0.3% ±18.1 (333) |
+| Kalshi 2+ centavos más barato que la línea ESPN sin margen | -6.3% ±26.3 (119) |
+| Kalshi 3+ centavos más barato que la línea ESPN sin margen | 11.5% ±43.3 (41) |
+| Kalshi 5+ centavos más barato que la línea ESPN sin margen | 62.6% ±112.6 (12) |
+| Kalshi 0+ centavos más barato que Pinnacle sin margen | -21.7% ±27.4 (52) |
+| Kalshi 1+ centavos más barato que Pinnacle sin margen | -35.9% ±40.4 (26) |
+| Kalshi 2+ centavos más barato que Pinnacle sin margen | -70.7% ±58.6 (8) |
+| Kalshi 3+ centavos más barato que Pinnacle sin margen | -100.0% ±0.0 (3) |
+
+## nhl (1614 juegos)
+Diferencial al comprar los dos lados (mediana): 1.0 centavos
+Error Kalshi 0.6698
+Con línea ESPN (1095): Kalshi 0.6683 línea 0.6692 | distancia mediana 0.6 pts
+Por temporada del favorito (compra 60+ centavos) y del perro (menos de 40): 2025 fav -9.4% ±8.7 (287) perro 2.4% ±19.6 (182) · 2026 fav 1.9% ±7.2 (379) perro -22.5% ±15.2 (279)
+| Regla, al precio de compra y con comisión | ROI |
+|---|---|
+| Todo (referencia) | -5.0% ±3.5 (3228) |
+| Compra entre 1 y 25 centavos: ganó 18.2% | -21.5% ±105.5 (11) |
+| Compra entre 25 y 40 centavos: ganó 32.0% | -12.5% ±12.1 (450) |
+| Compra entre 40 y 50 centavos: ganó 46.2% | -0.4% ±6.8 (1013) |
+| Compra entre 50 y 60 centavos: ganó 52.1% | -7.1% ±5.4 (1088) |
+| Compra entre 60 y 75 centavos: ganó 64.5% | -3.1% ±5.7 (639) |
+| Compra entre 75 y 99 centavos: ganó 77.8% | -0.0% ±21.0 (27) |
+| Kalshi 0+ centavos más barato que la línea ESPN sin margen | -9.1% ±8.3 (589) |
+| Kalshi 1+ centavos más barato que la línea ESPN sin margen | -7.9% ±17.6 (141) |
+| Kalshi 2+ centavos más barato que la línea ESPN sin margen | -19.3% ±50.3 (18) |
+| Kalshi 3+ centavos más barato que la línea ESPN sin margen | -14.0% ±82.4 (7) |
+| Kalshi 5+ centavos más barato que la línea ESPN sin margen | sin apuestas |
+| Kalshi 0+ centavos más barato que Pinnacle sin margen | -24.3% ±57.8 (15) |
+| Kalshi 1+ centavos más barato que Pinnacle sin margen | -66.5% ±67.0 (6) |
+| Kalshi 2+ centavos más barato que Pinnacle sin margen | -49.7% ±100.5 (4) |
+| Kalshi 3+ centavos más barato que Pinnacle sin margen | 101.0% ±0.0 (1) |
+
+## nfl (491 juegos)
+Diferencial al comprar los dos lados (mediana): 1.0 centavos
+Error Kalshi 0.6402
+Con línea ESPN (255): Kalshi 0.6584 línea 0.6551 | distancia mediana 1.0 pts
+Por temporada del favorito (compra 60+ centavos) y del perro (menos de 40): 2025 fav -6.0% ±8.9 (212) perro -3.7% ±22.6 (190) · 2026 fav -9.5% ±12.1 (131) perro 11.1% ±31.6 (107)
+| Regla, al precio de compra y con comisión | ROI |
+|---|---|
+| Todo (referencia) | -3.0% ±7.2 (982) |
+| Compra entre 1 y 25 centavos: ganó 22.7% | 5.2% ±42.3 (88) |
+| Compra entre 25 y 40 centavos: ganó 34.9% | 0.1% ±19.2 (209) |
+| Compra entre 40 y 50 centavos: ganó 48.6% | 6.0% ±16.3 (181) |
+| Compra entre 50 y 60 centavos: ganó 49.7% | -12.1% ±14.0 (161) |
+| Compra entre 60 y 75 centavos: ganó 62.1% | -8.0% ±9.5 (232) |
+| Compra entre 75 y 99 centavos: ganó 77.5% | -6.0% ±9.7 (111) |
+| Kalshi 0+ centavos más barato que la línea ESPN sin margen | 5.4% ±17.6 (187) |
+| Kalshi 1+ centavos más barato que la línea ESPN sin margen | 23.0% ±29.6 (75) |
+| Kalshi 2+ centavos más barato que la línea ESPN sin margen | 12.8% ±46.1 (31) |
+| Kalshi 3+ centavos más barato que la línea ESPN sin margen | 17.9% ±77.5 (9) |
+| Kalshi 5+ centavos más barato que la línea ESPN sin margen | 54.7% ±0.0 (1) |
+| Kalshi 0+ centavos más barato que Pinnacle sin margen | -34.5% ±91.2 (9) |
+| Kalshi 1+ centavos más barato que Pinnacle sin margen | 26.7% ±253.4 (3) |
+
+## mlb (4647 juegos)
+Diferencial al comprar los dos lados (mediana): 1.0 centavos
+Error Kalshi 0.6795
+Con línea ESPN (2455): Kalshi 0.6797 línea 0.6793 | distancia mediana 0.6 pts
+Por temporada del favorito (compra 60+ centavos) y del perro (menos de 40): 2025 fav -7.6% ±5.1 (827) perro -5.9% ±11.0 (575) · 2026 fav -4.3% ±5.5 (732) perro -7.2% ±11.9 (475)
+| Regla, al precio de compra y con comisión | ROI |
+|---|---|
+| Todo (referencia) | -4.2% ±2.1 (9294) |
+| Compra entre 1 y 25 centavos: ganó 20.0% | -20.9% ±84.6 (15) |
+| Compra entre 25 y 40 centavos: ganó 34.4% | -6.3% ±8.1 (1035) |
+| Compra entre 40 y 50 centavos: ganó 46.5% | -0.2% ±3.8 (3144) |
+| Compra entre 50 y 60 centavos: ganó 52.4% | -6.3% ±3.0 (3541) |
+| Compra entre 60 y 75 centavos: ganó 61.7% | -6.3% ±3.8 (1516) |
+| Compra entre 75 y 99 centavos: ganó 81.4% | 4.8% ±15.5 (43) |
+| Kalshi 0+ centavos más barato que la línea ESPN sin margen | -0.6% ±6.0 (1159) |
+| Kalshi 1+ centavos más barato que la línea ESPN sin margen | 0.7% ±16.6 (171) |
+| Kalshi 2+ centavos más barato que la línea ESPN sin margen | 3.5% ±44.2 (28) |
+| Kalshi 3+ centavos más barato que la línea ESPN sin margen | 41.9% ±73.7 (7) |
+| Kalshi 5+ centavos más barato que la línea ESPN sin margen | 99.5% ±20.0 (3) |
+| Kalshi 0+ centavos más barato que Pinnacle sin margen | 30.1% ±87.9 (4) |
