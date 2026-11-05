@@ -6,7 +6,7 @@
      2) Forma: últimos 6 partidos con rival, marcador, tipo de partido y Elo del rival,
      3) Cara a cara de los últimos 4 años,
      4) Tipo de partido (amistoso / Liga de Naciones / eliminatoria / torneo / Mundial);
-        los amistosos pesan menos en el Elo (K 20 contra 40-60).
+        los amistosos pesan menos en el Elo (K 25 contra 50-75).
    El historial se baja una sola vez y queda guardado en el teléfono (después solo baja lo nuevo). */
 (function(){
 /* nombres y escudos de ESPN: se limpian en el origen porque luego se pintan con innerHTML */
@@ -41,9 +41,10 @@ function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u
    ['afc.asian.cup','torneo']
   ];
   // K del Elo por tipo de partido (los amistosos pesan la mitad que un partido oficial)
-  var KT = {amistoso:20, 'liga de naciones':40, eliminatoria:40, torneo:50, mundial:60};
-  // ventaja de local (en puntos Elo): solo donde el local es de verdad local; amistosos y torneos casi siempre son neutrales
-  var HA = {eliminatoria:100, 'liga de naciones':100};
+  /* Medido fuera de muestra (docs/MEDICION-HUECOS-2026-11.md), 3,329 partidos 2023-26: 0.9165 -> 0.9050, z -4.8. El mercado sigue mejor (0.893 contra 0.829). */
+  var KT = {amistoso:25, 'liga de naciones':50, eliminatoria:50, torneo:62.5, mundial:75};
+  // ventaja de local (en puntos Elo): menor en amistosos y torneos, donde parte de los partidos son en cancha neutral
+  var HA = {eliminatoria:60, 'liga de naciones':60, amistoso:40, torneo:40, mundial:40};
   var TIPO_TXT = {amistoso:'amistoso', 'liga de naciones':'Liga de Naciones', eliminatoria:'eliminatoria', torneo:'torneo', mundial:'Mundial'};
   var CK = 'ova_sel_hist_v1';
 
@@ -332,7 +333,7 @@ function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u
     nota = 'Todavía no hay suficientes partidos para chequear qué tan bien acierta este Elo.';
    }
    nota += ' Contra las cuotas (2,197 partidos) el mercado le gana: error 0.829 contra 0.904, y apostar donde el Elo se separa perdió −21%. Es referencia, no valor.';
-   h += '<div class="nota" style="margin-top:6px">'+nota+' '+(ha ? 'Incluye ventaja de local (+'+ha+') por ser '+TIPO_TXT[tipoComp]+'.' : 'Sin ventaja de local (amistosos y torneos suelen ser en cancha neutral).')+
+   h += '<div class="nota" style="margin-top:6px">'+nota+' '+(ha ? 'Incluye ventaja de local (+'+ha+') por ser '+TIPO_TXT[tipoComp]+'.' : 'Sin ventaja de local.')+
     ' No sabe de lesiones, alineaciones ni de lo que se juega cada equipo: úsalo como referencia, no como pick.</div>';
    return h;
   }

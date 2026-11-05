@@ -403,6 +403,22 @@
      <div class="nota">Probabilidad de Pinnacle ya sin su margen y la cuota justa que le corresponde (actualizado hace ${pinTxt()}). Una cuota solo tiene valor si paga <b>más</b> que esa cuota justa. El mercado es la mejor estimación; el modelo queda de referencia.</div>`;
   }
 
+  /* NFL: clima a la hora del juego. Solo informa: medido contra la línea, no da para apostar (docs/MEDICION-HUECOS-2026-11.md). */
+  const CLIMA_NFL = { ARI: [33.5, -112.3], ATL: [33.8, -84.4], BAL: [39.3, -76.6], BUF: [42.8, -78.8], CAR: [35.2, -80.9], CHI: [41.9, -87.6], CIN: [39.1, -84.5], CLE: [41.5, -81.7], DAL: [32.7, -97.1], DEN: [39.7, -105], DET: [42.3, -83], GB: [44.5, -88], HOU: [29.7, -95.4], IND: [39.8, -86.2], JAX: [30.3, -81.6], KC: [39, -94.5], LV: [36.1, -115.2], LAC: [33.95, -118.3], LAR: [33.95, -118.3], MIA: [25.96, -80.2], MIN: [45, -93.3], NE: [42.1, -71.3], NO: [30, -90.1], NYG: [40.8, -74.1], NYJ: [40.8, -74.1], PHI: [39.9, -75.2], PIT: [40.4, -80], SF: [37.4, -122], SEA: [47.6, -122.3], TB: [27.98, -82.5], TEN: [36.2, -86.8], WSH: [38.9, -76.9] };
+  function textoClimaNfl(viento, temp, lluvia) {
+    let t = 'Clima a la hora del juego: viento ' + Math.round(viento) + ' mph · ' + Math.round(temp) + '°F · lluvia o nieve ' + Math.round(lluvia) + '%.';
+    if (viento >= 15) t += ' Con viento así el total suele quedar un poco por debajo de la línea, pero apostar Menos no dio ganancia comprobada.';
+    return t;
+  }
+  function pintarClimaNfl(g, ab) {
+    const el = () => document.querySelector('[data-clima-nfl="' + g.id + '"]'), c = CLIMA_NFL[ab], f = new Date(g.ts).toISOString().slice(0, 10);
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + c[0] + '&longitude=' + c[1] + '&hourly=temperature_2m,wind_speed_10m,precipitation_probability&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=GMT&start_date=' + f + '&end_date=' + f)
+      .then(r => r.ok ? r.json() : null).then(j => {
+        const e = el(); if (!e) return;
+        const h = j && j.hourly, i = h ? h.time.indexOf(new Date(g.ts).toISOString().slice(0, 13) + ':00') : -1;
+        e.textContent = i >= 0 && isFinite(h.wind_speed_10m[i]) ? textoClimaNfl(h.wind_speed_10m[i], h.temperature_2m[i], h.precipitation_probability[i] || 0) : 'Clima del juego no disponible.';
+      }).catch(() => { const e = el(); if (e) e.textContent = 'Clima del juego no disponible.'; });
+  }
   function descansoTxt(g, pr, H, A) {
     if (DEP === 'nhl') {
       const li = [];
@@ -417,6 +433,7 @@
     if (a || h) li.push(['ok', [a, h].filter(Boolean).join(' ')]); else li.push(['ok', 'Descanso normal para los dos.']);
     if (g.neutral) li.push(['w', 'Cancha neutral: el modelo no le da ventaja de local a nadie.']);
     if (g.indoor) li.push(['ok', 'Techo cerrado: el viento y el frío no pesan.']);
+    else if (!g.neutral && CLIMA_NFL[H.ab] && !g.done && g.ts - Date.now() < 15 * 864e5 && g.ts > Date.now() - 6 * 36e5) { li.push(['ok', '<span data-clima-nfl="' + g.id + '">Buscando el clima del juego…</span>']); setTimeout(() => pintarClimaNfl(g, H.ab), 60); }
     return li;
   }
   /* bajas del robot (rama datos): mariscales en NFL y cambio de portero en NHL. Solo informa: no entra a ningún cálculo. */

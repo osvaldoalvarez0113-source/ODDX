@@ -10,6 +10,7 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 | [`MEDICION-DIFERENCIA-CUOTAS-2026-10.md`](MEDICION-DIFERENCIA-CUOTAS-2026-10.md) | Diferencia de cuotas: ¿cuántas veces gana el favorito? (MLB y fútbol, octubre 2026) |
 | [`MEDICION-FIP-2026-10.md`](MEDICION-FIP-2026-10.md) | FIP del abridor: medición de octubre 2026 |
 | [`MEDICION-FUTBOL-PENDIENTES-2026-11.md`](MEDICION-FUTBOL-PENDIENTES-2026-11.md) | **Fútbol: lo que faltaba**: Ambos anotan, cuota previa, alineaciones, copas europeas, copas nacionales y selecciones |
+| [`MEDICION-HUECOS-2026-11.md`](MEDICION-HUECOS-2026-11.md) | **Lo que el modelo no lee**: clima, viaje, mariscal, copas entre semana y selecciones |
 | [`MEDICION-FUTBOL-COPAS-2026-11.md`](MEDICION-FUTBOL-COPAS-2026-11.md) | **Champions**: fuerza entre ligas con todas las copas europeas, y corrección del registro Auto en NBA, NHL y NFL |
 | [`MEDICION-FUTBOL-MOTOR-REAL-2026-11.md`](MEDICION-FUTBOL-MOTOR-REAL-2026-11.md) | **Fútbol con el motor real y datos al día, hasta 2026-27**: qué pasa cuando modelo y mercado discrepan, y cambio a v22 |
 | [`MEDICION-FUTBOL-LOCAL-ELO-2026-10.md`](MEDICION-FUTBOL-LOCAL-ELO-2026-10.md) | Fútbol: ¿mejoran el modelo los ratings local/visita, el Elo, la mezcla con el mercado o el descanso? |

@@ -91,6 +91,7 @@ Todos en `.github/workflows/`. «OddsPapi» = gasta llamadas del plan (250 al me
 | Workflow | Cuándo corre | Qué hace | OddsPapi |
 |---|---|---|---|
 | `fuerza-copas.yml` | a diario y las noches de copa | actualiza `fuerza-copas.json` con los partidos terminados de copas europeas | no |
+| `medir-huecos.yml` | a mano o al subir a la rama `medir-huecos` | mide clima de MLB y NFL, mariscal de NFL y viaje de NBA contra la línea (resultado en `resultados-huecos`) | no |
 | `futbol-pendientes.yml` | a mano o al subir a la rama `medir-pendientes` | mide Ambos anotan, cuota previa, alineaciones, copas y selecciones (resultado en `resultados-futbol-pendientes`) | no |
 | `futbol-actual.yml` | a mano o al subir a la rama `futbol-actual` | mide fútbol con el motor real y datos al día (resultado en `resultados-futbol-actual`) | no |
 | `pruebas.yml` | en cada subida a `main` y en pull requests | corre `pruebas.js` (sintaxis, nombres, modelos, hub, respaldo…). Una X roja = algo se rompió | no |

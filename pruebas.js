@@ -1519,6 +1519,15 @@ sec('Champions: fuerza entre ligas; Auto guarda el modelo solo');
  ok('el workflow guarda solo los dos archivos de datos',/git add hist-copas\.json fuerza-copas\.json/.test(rd('.github/workflows/fuerza-copas.yml')));
 }
 
+sec('Huecos del modelo: selecciones y clima de NFL');
+{
+ const sj=rd('selecciones.js'), us=rd('usdeporte.js');
+ ok('selecciones usa el K y la localía medidos',/amistoso:25, 'liga de naciones':50, eliminatoria:50, torneo:62\.5, mundial:75/.test(sj)&&/eliminatoria:60, 'liga de naciones':60, amistoso:40, torneo:40, mundial:40/.test(sj));
+ ok('el clima de NFL solo informa: va con textContent y no toca margen, total ni probabilidad',/e\.textContent = i >= 0/.test(us)&&!/pr\.(pm|pt|pH)[^;]*wind_speed/.test(us));
+ ok('clima de NFL: techo cerrado y cancha neutral no lo piden',/if \(g\.indoor\)[^\n]*\n\s*else if \(!g\.neutral && CLIMA_NFL\[H\.ab\]/.test(us));
+ ok('hay coordenadas para los 32 equipos de NFL',(us.match(/CLIMA_NFL = \{[^}]*\}/)[0].match(/[A-Z]{2,3}: \[/g)||[]).length===32);
+}
+
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);
