@@ -33,7 +33,8 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 | `railway.js` | Compara (o aplica) el cálculo del servidor Railway sobre el Veredicto de MLB. **Única copia** de ese parche. |
 | `pinnacle.js` + `pinnacle-datos.json` | Muestra lo que dice el mercado (Pinnacle sin margen). El JSON lo escribe el escáner de GitHub Actions. |
 | `mejoras.js`, `selecciones.js` | Lesionados + clima (fútbol) y selecciones (ESPN). |
-| `pruebas.js` | 400 pruebas automáticas. `node --expose-internals pruebas.js` |
+| `scripts/fuerza_copas.js`, `fuerza-copas.json`, `hist-copas.json` | **Champions**: fuerza de equipos con Champions, Europa y Conference juntas. El workflow *Fuerza de copas europeas* la actualiza con ESPN y `futbol.html` la lee; si no baja, sigue el modelo básico. Medición: `docs/MEDICION-FUTBOL-COPAS-2026-11.md`. |
+| `pruebas.js` | Pruebas automáticas. `node --expose-internals pruebas.js` |
 | `backtests/` | Páginas de medición (se abren en el navegador). Cada decisión de la fórmula salió de una de ellas. Índice en `backtests/index.html`. |
 | `scripts/` | Lo que corre en GitHub Actions o a mano: `valor.js` (escáner Pinnacle, ahora también avisa movimientos de cuota con `mov.js`), `avisos.js` (abridor cambiado, alineación oficial y clima por ntfy), `correr_mercado.js`, `correr_deportes.js`, `ova_formula.py`. |
 | `worker/ova-ia.js` | Versión **endurecida** del Worker de Cloudflare del botón 🦈 (ver abajo). |
@@ -89,6 +90,7 @@ Todos en `.github/workflows/`. «OddsPapi» = gasta llamadas del plan (250 al me
 
 | Workflow | Cuándo corre | Qué hace | OddsPapi |
 |---|---|---|---|
+| `fuerza-copas.yml` | a diario y las noches de copa | actualiza `fuerza-copas.json` con los partidos terminados de copas europeas | no |
 | `futbol-pendientes.yml` | a mano o al subir a la rama `medir-pendientes` | mide Ambos anotan, cuota previa, alineaciones, copas y selecciones (resultado en `resultados-futbol-pendientes`) | no |
 | `futbol-actual.yml` | a mano o al subir a la rama `futbol-actual` | mide fútbol con el motor real y datos al día (resultado en `resultados-futbol-actual`) | no |
 | `pruebas.yml` | en cada subida a `main` y en pull requests | corre `pruebas.js` (sintaxis, nombres, modelos, hub, respaldo…). Una X roja = algo se rompió | no |

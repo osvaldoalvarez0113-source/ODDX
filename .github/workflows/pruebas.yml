@@ -8,6 +8,8 @@ on:
       - pinnacle-datos.json
       - pinnacle-futbol.json
       - pinnacle-nba.json
+      - fuerza-copas.json
+      - hist-copas.json
   pull_request:
   workflow_dispatch:
 

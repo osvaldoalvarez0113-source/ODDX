@@ -670,7 +670,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 <body>
 <header>
  <div class="top">
-  <h1>⚽ FÚTBOL <span class="ver">v22</span></h1>
+  <h1>⚽ FÚTBOL <span class="ver">v23</span></h1>
   <select id="ligaSel">
    <optgroup label="Ligas">
     <option value="pl">Premier League</option>
@@ -739,7 +739,7 @@ html[data-app=fut]:not([data-skin]) .nota{color:#7C92AA}
 
 
 <script>
-var VERSION = 'v22';
+var VERSION = 'v23';
 var EQUIPOS = null;
 var PARTIDOS = null;
 var PENDIENTES_TODOS = [];
@@ -1817,7 +1817,7 @@ function calcularDC(eL, eV){
   var lamL = f.c*xl.att*xv.def*f.gam, lamV = f.c*xv.att*xl.def;
   var d = distribucion(lamL, lamV, DC_CFG.rho, true);
   var g0 = distribucion(f.hAvg, f.aAvg, DC_CFG.rho, false);
-  var g = mezclar(d, g0, DC_CFG.wt, CLAVES_GOLES);
+  var g = mezclar(d, g0, f.wt!==undefined ? f.wt : DC_CFG.wt, CLAVES_GOLES);
   var pL = d.pL, pD = d.pD, pV = d.pV, wE = eloMix(), conElo = false;
   if(wE>0 && f.elo){
     var rl = buscarEnMapa(f.elo, eL.nombre), rv = buscarEnMapa(f.elo, eV.nombre);
@@ -1831,14 +1831,27 @@ function calcularDC(eL, eV){
 }
 function calcular(eL, eV, P){
   if(P===undefined && DCFIT && DCFIT.liga===LIGA_ACTUAL && !LIGA_ES_COPA){
-    try{ return calcularDC(eL, eV); }catch(e){}
+    /* Champions: si un equipo no está en fuerza-copas.json, se queda el básico; el prior de "recién llegado" no sirve con un cruce de nombres fallido */
+    var conAmbos = !DCFIT.copa || (buscarEnMapa(DCFIT.eq, eL.nombre) && buscarEnMapa(DCFIT.eq, eV.nombre));
+    if(conAmbos){ try{ return calcularDC(eL, eV); }catch(e){} }
   }
   return calcularBase(eL, eV, P);
 }
 // Arma el ajuste con las dos temporadas anteriores (de la memoria del teléfono o de ESPN) + lo que va de esta. Mientras se prepara, el modelo básico responde.
 // Si la más vieja no baja, sigue con la pasada sola.
+/* Champions: la fuerza sale de fuerza-copas.json (Champions, Europa y Conference juntas, scripts/fuerza_copas.js). Europa y Conference siguen con el básico: no mejoraron de forma clara.
+   Medido en docs/MEDICION-FUTBOL-COPAS-2026-11.md: 539 partidos de Champions fuera de muestra, básico 0.9858, este 0.9125, mercado 0.8994. Si el archivo no baja, sigue el básico. */
+function prepararDCCopa(clave, mio){
+  fetch('fuerza-copas.json?v='+Date.now()).then(function(r){ return r.ok ? r.json() : null; }).then(function(fit){
+    if(mio!==CARGA_ID || !fit || !fit.eq) return;
+    fit.liga = clave; fit.copa = true; DCFIT = fit;
+    DIAG.dc = {partidos:fit.n, equipos:Object.keys(fit.eq).length, pasada:0, anterior:0};
+    try{ pintarEstado(LIGAS[clave]); aplicarSelectorDias(); }catch(e){}
+  }).catch(function(){});
+}
 function prepararDC(clave, mio){
   DCFIT = null;
+  if(clave==='cl'){ prepararDCCopa(clave, mio); return; }
   if(LIGA_ES_COPA || !DC_CFG.ligas[clave] || !ESPN_SLUG[clave] || !TERMINADOS || !TERMINADOS.length) return;
   var actuales = TERMINADOS.slice();
   var nada = function(){ return []; };
@@ -2226,7 +2239,11 @@ function pintarGameBody(bodyEl, p, eL, eV){
   var id = 'g'+Math.random().toString(36).slice(2);
   var estadoParams = PARAMS.calibrado ? 'calibrados con datos reales' : 'valores de arranque, aún sin calibrar (ve a Backtest)';
   /* texto de «Cómo se lee»: el modelo de las 5 ligas grandes está medido; el básico (Champions, Europa, Conference o si faltan datos) no */
-  var comoCalc = base.r.dc ?
+  var comoCalc = (base.r.dc && DCFIT && DCFIT.copa) ?
+    '<b>Cómo se calcula:</b> con los goles de cada equipo en Champions, Europa League y Conference de los últimos 3 años, para comparar la fuerza entre ligas (los partidos recientes pesan más). '+
+    '<b>Qué tan confiable es:</b> probado en 539 partidos de Champions (2023-24 a hoy): error 0.913, contra 0.986 de la fórmula anterior y 0.899 del mercado. El mercado sigue siendo mejor. '+
+    'No sabe de lesiones ni de alineaciones, y con equipos de pocos partidos europeos se equivoca más.' :
+    base.r.dc ?
     '<b>Cómo se calcula:</b> con los goles que cada equipo ha metido y recibido esta temporada y las dos anteriores (los partidos recientes pesan más). '+
     '<b>Qué tan confiable es:</b> probado en 5,708 partidos de las 5 grandes ligas (2023-24 a hoy) contra las cuotas de cierre, el mercado acierta más que este modelo (error 0.963 contra 0.986). '+
     'Así que es una referencia, no una ventaja. No sabe de lesiones ni de alineaciones.' :
@@ -3292,7 +3309,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
 /* OVA Fútbol · v10: anillo de probabilidad, doble oportunidad, selector de tema, pulido (atenuar
    porcentajes de goles no medidos, apagar Kalshi tras un 429, verificar picks al abrir Registro). */
 (function(){
- var VER='v22';
+ var VER='v23';
  function $q(s,r){ return (r||document).querySelector(s); }
  function pct(x){ return (x*100).toFixed(1)+'%'; }
  function am(p){

@@ -87,6 +87,7 @@ function aplicarRegistro(arr,app,lista,ahora){
    arr.push(r);
   }
   if(r.res) return;                                                  /* ya resuelto: no se toca */
+  if(g.crudo) r.cr=1;
   r.m1=m; r.t1=ahora; r.ts=g.ts; if(g.liga) r.liga=g.liga; if(g.slug) r.slug=g.slug;
   cambios++; tocados.push(r);
  });
@@ -194,9 +195,15 @@ function fav2(p){ return p.L>=p.A?'L':'A'; }
 function precio0(k){ return k>0?1/k:null; }                          /* decimal justo, sin margen: el techo, no se puede cobrar */
 function precio3(k){ return k>0?(1/k)/(1+MARGEN):null; }            /* decimal con un margen realista */
 function unidad(gana,dec){ return gana?dec-1:-1; }
+/* Hasta el 4-nov-2026, NBA, NHL y NFL guardaban como «modelo» el número final: 95% mercado y 5% modelo. Esos registros no dicen nada del modelo y no se comparan. */
+function modeloDe(r){
+ if(!r) return null;
+ if((r.app==='nba'||r.app==='nhl'||r.app==='nfl')&&!r.cr) return null;
+ return r.m1||r.m0||null;
+}
 function derivar(r){
  if(!r||!r.res||r.res==='X') return null;
- var m=r.m1||r.m0; if(!m) return null;
+ var m=modeloDe(r); if(!m) return null;
  var d={r:r,m:m,k:r.k1||r.k0||null,res:r.res};
  d.favMod=fav2(m);
  if(d.k){
@@ -295,7 +302,7 @@ function veredicto(o){
 function exportar(items){ return JSON.stringify({app:'ova-auto',v:1,fecha:new Date().toISOString(),n:(items||[]).length,items:items||[]}); }
 
 var API={cierreCore:cierreCore,lineaEspn:lineaEspn,lineasEspn:lineasEspn,cruzarEspn:cruzarEspn,comoPicks:comoPicks,HORIZONTE:HORIZONTE,norm:norm,fechaLocal:fechaLocal,trio:trio,idDe:idDe,cruzar:cruzar,aplicarRegistro:aplicarRegistro,aplicarMercado:aplicarMercado,
- eventosDe:eventosDe,esEq:esEq,ganadorDe:ganadorDe,buscarEvento:buscarEvento,derivar:derivar,brier:brier,resumir:resumir,veredicto:veredicto,
+ eventosDe:eventosDe,esEq:esEq,ganadorDe:ganadorDe,buscarEvento:buscarEvento,modeloDe:modeloDe,derivar:derivar,brier:brier,resumir:resumir,veredicto:veredicto,
  exportar:exportar,precio0:precio0,precio3:precio3,KEY:KEY,MARGEN:MARGEN};
 root.OVARegAuto=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;

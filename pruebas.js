@@ -796,7 +796,7 @@ sec('En vivo (envivo.js): lista de juegos, cancha de la NBA, zona de strike de M
  ok('fútbol: la cancha en vivo usa las jugadas con posición de ESPN y es la pestaña por defecto',/sports\.core\.api\.espn\.com/.test(se)&&/fieldPositionX/.test(se)&&/fieldPosition2X/.test(se)&&/data-v="cancha">Cancha/.test(se)&&/function porDefecto\(\)\{ return \(APP==='nba'\|\|APP==='fut'\)/.test(se));
  ok('cancha: el visitante se voltea para jugar hacia el otro lado y las coordenadas se mantienen dentro de la cancha',/100-xy\[0\]/.test(se)&&/Math\.min\(100,/.test(se));
  ok('cancha: el nombre del jugador sale de ESPN y se pinta con textContent (sin HTML)',/\.evAn',P\.act\)\.textContent/.test(se)&&/\.evPitchTxt',P\.el\)\.textContent/.test(se));
- ok('Veredicto legible en todos los modelos: fútbol muestra «Cómo se lee» también con el modelo básico (Champions/Europa) y la NBA lo trae; el texto técnico va plegado',/var comoCalc = base\.r\.dc \?/.test(rd('futbol.html'))&&!/\(base\.r\.dc \? '' : '<div class="nota">Modelo Poisson/.test(rd('futbol.html'))&&/<details class="comoLee"( open)?>/.test(rd('nba.html')));
+ ok('Veredicto legible en todos los modelos: fútbol muestra «Cómo se lee» también con el modelo básico (Champions/Europa) y la NBA lo trae; el texto técnico va plegado',/var comoCalc = \(base\.r\.dc && DCFIT && DCFIT\.copa\) \?/.test(rd('futbol.html'))&&!/\(base\.r\.dc \? '' : '<div class="nota">Modelo Poisson/.test(rd('futbol.html'))&&/<details class="comoLee"( open)?>/.test(rd('nba.html')));
  ok('NBA y MLB: pestaña de jugada animada (tiro al aro y campo con bola bateada) con jugadores y dorsales',/function mostrarNBA/.test(se)&&/function mostrarMLB/.test(se)&&/jerseyNum/.test(se)&&/jerseyNumber/.test(se)&&/hitData/.test(se)&&/coordX/.test(se)&&/class="evLiveHost" data-t="nba"/.test(se)&&/class="evLiveHost" data-t="mlb"/.test(se));
  ok('en vivo: mientras el juego está en vivo se actualiza cada 5-6 s y el reproductor usa una cola con pausas',/function msVivo/.test(se)&&/P\.espera\?P\.espera/.test(se));
  ok('MLB: la bola bateada solo se anima cuando trae datos del golpe o la jugada terminó',/d\.isInPlay&&!hd&&!fin/.test(se));
@@ -1052,8 +1052,8 @@ sec('ovaedge.js: vig, Kelly, CLV, calibración y Monte Carlo, y su chequeo en el
    ok('El aviso de «precio imposible» trae el dato de 6 temporadas (1,713 juegos, −5.6%, perdió en 5 de 6)',/1,713 juegos/.test(V(70,'-110','-110'))&&/-5\.6%/.test(V(70,'-110','-110'))&&/5 de las 6 temporadas/.test(V(70,'-110','-110')));
    ok('Veredicto: trae la línea «Si prefieres el favorito» con el EV si el mercado acierta (la comisión) cuando el favorito no es el pick',(()=>{const h=txt(V(40,'+150','-170'));return /Si prefieres el favorito: Local \(-170\)/.test(h)&&/si el mercado acierta, -\d+\.\d%/.test(h);})());
    ok('Veredicto: no repite la línea del favorito cuando el favorito YA es el pick con valor',!/Si prefieres el favorito/.test(txt(V(62,'-110','-110'))));
-   ok('Fútbol v21: PARAMS_DEFECTO trae los parámetros medidos en 6 temporadas (K 8, S 20, wt 0.8, ct 0.97)',(()=>{const f=rd('futbol.html');const m=/var PARAMS_DEFECTO = \{K:8, h:1\.13, rho:-0\.08, w:1, S:20, Kt:16, wt:0\.8, ct:0\.97, A:1, At:1\};/.test(f);return m&&/<span class="ver">v22<\/span>/.test(f);})());
-   ok('Fútbol v22: Dixon-Coles con xi 1.0 y dos temporadas de historial; la etiqueta y VERSION dicen lo mismo',(()=>{const f=rd('futbol.html');return /var DC_CFG = \{xi:1\.0,/.test(f)&&/obtenerTemporada\(1, null\)\.catch\(nada\), obtenerTemporada\(2, null\)\.catch\(nada\)/.test(f)&&/var VER='v22'/.test(f)&&/var VERSION = 'v22'/.test(f);})());
+   ok('Fútbol v21: PARAMS_DEFECTO trae los parámetros medidos en 6 temporadas (K 8, S 20, wt 0.8, ct 0.97)',(()=>{const f=rd('futbol.html');const m=/var PARAMS_DEFECTO = \{K:8, h:1\.13, rho:-0\.08, w:1, S:20, Kt:16, wt:0\.8, ct:0\.97, A:1, At:1\};/.test(f);return m&&/<span class="ver">v23<\/span>/.test(f);})());
+   ok('Fútbol v23: Dixon-Coles con xi 1.0 y dos temporadas de historial; la etiqueta y VERSION dicen lo mismo',(()=>{const f=rd('futbol.html');return /var DC_CFG = \{xi:1\.0,/.test(f)&&/obtenerTemporada\(1, null\)\.catch\(nada\), obtenerTemporada\(2, null\)\.catch\(nada\)/.test(f)&&/var VER='v23'/.test(f)&&/var VERSION = 'v23'/.test(f);})());
    {  // Shin para el 1X2 de Pinnacle (scripts/valor2.js)
     const v2=fs.readFileSync(path.join(__dirname,'scripts','valor2.js'),'utf8'), i0=v2.indexOf('function shin(ds)'), i1=v2.indexOf('\n}\n',i0)+3;
     const c={Math};vm.createContext(c);vm.runInContext(v2.slice(i0,i1),c);
@@ -1176,7 +1176,7 @@ sec('Registro automático: guarda ANTES del juego, resuelve solo y mide con prec
   ok('por mes junta todo octubre: 4 ganados, 2 perdidos, +1.5 unidades y positivo',mes.length===1&&mes[0].g===4&&mes[0].p===2&&Math.abs(mes[0].u-1.5)<1e-9&&mes[0].estado==='+'&&/octubre 2026/.test(mes[0].etiqueta),JSON.stringify(mes));
   ok('un periodo sin picks resueltos queda en ⏳ (no es positivo ni negativo)',HR.porPeriodo([{t:dia(2026,9,26),res:null,u:null}],'semana')[0].estado==='?');
   const RA2=require(path.join(__dirname,'autoregistro.js'));
-  const cp=RA2.comoPicks([{id:'a',app:'nba',ts:dia(2026,9,25),m1:{L:0.6,A:0.4},k1:{L:0.58,A:0.42},res:'L'},{id:'b',app:'nba',ts:dia(2026,9,25),m1:{L:0.6,A:0.4},k1:null,res:'L'},{id:'c',app:'mlb',ts:1,m1:{L:0.6,A:0.4},k1:{L:0.58,A:0.42},res:'A'}],'nba');
+  const cp=RA2.comoPicks([{id:'a',app:'nba',cr:1,ts:dia(2026,9,25),m1:{L:0.6,A:0.4},k1:{L:0.58,A:0.42},res:'L'},{id:'b',app:'nba',cr:1,ts:dia(2026,9,25),m1:{L:0.6,A:0.4},k1:null,res:'L'},{id:'c',app:'mlb',ts:1,m1:{L:0.6,A:0.4},k1:{L:0.58,A:0.42},res:'A'}],'nba');
   ok('comoPicks: solo juegos resueltos con precio de mercado y de la app pedida; 1 unidad al favorito al precio con margen',cp.length===1&&cp[0].res==='G'&&Math.abs(cp[0].u-((1/0.58)/1.03-1))<1e-9);
   ok('Marcador y Auto muestran el bloque «Por semana y por mes»',/bloquePeriodos\(items,'📅 Por semana y por mes'/.test(rd('herramientas.js'))&&/Semana por semana/.test(rd('herramientas.js')));
  }
@@ -1494,6 +1494,29 @@ sec('Cuántas veces acierta este % (aciertos.js)');
  ['index.html','futbol.html','nba.html','nhl.html','nfl.html'].forEach(h=>ok(h+' carga aciertos.js antes de autoregistro.js',rd(h).indexOf('<script src="aciertos.js">')>0&&rd(h).indexOf('<script src="aciertos.js">')<rd(h).indexOf('<script src="autoregistro.js">')));
  ok('el service worker guarda aciertos.js',/'aciertos\.js'/.test(rd('sw.js')));
  ok('las 4 pantallas de Veredicto ponen la línea con try/catch (MLB, fútbol, NBA, NHL/NFL) y no con el precio en vivo',/OVAAciertos\.html\('mlb',pf,!favA,!!mk\)/.test(rd('pinnacle.js'))&&/OVAAciertos\.html\('fut', fuente\[best\], best===0, !!f\)/.test(rd('futbol.html'))&&/!\(f && m\.vivo\)/.test(rd('futbol.html'))&&/OVAAciertos\.html\('nba',pf,local,mercado\)/.test(rd('nba.html'))&&/OVAAciertos\.html\(DEP, pf, favM, hit !== null\)/.test(rd('usdeporte.js'))&&/!\(mk && mk\.live\)/.test(rd('usdeporte.js')));
+}
+
+/* ---------------- Champions con todas las copas y registro Auto con el modelo solo ---------------- */
+sec('Champions: fuerza entre ligas; Auto guarda el modelo solo');
+{
+ const RA=require(path.join(__dirname,'autoregistro.js')), F=require(path.join(__dirname,'scripts/fuerza_copas.js'));
+ const AH=Date.UTC(2026,10,5,12), K={L:0.6,A:0.4,D:null};
+ const nuevo=RA.aplicarRegistro?RA.aplicarRegistro([],'nhl',[{ts:AH+3600e3,local:'A',visita:'B',p:{L:0.55,A:0.45},crudo:1}],AH).arr[0]:null;
+ ok('Auto marca como crudo lo que NBA, NHL y NFL guardan ahora',!!nuevo&&nuevo.cr===1);
+ ok('un registro viejo de NBA, NHL o NFL (95% mercado) no cuenta como modelo',['nba','nhl','nfl'].every(a=>RA.modeloDe({app:a,m1:{L:.6,A:.4}})===null&&RA.derivar({app:a,res:'L',m1:{L:.6,A:.4},k1:K})===null));
+ ok('MLB y fútbol siguen contando sin la marca',['mlb','fut'].every(a=>!!RA.modeloDe({app:a,m1:{L:.6,A:.4}})));
+ ok('uno marcado sí se compara contra el mercado',RA.derivar({app:'nhl',cr:1,res:'L',m1:{L:.5,A:.5},k1:K}).k.L===0.6);
+ ok('NBA, NHL y NFL registran pHMod, no la mezcla',/p:\{L:pr\.pHMod,A:1-pr\.pHMod\},crudo:1/.test(rd('nba.html'))&&/p: \{ L: pr\.pHMod, A: 1 - pr\.pHMod \}, crudo: 1/.test(rd('usdeporte.js')));
+ const J=JSON.parse(rd('fuerza-copas.json')), fut=rd('futbol.html'), ks=Object.keys(J.eq);
+ ok('fuerza-copas.json trae equipos y números válidos',ks.length>=50&&ks.every(k=>J.eq[k].att>0&&J.eq[k].def>0&&J.eq[k].n>0)&&J.c>0&&J.gam>0&&J.wt===0.25);
+ ok('las claves son las de la app (Sabah Masazir y Viking FK se encuentran)',!!J.eq.sabah&&!!J.eq.viking&&!!J.eq.parissaintgermain);
+ const m=[];for(let i=0;i<70;i++)m.push({h:'Fuerte',a:'Debil',gh:3,ga:0,d:AH-(i+1)*864e5});
+ const f=F.ajustar(m,Math.floor(AH/864e5));
+ ok('el ajuste copia el motor de futbol.html y el fuerte sale mejor que el débil',f.eq.fuerte.att>f.eq.debil.att&&f.eq.fuerte.def<f.eq.debil.def);
+ ok('solo Champions usa el archivo; Europa y Conference siguen con el básico',/if\(clave==='cl'\)\{ prepararDCCopa\(clave, mio\); return; \}/.test(fut)&&!/clave==='europa'/.test(fut));
+ ok('si falta un equipo en el archivo se queda el básico, no el prior de recién llegado',/conAmbos = !DCFIT\.copa \|\| \(buscarEnMapa\(DCFIT\.eq, eL\.nombre\) && buscarEnMapa\(DCFIT\.eq, eV\.nombre\)\)/.test(fut));
+ ok('el peso de goles sale del archivo en Champions y de DC_CFG en las ligas',/f\.wt!==undefined \? f\.wt : DC_CFG\.wt/.test(fut));
+ ok('el workflow guarda solo los dos archivos de datos',/git add hist-copas\.json fuerza-copas\.json/.test(rd('.github/workflows/fuerza-copas.yml')));
 }
 
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{

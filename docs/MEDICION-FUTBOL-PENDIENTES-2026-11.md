@@ -72,6 +72,7 @@ Fórmula básica de la app, con lo acumulado en esa competición. Resultados des
 - **Contra la frecuencia:** el modelo gana (1.0145 contra 1.0581, z −8.4, 2,698 partidos), pero es poco decir.
 - **Por eso se descuadra más que en ligas:** la diferencia mediana es 12 pts contra 5.4 en las 5 ligas, porque el modelo tiene pocos partidos por equipo y no cruza fuerza entre ligas.
 - **Recorte que no hay que creer:** Champions con ≥12 pts y ambos con 4+ partidos da +37.9% ±51.4 en 95 apuestas. Los mismos cortes en Europa (−5.1%) y Conference (−11.2%) salen negativos, y se miró después de ver los datos.
+- **Actualización:** lo que se aplicó fue otro modelo, en [`MEDICION-FUTBOL-COPAS-2026-11.md`](MEDICION-FUTBOL-COPAS-2026-11.md).
 - **Pista sin aplicar:** sumar la temporada pasada de esa copa mejora Champions (−24.7 milésimas, z −3.1; 0.9566 contra el mercado 0.9121). En Europa y Conference no se distingue de cero. Se midió aceptando equipos con 6+ partidos; la app exige 10, que muchos equipos de Champions no alcanzan, así que habría que volver a medir con esa regla.
 
 ## Copas nacionales
