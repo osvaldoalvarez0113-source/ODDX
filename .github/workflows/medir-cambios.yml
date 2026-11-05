@@ -26,16 +26,17 @@ jobs:
         run: node scripts/medicion/kalshi_pinnacle.js 2>&1 | tee salida_kalshi.txt
       - name: Cambios de jugadores
         continue-on-error: true
-        run: node scripts/medicion/cambios_jugadores.js filas_nba.json 2>&1 | tail -80 | tee salida_cambios.txt
+        run: node scripts/medicion/cambios_jugadores.js filas_nba.json 2>&1 | grep -v '^box' | tee salida_cambios.txt
       - name: Guardar el resultado
         if: always()
         run: |
           mkdir -p /tmp/res
-          cp -f salida_*.txt resultado_*.txt filas_kalshi.json /tmp/res/ 2>/dev/null || true
+          cp -f salida_*.txt resultado_*.txt filas_kalshi.json filas_cambios.json /tmp/res/ 2>/dev/null || true
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout --orphan resultados-cambios
           git rm -rf . >/dev/null 2>&1 || true
+          rm -rf hist-precios filas_nba.json
           cp -f /tmp/res/* . 2>/dev/null || true
           git add -A
           git commit -m "Resultado Kalshi y cambios de jugadores" || true
