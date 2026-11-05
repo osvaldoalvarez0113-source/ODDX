@@ -11,6 +11,7 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 | [`MEDICION-FIP-2026-10.md`](MEDICION-FIP-2026-10.md) | FIP del abridor: medición de octubre 2026 |
 | [`MEDICION-FUTBOL-PENDIENTES-2026-11.md`](MEDICION-FUTBOL-PENDIENTES-2026-11.md) | **Fútbol: lo que faltaba**: Ambos anotan, cuota previa, alineaciones, copas europeas, copas nacionales y selecciones |
 | [`MEDICION-FORMULA-CALIBRADA-2026-11.md`](MEDICION-FORMULA-CALIBRADA-2026-11.md) | **¿Una fórmula que corrija al modelo con su diferencia contra el mercado?** No mejora en ningún deporte |
+| [`MEDICION-KALSHI-JUGADORES-2026-11.md`](MEDICION-KALSHI-JUGADORES-2026-11.md) | **Kalshi contra las casas y Pinnacle**, y cambios de jugadores en NBA (regresos, traspasos, continuidad) |
 | [`MEDICION-HUECOS-2026-11.md`](MEDICION-HUECOS-2026-11.md) | **Lo que el modelo no lee**: clima, viaje, mariscal, copas entre semana y selecciones |
 | [`MEDICION-FUTBOL-COPAS-2026-11.md`](MEDICION-FUTBOL-COPAS-2026-11.md) | **Champions**: fuerza entre ligas con todas las copas europeas, y corrección del registro Auto en NBA, NHL y NFL |
 | [`MEDICION-FUTBOL-MOTOR-REAL-2026-11.md`](MEDICION-FUTBOL-MOTOR-REAL-2026-11.md) | **Fútbol con el motor real y datos al día, hasta 2026-27**: qué pasa cuando modelo y mercado discrepan, y cambio a v22 |

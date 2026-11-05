@@ -73,7 +73,7 @@
       return '<div class="linea"><span>' + kEsc(n) + ': ' + c + '¢ · justo ' + (f * 100).toFixed(1) + '¢</span><b style="color:var(--' + (r.entra ? 'good' : 'mut') + ')">' + (r.entra ? '✓ Hay margen' : 'Entra a ' + r.tope + '¢ o menos') + '</b></div>';
     };
     return '<h4>Kalshi</h4><div class="lineas">' + fila(nA, k.cA, 1 - pH) + fila(nH, k.cH, pH) + '</div>' +
-      '<div class="nota" style="margin-top:6px">Precio de compra de hace ' + Math.max(edad, 0) + ' min, compáralo en Kalshi antes de entrar. Justo = mercado sin margen. «Entra» deja 3% de ganancia esperada después de la comisión estimada; no es una señal probada.</div>';
+      '<div class="nota" style="margin-top:6px">Precio de compra de hace ' + Math.max(edad, 0) + ' min, compáralo en Kalshi antes de entrar. Justo = mercado sin margen. «Entra» deja 3% de ganancia esperada después de la comisión estimada; no es una señal probada. En 8,384 juegos, comprar entre 55 y 60¢ rindió −8.6% ±3.4 con comisión.</div>';
   }
   function kCargar(dep) {
     if (typeof fetch === 'undefined') return Promise.resolve(null);
