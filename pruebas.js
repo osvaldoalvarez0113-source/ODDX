@@ -1559,6 +1559,13 @@ sec('Picks ganadores');
  ok('el service worker guarda ganadores.js',/'ganadores\.js'/.test(rd('sw.js')));
 }
 
+sec('Auto se actualiza solo');
+{
+ const ra=rd('autoregistro.js'), he=rd('herramientas.js');
+ ok('al guardar resultados avisa a la pantalla, y Herramientas repinta Auto',/new root\.CustomEvent\('ova-auto-cambio'\)/.test(ra)&&/addEventListener\('ova-auto-cambio'/.test(he));
+ ok('la app instalada busca resultados al volver a primer plano, no solo al cargar',/visibilitychange[^\n]*resolverTodo\(false\)/.test(ra));
+}
+
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);

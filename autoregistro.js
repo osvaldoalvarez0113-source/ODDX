@@ -425,8 +425,10 @@ function rellenarCierres(forzar){
   escribir(cur); EN_CIERRES=false; return n;
  }).catch(function(){ EN_CIERRES=false; return 0; });
 }
-function resolverTodo(forzar){ return resolver(forzar).then(function(n){ return rellenarCierres(forzar).then(function(m){ return n+m; }); }); }
+/* avisa a la pantalla abierta: sin esto, los resultados se guardaban en silencio y Auto seguía mostrando ⏳ */
+function resolverTodo(forzar){ return resolver(forzar).then(function(n){ return rellenarCierres(forzar).then(function(m){ if(n+m>0&&root.dispatchEvent&&root.CustomEvent){ try{ root.dispatchEvent(new root.CustomEvent('ova-auto-cambio')); }catch(e){} } return n+m; }); }); }
 API.leer=leer; API.registrar=registrar; API.resolver=resolverTodo;
-function arrancar(){ root.setTimeout(function(){ resolverTodo(false); },6000); }
+/* la app instalada en el iPhone puede quedar abierta por días sin recargar: al volver a ella también se buscan resultados */
+function arrancar(){ root.setTimeout(function(){ resolverTodo(false); },6000); root.document.addEventListener('visibilitychange',function(){ if(root.document.visibilityState==='visible') resolverTodo(false); }); }
 if(root.document.readyState==='loading') root.document.addEventListener('DOMContentLoaded',arrancar); else arrancar();
 })(typeof window!=='undefined'?window:globalThis);

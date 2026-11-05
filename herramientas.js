@@ -727,6 +727,8 @@ function arrancar(){
   }
   TABS.forEach(function(t){ nav.appendChild(el('button',{type:'button',role:'tab','data-k':t[0],text:t[1],onclick:function(){ ir(t[0]); }})); });
   ir((root.location.hash||'').replace('#','')||'marcador');
+  /* si llegan resultados con Auto abierto, se repinta sin mover la pantalla */
+  root.addEventListener('ova-auto-cambio',function(){ var b=nav.querySelector('.on'); if(!b||b.getAttribute('data-k')!=='auto') return; var y=root.scrollY||0; ir('auto'); try{ root.scrollTo(0,y); }catch(e){} });
 }
 
 var API={autoCalib:autoCalib,aDecimal:aDecimal,aAmericana:aAmericana,quitarMargen:quitarMargen,compararCasas:compararCasas,normalizar:normalizar,resumir:resumir,
