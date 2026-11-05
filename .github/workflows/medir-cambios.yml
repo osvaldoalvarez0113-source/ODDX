@@ -1,0 +1,42 @@
+name: Medir Kalshi y cambios de jugadores (solo mide)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [medir-cambios]
+
+permissions:
+  contents: write
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Traer datos previos
+        run: |
+          git fetch -q --depth 1 origin resultados-nba-6t && git show FETCH_HEAD:filas_nba.json > filas_nba.json
+          git fetch -q --depth 1 origin historia-precios && mkdir -p hist-precios && for f in $(git ls-tree --name-only -r FETCH_HEAD | grep jsonl); do git show FETCH_HEAD:$f > hist-precios/$(basename $f); done
+      - name: Kalshi contra Pinnacle
+        continue-on-error: true
+        run: node scripts/medicion/kalshi_pinnacle.js 2>&1 | tee salida_kalshi.txt
+      - name: Cambios de jugadores
+        continue-on-error: true
+        run: node scripts/medicion/cambios_jugadores.js filas_nba.json 2>&1 | tail -80 | tee salida_cambios.txt
+      - name: Guardar el resultado
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f salida_*.txt resultado_*.txt filas_kalshi.json /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-cambios
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* . 2>/dev/null || true
+          git add -A
+          git commit -m "Resultado Kalshi y cambios de jugadores" || true
+          git push -f origin resultados-cambios
