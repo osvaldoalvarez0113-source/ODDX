@@ -1,0 +1,22 @@
+mlb 20250327: 2433 juegos
+juegos 300/2433
+juegos 600/2433
+juegos 900/2433
+juegos 1200/2433
+juegos 1500/2433
+juegos 1800/2433
+juegos 2100/2433
+juegos 2400/2433
+mlb 20250327: con props 2433, filas 233083
+mlb 20260325: 2431 juegos
+juegos 300/2431
+juegos 600/2431
+juegos 900/2431
+juegos 1200/2431
+juegos 1500/2431
+juegos 1800/2431
+juegos 2100/2431
+juegos 2400/2431
+mlb 20260325: con props 4605, filas 233083
+Llaves cuando faltó la estadística: {"Total Bases":"B:hits-atBats,B:atBats,B:runs,B:hits,B:RBIs,B:homeRuns,B:walks,B:strikeouts,B:pitches,B:avg,B:onBasePct,B:slugAvg","Total Strikeouts":"B:hits-atBats,B:atBats,B:runs,B:hits,B:RBIs,B:homeRuns,B:walks,B:strikeouts,B:pitches,B:avg,B:onBasePct,B:slugAvg"}
+FIN mlb: juegos 4864, con props 4605, filas 233083
