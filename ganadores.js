@@ -135,7 +135,7 @@ function pintar(){
  cuerpo.appendChild(n);
  var pr=PROPS[APP]; if(pr){
   var dp=mk('details','gnProps'); dp.appendChild(mk('summary','','🎯 Props de juego: cuántas veces pasan'));
-  dp.appendChild(mk('div','gnTit','Cuota justa = lo mínimo que te tienen que pagar. Si tu casa paga menos, pagas de más. Ninguna le ganó a la línea en las pruebas.'));
+  dp.appendChild(mk('div','gnTit','Cuota justa = lo mínimo que te tienen que pagar. Si tu casa paga menos, pagas de más. Ninguna le ganó a la línea en las pruebas. Props de jugador (478 mil líneas de apertura): el lado más probable pasa casi lo que dice su precio y rinde entre −4% y −8%; el Más pierde más que el Menos.'));
   pr.slice().sort(function(a,b){ return b[1]-a[1]; }).forEach(function(x){ var f=mk('div','gnPr'); f.appendChild(mk('span','',x[0])); f.appendChild(mk('b','',Math.round(x[1]*1000)/10+'% · '+americana(x[1]))); dp.appendChild(f); });
   cuerpo.appendChild(dp);
  }
