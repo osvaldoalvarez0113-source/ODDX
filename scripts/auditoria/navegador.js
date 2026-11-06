@@ -11,10 +11,10 @@ const srv = http.createServer((q, r) => { const f = path.join(R, decodeURICompon
     const p = await ctx.newPage(), err = [], fall = [], con = [];
     p.on('pageerror', e => err.push(e.message.slice(0, 200)));
     p.on('console', m => { if (m.type() === 'error' || m.type() === 'warning') con.push(m.type() + ': ' + m.text().slice(0, 160)); });
-    p.on('requestfailed', q => fall.push(q.url().slice(0, 120) + ' ' + (q.failure() || {}).errorText));
+    p.on('requestfailed', q => { if (/fonts\.g/.test(q.url())) return; fall.push(q.url().slice(0, 120) + ' ' + (q.failure() || {}).errorText); });
     p.on('response', q => { if (q.status() >= 400) fall.push(q.status() + ' ' + q.url().slice(0, 120)); });
-    const t0 = Date.now(); try { await p.goto('http://localhost:8770/' + u, { waitUntil: 'domcontentloaded', timeout: 30000 }); } catch (e) { err.push('goto ' + e.message.slice(0, 100)); }
-    await p.waitForTimeout(15000);
+    const t0 = Date.now(); try { await p.goto((process.env.BASE || 'http://localhost:8770/') + u, { waitUntil: 'domcontentloaded', timeout: 30000 }); } catch (e) { err.push('goto ' + e.message.slice(0, 100)); }
+    await p.waitForTimeout(25000);
     const info = await p.evaluate(() => { const d = document.documentElement; const anchos = [...document.querySelectorAll('body *')].filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > innerWidth + 2 && getComputedStyle(e).position !== 'fixed'; }).slice(0, 6).map(e => (e.id ? '#' + e.id : e.className ? '.' + String(e.className).split(' ')[0] : e.tagName) + ' ' + Math.round(e.getBoundingClientRect().right));
       const txt = document.body.innerText.replace(/\s+/g, ' '); const st = (document.querySelector('#status,.status,#estado,.estadoCarga') || {}).innerText || '';
       let auto = []; try { auto = JSON.parse(localStorage.getItem('ova_auto_v1') || '[]'); } catch (e) {}

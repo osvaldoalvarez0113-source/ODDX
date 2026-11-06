@@ -20,7 +20,7 @@ jobs:
       - name: Playwright
         run: npm i --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
       - name: Abrir las apps
-        run: node scripts/auditoria/navegador.js
+        run: BASE=https://osvaldoalvarez0113-source.github.io/ODDX/ node scripts/auditoria/navegador.js
       - name: Guardar
         if: always()
         run: |
