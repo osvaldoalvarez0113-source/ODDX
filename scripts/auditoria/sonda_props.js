@@ -1,21 +1,11 @@
 'use strict';
-// Prueba si ESPN trae props de jugador (hoy y de juegos pasados). Solo lee.
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-async function j(u) { try { const r = await fetch(u, { headers: { 'user-agent': 'ova-sonda' } }); const t = await r.text(); let x = null; try { x = JSON.parse(t); } catch (e) {} return { s: r.status, x, t: t.slice(0, 300) }; } catch (e) { return { s: 'err ' + e.message }; } }
-const D = { nba: ['basketball', 'nba'], nhl: ['hockey', 'nhl'], nfl: ['football', 'nfl'], mlb: ['baseball', 'mlb'] };
+async function j(u) { const r = await fetch(u, { headers: { 'user-agent': 'ova-sonda' } }); return r.json(); }
 (async () => {
-  for (const [k, [sp, lg]] of Object.entries(D)) {
-    for (const dia of [null, '20251115', '20250601', '20241115']) {
-      const sb = await j(`https://site.api.espn.com/apis/site/v2/sports/${sp}/${lg}/scoreboard${dia ? '?dates=' + dia : ''}`);
-      const ev = sb.x && sb.x.events && sb.x.events[0]; if (!ev) { console.log(k, dia, 'sin eventos', sb.s); continue; }
-      const base = `https://sports.core.api.espn.com/v2/sports/${sp}/leagues/${lg}/events/${ev.id}/competitions/${ev.id}`;
-      const od = await j(base + '/odds');
-      const items = (od.x && od.x.items) || [];
-      const provs = items.map(i => (i.provider && (i.provider.id + ':' + i.provider.name)) || '?');
-      let pb = null;
-      for (const it of items.slice(0, 4)) { const pid = it.provider && it.provider.id; if (!pid) continue; const r = await j(base + '/odds/' + pid + '/propBets?limit=1000'); if (r.x && r.x.count) { pb = { pid, count: r.x.count, ej: JSON.stringify(r.x.items && r.x.items[0]).slice(0, 500) }; break; } else pb = { pid, s: r.s, t: (r.t || '').slice(0, 120) }; await sleep(200); }
-      console.log(`${k} ${dia || 'hoy'} evento ${ev.id} ${ev.name} | odds ${od.s} proveedores ${provs.join(',')} | props ${JSON.stringify(pb)}`);
-      await sleep(300);
-    }
-  }
+  const base = 'https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/events/401810083/competitions/401810083/odds/58/propBets?limit=1000';
+  const x = await j(base); console.log('count', x.count, 'pageCount', x.pageCount, 'items', x.items.length);
+  const tipos = {}; x.items.forEach(i => { const k = i.type && i.type.name; tipos[k] = (tipos[k] || 0) + 1; }); console.log(JSON.stringify(tipos));
+  const pts = x.items.filter(i => i.type && i.type.name === 'Total Points'); console.log(JSON.stringify(pts.slice(0, 4), null, 0).slice(0, 3000));
+  const k = (await j('https://sports.core.api.espn.com/v2/sports/hockey/leagues/nhl/events/401802634/competitions/401802634/odds/58/propBets?limit=1000')); const t2 = {}; k.items.forEach(i => { const n = i.type && i.type.name; t2[n] = (t2[n] || 0) + 1; }); console.log('NHL', k.count, JSON.stringify(t2));
+  const m = (await j('https://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events/401695789/competitions/401695789/odds/58/propBets?limit=1000')); const t3 = {}; m.items.forEach(i => { const n = i.type && i.type.name; t3[n] = (t3[n] || 0) + 1; }); console.log('MLB', m.count, JSON.stringify(t3));
+  console.log(JSON.stringify(m.items.filter(i => i.type.name === 'Total Strikeouts').slice(0, 2)).slice(0, 1500));
 })();
