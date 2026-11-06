@@ -550,10 +550,11 @@ function pantallaAuto(cont,ls){
     [].forEach.call(cuerpo.querySelectorAll('button[disabled="null"]'),function(b){ b.removeAttribute('disabled'); });
 
     var s=autoStats(fs);
+    var viejos=fs.filter(function(f){ return f.fin&&!f.fm; }).length;
     /* marcador */
     var caja=el('div',{class:'caja'});
     caja.appendChild(el('div',{class:'duelo'},[
-      el('div',{class:'lado'+(s.cN&&s.cW>s.kW?' gana':'')},[el('span',{text:'🧠 Tu modelo'}),el('b',{text:s.cN?pct0(s.cW,s.cN):pct0(s.mW,s.mN)}),el('small',{text:s.cN?'acertó '+s.cW+' de '+s.cN:(s.mN?'acertó '+s.mW+' de '+s.mN:'sin juegos terminados')})]),
+      el('div',{class:'lado'+(s.cN&&s.cW>s.kW?' gana':'')},[el('span',{text:'🧠 Tu modelo'}),el('b',{text:s.cN?pct0(s.cW,s.cN):pct0(s.mW,s.mN)}),el('small',{text:s.cN?'acertó '+s.cW+' de '+s.cN:(s.mN?'acertó '+s.mW+' de '+s.mN:(viejos?viejos+' terminados sin modelo guardado (de antes del 4-nov)':'sin juegos terminados'))})]),
       el('div',{class:'lado'+(s.cN&&s.kW>s.cW?' gana':'')},[el('span',{text:'📈 Mercado'}),el('b',{text:pct0(s.kW,s.kN)}),el('small',{text:s.kN?'acertó '+s.kW+' de '+s.kN:'sin precio todavía'})])]));
     var lin=[];
     if(s.mN>s.cN) lin.push(el('div',{class:'linA'},[el('span',{text:'🚫 Sin precio de mercado, fuera de la comparación ('+(s.mN-s.cN)+')'}),el('b',{text:'modelo '+(s.mW-s.cW)+'-'+(s.mN-s.cN-(s.mW-s.cW))})]));

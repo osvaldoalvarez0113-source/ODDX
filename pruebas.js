@@ -1563,6 +1563,7 @@ sec('Al gane');
 
 sec('Auto se actualiza solo');
 {
+ ok('Auto explica cuando los terminados son viejos y no tienen modelo',/terminados sin modelo guardado \(de antes del 4-nov\)/.test(rd('herramientas.js')));
  const ra=rd('autoregistro.js'), he=rd('herramientas.js');
  ok('al guardar resultados avisa a la pantalla, y Herramientas repinta Auto',/new root\.CustomEvent\('ova-auto-cambio'\)/.test(ra)&&/addEventListener\('ova-auto-cambio'/.test(he));
  ok('la app instalada busca resultados al volver a primer plano, no solo al cargar',/visibilitychange[^\n]*resolverTodo\(false\)/.test(ra));
