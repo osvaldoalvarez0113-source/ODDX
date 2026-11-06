@@ -1,0 +1,8 @@
+nfl 20240905: 286 juegos
+nfl 20240905: con props 284, filas 6598
+nfl 20250904: 286 juegos
+nfl 20250904: con props 482, filas 12239
+nfl 20260909: 122 juegos
+nfl 20260909: con props 604, filas 12239
+Llaves cuando faltó la estadística: {"Total Rushing Yards":"defensive:totalTackles,defensive:soloTackles,defensive:sacks,defensive:tacklesForLoss,defensive:passesDefended,defensive:QBHits,defensive:defensiveTouchdowns","Total Receiving Yards":"rushing:rushingAttempts,rushing:rushingYards,rushing:yardsPerRushAttempt,rushing:rushingTouchdowns,rushing:longRushing,puntReturns:puntReturns,puntReturns:puntReturnYards,puntReturns:yardsPerPuntReturn,puntReturns:longPuntReturn,puntReturns:puntReturnTouchdowns","Total Receptions":"defensive:totalTackles,defensive:soloTackles,defensive:sacks,defensive:tacklesForLoss,defensive:passesDefended,defensive:QBHits,defensive:defensiveTouchdowns","Total Passing Attempts":"passing:passingYards,passing:yardsPerPassAttempt,passing:passingTouchdowns,passing:interceptions,passing:sacks-sackYardsLost,passing:adjQBR,passing:QBRating,rushing:rushingAttempts,rushing:rushingYards,rushing:yardsPerRushAttempt,rushing:rushingTouchdowns,rushing:longRushing"}
+FIN nfl: juegos 694, con props 604, filas 12239
