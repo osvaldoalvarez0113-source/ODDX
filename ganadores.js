@@ -1,4 +1,5 @@
-/* OVA · Picks ganadores (window.OVAGanadores) — MLB, fútbol, NBA, NHL y NFL
+/* OVA · Pestaña Al gane (window.OVAGanadores) — MLB, fútbol, NBA, NHL y NFL
+   Reemplaza el ranking viejo: ese se sigue pintando oculto porque registra los juegos en Auto y publica el resumen del hub.
    Ordena los juegos por qué tan probable es que gane el favorito, con el % del mercado: es lo que mejor separa ganadores
    (medido en docs/MEDICION-PICKS-GANADORES-2026-11.md). Lee el registro automático (ova_auto_v1), que ya guarda cada juego
    antes de empezar con el modelo solo y el precio del mercado. No calcula apuestas ni toca ningún pick. */
@@ -80,13 +81,9 @@ function appActual(){ var a=doc.documentElement.getAttribute('data-app')||''; if
 function etiquetaDia(d,ahora){ var h=diaDe(ahora), m=diaDe(ahora+864e5); if(d===h) return 'Hoy'; if(d===m) return 'Mañana'; try{ var s=new Date(d+'T12:00:00').toLocaleDateString('es-US',{weekday:'long',day:'numeric',month:'short'}); return s.charAt(0).toUpperCase()+s.slice(1); }catch(e){ return d; } }
 function hora(ts){ try{ return new Date(ts).toLocaleTimeString('es-US',{hour:'numeric',minute:'2-digit',hour12:true}); }catch(e){ return ''; } }
 function sg(u){ return (u>=0?'+':'−')+Math.abs(u).toFixed(1)+' u'; }
-var CSS=['.gnBarra{display:flex;align-items:center;gap:12px;margin:12px 0;padding:12px 14px;border-radius:14px;background:var(--bg2,#131c2a);color:var(--txt,#fff);border:1px solid var(--line2,#2a3340);font-weight:700;font-size:15px;cursor:pointer;-webkit-tap-highlight-color:transparent}',
- '.gnBarra b{font-size:22px;line-height:1}.gnBarra span{display:block;font-weight:500;font-size:12px;color:var(--mut,#9db2c8);margin-top:2px}',
- '.gnSheet{display:none;position:fixed;inset:0;z-index:95;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg,#070b12);color:var(--txt,#fff);padding:0 14px calc(28px + env(safe-area-inset-bottom,0px));box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif}',
- '.gnSheet.on{display:block}',
- '.gnCab{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px;margin:0 -14px 10px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;background:var(--bg,#070b12);border-bottom:1px solid var(--line2,#2a3340)}',
- '.gnCab h2{margin:0;flex:1;font-size:19px;font-weight:700}.gnCab h2 small{display:block;font-size:11.5px;font-weight:500;color:var(--mut,#9aa);margin-top:2px}',
- '.gnX{border-radius:99px;background:var(--bg2,#131c2a);color:var(--hot,#fbbf24);padding:9px 14px;font-weight:700;font-size:14px;cursor:pointer}',
+var CSS=['#gane_zona,#algane,#vAlgane>.nota,#algane_btn,#pane-gane>.controls{display:none!important}',
+ '.gnPanel{margin:12px 0 0;color:var(--txt,#fff);padding-bottom:18px;font-family:system-ui,-apple-system,sans-serif}',
+ '.gnTit{margin:0 2px 10px;font-size:13px;line-height:1.4;color:var(--mut,#9aa)}',
  '.gnMarc{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}.gnMarc div{background:var(--bg1,#0d1420);border:1px solid var(--line2,#2a3340);border-radius:12px;padding:10px 12px;font-size:11.5px;color:var(--mut,#9aa);min-width:0}',
  '.gnMarc b{display:block;color:var(--txt,#fff);font-size:18px;margin:3px 0 1px}',
  '.gnDia{margin:16px 0 6px;font-size:13px;font-weight:800;color:var(--mut,#9aa);display:flex;justify-content:space-between;gap:10px}.gnDia span{font-weight:600}',
@@ -98,7 +95,7 @@ var CSS=['.gnBarra{display:flex;align-items:center;gap:12px;margin:12px 0;paddin
  '.gnAl{margin-top:8px;padding:8px 10px;border-radius:10px;font-size:12.5px;line-height:1.4;background:rgba(251,191,36,.12);color:var(--txt,#fff)}',
  '.gnNota{margin:14px 0;font-size:12.5px;line-height:1.5;color:var(--mut,#9aa)}.gnNota b{color:var(--txt,#fff)}',
  '.gnMini{display:inline-block;border-radius:99px;background:var(--bg2,#131c2a);color:var(--txt,#fff);padding:8px 13px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--line2,#2a3340)}'].join('');
-var sheet,cuerpo,APP;
+var cuerpo,APP;
 function fila(x,i){
  var f=mk('div','gnFila'+(x.top?' gnEstrella':'')), t=mk('div','gnTop'), pc=mk('div','gnPct '+x.tramo,Math.round(x.p*100)+'%'), e=mk('div','gnEq');
  e.appendChild(mk('b','',(x.top?'⭐ ':'')+x.fav));
@@ -119,7 +116,7 @@ function pintar(){
  var a=mk('div','','Tus picks este mes'); a.appendChild(mk('b','',mio.g+'–'+mio.p)); a.appendChild(doc.createTextNode((mio.g+mio.p)?sg(mio.u)+(mio.sinCuota?' · '+mio.sinCuota+' sin cuota':''):'Sin picks resueltos'));
  var b=mk('div','','El ⭐ de cada día este mes'); b.appendChild(mk('b','',li.g+'–'+li.p)); b.appendChild(doc.createTextNode((li.g+li.p)?sg(li.u)+' con margen de casa':'Sin juegos resueltos'));
  mc.appendChild(a); mc.appendChild(b); cuerpo.appendChild(mc);
- if(!filas.length) cuerpo.appendChild(mk('div','gnNota','No hay juegos por empezar guardados. Abre la lista de Juegos para que se guarden y vuelve aquí.'+(APP==='fut'?' En fútbol solo salen las ligas que hayas abierto.':'')));
+ if(!filas.length) cuerpo.appendChild(mk('div','gnNota','No hay juegos por empezar guardados. Abre Juegos para que se guarden y vuelve aquí.'+(APP==='fut'?' En fútbol solo salen las ligas que hayas abierto.':'')));
  var dias={}; filas.forEach(function(x){ (dias[x.dia]=dias[x.dia]||[]).push(x); });
  Object.keys(dias).sort().forEach(function(d){
   var v=dias[d], con=v.filter(function(x){ return x.conMercado; }), cab=mk('div','gnDia',etiquetaDia(d,ahora));
@@ -128,24 +125,35 @@ function pintar(){
  });
  var n=mk('div','gnNota'); n.appendChild(mk('b','','Cómo se lee. ')); n.appendChild(doc.createTextNode('El orden sale del % del mercado, que es lo que mejor separa ganadores. Que tu modelo esté de acuerdo casi no sube los aciertos. Acertar mucho no es lo mismo que ganar dinero: a cuota de cierre, los favoritos de 60% o más rindieron entre −2.8% y −4.4% en MLB, NBA, NHL y NFL, y +0.5% (±2.4) en fútbol con cuota de Pinnacle. Mira tu marcador del mes, no solo los aciertos.'));
  cuerpo.appendChild(n);
- cuerpo.appendChild(boton('gnMini','↻ Actualizar',pintar));
+ cuerpo.appendChild(boton('gnMini','↻ Actualizar',alEntrar));
 }
-function abrir(){ sheet.classList.add('on'); sheet.scrollTop=0; pintar(); root.setTimeout(function(){ if(sheet.classList.contains('on')) pintar(); },1800); }
-function cerrar(){ sheet.classList.remove('on'); }
-function colocar(barra){
- var ms=doc.querySelector('.msBarra'), li=doc.getElementById('slate')||doc.getElementById('juegos');
- if(ms&&ms.parentNode) ms.parentNode.insertBefore(barra,ms); else if(li&&li.parentNode) li.parentNode.insertBefore(barra,li); else doc.body.appendChild(barra);
+function contenedor(){ return doc.getElementById('vistaAlgane')||doc.getElementById('vAlgane')||doc.getElementById('pane-gane'); }
+function visible(){ return !!(panel&&panel.offsetParent!==null); }
+/* MLB calcula cada juego al pedirlo: sin esto no hay nada guardado en Auto. Una sola vez por fecha y cantidad de juegos. */
+var hechoMlb='';
+function calcularMlb(){
+ if(APP!=='mlb') return;
+ var gs=doc.querySelectorAll('.game'), b=doc.getElementById('algane_btn'); if(!gs.length||!b||b.disabled) return;
+ var f=doc.getElementById('fecha'), k=(f&&f.value||'')+'|'+gs.length; if(k===hechoMlb) return;
+ var faltan=[].some.call(gs,function(g){ return !g._calc; }); hechoMlb=k; if(!faltan) return;
+ b.click(); estado.textContent='Calculando los juegos de MLB… esto tarda un minuto.';
+ var n=0, t=root.setInterval(function(){ n++; if(!b.disabled||n>120){ root.clearInterval(t); estado.textContent=''; pintar(); root.setTimeout(pintar,2500); } },1000);
 }
+function alEntrar(){ calcularMlb(); pintar(); root.setTimeout(function(){ if(visible()) pintar(); },1800); root.setTimeout(function(){ if(visible()) pintar(); },6000); }
+var panel, estado;
 function armar(){
- if(doc.querySelector('.gnBarra')) return;
+ if(doc.querySelector('.gnPanel')) return true;
+ var c=contenedor(); if(!c) return false;
  APP=appActual();
- var s=mk('style'); s.textContent=CSS; (doc.head||doc.documentElement).appendChild(s);
- var barra=boton('gnBarra','',abrir); barra.appendChild(mk('b','','🏆')); var t=mk('div'); t.appendChild(doc.createTextNode('Picks ganadores')); t.appendChild(mk('span','','Los juegos más probables, de mayor a menor')); barra.appendChild(t); barra.setAttribute('aria-label','Abrir Picks ganadores');
- colocar(barra);
- sheet=mk('div','gnSheet'); sheet.setAttribute('role','dialog'); sheet.setAttribute('aria-label','Picks ganadores');
- var c=mk('div','gnCab'), h=mk('h2','','Picks ganadores'); h.appendChild(mk('small','',NOMBRE[APP]+' · de más a menos probable')); c.appendChild(h); c.appendChild(boton('gnX','✕ Cerrar',cerrar)); sheet.appendChild(c);
- cuerpo=mk('div'); sheet.appendChild(cuerpo); doc.body.appendChild(sheet);
+ var st=mk('style'); st.textContent=CSS; (doc.head||doc.documentElement).appendChild(st);
+ panel=mk('div','gnPanel'); panel.setAttribute('aria-label','Picks al gane');
+ panel.appendChild(mk('div','gnTit','Los juegos más probables, de mayor a menor.'));
+ estado=mk('div','gnTit'); panel.appendChild(estado);
+ cuerpo=mk('div'); panel.appendChild(cuerpo); c.insertBefore(panel,c.firstChild);
+ doc.addEventListener('click',function(e){ var b=e.target&&e.target.closest&&e.target.closest('[data-v="vAlgane"],[data-vista="algane"],.navbar [data-p="gane"]'); if(b) root.setTimeout(alEntrar,0); });
+ root.addEventListener('ova-auto-cambio',function(){ if(visible()) pintar(); });
+ pintar(); return true;
 }
-function arrancar(){ try{ armar(); }catch(e){ if(root.console) root.console.error('ganadores',e); } }
+function arrancar(){ var n=0; (function intento(){ try{ if(armar()) return; }catch(e){ if(root.console) root.console.error('ganadores',e); return; } if(++n<40) root.setTimeout(intento,500); })(); }
 if(doc.readyState==='loading') doc.addEventListener('DOMContentLoaded',arrancar); else arrancar();
 })(typeof window!=='undefined'?window:globalThis);

@@ -1528,8 +1528,10 @@ sec('Huecos del modelo: selecciones y clima de NFL');
  ok('hay coordenadas para los 32 equipos de NFL',(us.match(/CLIMA_NFL = \{[^}]*\}/)[0].match(/[A-Z]{2,3}: \[/g)||[]).length===32);
 }
 
-sec('Picks ganadores');
+sec('Al gane');
 {
+ ok('la pestaña Al gane reemplaza al ranking viejo y ya no hay barra aparte',/#gane_zona,#algane,#vAlgane>\.nota,#algane_btn/.test(rd('ganadores.js'))&&!/gnBarra|gnSheet/.test(rd('ganadores.js')));
+ ok('el ranking viejo sigue corriendo oculto: registra en Auto',/OVARegAuto\.registrar\('nba'/.test(rd('nba.html'))&&/id="algane"/.test(rd('nba.html')));
  const G=require(path.join(__dirname,'ganadores.js')), AC=require(path.join(__dirname,'aciertos.js')), gj=rd('ganadores.js');
  const AH=Date.UTC(2026,10,5,12), H=36e5, it=[
   {id:'a',app:'nba',cr:1,fecha:'2026-11-05',ts:AH+H,local:'Celtics',visita:'Nets',m1:{L:.6,A:.4},k1:{L:.8,A:.2},ksrc:'pin'},
