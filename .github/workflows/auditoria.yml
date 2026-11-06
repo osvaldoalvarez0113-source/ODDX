@@ -1,0 +1,35 @@
+name: Auditoría en navegador (solo mira)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [auditoria]
+
+permissions:
+  contents: write
+
+jobs:
+  auditar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Playwright
+        run: npm i --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
+      - name: Abrir las apps
+        run: node scripts/auditoria/navegador.js
+      - name: Guardar
+        if: always()
+        run: |
+          mkdir -p /tmp/res && cp -r auditoria/* /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan resultados-auditoria
+          git rm -rf . >/dev/null 2>&1 || true
+          rm -rf node_modules auditoria
+          cp -r /tmp/res/* . 2>/dev/null || true
+          git add -A && git commit -m "Auditoría" || true
+          git push -f origin resultados-auditoria
