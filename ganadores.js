@@ -10,6 +10,13 @@ var REG={mlb:'ventaja_picks_v1',fut:'ova_futbol_registro_v1',nba:'ova_nba_regist
 /* separación modelo-mercado que solo pasa en 1 de cada 10 juegos, medida por deporte */
 var ALERTA={mlb:11,fut:12,nba:16,nhl:9,nfl:15};
 var NOMBRE={mlb:'MLB',fut:'Fútbol',nba:'NBA',nhl:'NHL',nfl:'NFL'};
+/* Props de juego más usadas: cuántas veces pasó de verdad (docs/PROPS-2026-10.md, ~44,300 juegos con línea de cierre). Ninguna le gana a la línea. */
+var PROPS={
+ mlb:[['Ambos equipos anotan en el juego',.869],['El favorito va ganando tras 5 innings (sin empates)',.581],['Nadie anota en el 1er inning (NRFI)',.506],['Sí hay carrera en el 1er inning (YRFI)',.494],['El local anota en el 1er inning',.312],['La visita anota en el 1er inning',.267],['Empate tras 5 innings',.155]],
+ fut:[['Gol en el 1er tiempo',.717],['Ambos anotan: sí',.545],['Ambos anotan: no',.455],['El favorito gana el 1er tiempo',.406],['Empate al descanso',.400],['Más de 1.5 goles en el 1er tiempo',.356]],
+ nba:[['El favorito gana la 1a mitad (sin empates)',.626],['El favorito gana el 1er cuarto (sin empates)',.592],['El local gana la 1a mitad',.523],['El local gana el 1er cuarto',.506]],
+ nhl:[['Ambos anotan (60 min)',.901],['Hay gol en el 1er periodo',.832],['El favorito gana el 1er periodo (sin empates)',.579],['Más de 1.5 goles en el 1er periodo',.539],['El favorito gana en los 60 minutos',.488],['Empate a los 60 minutos',.223]],
+ nfl:[['Hay puntos en el 1er cuarto',.912],['Ambos anotan en la 1a mitad',.875],['El favorito gana la 1a mitad (sin empates)',.629],['Empate al medio tiempo',.072]]};
 
 function favDe(p){ return p.L>=p.A?'L':'A'; }
 /* cuántas victorias hacen falta para pagar una derrota a precio justo */
@@ -68,7 +75,7 @@ function marcadorMio(picks,app,mes){
  return o;
 }
 function esperados(filas){ var s=0; filas.forEach(function(x){ s+=x.p; }); return s; }
-var API={lista:lista,marcadorLista:marcadorLista,marcadorMio:marcadorMio,borra:borra,americana:americana,esperados:esperados,ALERTA:ALERTA};
+var API={PROPS:PROPS,lista:lista,marcadorLista:marcadorLista,marcadorMio:marcadorMio,borra:borra,americana:americana,esperados:esperados,ALERTA:ALERTA};
 root.OVAGanadores=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
 var doc=root.document; if(!doc) return;
@@ -94,6 +101,7 @@ var CSS=['#gane_zona,#algane,#vAlgane>.nota,#algane_btn,#pane-gane>.controls{dis
  '.gnDet{margin-top:8px;font-size:12.5px;line-height:1.45;color:var(--mut,#9aa)}.gnDet b{color:var(--txt,#fff);font-weight:700}',
  '.gnAl{margin-top:8px;padding:8px 10px;border-radius:10px;font-size:12.5px;line-height:1.4;background:rgba(251,191,36,.12);color:var(--txt,#fff)}',
  '.gnNota{margin:14px 0;font-size:12.5px;line-height:1.5;color:var(--mut,#9aa)}.gnNota b{color:var(--txt,#fff)}',
+ '.gnProps{margin:14px 0;border:1px solid var(--line2,#2a3340);border-radius:14px;background:var(--bg1,#0d1420);padding:10px 12px}.gnProps summary{font-weight:700;font-size:14.5px;cursor:pointer}.gnPr{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line2,#2a3340);font-size:13px}.gnPr b{white-space:nowrap}',
  '.gnMini{display:inline-block;border-radius:99px;background:var(--bg2,#131c2a);color:var(--txt,#fff);padding:8px 13px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--line2,#2a3340)}'].join('');
 var cuerpo,APP;
 function fila(x,i){
@@ -125,6 +133,12 @@ function pintar(){
  });
  var n=mk('div','gnNota'); n.appendChild(mk('b','','Cómo se lee. ')); n.appendChild(doc.createTextNode('El orden sale del % del mercado, que es lo que mejor separa ganadores. Que tu modelo esté de acuerdo casi no sube los aciertos. Acertar mucho no es lo mismo que ganar dinero: a cuota de cierre, los favoritos de 60% o más rindieron entre −2.8% y −4.4% en MLB, NBA, NHL y NFL, y +0.5% (±2.4) en fútbol con cuota de Pinnacle. Mira tu marcador del mes, no solo los aciertos.'));
  cuerpo.appendChild(n);
+ var pr=PROPS[APP]; if(pr){
+  var dp=mk('details','gnProps'); dp.appendChild(mk('summary','','🎯 Props de juego: cuántas veces pasan'));
+  dp.appendChild(mk('div','gnTit','Cuota justa = lo mínimo que te tienen que pagar. Si tu casa paga menos, pagas de más. Ninguna le ganó a la línea en las pruebas.'));
+  pr.slice().sort(function(a,b){ return b[1]-a[1]; }).forEach(function(x){ var f=mk('div','gnPr'); f.appendChild(mk('span','',x[0])); f.appendChild(mk('b','',Math.round(x[1]*1000)/10+'% · '+americana(x[1]))); dp.appendChild(f); });
+  cuerpo.appendChild(dp);
+ }
  cuerpo.appendChild(boton('gnMini','↻ Actualizar',alEntrar));
 }
 function contenedor(){ return doc.getElementById('vistaAlgane')||doc.getElementById('vAlgane')||doc.getElementById('pane-gane'); }

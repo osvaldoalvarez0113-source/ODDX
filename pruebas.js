@@ -1530,6 +1530,7 @@ sec('Huecos del modelo: selecciones y clima de NFL');
 
 sec('Al gane');
 {
+ ok('Al gane trae las props de juego de las cinco apps con su cuota justa',['mlb','fut','nba','nhl','nfl'].every(k=>require(path.join(__dirname,'ganadores.js')).PROPS[k].length>=4)&&require(path.join(__dirname,'ganadores.js')).americana(.506)==='−102');
  ok('la pestaña Al gane reemplaza al ranking viejo y ya no hay barra aparte',/#gane_zona,#algane,#vAlgane>\.nota,#algane_btn/.test(rd('ganadores.js'))&&!/gnBarra|gnSheet/.test(rd('ganadores.js')));
  ok('el ranking viejo sigue corriendo oculto: registra en Auto',/OVARegAuto\.registrar\('nba'/.test(rd('nba.html'))&&/id="algane"/.test(rd('nba.html')));
  const G=require(path.join(__dirname,'ganadores.js')), AC=require(path.join(__dirname,'aciertos.js')), gj=rd('ganadores.js');
