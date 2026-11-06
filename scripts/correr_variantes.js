@@ -30,7 +30,32 @@ function eraMarcel(p,L,h,y){
   var l=reg(p.era5,p.ip5,PRIOR_ERA*0.625,anc);
   return l!=null? s*0.70+l*0.30 : s;
 }
+/* ---- ajuste por rival (medición nov-2026): el calendario guarda contra quién jugó cada equipo ---- */
+function armarCalendario(lista){
+  CAL={};
+  lista.forEach(function(g){
+    (CAL[g.hId]||(CAL[g.hId]=[])).push({d:g.fecha,runs:g.rH,ra:g.rA,op:g.aId});
+    (CAL[g.aId]||(CAL[g.aId]=[])).push({d:g.fecha,runs:g.rA,ra:g.rH,op:g.hId});
+  });
+  Object.keys(CAL).forEach(function(k){ CAL[k].sort(function(a,b){ return a.d<b.d?-1:(a.d>b.d?1:0); }); });
+}
+var RIV_C={};
+function promHasta(id,fecha,k){ var key=id+'|'+fecha+'|'+k; if(RIV_C[key]!=null) return RIV_C[key]; var a=CAL[id]||[], g=0, t=0; for(var i=0;i<a.length;i++){ if(a[i].d>=fecha) break; g++; t+=a[i][k]; } return RIV_C[key]=(g>=5?t/g:null); }
+function ligaRuns(fecha){ var g=0,r=0; Object.keys(CAL).forEach(function(k){ var a=CAL[k]; for(var i=0;i<a.length;i++){ if(a[i].d>=fecha) break; g++; r+=a[i].runs; } }); return g>0?r/g:4.4; }
+/* factor de los rivales enfrentados: >1 si jugó contra pitcheo (o bateo) más débil que la liga */
+function factorRival(id,fecha,k,lg){ var a=CAL[id]||[], s=0, n=0; for(var i=0;i<a.length;i++){ if(a[i].d>=fecha) break; var v=promHasta(a[i].op,fecha,k); if(v!=null){ s+=v; n++; } } return n>=10?(s/n)/lg:1; }
 async function VARS(c,g,yr,L,pH,pA,rgH,rgA,sH,sA){
+  var lg=ligaRuns(g.fecha), save0=PRIOR_ERA; PRIOR_ERA=40;
+  var fOH=factorRival(g.hId,g.fecha,'ra',lg), fOA=factorRival(g.aId,g.fecha,'ra',lg), fPH=factorRival(g.hId,g.fecha,'runs',lg), fPA=factorRival(g.aId,g.fecha,'runs',lg);
+  var base={eraH:eraUsado(pH,L),eraA:eraUsado(pA,L),rgH:rgH,rgA:rgA,bpH:sH.era,bpA:sA.era};
+  var adjO={eraH:base.eraH,eraA:base.eraA,rgH:rgH/fOH,rgA:rgA/fOA,bpH:sH.era,bpA:sA.era};
+  var adjT={eraH:base.eraH,eraA:base.eraA,rgH:rgH/fOH,rgA:rgA/fOA,bpH:sH.era/fPH,bpA:sA.era/fPA};
+  var curva=function(x){ var d=(x.eraA-x.eraH)*PESO_ABRIDOR+(x.rgH-x.rgA)*PESO_OFENSIVA+(x.bpA-x.bpH)*PESO_BULLPEN+BONO_LOCAL; return 1/(1+Math.exp(-d*MULT/100*4)); };
+  var extra={RIVAL:chanceLocal(adjO),RIVAL2:chanceLocal(adjT),CURVA:curva(base),CURVA_RIVAL2:curva(adjT),fO:[fOH,fOA],fP:[fPH,fPA]};
+  PRIOR_ERA=save0;
+  var o=await VARS0(c,g,yr,L,pH,pA,rgH,rgA,sH,sA); Object.keys(extra).forEach(function(k){ o[k]=extra[k]; }); return o;
+}
+async function VARS0(c,g,yr,L,pH,pA,rgH,rgA,sH,sA){
   var y=+yr, out={}, hH=await histDe(c.pH), hA=await histDe(c.pA), save=PRIOR_ERA;
   [20,30,40,60,80,120].forEach(function(k){
     PRIOR_ERA=k;

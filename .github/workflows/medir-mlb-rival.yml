@@ -1,0 +1,38 @@
+name: Medir MLB ajustado por rival (solo mide)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [medir-mlb-rival]
+
+permissions:
+  contents: write
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        dias: [S2021, S2022, S2023, S2024, S2025, S2026]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Correr
+        run: node scripts/correr_variantes.js "${{ matrix.dias }}" 2>&1 | tail -20 | tee log.txt
+      - name: Guardar
+        if: always()
+        run: |
+          mkdir -p /tmp/res
+          cp -f variantes_*.json log.txt /tmp/res/ 2>/dev/null || echo "sin resultado" > /tmp/res/log.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan salida
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* .
+          git add -A
+          git commit -m "Rival ${{ matrix.dias }}" || true
+          git push -f origin HEAD:refs/heads/rival-${{ matrix.dias }}
