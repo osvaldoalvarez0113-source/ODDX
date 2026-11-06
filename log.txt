@@ -1,0 +1,16 @@
+nba 20241022: 1234 juegos
+juegos 300/1234
+juegos 600/1234
+juegos 900/1234
+juegos 1200/1234
+nba 20241022: con props 1231, filas 86329
+nba 20251021: 1235 juegos
+juegos 300/1235
+juegos 600/1235
+juegos 900/1235
+juegos 1200/1235
+nba 20251021: con props 1548, filas 110005
+nba 20261020: 123 juegos
+nba 20261020: con props 1671, filas 110005
+Llaves cuando faltó la estadística: {}
+FIN nba: juegos 2592, con props 1671, filas 110005
