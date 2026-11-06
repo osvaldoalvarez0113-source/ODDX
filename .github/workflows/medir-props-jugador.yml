@@ -1,0 +1,34 @@
+name: Medir props de jugador (solo mide)
+on:
+  workflow_dispatch:
+  push:
+    branches: [medir-props-jugador]
+permissions:
+  contents: write
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        dep: [nba, nhl, mlb, nfl]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Bajar
+        run: node scripts/medicion/props_jugador.js ${{ matrix.dep }} 2>&1 | tee log.txt
+      - name: Guardar
+        if: always()
+        run: |
+          mkdir -p /tmp/res && cp -f props_*.json log.txt /tmp/res/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan salida
+          git rm -rf . >/dev/null 2>&1 || true
+          cp -f /tmp/res/* .
+          gzip -f props_*.json 2>/dev/null || true
+          git add -A && git commit -m "Props jugador ${{ matrix.dep }}" || true
+          git push -f origin HEAD:refs/heads/props-jugador-${{ matrix.dep }}
