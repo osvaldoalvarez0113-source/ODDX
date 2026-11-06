@@ -1,0 +1,16 @@
+nhl 20241004: 1319 juegos
+juegos 300/1319
+juegos 600/1319
+juegos 900/1319
+juegos 1200/1319
+nhl 20241004: con props 1319, filas 88476
+nhl 20251007: 1312 juegos
+juegos 300/1312
+juegos 600/1312
+juegos 900/1312
+juegos 1200/1312
+nhl 20251007: con props 1753, filas 122379
+nhl 20261007: 209 juegos
+nhl 20261007: con props 1962, filas 122379
+Llaves cuando faltó la estadística: {}
+FIN nhl: juegos 2840, con props 1962, filas 122379
