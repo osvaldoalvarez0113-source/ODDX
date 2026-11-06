@@ -39,7 +39,7 @@ function totalBases(sum) { // MLB: bases totales desde el resumen (dobles, tripl
     console.log(`${DEP} ${a}: ${ev.length} juegos`); juegos += ev.length;
     await pool(ev.map(e => async () => {
       const base = `https://sports.core.api.espn.com/v2/sports/${sp}/leagues/${lg}/events/${e.id}/competitions/${e.id}`;
-      const od = await get(base + '/odds'); const provs = ((od && od.items) || []).map(i => i.provider && i.provider.id).filter(p => p && !/live/i.test(JSON.stringify(i.provider.name || '')));
+      const od = await get(base + '/odds'); const provs = ((od && od.items) || []).filter(i => i.provider && i.provider.id && !/live/i.test(String(i.provider.name || ''))).map(i => i.provider.id);
       let items = []; for (const p of [...new Set(provs)]) { let pg = 1, all = []; for (;;) { const r = await get(`${base}/odds/${p}/propBets?limit=1000&page=${pg}`, 3); if (!r || !r.items) break; all = all.concat(r.items); if (!r.pageCount || pg >= r.pageCount) break; pg++; } if (all.length) { items = all; break; } }
       if (!items.length) return; conProps++;
       const sum = await get(`https://site.api.espn.com/apis/site/v2/sports/${sp}/${lg}/summary?event=${e.id}`, 3); if (!sum) return; const st = stats(sum.boxscore), tb = DEP === 'mlb' ? totalBases(sum) : null;
