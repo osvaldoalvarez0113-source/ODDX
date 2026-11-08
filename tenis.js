@@ -26,6 +26,11 @@
   let KAL = [];              // precios de Kalshi (rama kalshi, robot scripts/kalshi.js)
   const KURL = 'https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/kalshi/kalshi-tenis.json';
   const apellido = s => { const p = T.normNombre(s).split(' '); return p[p.length - 1] || ''; };
+  // Medido (docs/MEDICION-TENIS-BATERIA-2026-11.md, 7,506 partidos): el precio de Kalshi acierta más que el modelo
+  // (69.1% contra 65.6%) y el peso del modelo encima del mercado sale 0. Como en las otras apps: si hay precio, manda el mercado
+  // y el modelo solo pone un 5%. Tramos: cuánto ganó el favorito de Kalshi según su %.
+  const LAM_M = 0.05;
+  const MER_BANDAS = [[.5, .55, 920, .501], [.55, .6, 1262, .571], [.6, .65, 1197, .642], [.65, .7, 1033, .686], [.7, .75, 908, .709], [.75, .8, 742, .782], [.8, .85, 586, .84], [.85, .9, 421, .898], [.9, 1.01, 437, .961]];
   // Kalshi del partido: mismo día (±1) y los dos apellidos. Devuelve {cA, cB} en centavos de compra y el % sin margen para A
   function kalshiDe(m) {
     const a = apellido(m.a.nombre), b = apellido(m.b.nombre); if (!a || !b || a === b) return null;
@@ -102,13 +107,16 @@
     const bestOf = (m.ev.mj && m.tour === 'a' && !esQ(m.ronda)) ? 5 : 3;
     const rA = T.rating(A, sup, P.w), rB = T.rating(B, sup, P.w), pElo = T.probElo(rA, rB);
     const p3 = T.ajustar(pElo, T.rasgos(A, B), P.aj);   // corrección medida: pocos partidos en la base y lejos de su mejor nivel
-    let pGana = p3;
-    if (bestOf === 5 && P.bo5 === true) { const d = T.ventaja(p3, 0.63, 0.63); pGana = T.pMatchRapido(0.63 + d, 0.63 - d, 5); }
-    const an = { sup, bestOf, rA, rB, pElo, p3, pGana, A, B };
+    let pMod = p3;
+    if (bestOf === 5 && P.bo5 === true) { const d = T.ventaja(p3, 0.63, 0.63); pMod = T.pMatchRapido(0.63 + d, 0.63 - d, 5); }
+    const k = kalshiDe(m), lg = x => Math.log(x / (1 - x)), cl = x => Math.min(Math.max(x, 0.01), 0.99);
+    const pGana = k ? 1 / (1 + Math.exp(-((1 - LAM_M) * lg(cl(k.pA)) + LAM_M * lg(cl(pMod))))) : pMod;
+    const an = { sup, bestOf, rA, rB, pElo, p3, pMod, pGana, A, B, k, conMercado: !!k };
     an.favA = pGana >= 0.5; an.pFav = Math.max(pGana, 1 - pGana);
     an.fav = an.favA ? A : B; an.rival = an.favA ? B : A;
     an.poco = Math.min(A.n, B.n) < 10;
-    an.hist = historico(m.tour, an.pFav, an.poco);
+    an.hist = k ? (b => b ? { de: b[0], a: b[1], n: b[2], gano: b[3], mer: true } : null)(MER_BANDAS.find(b => an.pFav >= b[0] && an.pFav < b[1])) : historico(m.tour, an.pFav, an.poco);
+    an.modFav = an.favA ? pMod : 1 - pMod;
     an.t = T.deTabla(T.tablaDe(R && R.emp && R.emp[m.tour], sup, an.pFav, bestOf === 5));
     return (m._an = an);
   }
@@ -127,7 +135,7 @@
   }
   function senal(an) {
     const g = an.hist ? an.hist.gano : an.pFav;
-    if (an.poco) return { c: 'mid', t: 'Con cuidado: hay pocos partidos de ' + (Math.min(an.A.n, an.B.n) === an.A.n ? an.A.nombre : an.B.nombre) + ' en la base' };
+    if (an.poco && !an.conMercado) return { c: 'mid', t: 'Con cuidado: hay pocos partidos de ' + (Math.min(an.A.n, an.B.n) === an.A.n ? an.A.nombre : an.B.nombre) + ' en la base' };
     if (g >= 0.78) return { c: 'ok', t: 'Pick fuerte' };
     if (g >= 0.66) return { c: 'ok', t: 'Pick sólido' };
     if (g >= 0.58) return { c: 'mid', t: 'Ventaja ligera' };
@@ -142,7 +150,7 @@
     lista.forEach(m => {
       if (m.estado === 'pre' && !ids[m.id] && m.ts - Date.now() < 30 * 3600e3) {
         const an = analisis(m);
-        const p = { id: m.id, ts: m.ts, tour: m.tour, ev: m.ev.n, ronda: m.ronda, sup: an.sup, a: m.a.nombre, b: m.b.nombre, pick: an.fav.nombre, pickId: an.fav.id, p: +an.pFav.toFixed(4), poco: an.poco, guardado: Date.now(), res: null };
+        const p = { id: m.id, ts: m.ts, tour: m.tour, ev: m.ev.n, ronda: m.ronda, sup: an.sup, a: m.a.nombre, b: m.b.nombre, pick: an.fav.nombre, pickId: an.fav.id, p: +an.pFav.toFixed(4), mer: an.conMercado, poco: an.poco, guardado: Date.now(), res: null };
         reg.push(p); ids[m.id] = p; cambio = true;
       }
       const p = ids[m.id];
@@ -239,11 +247,11 @@
     const fav = an.fav, riv = an.rival;
     const pTxt = an.bestOf === 5 ? 'a 5 sets' : 'a 3 sets';
     let o = `<div class="hero"><div class="side${an.favA ? ' fav' : ''}">${an.A.pais || m.a.pais ? `<img src="${flagUrl(m.a.pais || an.A.pais)}" alt="" onerror="this.remove()">` : ''}<span class="ab">${esc(m.a.corto || m.a.nombre)}</span><span class="pc">${pct(an.pGana)}</span></div><div class="mid"><b>${amer(an.pFav)}</b><small>cuota justa del favorito</small></div><div class="side${!an.favA ? ' fav' : ''}">${an.B.pais || m.b.pais ? `<img src="${flagUrl(m.b.pais || an.B.pais)}" alt="" onerror="this.remove()">` : ''}<span class="ab">${esc(m.b.corto || m.b.nombre)}</span><span class="pc">${pct(1 - an.pGana)}</span></div></div>`;
-    o += `<div class="rv"><div class="rvMain"><div class="rvT">Pick · ganador del partido</div><div class="rvH">${esc(fav.nombre)}</div><div class="rvP">El modelo le da <b>${pct(an.pFav, 1)}</b> ${pTxt} contra ${esc(riv.nombre)} en ${T.SUP_TXT[an.sup].toLowerCase()}.${h ? ` En la medición (${h.n.toLocaleString('es')} partidos ${m.tour === 'a' ? 'ATP' : 'WTA'} del ${Math.round(h.de * 100)} al ${Math.round(Math.min(h.a, 1) * 100)}%), el favorito ganó el <b>${pct(h.gano, 1)}</b>.` : ''}</div><span class="rvSig ${s.c}">${esc(s.t)}</span></div>`;
-    const k = kalshiDe(m);
+    o += `<div class="rv"><div class="rvMain"><div class="rvT">Pick · ganador del partido</div><div class="rvH">${esc(fav.nombre)}</div><div class="rvP">${an.conMercado ? `Mercado (Kalshi) + 5% de modelo: <b>${pct(an.pFav, 1)}</b> contra ${esc(riv.nombre)}. El modelo solo le daba ${pct(an.modFav, 1)}.` : `El modelo le da <b>${pct(an.pFav, 1)}</b> ${pTxt} contra ${esc(riv.nombre)} en ${T.SUP_TXT[an.sup].toLowerCase()}. <small>Sin precio de Kalshi para este partido.</small>`}${h ? ` En la medición (${h.n.toLocaleString('es')} partidos${h.mer ? ' con precio de Kalshi' : ' ' + (m.tour === 'a' ? 'ATP' : 'WTA')}, del ${Math.round(h.de * 100)} al ${Math.round(Math.min(h.a, 1) * 100)}%), el favorito ganó el <b>${pct(h.gano, 1)}</b>.` : ''}</div><span class="rvSig ${s.c}">${esc(s.t)}</span></div>`;
+    const k = an.k;
     if (k) {
-      const kf = an.favA ? k.pA : 1 - k.pA, cF = an.favA ? k.cA : k.cB, de = Math.abs(kf - an.pFav) * 100;
-      o += `<div class="nota" style="margin-top:10px">📈 <b>Kalshi:</b> ${esc(fav.nombre)} ${cF}¢ · el mercado le da <b>${pct(kf)}</b> (modelo ${pct(an.pFav)}).${kf < 0.5 ? ' El mercado tiene de favorito al otro.' : de >= 8 ? ' Se separan bastante: el mercado suele saber algo (lesión, cansancio).' : ''}</div>`;
+      const kf = an.favA ? k.pA : 1 - k.pA, cF = an.favA ? k.cA : k.cB, de = Math.abs(kf - an.modFav) * 100;
+      o += `<div class="nota" style="margin-top:10px">📈 <b>Kalshi:</b> ${esc(fav.nombre)} se compra a ${cF}¢ (mercado ${pct(kf)}, modelo ${pct(an.modFav)}).${an.modFav < 0.5 ? ' El modelo tenía de favorito al otro: medido, en esos casos el favorito del mercado ganó 72%.' : de >= 8 ? ' Se separan bastante: el mercado suele saber algo que el modelo no (lesión, cansancio).' : ''}</div>`;
     }
     // resumen de sets y games (tablas medidas, vistas desde el favorito)
     const t = an.t, Md = R && R.medicion && R.medicion[m.tour] || {};
@@ -296,7 +304,7 @@
     box.innerHTML = aviso + filas.map(({ m, an }, i) => {
       const s = senal(an), h = an.hist;
       return `<div class="fila-rank" data-id="${m.id}"><span class="pos">${i + 1}</span>${an.fav.pais ? `<img src="${flagUrl(an.fav.pais)}" alt="" onerror="this.remove()">` : ''}<div class="nom">${esc(an.fav.nombre)}<small>vs ${esc(an.rival.nombre)} · ${m.tour === 'a' ? 'ATP' : 'WTA'} ${esc(m.ev.n)} · ${esc(horaTxt(m))}${m.estado === 'in' ? ' · 🔴 en vivo' : ''}</small><small class="sig ${s.c}">${esc(s.t)}${h ? ' · en la medición ganó ' + pct(h.gano) : ''}</small></div><span class="pct">${pct(an.pFav)}</span></div>`;
-    }).join('') + `<div class="nota">Ordenado por lo que de verdad ganó el favorito en ese tramo de probabilidad (medición 2024-2026). "Pocos partidos" = uno de los dos casi no juega ATP/WTA: su número es menos fiable.</div>`;
+    }).join('') + `<div class="nota">Ordenado por lo que de verdad ganó el favorito en ese tramo. Con precio de Kalshi manda el mercado (acierta más que el modelo: 69% contra 66%); sin precio, el modelo. "Pocos partidos" = uno de los dos casi no juega ATP/WTA: su número es menos fiable.</div>`;
     box.querySelectorAll('.fila-rank').forEach(f => f.onclick = () => {
       irA('vJuegos'); const g = document.querySelector('#juegos .game[data-id="' + f.dataset.id + '"]');
       if (g) { g.classList.add('open'); pintarCuerpo(g.querySelector('.body'), PART.find(x => x.id === f.dataset.id), 'ver'); g.scrollIntoView({ block: 'start', behavior: 'smooth' }); }

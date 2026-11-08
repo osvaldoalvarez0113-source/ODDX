@@ -246,7 +246,7 @@ function main() {
       const mejor = variantes[0];
       console.log(nomTour, 'mejor variante:', JSON.stringify(mejor));
       const fin = recorrer(L, db, { w: mejor.w, prior: mejor.prior ? pr : null, kM: mejor.kM, guardar: true, factores: true });
-      PREDS.push(...fin.preds.map(p => Object.assign({}, p, { a: (db.jug[p.wId] || [''])[0], b: (db.jug[p.lId] || [''])[0] })));
+
       const P = fin.preds;
       // ajuste medido (scripts/medicion/tenis_mercado.js, «huecos»): el Elo se pasa con los que casi no tienen partidos
       // en la base y se queda corto con los que están lejos de su mejor nivel. Se elige con 2024-2025 y se prueba en 2026.
@@ -266,6 +266,8 @@ function main() {
       const acDespues = t26.filter(p => p.pW > .5).length / (t26.length || 1);
       const ajusteMed = { coef: aj, prueba2026: { n: t26.length, mejora: +(1000 * mD).toFixed(2), z: +(sD ? mD / sD : 0).toFixed(1), aciertoAntes: +acAntes.toFixed(4), aciertoDespues: +acDespues.toFixed(4) } };
       console.log(nomTour, 'ajuste', JSON.stringify(ajusteMed));
+      // para las mediciones mensuales: la probabilidad que de verdad muestra la app (ya con el ajuste); pW0 = Elo solo
+      PREDS.push(...P.map(p => Object.assign({}, p, { a: (db.jug[p.wId] || [''])[0], b: (db.jug[p.lId] || [''])[0] })));
       // cansancio: jugó hace menos de 30 h un partido de 30+ games (se avisa en la app, no entra al cálculo)
       const cans = quien => { const z = P.filter(p => p.fin === 'F').map(p => { const favW = p.pW >= .5, fv = favW ? p.fW : p.fL, rv = favW ? p.fL : p.fW, j = quien === 'fav' ? fv : rv; return (j.dias != null && j.dias < 1.25 && (j.gPrev || 0) >= 30) ? { d: Math.max(p.pW, 1 - p.pW), g: favW ? 1 : 0 } : null; }).filter(Boolean); const n = z.length || 1; return { n: z.length, dice: +(z.reduce((a, b) => a + b.d, 0) / n).toFixed(3), gano: +(z.reduce((a, b) => a + b.g, 0) / n).toFixed(3) }; };
       const cansancio = { fav: cans('fav'), rival: cans('rival') };

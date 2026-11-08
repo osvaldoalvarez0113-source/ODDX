@@ -1,5 +1,7 @@
 # Medición de la app de tenis (noviembre 2026)
 
+> Segunda ronda (8-nov): huecos del modelo, fórmula calibrada y comparación contra Kalshi en `MEDICION-TENIS-BATERIA-2026-11.md`. Desde ahí el modelo lleva un ajuste medido y, si hay precio de Kalshi, manda el mercado.
+
 Datos: ESPN, individuales ATP y WTA del 1-ene-2023 al 7-nov-2026 (38,412 partidos; sin Challengers ni ITF).
 Cada partido de 2024 en adelante se predijo **solo con lo que había antes de jugarse**. 2023 sirvió para arrancar los ratings.
 Los parámetros se eligieron con 2024-2025 y se comprobaron en 2026, que el modelo no vio al elegirlos.

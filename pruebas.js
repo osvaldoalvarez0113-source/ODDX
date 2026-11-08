@@ -1596,6 +1596,7 @@ sec('Tenis');
  ok('tenis: el que casi no tiene partidos en la base baja; el que está lejos de su mejor nivel sube',T.ajustar(.6,T.rasgos({n:30,all:1800,pico:1800},{n:1,all:1700,pico:1700}),{b:1,cn:.5,cp:.1})>.6&&T.ajustar(.6,T.rasgos({n:30,all:1800,pico:2000},{n:30,all:1700,pico:1700}),{b:1,cn:.5,cp:.1})>.6);
  ok('tenis.js aplica el ajuste medido y avisa del cansancio',/T\.ajustar\(pElo, T\.rasgos\(A, B\), P\.aj\)/.test(rd('tenis.js'))&&/function cansado/.test(rd('tenis.js')));
  { const Kp=require(path.join(__dirname,'scripts','kalshi.js')); ok('kalshi robot: también baja tenis (ATP y WTA)',JSON.stringify(Kp.SERIES.tenis)===JSON.stringify(['KXATPMATCH','KXWTAMATCH'])); }
+ ok('tenis.js: con precio de Kalshi manda el mercado (LAM_M 0.05, medido: acierta 69% contra 66%)',/const LAM_M = 0\.05/.test(rd('tenis.js'))&&/k \? 1 \/ \(1 \+ Math\.exp\(-\(\(1 - LAM_M\)/.test(rd('tenis.js')));
  ok('tenis.js muestra el precio de Kalshi del partido',/kalshi-tenis\.json/.test(rd('tenis.js'))&&/function kalshiDe/.test(rd('tenis.js')));
  ok('tenis: la batería de pruebas existe y corre cada mes (huecos, fórmula, Kalshi)',fs.existsSync(path.join(__dirname,'scripts','medicion','tenis_mercado.js'))&&/schedule:/.test(rd('.github/workflows/medir-tenis.yml'))&&/resultados-tenis/.test(rd('.github/workflows/medir-tenis.yml')));
 }
