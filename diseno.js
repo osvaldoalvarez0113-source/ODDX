@@ -91,12 +91,13 @@ function versionApp(){
  if(!v){ var e=$('.ver'); if(e) v=(e.textContent||'').trim(); }
  return v;
 }
-function nombreApp(a){ return a==='mlb'?'OVA MLB':(a==='fut'?'OVA Fútbol':(a==='nhl'?'OVA NHL':(a==='nfl'?'OVA NFL':'OVA NBA'))); }
+function nombreApp(a){ return a==='mlb'?'OVA MLB':(a==='fut'?'OVA Fútbol':(a==='nhl'?'OVA NHL':(a==='nfl'?'OVA NFL':(a==='tenis'?'OVA Tenis':'OVA NBA')))); }
 function fuentesApp(a){
  return a==='mlb'?'Datos: MLB StatsAPI y Open-Meteo. Modelo propio de OVA (diferencial de abridores, bullpen y ofensiva).'
   :a==='fut'?'Datos: ESPN y worldfootball.net. Modelo Poisson con corrección Dixon-Coles.'
   :a==='nhl'?'Datos: ESPN (3 temporadas completas + la actual) y Pinnacle. Modelo de goles Poisson con tiempo extra; el mercado manda.'
   :a==='nfl'?'Datos: ESPN (3 temporadas completas + la actual) y Pinnacle. Modelo de rating de margen con números clave 3 y 7; el mercado manda.'
+  :a==='tenis'?'Datos: ESPN (ATP y WTA desde 2023) y Kalshi. Elo general + superficie con ajuste medido; si hay precio de Kalshi, el mercado manda.'
   :'Datos: ESPN (3 temporadas). Modelo de rating de margen con aproximación normal.';
 }
 function tarjetaVersion(a){
@@ -218,7 +219,7 @@ function unificarNBA(){
  var porV=function(k){ return $('[data-v="'+k+'"]',barra); };
  diagEnEncabezado();
  ponerLabel(porV('vReg'),'Mis picks');
- var apDeApp=d.documentElement.getAttribute('data-app'); apDeApp=(apDeApp==='nhl'||apDeApp==='nfl')?apDeApp:'nba';
+ var apDeApp=d.documentElement.getAttribute('data-app'); apDeApp=(apDeApp==='nhl'||apDeApp==='nfl'||apDeApp==='tenis')?apDeApp:'nba';
  var aj=armarAjustes(apDeApp,{
   attr:'data-v',
   tabBtn:porV,
@@ -227,7 +228,7 @@ function unificarNBA(){
    return h && $('#respMsg')?[h,$('#respMsg')]:null;
   },
   ocultos:[
-   {clave:'vRank',vista:'#vRank',titulo:'📊 Ratings de equipos',detalle:'Cuántos puntos vale cada equipo; es lo que usa el modelo.'},
+   apDeApp==='tenis'?{clave:'vRank',vista:'#vRank',titulo:'📊 Ratings de jugadores',detalle:'El Elo de cada jugador por superficie; es lo que usa el modelo.'}:{clave:'vRank',vista:'#vRank',titulo:'📊 Ratings de equipos',detalle:'Cuántos puntos vale cada equipo; es lo que usa el modelo.'},
    {clave:'vBt',vista:'#vBt',titulo:'📈 Backtest del modelo',detalle:'Mide qué tan bien habría acertado en temporadas pasadas.'}
   ]
  });

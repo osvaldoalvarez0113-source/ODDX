@@ -210,21 +210,25 @@
       const ms = grupos[k], m0 = ms[0];
       return `<div class="diaHead">${m0.tour === 'a' ? 'ATP' : 'WTA'} · ${esc(m0.ev.n)} <span class="supTag s${supDe(m0)}">${T.SUP_TXT[supDe(m0)]}</span></div>` + ms.map(m => {
         const an = analisis(m);
-        return `<div class="game" data-id="${m.id}"><div class="head"><div class="crestpair">${filaJug(m.a.nombre ? Object.assign({}, an.A, { nombre: m.a.nombre, pais: m.a.pais || an.A.pais }) : an.A, an.pGana, an.favA, m.a.gano)}${filaJug(Object.assign({}, an.B, { nombre: m.b.nombre, pais: m.b.pais || an.B.pais }), 1 - an.pGana, !an.favA, m.b.gano)}<div class="ronda">${esc(m.ronda)}${an.bestOf === 5 ? ' · a 5 sets' : ''}</div></div>${chipHora(m)}<div class="chev">⌄</div></div><div class="body"></div></div>`;
+        return `<div class="game" data-id="${m.id}"><div class="head"><div class="crestpair">${filaJug(m.a.nombre ? Object.assign({}, an.A, { nombre: m.a.nombre, pais: m.a.pais || an.A.pais }) : an.A, an.pGana, an.favA, m.a.gano)}${filaJug(Object.assign({}, an.B, { nombre: m.b.nombre, pais: m.b.pais || an.B.pais }), 1 - an.pGana, !an.favA, m.b.gano)}<div class="ronda">${esc(m.ronda)}${an.bestOf === 5 ? ' · a 5 sets' : ''}</div></div>${chipHora(m)}<div class="chev">⌄</div></div><div class="body">${kpiOculto(an)}</div></div>`;
       }).join('');
     }).join('');
+    // lo mismo que dejan las otras apps en cada tarjeta: los diseños de adentro (Boleto, Duelo, Bento…) leen esto
+    box.querySelectorAll('.game').forEach(g => { const m = PART.find(x => x.id === g.dataset.id); if (!m || !m._an) return; g._calc = { pA: 100 * m._an.pGana, pH: 100 * (1 - m._an.pGana), nomA: m.a.corto || m.a.nombre, nomH: m.b.corto || m.b.nombre }; });
     box.querySelectorAll('.game .head').forEach(h => h.onclick = () => {
       const g = h.parentNode, m = PART.find(x => x.id === g.dataset.id);
       g.classList.toggle('open'); if (g.classList.contains('open')) pintarCuerpo(g.querySelector('.body'), m, 'ver');
     });
   }
+  // dato escondido para los diseños de adentro (Boleto, Duelo…): leen la «cuota justa» de un .kpi como en las otras apps
+  const kpiOculto = an => `<div class="kpi" style="display:none"><div><b>${amer(an.pFav).replace('-', '−')}</b><small>Cuota justa</small></div></div>`;
   function vacio(t, d) { return `<div class="vacio"><div class="vico"><div class="anillo"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M4.5 6.5c3 2.5 3 8.5 0 11M19.5 6.5c-3 2.5-3 8.5 0 11"/></svg></div><b>${esc(t)}</b>${esc(d)}</div>`; }
 
   /* ---------- cuerpo: Veredicto · Mercados · Jugadores ---------- */
   function pintarCuerpo(bd, m, tab) {
     const an = analisis(m);
     const tabs = [['ver', 'Veredicto'], ['mer', 'Sets y games'], ['jug', 'Jugadores']];
-    bd.innerHTML = `<div class="tabs">${tabs.map(([k, n]) => `<button class="tb${k === tab ? ' on' : ''}" data-t="${k}">${n}</button>`).join('')}</div><div class="pane on"></div>`;
+    bd.innerHTML = `<div class="tabs">${tabs.map(([k, n]) => `<button class="tb${k === tab ? ' on' : ''}" data-t="${k}">${n}</button>`).join('')}</div><div class="pane on"></div>${kpiOculto(an)}`;
     bd.querySelector('.tabs').onclick = e => { const b = e.target.closest('.tb'); if (b) pintarCuerpo(bd, m, b.dataset.t); };
     const pane = bd.querySelector('.pane');
     if (tab === 'ver') pane.innerHTML = htmlVeredicto(m, an);
@@ -350,10 +354,40 @@
   function irA(v) {
     document.querySelectorAll('.tabbar .tbar-btn').forEach(x => x.classList.toggle('on', x.dataset.v === v));
     document.querySelectorAll('main > .vista').forEach(x => x.classList.toggle('on', x.id === v));
-    if (v === 'vPicks') pintarPicks(); if (v === 'vReg') pintarRegistro(); if (v === 'vMed') pintarMedicion();
+    if (v === 'vAlgane') pintarPicks(); if (v === 'vReg') pintarRegistro(); if (v === 'vBt') pintarMedicion(); if (v === 'vRank') pintarRank();
   }
-  function pintarTodo() { pintarSelector(); pintarJuegos(); if ($('vPicks').classList.contains('on')) pintarPicks(); }
+  function pintarTodo() { pintarSelector(); pintarJuegos(); if ($('vAlgane').classList.contains('on')) pintarPicks(); }
   document.querySelectorAll('.tabbar .tbar-btn').forEach(b => b.onclick = () => irA(b.dataset.v));
+
+  /* ---------- Ratings de jugadores ---------- */
+  let RTOUR = 'a', RSUP = '*';
+  function pintarRank() {
+    const box = $('rank'), sel = $('rankSel');
+    if (!R || !R.jug) { box.innerHTML = vacio('Sin ratings', 'Todavía no llegó ratings-tenis.json.'); return; }
+    const op = [['a', 'ATP'], ['w', 'WTA']], su = [['*', 'General'], ['H', 'Dura'], ['C', 'Arcilla'], ['G', 'Hierba']];
+    sel.innerHTML = op.map(([k, n]) => `<button class="diaBtn tourBtn${k === RTOUR ? ' on' : ''}" data-t="${k}">${n}</button>`).join('') + '<span class="sepTour"></span>' + su.map(([k, n]) => `<button class="diaBtn${k === RSUP ? ' on' : ''}" data-s="${k}">${n}</button>`).join('');
+    sel.onclick = e => { const b = e.target.closest('.diaBtn'); if (!b) return; if (b.dataset.t) RTOUR = b.dataset.t; if (b.dataset.s) RSUP = b.dataset.s; pintarRank(); };
+    const col = { '*': 3, H: 4, C: 5, G: 6 }[RSUP], ncol = { '*': 7, H: 8, C: 9, G: 10 }[RSUP];
+    const hoy = Date.now() / 864e5;
+    const L = Object.entries(R.jug).filter(([, j]) => j[2] === RTOUR && j[7] >= 15 && j[ncol] >= (RSUP === '*' ? 15 : 5) && hoy - j[12] < 120).sort((x, y) => y[1][col] - x[1][col]).slice(0, 60);
+    box.innerHTML = L.map(([id, j], i) => `<div class="fila-rank"><span class="pos">${i + 1}</span>${j[1] ? `<img src="${flagUrl(j[1])}" alt="" onerror="this.remove()">` : ''}<div class="nom">${esc(j[0])}<small>${j[11] ? '#' + j[11] + ' · ' : ''}${j[7]} partidos · forma ${esc((j[13] || '').slice(-5))}</small></div><span class="pct">${j[col]}</span></div>`).join('') + '<div class="nota">Jugadores con 15+ partidos y activos en los últimos 4 meses.</div>';
+  }
+
+  /* ---------- respaldo del registro (igual que en las otras apps) ---------- */
+  $('btnResp').onclick = () => {
+    const t = JSON.stringify({ app: 'ova-tenis', v: 1, fecha: new Date().toISOString(), registro: regGet() });
+    $('respTxt').value = t;
+    try { navigator.clipboard.writeText(t).then(() => $('respMsg').textContent = '✓ Copiado. Pégalo en Notas.', () => $('respMsg').textContent = 'Listo: copia el texto del cuadro.'); } catch (e) { $('respMsg').textContent = 'Listo: copia el texto del cuadro.'; }
+  };
+  $('btnRest').onclick = () => {
+    try {
+      const j = JSON.parse($('respTxt').value), lista = Array.isArray(j) ? j : j.registro;
+      if (!Array.isArray(lista)) throw new Error('no es un respaldo de tenis');
+      const reg = regGet(), ids = {}; reg.forEach(p => ids[p.id] = 1); let n = 0;
+      lista.forEach(p => { if (p && p.id && !ids[p.id]) { reg.push(p); ids[p.id] = 1; n++; } });
+      regSet(reg); $('respMsg').textContent = '✓ Restaurado: ' + n + ' picks nuevos.'; pintarRegistro();
+    } catch (e) { $('respMsg').textContent = '✗ No se pudo: ' + e.message; }
+  };
   $('btnDiag').onclick = () => {
     const el = $('diagOut'); if (el.style.display === 'block') { el.style.display = 'none'; return; }
     const L = ['Ratings: ' + (R ? (Object.keys(R.jug).length + ' jugadores, generado ' + R.gen) : 'NO cargó'), 'Partidos de ESPN: ' + PART.length + ' (pedidos ' + DIAG.pedidos + ')', 'Con rating: ' + PART.filter(m => R && R.jug[m.a.id] && R.jug[m.b.id]).length, 'Registro: ' + regGet().length, DIAG.errores.length ? 'Errores: ' + DIAG.errores.slice(0, 4).join(' | ') : 'Sin errores de descarga.'];

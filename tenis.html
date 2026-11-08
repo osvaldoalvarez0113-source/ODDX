@@ -11,6 +11,8 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Tenis — OVA</title>
+<script src="interior.js"></script>
+<script src="interior2.js"></script>
 <style>
 :root{
  --bg:#070B12;--bg1:#0D1420;--bg2:#131D2C;--bg3:#1B2838;
@@ -230,22 +232,38 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 
  <div class="vista on" id="vJuegos"><div class="diaSelector" id="diaSel"></div><div id="juegos"></div></div>
 
- <div class="vista" id="vPicks">
+ <div class="vista" id="vAlgane">
   <div class="diaSelector" id="diaSel2"></div>
-  <div class="nota" style="margin:8px 2px 0">Picks ganadores del día: los partidos que faltan, del favorito más seguro al menos seguro.</div>
+  <div class="nota" style="margin:12px 2px 0">Ranking de los partidos que faltan por probabilidad de que gane el favorito (del mercado si hay precio de Kalshi; si no, del modelo), con lo que de verdad ganó el favorito en ese tramo.</div>
   <div id="picks"></div>
  </div>
 
- <div class="vista" id="vReg"><h3>Aciertos del modelo</h3><div id="registro"></div></div>
+ <div class="vista" id="vRank">
+  <div class="nota" style="margin:12px 2px 0">Rating Elo de cada jugador: 1500 es el promedio de la base; +100 puntos ≈ 64% de ganar. Es lo que usa el modelo (25% superficie).</div>
+  <div class="diaSelector" id="rankSel"></div>
+  <div id="rank"></div>
+ </div>
 
- <div class="vista" id="vMed"><div id="medicion"></div></div>
+ <div class="vista" id="vBt"><div id="medicion"></div></div>
+
+ <div class="vista" id="vReg">
+  <h3>Aciertos del modelo</h3>
+  <div id="registro"></div>
+  <h3>Respaldo</h3>
+  <div class="nota" style="margin-top:0">El registro vive solo en este navegador. Genera un respaldo y pégalo en Notas; si algún día se borra, lo restauras desde aquí.</div>
+  <button id="btnResp" class="btnAncho sec">Generar respaldo (y copiar)</button>
+  <textarea id="respTxt" class="resp" placeholder="Aquí aparece el respaldo. Para restaurar, pega el texto aquí y toca Restaurar."></textarea>
+  <button id="btnRest" class="btnAncho sec">Restaurar desde el cuadro</button>
+  <div id="respMsg" class="nota"></div>
+ </div>
 </main>
 
 <nav class="tabbar">
- <button class="tbar-btn on" data-v="vJuegos"><span class="ic">🎾</span><span class="lb">Partidos</span></button>
- <button class="tbar-btn" data-v="vPicks"><span class="ic">🏆</span><span class="lb">Picks</span></button>
+ <button class="tbar-btn on" data-v="vJuegos"><span class="ic">🎾</span><span class="lb">Juegos</span></button>
+ <button class="tbar-btn" data-v="vAlgane"><span class="ic">🏆</span><span class="lb">Al gane</span></button>
+ <button class="tbar-btn" data-v="vRank"><span class="ic">📊</span><span class="lb">Ratings</span></button>
+ <button class="tbar-btn" data-v="vBt"><span class="ic">📈</span><span class="lb">Backtest</span></button>
  <button class="tbar-btn" data-v="vReg"><span class="ic">📒</span><span class="lb">Registro</span></button>
- <button class="tbar-btn" data-v="vMed"><span class="ic">📈</span><span class="lb">Medición</span></button>
 </nav>
 
 <div class="ovaSheet" id="ovaSheet"><div class="card"><h2>Apariencia</h2><p>Toca un tema para verlo al instante. Se guarda y lo comparten todas las apps de OVA.</p><div id="skinBox"></div></div></div>
@@ -254,5 +272,6 @@ textarea.resp{width:100%;min-height:90px;background:var(--bg2);color:var(--txt);
 <script src="tenis.js"></script>
 <script src="banca.js"></script>
 <script src="ovaextra.js"></script>
+<script src="diseno.js"></script>
 </body>
 </html>
