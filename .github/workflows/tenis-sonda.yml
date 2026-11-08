@@ -1,0 +1,35 @@
+name: Sonda tenis (temporal)
+on:
+  push:
+    branches: [tenis-sonda]
+permissions:
+  contents: write
+jobs:
+  sonda:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Bajar muestras
+        run: |
+          mkdir -p /tmp/s && cd /tmp/s
+          E=https://site.api.espn.com/apis/site/v2/sports/tennis
+          for t in atp wta; do
+            curl -sS -m 40 "$E/$t/scoreboard" -o espn-$t-hoy.json || true
+            curl -sS -m 40 "$E/$t/scoreboard?dates=20261106" -o espn-$t-20261106.json || true
+            curl -sS -m 40 "$E/$t/scoreboard?dates=20260715" -o espn-$t-20260715.json || true
+          done
+          curl -sS -m 40 "https://site.web.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard?dates=20261106" -o espn-web-atp.json || true
+          S=https://raw.githubusercontent.com/JeffSackmann
+          for f in tennis_atp/master/atp_matches_2026.csv tennis_atp/master/atp_matches_2025.csv tennis_wta/master/wta_matches_2026.csv tennis_wta/master/wta_matches_2025.csv; do
+            n=$(echo $f | tr '/' '_'); curl -sS -m 60 "$S/$f" -o full.csv -w "%{http_code}\n" > code.txt || true
+            echo "$(cat code.txt) $(wc -l < full.csv)" > $n.info; head -3 full.csv >> $n.info; tail -3 full.csv >> $n.info; rm -f full.csv code.txt
+          done
+          for y in 2025 2026; do
+            curl -sS -m 60 -o td$y.xlsx -w "%{http_code} %{size_download}\n" "http://www.tennis-data.co.uk/$y/$y.xlsx" > td$y.info || true
+            rm -f td$y.xlsx
+          done
+          ls -la
+      - name: Guardar
+        run: |
+          cd /tmp/s && git init -q -b resultados-tenis-sonda && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m sonda && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" resultados-tenis-sonda
