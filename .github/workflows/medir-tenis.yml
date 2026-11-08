@@ -5,11 +5,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "41 11 3 * *"
-  push:
-    branches: [tenis-dev]
-    paths:
-      - scripts/medicion/tenis_mercado.js
-      - .github/workflows/medir-tenis.yml
 
 permissions:
   contents: write
