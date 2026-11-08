@@ -27,6 +27,8 @@ var ESTILOS=[
  {id:'tablero',n:'Tablero',d:'Marcador de aeropuerto',sw:'repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 22%/86% 14% no-repeat,repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 50%/86% 14% no-repeat,repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 78%/86% 14% no-repeat,#16161a'}
 ];
 var BY={};ESTILOS.forEach(function(e){BY[e.id]=e;});
+/* 8-nov-2026: Osvaldo eligió quedarse solo con Oro negro y Paneles. Los demás ya no se ofrecen; quien tenía uno guardado vuelve a Oro negro. */
+var VIS=['oro','paneles'];
 
 /* ===================================================================== CSS */
 var CSS=`
@@ -198,7 +200,7 @@ html[data-hub="tablero"] body{background:#0a0a0c}
 
 /* ===================================================================== utilidades */
 var ST={id:'oro',stop:null,timers:[]};
-function leer(){ try{ var v=root.localStorage.getItem(KEY); return BY[v]?v:'oro'; }catch(e){ return 'oro'; } }
+function leer(){ try{ var v=root.localStorage.getItem(KEY); return VIS.indexOf(v)>=0?v:'oro'; }catch(e){ return 'oro'; } }
 function guardar(id){ try{ root.localStorage.setItem(KEY,id); }catch(e){} }
 function inyectarCSS(){
   if(doc.getElementById('hubEstilosCss')) return;
@@ -465,7 +467,7 @@ function abrirHoja(){
   if(!h){
     h=doc.createElement('div'); h.id='hubSheet';
     var t='';
-    ESTILOS.forEach(function(e){ t+='<button type="button" class="tile" data-id="'+e.id+'"><span class="sw" style="background:'+e.sw+'"></span><span class="tx"><b>'+e.n+'</b><span>'+e.d+'</span></span></button>'; });
+    ESTILOS.filter(function(e){ return VIS.indexOf(e.id)>=0; }).forEach(function(e){ t+='<button type="button" class="tile" data-id="'+e.id+'"><span class="sw" style="background:'+e.sw+'"></span><span class="tx"><b>'+e.n+'</b><span>'+e.d+'</span></span></button>'; });
     h.innerHTML='<div class="sheetbox"><h2>Presentación del inicio</h2><p>Toca una para verla ahora. Se queda guardada.</p><div class="tiles">'+t+'</div></div>';
     h.addEventListener('click',function(ev){
       var el=ev.target, tile=null;
@@ -508,7 +510,7 @@ function arrancar(){
   if(doc.readyState==='loading') doc.addEventListener('DOMContentLoaded',listo); else listo();
 }
 
-var API={ESTILOS:ESTILOS,DEP:DEP,css:CSS,_html:{carrusel:htmlCarrusel,orbita:htmlOrbita,paneles:htmlPaneles,mazo:htmlMazo,tablero:htmlTablero},aplicar:aplicar,abrirHoja:abrirHoja,cerrarHoja:cerrarHoja,actual:function(){ return ST.id; },leer:leer,_arrancar:arrancar};
+var API={VIS:VIS,ESTILOS:ESTILOS,DEP:DEP,css:CSS,_html:{carrusel:htmlCarrusel,orbita:htmlOrbita,paneles:htmlPaneles,mazo:htmlMazo,tablero:htmlTablero},aplicar:aplicar,abrirHoja:abrirHoja,cerrarHoja:cerrarHoja,actual:function(){ return ST.id; },leer:leer,_arrancar:arrancar};
 root.OVAHub=API;
 if(typeof module!=='undefined'&&module.exports){ module.exports=API; }
 else if(doc&&html){ try{ arrancar(); }catch(e){} }

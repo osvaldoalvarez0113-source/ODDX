@@ -576,8 +576,9 @@ sec('Ajustes organizado (ajustes.js + pestañas de Apariencia)');
  ok('ajustes.js mueve los bloques que ya existen, no los recrea (ningún innerHTML con texto de la app)',/appendChild\(b\)/.test(rd('ajustes.js'))&&!/\.manual.*innerHTML/.test(rd('ajustes.js')));
  ok('index.html carga ajustes.js después de diseno.js y el service worker lo guarda',rd('index.html').indexOf('ajustes.js')>rd('index.html').indexOf('diseno.js')&&/'ajustes\.js'/.test(rd('sw.js')));
  ok('los botones del menú no son <button> (los diseños con !important no los pueden pintar de amarillo)',/mk\('div','ajRow'\)/.test(rd('ajustes.js')));
- ok('Apariencia tiene dos pestañas (Diseño de adentro / Tema de color) y los diseños van en categorías',/uiTab/.test(ic)&&/Deportivos y espectaculares/.test(ic)&&/uiSkinHost/.test(ic));
- ok('todos los diseños quedan en alguna categoría (si no, caen en la última)',/!usados\[u\.id\]/.test(ic));
+ ok('Apariencia: solo los 4 diseños que eligió Osvaldo (Oro negro, Cristal, Paneles, Bento); el tema de color va con el diseño',JSON.stringify(require(path.join(__dirname,'interior.js')).VIS)===JSON.stringify(['clasico','cristal','paneles','bento'])&&/\.uiSec \.uiSeg\{display:none\}/.test(ic)&&/var TEMA=\{clasico:'oro',cristal:'cristal'\}/.test(ic));
+ ok('Clásico se llama Oro negro y un diseño viejo guardado pasa a Paneles',/\{id:'clasico',n:'Oro negro'/.test(ic)&&/root\.localStorage\.setItem\(KEY,'paneles'\); return 'paneles';/.test(ic));
+ ok('Presentación del inicio: solo Oro negro y Paneles (lo demás vuelve a Oro negro)',JSON.stringify(require(path.join(__dirname,'hubestilos.js')).VIS)===JSON.stringify(['oro','paneles'])&&/VIS\.indexOf\(v\)>=0\?v:'oro'/.test(rd('hubestilos.js')));
  ok('fútbol y NBA: Ajustes tiene la entrada Apariencia que abre la hoja 🎨',/dsApar/.test(dj)&&/#ovaSheet/.test(dj));
 }
 

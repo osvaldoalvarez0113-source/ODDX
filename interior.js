@@ -9,7 +9,7 @@
 var doc=root.document, html=doc&&doc.documentElement;
 var KEY='ova_interior';
 var UIS=[
- {id:'clasico',n:'Clásico',d:'Como lo tenías',sw:'linear-gradient(135deg,#0b121c,#1b2838)'},
+ {id:'clasico',n:'Oro negro',d:'Negro con dorado, sobrio y elegante',sw:'linear-gradient(135deg,#0A0908,#3b2d10 60%,#C9A24A)'},
  {id:'cristal',n:'Cristal',d:'Vidrio, dock flotante y versus',sw:'radial-gradient(circle at 25% 30%,#3b82f6aa,transparent 55%),radial-gradient(circle at 80% 70%,#a855f7aa,transparent 55%),#0a0f1d'},
  {id:'broadcast',n:'Broadcast',d:'Gráficos de TV deportiva',sw:'linear-gradient(115deg,#0a0f1d 0 60%,#FBBF24 60% 64%,#0a0f1d 64%)'},
  {id:'pro',n:'Pro',d:'Datos primero: barras de probabilidad y números tabulares',sw:'linear-gradient(90deg,#3b82f6 0 46%,#0b121c 46% 48%,#fbbf24 48%)'},
@@ -30,8 +30,13 @@ var UIS=[
  {id:'paneles',n:'Paneles',d:'Franjas inclinadas con el color de cada deporte, títulos de contorno y movimiento: igual que el hub',sw:'linear-gradient(172deg,#F0CE6B 0 33%,#0a0a0a 33% 34%,#3DDC84 34% 66%,#0a0a0a 66% 67%,#FF8A3D 67%)'}
 ];
 var BY={};UIS.forEach(function(u){BY[u.id]=u;});
+/* 8-nov-2026: Osvaldo eligió quedarse con cuatro: Oro negro (Clásico con el tema Oro negro), Cristal, Paneles y Bento.
+   Los demás ya no se ofrecen; quien tenía uno guardado pasa a Paneles. Oro negro y Cristal ponen su tema de color solos. */
+var VIS=['clasico','cristal','paneles','bento'];
+var TEMA={clasico:'oro',cristal:'cristal'};
 
 var CSS=`
+.uiSec .uiSeg{display:none}
 .topbar .brand,header h1{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 @keyframes uiRise{from{opacity:0;transform:translateY(26px) scale(.97)}}
 @keyframes uiPop{from{opacity:0;transform:scale(.9)}}
@@ -604,7 +609,7 @@ function colorear(){
 
 /* ===================================================================== selector */
 var ST={id:'clasico'};
-function leer(){ try{ if(!root.localStorage.getItem('ova_ui_r6')){ root.localStorage.setItem('ova_ui_r6','1'); root.localStorage.setItem(KEY,'boleto'); } var v=root.localStorage.getItem(KEY); return BY[v]?v:'clasico'; }catch(e){ return 'clasico'; } }
+function leer(){ try{ if(!root.localStorage.getItem('ova_ui_r6')){ root.localStorage.setItem('ova_ui_r6','1'); root.localStorage.setItem(KEY,'clasico'); } var v=root.localStorage.getItem(KEY); if(VIS.indexOf(v)>=0) return v; if(v&&BY[v]){ root.localStorage.setItem(KEY,'paneles'); return 'paneles'; } return 'clasico'; }catch(e){ return 'clasico'; } }
 function inyectar(){
   if(doc.getElementById('uiInteriorCss')) return;
   var s=doc.createElement('style'); s.id='uiInteriorCss'; s.textContent=CSS; (doc.head||html).appendChild(s);
@@ -613,18 +618,22 @@ function aplicar(id,opts){
   opts=opts||{}; if(!BY[id]) id='clasico'; ST.id=id; inyectar();
   if(opts.guardar!==false){ try{ root.localStorage.setItem(KEY,id); }catch(e){} }
   if(id==='clasico') html.removeAttribute('data-ui'); else html.setAttribute('data-ui',id);
-  if(!opts.inicial){ iconos(); colorear(); marcar(); }
+  if(!opts.inicial){ iconos(); colorear(); marcar(); ponerTema(id); }
   /* cambiar de diseño cambia si la cabecera del juego es pegajosa: se vuelve a medir para que las pestañas no queden flotando */
   try{ root.requestAnimationFrame(function(){ if(typeof root.medirHead==='function') [].forEach.call(doc.querySelectorAll('.game.open'),root.medirHead); }); }catch(e){}
   return id;
 }
 var CATS=[
- {t:'Base y papel',ids:['clasico','cristal','boleto','boletonoche','prensa','recibo']},
- {t:'Datos y tableros',ids:['pro','radar','telemetria','radarvalor','bento','agenda']},
- {t:'Deportivos y espectaculares',ids:['broadcast','campo','marcador','duelo','historias','cromos','paneles']}
+ {t:'Tus diseños',ids:VIS}
 ];
+/* Oro negro y Cristal traen su tema de color: se toca el botón del tema de la app (cada app lo pinta a su manera) */
+function ponerTema(id){
+  var t=TEMA[id]; if(!t) return;
+  var b=doc.querySelector('.ovaSk[data-sk="'+t+'"]');
+  if(b&&b.click) b.click(); else { try{ root.localStorage.setItem('ova_skin',t); }catch(e){} }
+}
 var TKEY='ova_ui_tab';
-function pestana(){ try{ return root.localStorage.getItem(TKEY)==='t'?'t':'d'; }catch(e){ return 'd'; } }
+function pestana(){ return 'd'; }   /* el tema de color ya va con el diseño: solo queda la pestaña de diseños */
 function ponerPestana(s,t){
   [].forEach.call(s.querySelectorAll('.uiSeg .uiTab'),function(b){ var on=b.getAttribute('data-tab')===t; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false'); });
   [].forEach.call(s.querySelectorAll('.uiPanel'),function(p){ p.classList.toggle('on',p.getAttribute('data-tab')===t); });
@@ -639,7 +648,7 @@ function seccion(){
   CATS.forEach(function(c,i){
     var fila='';
     c.ids.forEach(function(id){ if(BY[id]){ usados[id]=1; fila+=tile(BY[id]); } });
-    if(i===CATS.length-1) UIS.forEach(function(u){ if(!usados[u.id]){ usados[u.id]=1; fila+=tile(u); } });   /* un diseño nuevo sin categoría cae en la última */
+
     if(fila) t+='<div class="uiCat">'+c.t+'</div><div class="uiRow">'+fila+'</div>';
   });
   s.innerHTML='<div class="uiSeg" role="tablist"><div class="uiTab" role="tab" tabindex="0" data-tab="d">🧩 Diseño de adentro</div><div class="uiTab" role="tab" tabindex="0" data-tab="t">🎨 Tema de color</div></div>'+
@@ -671,7 +680,7 @@ function abrirHoja(){
   var h=doc.getElementById('uiSheet');
   if(!h){
     h=doc.createElement('div'); h.id='uiSheet'; var t='';
-    UIS.forEach(function(u){ t+='<button type="button" class="tile" data-id="'+u.id+'"><span class="sw" style="background:'+u.sw+'"></span><span class="tx"><b>'+u.n+'</b><span>'+u.d+'</span></span></button>'; });
+    UIS.filter(function(u){ return VIS.indexOf(u.id)>=0; }).forEach(function(u){ t+='<button type="button" class="tile" data-id="'+u.id+'"><span class="sw" style="background:'+u.sw+'"></span><span class="tx"><b>'+u.n+'</b><span>'+u.d+'</span></span></button>'; });
     h.innerHTML='<div class="box"><h2>Diseño de adentro</h2><p>Cambia la forma de las pantallas. Va aparte del tema de color.</p><div class="tiles">'+t+'</div></div>';
     h.addEventListener('click',function(ev){
       var el=ev.target,tile=null;
@@ -721,7 +730,7 @@ function arrancar(){
   if(doc.readyState==='loading') doc.addEventListener('DOMContentLoaded',listo); else listo();
 }
 
-var API={UIS:UIS,css:CSS,aplicar:aplicar,leer:leer,abrirHoja:abrirHoja,actual:function(){ return ST.id; },_icons:IC,_clave:claveIcono,_seccion:seccion};
+var API={VIS:VIS,UIS:UIS,css:CSS,aplicar:aplicar,leer:leer,abrirHoja:abrirHoja,actual:function(){ return ST.id; },_icons:IC,_clave:claveIcono,_seccion:seccion};
 root.OVAInterior=API;
 if(typeof module!=='undefined'&&module.exports){ module.exports=API; }
 else if(doc&&html){ try{ arrancar(); }catch(e){} }
