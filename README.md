@@ -1,6 +1,6 @@
 # OVA · ODDX
 
-Apps de análisis de apuestas (MLB, fútbol, NBA, NHL y NFL) publicadas en GitHub Pages e instaladas en la pantalla de inicio del iPhone.
+Apps de análisis de apuestas (MLB, fútbol, NBA, NHL, NFL y tenis) publicadas en GitHub Pages e instaladas en la pantalla de inicio del iPhone.
 Todo corre en el navegador: no hay servidor propio salvo dos Workers de Cloudflare y un servidor opcional en Railway (ver «Piezas externas»).
 
 Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
@@ -9,11 +9,13 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 
 | Ruta | Qué es |
 |---|---|
-| `hub.html` | Pantalla de inicio: cinco tarjetas (MLB, Fútbol, NBA, NHL, NFL). Es lo que abre el icono del iPhone (`manifest.json` → `start_url`). |
+| `hub.html` | Pantalla de inicio: seis tarjetas (MLB, Fútbol, NBA, NHL, NFL, Tenis). Es lo que abre el icono del iPhone (`manifest.json` → `start_url`). |
 | `index.html` | App de **MLB** (la más grande). Fórmula de ventaja en carreras, cuotas, ranking por valor, registro de picks con CLV. |
 | `futbol.html` | App de **fútbol**: Poisson / Dixon-Coles, ligas de clubes, copas y (vía `selecciones.js`) selecciones. |
 | `nba.html` | App de **NBA**: rating tipo Elo de margen, márgenes y totales. |
 | `nhl.html` + `nfl.html` + `usdeporte.js` | Apps de **NHL** y **NFL**. Comparten `usdeporte.js` (partidos de `hist-<dep>.json` + ESPN, mercado de Pinnacle o DraftKings, picks y cierre); cada una trae su modelo: `modelo-nhl.js` (Poisson de goles, tiempo extra/shootout, back-to-back) y `modelo-nfl.js` (Elo de margen, números clave 3 y 7, descanso). Medidas en `docs/MEDICION-NHL-NFL-2026-10.md`: el mercado manda, el modelo pesa 5%. |
+| `tenis.html` + `tenis.js` + `modelo-tenis.js` | App de **tenis** (ATP y WTA, individuales). Partidos y marcador en vivo de ESPN; ganador con Elo general + Elo de superficie (25% superficie, medido); sets, primer set, hándicap y total de games salen de **tablas de lo que pasó de verdad** con un favorito de ese mismo % (no Markov: el Markov daba menos 2-0 de los reales). Pestañas: Partidos, Picks (ordenados por lo que ganó el favorito en la medición), Registro (guarda solo el pick antes del partido y lo resuelve; W.O./retiro no cuenta) y Medición. Medición: `docs/MEDICION-TENIS-2026-11.md`. |
+| `scripts/tenis_datos.js` + `.github/workflows/tenis.yml` + `ratings-tenis.json` | A diario baja de ESPN los partidos nuevos (historial completo desde 2023 en la rama `datos-tenis`), recalcula ratings, repite la medición y escribe `ratings-tenis.json`. No usa OddsPapi. |
 | `scripts/valor3.js` + `.github/workflows/valor-nhl-nfl.yml` | Escáner de Pinnacle para NHL y NFL (`pinnacle-nhl.json`, `pinnacle-nfl.json`), con su propio tope de 70 llamadas al mes (MLB 100 + fútbol/NBA 80 + NHL/NFL 70 = 250, el plan de OddsPapi). |
 | `scripts/kalshi.js` + `.github/workflows/kalshi.yml` | Precio de compra de **Kalshi** para NBA, NHL y NFL (rama `kalshi`, cada 30 min, API pública). El Veredicto lo muestra junto a la cuota justa con `OVAKalshi` (`prediccion.js`). Solo se muestra: no entra a ningún cálculo. |
 | `scripts/adelante.js` + `.github/workflows/adelante-nhl.yml` | **Prueba hacia adelante** de totales en NHL y NFL: reglas fijadas el 3-nov-2026, medidas solo con juegos nuevos (rama `adelante`; se ve en Auto). No gasta OddsPapi. |

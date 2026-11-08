@@ -2,8 +2,8 @@
    RED PRIMERO: con internet siempre baja la version nueva (nunca te quedas con un archivo viejo).
    Solo si no hay red (o tarda mas de 4 s) responde con la copia guardada.
    No toca las APIs (MLB, ESPN, Kalshi, Railway...): solo archivos de este mismo sitio. */
-var CACHE = 'ova-shell-v1';
-var SHELL = ['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html','modelo-nhl.js','modelo-nfl.js','usdeporte.js','prediccion.js','ovaextra.js','ovaedge.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','autoregistro.js','aciertos.js','ganadores.js','envivo.js','cierre.js','banca.js','herramientas.html','herramientas.js','obsidiana.js','mejoras.js','selecciones.js',
+var CACHE = 'ova-shell-v2';
+var SHELL = ['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html','tenis.js','modelo-tenis.js','modelo-nhl.js','modelo-nfl.js','usdeporte.js','prediccion.js','ovaextra.js','ovaedge.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','autoregistro.js','aciertos.js','ganadores.js','envivo.js','cierre.js','banca.js','herramientas.html','herramientas.js','obsidiana.js','mejoras.js','selecciones.js',
   'railway.js','pinnacle.js','diseno.js','manifest.json','icon-180.png','icon-192.png','icon-512.png'];
 
 self.addEventListener('install', function(e){

@@ -323,7 +323,7 @@ const t_sw=async()=>{
 sec('Hub limpio (solo las 5 tarjetas) y Panel aparte');
 {
  const hh=rd('hub.html');
- ok('el hub tiene SOLO las 5 tarjetas, sin Hoy ni Respaldo',(hh.match(/class="card /g)||[]).length===5&&!/id="hoy"|id="resp"|Respaldo|Favoritos/.test(hh));
+ ok('el hub tiene SOLO las 6 tarjetas, sin Hoy ni Respaldo',(hh.match(/class="card /g)||[]).length===6&&!/id="hoy"|id="resp"|Respaldo|Favoritos/.test(hh));
  ok('el hub no enlaza al panel (no estorba)',!/panel\.html/.test(hh));
  ok('el hub ya no resetea tu tema cada vez que entras',/if\(!localStorage\.getItem\('ova_skin'\)\)/.test(hh));
  const h=rd('panel.html');
@@ -366,9 +366,9 @@ sec('Presentaciones del hub (6 diseños)');
  const HB=require(path.join(__dirname,'hubestilos.js'));
  const IDS=['oro','carrusel','orbita','paneles','mazo','tablero'];
  ok('hay 6 diseños: '+IDS.join(', '),JSON.stringify(HB.ESTILOS.map(e=>e.id))===JSON.stringify(IDS));
- ok('los 5 deportes llevan a MLB, fútbol, NBA, NHL y NFL',JSON.stringify(HB.DEP.map(d=>d.href))===JSON.stringify(['index.html','futbol.html','nba.html','nhl.html','nfl.html'])&&HB.DEP.every(d=>fs.existsSync(D0(d.href))));
+ ok('los 6 deportes llevan a MLB, fútbol, NBA, NHL, NFL y tenis',JSON.stringify(HB.DEP.map(d=>d.href))===JSON.stringify(['index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html'])&&HB.DEP.every(d=>fs.existsSync(D0(d.href))));
  function D0(f){return path.join(__dirname,f);}
- IDS.slice(1).forEach(id=>{const h=HB._html[id]();ok('diseño '+id+': arma sus 5 enlaces y el logo para cambiar de diseño',['index.html','futbol.html','nba.html','nhl.html','nfl.html'].every(x=>h.indexOf('href="'+x+'"')>=0)&&h.indexOf('hl-brand')>=0);});
+ IDS.slice(1).forEach(id=>{const h=HB._html[id]();ok('diseño '+id+': arma sus 6 enlaces y el logo para cambiar de diseño',['index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html'].every(x=>h.indexOf('href="'+x+'"')>=0)&&h.indexOf('hl-brand')>=0);});
  const css=HB.css;
  let nivel=0,okb=true;for(const c of css){if(c==='{')nivel++;if(c==='}'){nivel--;if(nivel<0)okb=false;}}
  ok('el CSS tiene llaves balanceadas',okb&&nivel===0);
@@ -1183,7 +1183,8 @@ sec('Registro automático: guarda ANTES del juego, resuelve solo y mide con prec
  ['index.html','futbol.html','nba.html'].forEach(f=>ok(f+' carga autoregistro.js después de asistente.js',rd(f).indexOf('<script src="autoregistro.js">')>rd(f).indexOf('<script src="asistente.js">')&&rd(f).indexOf('<script src="asistente.js">')>0));
  ok('herramientas.html lo carga antes de herramientas.js y el service worker lo guarda',rd('herramientas.html').indexOf('autoregistro.js')>0&&rd('herramientas.html').indexOf('autoregistro.js')<rd('herramientas.html').indexOf('herramientas.js')&&/'autoregistro\.js'/.test(rd('sw.js')));
  ok('las tres apps llaman al registro con try/catch y solo con juegos pendientes',/OVARegAuto\.registrar\('mlb'/.test(rd('index.html'))&&/OVARegAuto\.registrar\('fut'/.test(rd('futbol.html'))&&/OVARegAuto\.registrar\('nba'/.test(rd('nba.html')));
- ok('el respaldo (ovaextra.js) incluye ova_auto_v1 y lo mezcla sin duplicar',/'ova_auto_v1'\]/.test(rd('ovaextra.js'))&&/ova_auto_v1:1\}/.test(rd('ovaextra.js')));
+ ok('el respaldo (ovaextra.js) incluye ova_auto_v1 y lo mezcla sin duplicar',/'ova_auto_v1'[,\]]/.test(rd('ovaextra.js'))&&/ova_auto_v1:1[,}]/.test(rd('ovaextra.js')));
+ok('el respaldo incluye el registro de tenis y lo mezcla sin duplicar',/'ova_tenis_registro_v1'/.test(rd('ovaextra.js'))&&/ova_tenis_registro_v1:1\}/.test(rd('ovaextra.js')));
  ok('la pestaña Auto lista los juegos por deporte y periodo con modelo, mercado y quién ganó',/🗓️ Juegos \(/.test(rd('herramientas.js'))&&/🧠 Modelo/.test(rd('herramientas.js')));
  ok('Herramientas tiene la pestaña 🤖 Auto',/\['auto','🤖 Auto'\]/.test(rd('herramientas.js'))&&/pantallaAuto\(cont,ls\)/.test(rd('herramientas.js')));
 }
@@ -1568,6 +1569,29 @@ sec('Auto se actualiza solo');
  const ra=rd('autoregistro.js'), he=rd('herramientas.js');
  ok('al guardar resultados avisa a la pantalla, y Herramientas repinta Auto',/new root\.CustomEvent\('ova-auto-cambio'\)/.test(ra)&&/addEventListener\('ova-auto-cambio'/.test(he));
  ok('la app instalada busca resultados al volver a primer plano, no solo al cargar',/visibilitychange[^\n]*resolverTodo\(false\)/.test(ra));
+}
+
+sec('Tenis');
+{
+ const T=require(path.join(__dirname,'modelo-tenis.js'));
+ ok('tenis: game al saque con 64% de puntos ≈ 81%',Math.abs(T.pGame(0.64)-0.813)<0.002);
+ ok('tenis: dos jugadores iguales = 50% (partido, primer set y sets suman 1)',(()=>{const m=T.partido(.62,.62,3);const ss=Object.values(m.sets).reduce((a,b)=>a+b,0);return Math.abs(m.pA-.5)<1e-9&&Math.abs(m.set1A-.5)<1e-9&&Math.abs(ss-1)<1e-9;})());
+ ok('tenis: la ventaja por punto devuelve la probabilidad pedida',(()=>{const d=T.ventaja(0.7,0.63,0.63);return Math.abs(T.pMatchRapido(0.63+d,0.63-d,3)-0.7)<0.002;})());
+ ok('tenis: Elo 100 puntos arriba ≈ 64%',Math.abs(T.probElo(1600,1500)-0.64)<0.01);
+ ok('tenis: superficies (Roland Garros arcilla, Wimbledon hierba, Paris dura, Stuttgart de junio hierba)',T.superficie('Roland Garros',0)==='C'&&T.superficie('Wimbledon',0)==='G'&&T.superficie('Rolex Paris Masters',Date.UTC(2026,10,1))==='H'&&T.superficie('Boss Open Stuttgart',Date.UTC(2026,5,10))==='G');
+ const tab={bo3:{'*':[{de:.7,a:.75,n:4,s:[2,1,1,0],s1:3,tot:{18:2,24:2},dif:{'6':2,'-2':1,'2':1}}]}};
+ const t=T.deTabla(T.tablaDe(tab,'H',0.72,false));
+ ok('tenis: tabla medida → 2-0, 1er set, total y hándicap',t&&t.sinSet===.5&&t.set1===.75&&t.masDe(20.5)===.5&&t.cubre(-3.5)===.5&&t.mediana===18);
+ ok('tenis: sin tabla no truena',T.deTabla(T.tablaDe(null,'H',.7,false))===null);
+ const h=rd('tenis.html');
+ ['modelo-tenis.js','tenis.js','banca.js','ovaextra.js'].forEach(f=>ok('tenis.html carga '+f,h.indexOf('<script src="'+f+'"></script>')>0));
+ ok('tenis.js: el registro guarda antes del partido y no se cambia después',/estado === 'pre' && !ids\[m\.id\]/.test(rd('tenis.js')));
+ ok('tenis.js: W.O. y retiros no cuentan como acierto ni fallo',/WALKOVER\|RETIRED/.test(rd('tenis.js'))&&/p\.res = 'N'/.test(rd('tenis.js')));
+ ok('tenis.js: descarta jugadores «TBD»',/tbd\|tba/.test(rd('tenis.js')));
+ const w=rd('.github/workflows/tenis.yml');
+ ok('tenis: el workflow corre a diario, no usa OddsPapi y guarda el historial en datos-tenis',/schedule:/.test(w)&&!/ODDSPAPI/.test(w)&&/datos-tenis/.test(w));
+ ok('el service worker guarda la app de tenis',['tenis.html','tenis.js','modelo-tenis.js'].every(f=>rd('sw.js').indexOf("'"+f+"'")>=0));
+ ok('partidos-tenis.json (pesado) no entra en main',/partidos-tenis\.json/.test(rd('.gitignore')));
 }
 
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
