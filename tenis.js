@@ -221,7 +221,7 @@
     });
   }
   // dato escondido para los diseños de adentro (Boleto, Duelo…): leen la «cuota justa» de un .kpi como en las otras apps
-  const kpiOculto = an => `<div class="kpi" style="display:none"><div><b>${amer(an.pFav).replace('-', '−')}</b><small>Cuota justa</small></div></div>`;
+  const kpiOculto = an => `<div class="kpi" style="display:none !important"><div><b>${amer(an.pFav).replace('-', '−')}</b><small>Cuota justa</small></div></div>`;
   function vacio(t, d) { return `<div class="vacio"><div class="vico"><div class="anillo"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M4.5 6.5c3 2.5 3 8.5 0 11M19.5 6.5c-3 2.5-3 8.5 0 11"/></svg></div><b>${esc(t)}</b>${esc(d)}</div>`; }
 
   /* ---------- cuerpo: Veredicto · Mercados · Jugadores ---------- */
@@ -238,42 +238,74 @@
     if (sel) sel.onchange = () => { const o = LS.get(K.sup) || {}; o[m.ev.id] = sel.value; LS.set(K.sup, o); PART.forEach(x => { if (x.ev.id === m.ev.id) x._an = null; }); pintarJuegos(); const g = document.querySelector('#juegos .game[data-id="' + m.id + '"]'); if (g) { g.classList.add('open'); pintarCuerpo(g.querySelector('.body'), m, tab); } };
     const inp = pane.querySelector('.cuotaIn');
     if (inp) inp.oninput = () => {
-      const out = pane.querySelector('.rvVal'); const v = parseFloat(String(inp.value).replace(',', '.'));
-      let pi = null; if (isFinite(v)) { if (Math.abs(v) >= 100) pi = v > 0 ? 100 / (v + 100) : -v / (-v + 100); else if (v > 1) pi = 1 / v; }
-      if (!pi) { out.className = 'rvVal'; out.innerHTML = ''; return; }
-      const ref = an.hist ? an.hist.gano : an.pFav;
-      out.className = 'rvVal ' + (ref > pi ? 'ok' : 'no');
-      out.innerHTML = `Esa cuota pide que ${esc(an.fav.nombre)} gane el <b>${pct(pi, 1)}</b> de las veces. El modelo dice <b>${pct(an.pFav, 1)}</b>${an.hist ? ' y en la medición ese tramo ganó el <b>' + pct(an.hist.gano, 1) + '</b>' : ''}. ${ref > pi ? 'La cuota paga más de lo que cuesta el riesgo.' : 'La cuota paga menos de lo que cuesta el riesgo.'}`;
+      const out = pane.querySelector('.rvVal'), v = +inp.value, p = parseFloat(inp.dataset.p), fm = inp.dataset.m === '1';
+      if (!v || isNaN(v)) { out.className = 'rvVal'; out.textContent = ''; return; }
+      const am = Math.abs(v) < 100 ? (q => q >= 0.5 ? Math.round(-(q / (1 - q)) * 100) : Math.round(((1 - q) / q) * 100))(Math.abs(v) / 100) : v;   // 55 = 55¢
+      const dec = am > 0 ? am / 100 + 1 : 100 / (-am) + 1, ev = p * dec - 1, imp = am > 0 ? 100 / (am + 100) : -am / (-am + 100), dif = (p - imp) * 100, jt = amer(p);
+      if (ev > 0 && ev < 0.02) { out.className = 'rvVal'; out.innerHTML = `≈ <b>Valor mínimo:</b> paga un poco más que la cuota justa (${jt}), pero +${(ev * 100).toFixed(1)}% está dentro del margen de error del precio de referencia. No cuenta como pick; busca +2% o más.`; }
+      else if (ev > 0) { out.className = 'rvVal ok'; out.innerHTML = `✓ <b>Hay valor:</b> te pagan más que la cuota justa (${jt}). Ganancia esperada: +${(ev * 100).toFixed(1)}% por cada $1 (${dif.toFixed(1)} pts de ventaja).` + (fm ? '' : ' Ojo: sale del modelo, que no le gana al mercado; desconfía.'); }
+      else { out.className = 'rvVal no'; out.innerHTML = `✗ <b>No hay valor:</b> la cuota justa es ${jt} y esta paga menos. Pérdida esperada: ${(ev * 100).toFixed(1)}% por cada $1.`; }
     };
   }
+  /* Veredicto con la misma forma que NBA, NHL y NFL (usdeporte.js): aro, barra, Pronóstico y pick, ¿Hay pick?,
+     Modelo contra mercado y Qué tan confiable es. Más abajo, lo de tenis: sets y games medidos. */
+  function ringSvg(pA, pH) {
+    const g = 1.4, d = 'M 50 8 A 42 42 0 1 1 49.99 8';
+    const seg = (p, cls, ini) => `<path class="sg ${cls}" d="${d}" pathLength="100" style="stroke-dasharray:${Math.max(0.1, p * 100 - g).toFixed(2)} 100;stroke-dashoffset:-${(ini * 100 + g / 2).toFixed(2)}"/>`;
+    return `<svg viewBox="0 0 100 100" aria-hidden="true"><path class="tr" d="${d}" pathLength="100"/>${seg(pA, 'aw', 0)}${seg(pH, 'fv', pA)}</svg>`;
+  }
+  const corto = j => j.corto || j.nombre;
   function htmlVeredicto(m, an) {
-    const s = senal(an), h = an.hist;
-    const fav = an.fav, riv = an.rival;
-    const pTxt = an.bestOf === 5 ? 'a 5 sets' : 'a 3 sets';
-    let o = `<div class="hero"><div class="side${an.favA ? ' fav' : ''}">${an.A.pais || m.a.pais ? `<img src="${flagUrl(m.a.pais || an.A.pais)}" alt="" onerror="this.remove()">` : ''}<span class="ab">${esc(m.a.corto || m.a.nombre)}</span><span class="pc">${pct(an.pGana)}</span></div><div class="mid"><b>${amer(an.pFav)}</b><small>cuota justa del favorito</small></div><div class="side${!an.favA ? ' fav' : ''}">${an.B.pais || m.b.pais ? `<img src="${flagUrl(m.b.pais || an.B.pais)}" alt="" onerror="this.remove()">` : ''}<span class="ab">${esc(m.b.corto || m.b.nombre)}</span><span class="pc">${pct(1 - an.pGana)}</span></div></div>`;
-    o += `<div class="rv"><div class="rvMain"><div class="rvT">Pick · ganador del partido</div><div class="rvH">${esc(fav.nombre)}</div><div class="rvP">${an.conMercado ? `Mercado (Kalshi) + 5% de modelo: <b>${pct(an.pFav, 1)}</b> contra ${esc(riv.nombre)}. El modelo solo le daba ${pct(an.modFav, 1)}.` : `El modelo le da <b>${pct(an.pFav, 1)}</b> ${pTxt} contra ${esc(riv.nombre)} en ${T.SUP_TXT[an.sup].toLowerCase()}. <small>Sin precio de Kalshi para este partido.</small>`}${h ? ` En la medición (${h.n.toLocaleString('es')} partidos${h.mer ? ' con precio de Kalshi' : ' ' + (m.tour === 'a' ? 'ATP' : 'WTA')}, del ${Math.round(h.de * 100)} al ${Math.round(Math.min(h.a, 1) * 100)}%), el favorito ganó el <b>${pct(h.gano, 1)}</b>.` : ''}</div><span class="rvSig ${s.c}">${esc(s.t)}</span></div>`;
-    const k = an.k;
-    if (k) {
-      const kf = an.favA ? k.pA : 1 - k.pA, cF = an.favA ? k.cA : k.cB, de = Math.abs(kf - an.modFav) * 100;
-      o += `<div class="nota" style="margin-top:10px">📈 <b>Kalshi:</b> ${esc(fav.nombre)} se compra a ${cF}¢ (mercado ${pct(kf)}, modelo ${pct(an.modFav)}).${an.modFav < 0.5 ? ' El modelo tenía de favorito al otro: medido, en esos casos el favorito del mercado ganó 72%.' : de >= 8 ? ' Se separan bastante: el mercado suele saber algo que el modelo no (lesión, cansancio).' : ''}</div>`;
-    }
-    // resumen de sets y games (tablas medidas, vistas desde el favorito)
-    const t = an.t, Md = R && R.medicion && R.medicion[m.tour] || {};
-    const med = (k) => { const x = Md[k] && Md[k][an.sup]; return x && x.n ? ` <small>· medido: acierta ${pct(x.acierto)}</small>` : ''; };
+    const fav = an.fav, riv = an.rival, k = an.k, pf = an.pFav, h = an.hist;
+    const pB = 1 - an.pGana, pA = an.pGana;   // en el aro: A a la izquierda, B a la derecha
+    const imgA = m.a.pais || an.A.pais, imgB = m.b.pais || an.B.pais;
+    let o = `<div class="hero">
+      <div class="side${an.favA ? ' fav' : ''}">${imgA ? `<img src="${flagUrl(imgA)}" alt="" onerror="this.style.display='none'">` : ''}<span class="ab">${esc(corto(m.a))}</span><span class="pc">${pct(pA, 1)}</span></div>
+      <div class="mid"><div class="gz">${ringSvg(pA, pB)}<div class="cx"><b>${amer(pf)}</b><small>${esc(apellido(fav.nombre).replace(/^./, c => c.toUpperCase()))}</small></div></div></div>
+      <div class="side${!an.favA ? ' fav' : ''}">${imgB ? `<img src="${flagUrl(imgB)}" alt="" onerror="this.style.display='none'">` : ''}<span class="ab">${esc(corto(m.b))}</span><span class="pc">${pct(pB, 1)}</span></div>
+     </div>
+     <div class="bar"><span class="a" style="flex-grow:${Math.max(pA, 0.08)}">${pct(pA, 1)}</span><span class="h" style="flex-grow:${Math.max(pB, 0.08)}">${pct(pB, 1)}</span></div>
+     <div class="nota" style="margin:6px 0 0;text-align:center">${k ? 'Probabilidades del mercado (Kalshi, sin margen) + 5% del modelo' : 'Probabilidades del modelo (sin precio de mercado)'} · ${T.SUP_TXT[an.sup].toLowerCase()}${an.bestOf === 5 ? ' · a 5 sets' : ''}</div>`;
+    // señal modelo contra mercado (mismas frases que las otras apps)
+    const modF = an.modFav, gap = k ? Math.abs((an.favA ? an.pMod : 1 - an.pMod) - (an.favA ? k.pA : 1 - k.pA)) * 100 : null, favModIgual = modF >= 0.5;
+    const pctNf = ` en ${esc(fav.nombre)} (modelo solo ${Math.round(modF * 100)}%, mercado ${Math.round(pf * 100)}%)`;
+    const sig = !k ? '<span class="rvSig mid">! Sin precio del mercado para este partido: pronóstico solo del modelo</span>' :
+      (gap <= 3 && favModIgual ? '<span class="rvSig ok">✓ Modelo y mercado coinciden</span>' :
+        (gap <= 7 && favModIgual ? `<span class="rvSig mid">≈ Diferencia de ${gap.toFixed(0)} pts de probabilidad${pctNf} · confía más en el mercado</span>` :
+          `<span class="rvSig bad">✗ Discrepan ${gap.toFixed(0)} pts de probabilidad${pctNf} · créele al mercado</span>`)) +
+      (k && !favModIgual ? `<div class="rvP" style="margin-top:7px">Modelo solo: <b>${esc(riv.nombre)}</b> (${Math.round((1 - modF) * 100)}%). Mercado: <b>${esc(fav.nombre)}</b> (${Math.round(pf * 100)}%).</div>` : '');
+    const acH = h ? `<div class="rvP rvAc" style="margin-top:9px">📊 <b>Cuántas veces acierta este %:</b> cuando ${h.mer ? 'Kalshi' : 'el modelo'} le dio ${Math.round(h.de * 100)}-${Math.round(Math.min(h.a, 1) * 100)}% al favorito, ganó <b>${Math.round(h.gano * h.n).toLocaleString('es')} de ${h.n.toLocaleString('es')}</b> partidos (${Math.round(h.gano * 100)}%).</div>` : '';
+    const umbral = 0.6;
+    o += `<div class="rv"><h4>Pronóstico y pick</h4><div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf >= umbral ? esc(fav.nombre) + ' gana · ' + Math.round(pf * 100) + '%' : 'Partido parejo'}</div>
+     <div class="rvP">${pf >= umbral ? 'Es el favorito' + (k ? ' según el mercado (Kalshi, sin margen).' : ' según el modelo.') : 'Ninguno pasa del 60%. Lo más probable: ' + esc(fav.nombre) + ' ' + Math.round(pf * 100) + '%.'}${an.bestOf === 5 ? ' Grand Slam a 5 sets.' : ''}</div>${sig}${acH}
+     <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amer(pf)}</b> por ${esc(fav.nombre)}${k ? '' : ' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(fav.nombre)}</label><input type="number" inputmode="decimal" class="cuotaIn" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${k ? 1 : 0}"><div class="rvVal"></div></div></div>`;
+    // modelo contra mercado
+    const row = (n, mo, mk) => `<div class="nm">${esc(n)} gana</div><div class="n md">${pct(mo, 1)}</div><div class="n mk">${mk === null ? '—' : pct(mk, 1)}</div><div class="n">${amer(mk === null ? mo : mk)}</div>`;
+    o += `<h4>Modelo contra mercado</h4><div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(m.a.nombre, an.pMod, k ? k.pA : null)}${row(m.b.nombre, 1 - an.pMod, k ? 1 - k.pA : null)}</div>
+     <div class="nota" style="margin-top:6px">Mercado = ${k ? `Kalshi (${esc(corto(m.a))} ${k.cA}¢ · ${esc(corto(m.b))} ${k.cB}¢)` : 'sin precio todavía'}.</div>`;
+    // qué tan confiable es
+    const L = (c, t) => `<div><i class="${c}">${c === 'ok' ? '✓' : (c === 'w' ? '!' : '✗')}</i><span>${t}</span></div>`;
+    const li = [];
+    li.push(k ? L('ok', 'Precio de Kalshi (se actualiza cada pocas horas).') : L('w', 'Sin precio del mercado para este partido.'));
+    const cF = cansado(m, fav), cR = cansado(m, riv), Cm = R && R.medicion && R.medicion[m.tour] && R.medicion[m.tour].cansancio;
+    if (cF) li.push(L('w', `<b>${esc(fav.nombre)} jugó hace poco un partido de ${cF.g} games.</b>${Cm && Cm.fav.n ? ` Medido: el favorito en esa situación ganó el ${pct(Cm.fav.gano, 1)} cuando el modelo decía ${pct(Cm.fav.dice, 1)} (${Cm.fav.n} partidos).` : ''}${k ? ' El precio ya lo puede incluir.' : ' El cálculo no lo descuenta.'}`));
+    else li.push(L('ok', `${esc(fav.nombre)} no viene de un partido largo ayer.`));
+    if (cR) li.push(L('ok', `${esc(riv.nombre)} jugó hace poco un partido de ${cR.g} games.`));
+    if (an.poco) li.push(L('w', `${esc(an.A.n < an.B.n ? an.A.nombre : an.B.nombre)} tiene ${Math.min(an.A.n, an.B.n)} partidos en la base (ATP/WTA desde 2023): su rating sale casi todo del ranking.${k ? ' Aquí el mercado sabe mucho más que el modelo.' : ''}`));
+    if (/qualif/i.test(m.ronda)) li.push(L('w', 'Clasificación: es donde el modelo más se equivoca (acierta 63% contra 70% del mercado).'));
+    li.push(L('w', 'Retiros: ~3% de los partidos terminan por retiro; cada casa los paga distinto.'));
+    o += `<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div>`;
+    // sets y games (lo propio del tenis)
+    const t = an.t;
     if (t) {
       const lT = t.mediana + 0.5, Rv = esc(riv.nombre), F = esc(fav.nombre);
       const lado = (p, si, no) => p >= 0.5 ? [p, si] : [1 - p, no];
       const items = [lado(t.set1, F + ' gana el 1er set', Rv + ' gana el 1er set'), lado(t.sinSet, F + ' gana sin perder set', Rv + ' gana al menos un set'), lado(t.cubre(-3.5), F + ' −3.5 games', Rv + ' +3.5 games')];
-      o += `<h4>Lo más probable</h4><div class="rvLs"><div><i class="ok">✓</i><span><b>${F}</b> gana el partido: ${pct(an.pFav)}</span></div>${items.map(([p, txt]) => `<div><i class="${p >= 0.6 ? 'ok' : 'w'}">${p >= 0.6 ? '✓' : '~'}</i><span>${txt}: ${pct(p)}</span></div>`).join('')}<div><i class="x">·</i><span>Total: lo normal son ${t.mediana} games (más de ${lT}: ${pct(t.masDe(lT))}). <small>Sin ventaja medida: solo referencia.</small></span></div></div>`;
+      o += `<h4>Sets y games (medido)</h4><div class="rvLs">${items.map(([p, txt]) => L(p >= 0.6 ? 'ok' : 'w', txt + ': ' + pct(p))).join('')}${L('x', `Total: lo normal son ${t.mediana} games (más de ${lT}: ${pct(t.masDe(lT))}). Sin ventaja medida: solo referencia.`)}</div>`;
     }
-    const cF = cansado(m, fav), cR = cansado(m, riv), Cm = R && R.medicion && R.medicion[m.tour] && R.medicion[m.tour].cansancio;
-    if (cF) o += `<div class="aviso">😮‍💨 ${esc(fav.nombre)} jugó hace poco un partido de ${cF.g} games.${Cm && Cm.fav.n ? ` En la medición, el favorito en esa situación ganó el ${pct(Cm.fav.gano, 1)} cuando el modelo decía ${pct(Cm.fav.dice, 1)} (${Cm.fav.n} partidos).` : ''} El cálculo no lo descuenta.</div>`;
-    if (cR) o += `<div class="nota">${esc(riv.nombre)} jugó hace poco un partido de ${cR.g} games.${Cm && Cm.rival.n ? ` Medido: el favorito ganó el ${pct(Cm.rival.gano, 1)} (decía ${pct(Cm.rival.dice, 1)}).` : ''}</div>`;
-    if (an.poco) o += `<div class="aviso">${esc(an.A.n < an.B.n ? an.A.nombre : an.B.nombre)} tiene ${Math.min(an.A.n, an.B.n)} partidos en la base (ATP/WTA desde 2023). Su rating sale casi todo del ranking: el número es menos fiable.</div>`;
-    if (an.bestOf === 5) o += `<div class="nota">Grand Slam a 5 sets. Medido en ${R && R.medicion && R.medicion.a && R.medicion.a.bo5 ? R.medicion.a.bo5.n : 'los'} partidos: subirle el % al favorito por jugar a 5 sets no mejoró la predicción, así que se usa el mismo %. Sets y games salen de lo que pasó en Grand Slams.</div>`;
-    o += `<div class="rvIn"><label>¿Te dan una cuota por ${esc(fav.nombre)}? (americana o decimal)</label><input class="cuotaIn" inputmode="decimal" placeholder="ej. -250 o 1.40"></div><div class="rvVal"></div>`;
-    o += `<div class="ajuste" style="margin-top:12px"><div><label>Superficie (si ESPN no la dice bien, cámbiala)</label><select class="supSel">${['H', 'C', 'G'].map(k => `<option value="${k}"${k === an.sup ? ' selected' : ''}>${T.SUP_TXT[k]}</option>`).join('')}</select></div></div>`;
-    o += `<details class="comoLee"><summary>Cómo se calcula</summary><div class="nota">Cada jugador tiene un rating Elo general y uno por superficie, hechos con todos sus partidos ATP/WTA desde 2023 (ESPN). Se mezclan con el peso medido (${R && R.params && R.params[m.tour] ? Math.round(R.params[m.tour].w * 100) : 25}% superficie). Después se corrige con dos cosas que el Elo no ve bien y que se midieron: al que casi no tiene partidos en la base el Elo lo infla, y al que está lejos de su mejor nivel lo castiga de más. Con eso sale quién gana. Sets y games salen de tablas de lo que pasó de verdad en miles de partidos con un favorito de ese mismo %. El % "ganó en la medición" sale de predecir cada partido de 2024-2026 solo con lo que había antes.</div></details></div>`;
+    o += `</div>`;
+    o += `<details class="comoLee"><summary>Superficie</summary><div class="ajuste" style="margin-top:8px"><div><label>Si ESPN no la dice bien, cámbiala</label><select class="supSel">${['H', 'C', 'G'].map(x => `<option value="${x}"${x === an.sup ? ' selected' : ''}>${T.SUP_TXT[x]}</option>`).join('')}</select></div></div></details>`;
+    o += `<details class="comoLee"><summary>¿Cómo se lee y qué tan confiable es?</summary><div class="nota"><b>Los dos porcentajes de arriba</b> son la probabilidad de que gane cada jugador. <b>Cuota justa</b> es lo que tendría que pagar la casa para que apostar ahí no gane ni pierda. <b>Qué tan confiable es:</b> en 7,506 partidos con precio de Kalshi el mercado acertó 69.1% contra 65.6% del modelo, por eso si hay precio manda el mercado (95%). <b>El modelo:</b> Elo general + ${R && R.params && R.params[m.tour] ? Math.round(R.params[m.tour].w * 100) : 25}% superficie con todos los partidos ATP/WTA desde 2023, corregido por dos cosas medidas (pocos partidos en la base y lejos de su mejor nivel). Sets y games salen de lo que pasó en miles de partidos con un favorito de ese mismo %.</div></details>`;
     return o;
   }
   function htmlMercados(m, an) {

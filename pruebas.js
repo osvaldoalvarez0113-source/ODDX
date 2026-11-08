@@ -1587,6 +1587,8 @@ sec('Tenis');
  ['interior.js','interior2.js','modelo-tenis.js','tenis.js','banca.js','ovaextra.js','diseno.js'].forEach(f=>ok('tenis.html carga '+f+' (mismo diseño que las otras apps)',h.indexOf('<script src="'+f+'"></script>')>0));
  ok('tenis.html: mismas vistas que NBA/NHL/NFL (Juegos, Al gane, Ratings, Backtest, Registro con respaldo)',['vJuegos','vAlgane','vRank','vBt','vReg','respMsg','btnResp','btnRest'].every(id=>h.indexOf('id="'+id+'"')>0));
  ok('diseno.js reconoce la app de tenis (nombre, fuentes y Ajustes)',/a==='tenis'\?'OVA Tenis'/.test(rd('diseno.js'))&&/apDeApp==='tenis'/.test(rd('diseno.js')));
+ ok('tenis: el Veredicto tiene la misma forma que NBA/NHL/NFL (aro, Pronóstico y pick, ¿Hay pick?, Modelo contra mercado, Qué tan confiable es)',['class="gz"','<h4>Pronóstico y pick</h4>','<b>¿Hay pick?</b>','<h4>Modelo contra mercado</h4>','<h4>Qué tan confiable es</h4>','class="rvTab"'].every(x=>rd('tenis.js').indexOf(x)>=0));
+ ok('interior2.js: el tenis tiene sus colores, su 🎾 y su cancha',/data-app=tenis\]\{[^}]*--emo:"🎾"/.test(rd('interior2.js'))&&/CAMPO_SVGS=\{\n tenis:/.test(rd('interior2.js')));
  ok('tenis.js deja _calc en cada tarjeta para los diseños de adentro',/g\._calc = \{ pA:/.test(rd('tenis.js')));
  ok('tenis.js: el registro guarda antes del partido y no se cambia después',/estado === 'pre' && !ids\[m\.id\]/.test(rd('tenis.js')));
  ok('tenis.js: W.O. y retiros no cuentan como acierto ni fallo',/WALKOVER\|RETIRED/.test(rd('tenis.js'))&&/p\.res = 'N'/.test(rd('tenis.js')));
