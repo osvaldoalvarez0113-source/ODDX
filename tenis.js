@@ -210,11 +210,11 @@
       const ms = grupos[k], m0 = ms[0];
       return `<div class="diaHead">${m0.tour === 'a' ? 'ATP' : 'WTA'} · ${esc(m0.ev.n)} <span class="supTag s${supDe(m0)}">${T.SUP_TXT[supDe(m0)]}</span></div>` + ms.map(m => {
         const an = analisis(m);
-        return `<div class="game" data-id="${m.id}"><div class="head"><div class="crestpair">${filaJug(m.a.nombre ? Object.assign({}, an.A, { nombre: m.a.nombre, pais: m.a.pais || an.A.pais }) : an.A, an.pGana, an.favA, m.a.gano)}${filaJug(Object.assign({}, an.B, { nombre: m.b.nombre, pais: m.b.pais || an.B.pais }), 1 - an.pGana, !an.favA, m.b.gano)}<div class="ronda">${esc(m.ronda)}${an.bestOf === 5 ? ' · a 5 sets' : ''}</div></div>${chipHora(m)}<div class="chev">⌄</div></div><div class="body">${kpiOculto(an)}</div></div>`;
+        return `<div class="game" data-id="${m.id}"><div class="head"><div class="crestpair">${filaJug(m.a.nombre ? Object.assign({}, an.A, { nombre: m.a.nombre, pais: m.a.pais || an.A.pais }) : an.A, an.pGana, an.favA, m.a.gano)}${filaJug(Object.assign({}, an.B, { nombre: m.b.nombre, pais: m.b.pais || an.B.pais }), 1 - an.pGana, !an.favA, m.b.gano)}<div class="ronda">${esc(m.ronda)}${an.bestOf === 5 ? ' · a 5 sets' : ''}</div><span class="match" style="display:none"><small>${esc(m.ronda)}${an.bestOf === 5 ? ' · a 5 sets' : ''}</small></span></div>${chipHora(m)}<div class="chev">⌄</div></div><div class="body">${kpiOculto(an)}</div></div>`;
       }).join('');
     }).join('');
     // lo mismo que dejan las otras apps en cada tarjeta: los diseños de adentro (Boleto, Duelo, Bento…) leen esto
-    box.querySelectorAll('.game').forEach(g => { const m = PART.find(x => x.id === g.dataset.id); if (!m || !m._an) return; g._calc = { pA: 100 * m._an.pGana, pH: 100 * (1 - m._an.pGana), nomA: m.a.corto || m.a.nombre, nomH: m.b.corto || m.b.nombre }; });
+    box.querySelectorAll('.game').forEach(g => { const m = PART.find(x => x.id === g.dataset.id); if (!m || !m._an) return; g._calc = { pA: 100 * m._an.pGana, pH: 100 * (1 - m._an.pGana), nomA: m.a.corto || m.a.nombre, nomH: m.b.corto || m.b.nombre }; const ab = j => (apellido(j.nombre).slice(0, 3) || '?').toUpperCase(); g.setAttribute('data-ab-a', ab(m.a)); g.setAttribute('data-ab-h', ab(m.b)); });
     box.querySelectorAll('.game .head').forEach(h => h.onclick = () => {
       const g = h.parentNode, m = PART.find(x => x.id === g.dataset.id);
       g.classList.toggle('open'); if (g.classList.contains('open')) pintarCuerpo(g.querySelector('.body'), m, 'ver');

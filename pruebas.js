@@ -1588,6 +1588,8 @@ sec('Tenis');
  ok('tenis.html: mismas vistas que NBA/NHL/NFL (Juegos, Al gane, Ratings, Backtest, Registro con respaldo)',['vJuegos','vAlgane','vRank','vBt','vReg','respMsg','btnResp','btnRest'].every(id=>h.indexOf('id="'+id+'"')>0));
  ok('diseno.js reconoce la app de tenis (nombre, fuentes y Ajustes)',/a==='tenis'\?'OVA Tenis'/.test(rd('diseno.js'))&&/apDeApp==='tenis'/.test(rd('diseno.js')));
  ok('tenis: el Veredicto tiene la misma forma que NBA/NHL/NFL (aro, Pronóstico y pick, ¿Hay pick?, Modelo contra mercado, Qué tan confiable es)',['class="gz"','<h4>Pronóstico y pick</h4>','<b>¿Hay pick?</b>','<h4>Modelo contra mercado</h4>','<h4>Qué tan confiable es</h4>','class="rvTab"'].every(x=>rd('tenis.js').indexOf(x)>=0));
+ ok('Bento v2: tarjetas blancas con franja de color (sin los cuatro fondos fuertes ni etiquetas negras)',/var BENTO=dis\('bento'/.test(rd('interior2.js'))&&/border-top:5px solid var\(--nxTile\)/.test(rd('interior2.js'))&&!/nth-child\(4n\+2\)\{--nxTile/.test(rd('interior2.js')));
+ ok('Agenda v2: pase de abordar (talón con la hora, nombres completos y ✈ en la ruta)',/grid-template-areas:"hora info" "hora vs" "hora bar" "hora foot"/.test(rd('interior2.js'))&&/content:"✈"/.test(rd('interior2.js')));
  ok('interior2.js: el tenis tiene sus colores, su 🎾 y su cancha',/data-app=tenis\]\{[^}]*--emo:"🎾"/.test(rd('interior2.js'))&&/CAMPO_SVGS=\{\n tenis:/.test(rd('interior2.js')));
  ok('tenis.js deja _calc en cada tarjeta para los diseños de adentro',/g\._calc = \{ pA:/.test(rd('tenis.js')));
  ok('tenis.js: el registro guarda antes del partido y no se cambia después',/estado === 'pre' && !ids\[m\.id\]/.test(rd('tenis.js')));

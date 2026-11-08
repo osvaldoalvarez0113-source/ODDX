@@ -199,62 +199,61 @@ var DUELO=dis('duelo',`
 & .nxArt{display:none}
 `);
 
-/* ===================================================================== 3 · BENTO */
+/* ===================================================================== 3 · BENTO (v2, 8-nov-2026: más calmado)
+   Antes: cuatro colores fuertes de fondo, etiquetas negras y aro negro, y la vista se perdía. Ahora: tarjetas blancas
+   con una franja de color arriba (verde = pick, coral = en vivo, violeta = lo demás), etiquetas suaves, aro violeta y
+   un resumen arriba en blanco. Misma estructura: dos columnas y el juego abierto a todo lo ancho. */
 var BENTO=dis('bento',`
-&{--bg:#F3F0FB;--bg1:#FFFFFF;--bg2:#F6F3FF;--bg3:#E9E3FB;--line:#E4DEF5;--line2:#CFC6EE;--txt:#16132B;--mut:#4A4570;--mut2:#6D6890;--acc:#5B2BD6;--acc2:#7C55E8;--accTx:#FFFFFF;--hot:#0B7F57;--hotTx:#FFFFFF;--good:#0B7F57;--bad:#C3302B;--info:#3A1F78;--ia:#4A4570;--r:20px;--r2:28px;--body:${ROUND};color-scheme:light;--x-onhead:#B6FF6A}
-&,& body{background:#F3F0FB!important;color:var(--txt)!important}
+&{--bg:#F5F4FA;--bg1:#FFFFFF;--bg2:#F7F6FC;--bg3:#ECEAF6;--line:#E6E3F2;--line2:#D3CFE6;--txt:#1C1A2E;--mut:#4F4C66;--mut2:#6E6B85;--acc:#5B3FD6;--acc2:#7A62E3;--accTx:#FFFFFF;--hot:#0B7F57;--hotTx:#FFFFFF;--good:#0B7F57;--bad:#C3302B;--info:#3A2C7A;--ia:#4F4C66;--r:18px;--r2:24px;--body:${ROUND};color-scheme:light;--x-onhead:#5B3FD6}
+&,& body{background:#F5F4FA!important;color:var(--txt)!important}
 & body{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 104px)!important}
-& :is(.topbar,header){background:#F3F0FB!important;border-bottom:0!important}
-& :is(.brand,header h1){font:800 24px/1 ${ROUND}!important;letter-spacing:.06em;color:#16132B!important;background:none!important;-webkit-text-fill-color:currentColor!important}
-& :is(.navbar,.tabbar){left:16px!important;right:16px!important;bottom:calc(env(safe-area-inset-bottom,0px) + 14px)!important;width:auto!important;border-radius:33px!important;padding:8px!important;gap:2px!important;background:#16132B!important;border:0!important;box-shadow:0 24px 40px -16px rgba(22,19,43,.7)!important}
-& :is(.navbar button,.tabbar .tbar-btn){color:#C9C2F0!important}
-& :is(.navbar button.on,.tabbar .tbar-btn.on){background:#B6FF6A!important;color:#14201A!important;border-radius:24px!important}
-& :is(#slate,#juegos){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+& :is(.topbar,header){background:#F5F4FA!important;border-bottom:0!important}
+& :is(.brand,header h1){font:800 24px/1 ${ROUND}!important;letter-spacing:.06em;color:#1C1A2E!important;background:none!important;-webkit-text-fill-color:currentColor!important}
+& :is(.navbar,.tabbar){left:16px!important;right:16px!important;bottom:calc(env(safe-area-inset-bottom,0px) + 14px)!important;width:auto!important;border-radius:30px!important;padding:7px!important;gap:2px!important;background:#FFFFFF!important;border:1px solid #E6E3F2!important;box-shadow:0 14px 30px -16px rgba(40,30,110,.45)!important}
+& :is(.navbar button,.tabbar .tbar-btn){color:#6E6B85!important}
+& :is(.navbar button.on,.tabbar .tbar-btn.on){background:#5B3FD6!important;color:#FFFFFF!important;border-radius:23px!important}
+& :is(#slate,#juegos){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
 & :is(#slate,#juegos)>:not(.game){grid-column:1/-1}
-& :is(#slate,#juegos)>.diaHead{margin:8px 2px 0}
+& :is(#slate,#juegos)>.diaHead{margin:10px 2px 0}
 & .game.open{grid-column:1/-1}
-& .game{--nxTile:#D8F98E;margin:0;border-radius:28px!important;border:0!important;background:#FFFFFF!important;overflow:hidden;box-shadow:0 14px 26px -18px rgba(40,20,120,.55)!important;animation:nxRise .55s cubic-bezier(.2,.9,.3,1) both}
-& .game:nth-child(4n+2){--nxTile:#E3D7FF}
-& .game:nth-child(4n+3){--nxTile:#FFD6BD}
-& .game:nth-child(4n+4){--nxTile:#CFE9FF}
-& .game.live{--nxTile:#FFC9C2}
-& .game .head{padding:0!important;background:var(--nxTile)!important;position:relative!important;top:auto!important;display:block!important;color:#16132B}
+& .game{--nxTile:#7A62E3;margin:0;border-radius:22px!important;border:1px solid #E6E3F2!important;background:#FFFFFF!important;overflow:hidden;box-shadow:0 10px 22px -18px rgba(40,30,110,.5)!important;animation:nxRise .55s cubic-bezier(.2,.9,.3,1) both}
+& .game[data-nxv="si"]{--nxTile:#16A672}
+& .game.live{--nxTile:#F0604D}
+& .game .head{padding:0!important;background:#FFFFFF!important;position:relative!important;top:auto!important;display:block!important;color:#1C1A2E;border-top:5px solid var(--nxTile)}
 & .game .head>:not(.nxT):not(.bug){display:none!important}
 & .game .head .bug{margin:0;padding:0 12px 10px}
-& .nxT{display:flex;flex-direction:column;gap:8px;padding:12px;color:#16132B}
+& .nxT{display:flex;flex-direction:column;gap:9px;padding:12px 12px 13px;color:#1C1A2E}
 & .nxTop{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}
-& .nxHora{order:1;padding:4px 9px;border-radius:99px;background:#16132B;color:#fff;font:700 12px/1.2 ${ROUND}}
-& .nxHora.vivo{background:#D9381E}
-& .nxTit{order:2;flex-basis:100%;font:800 17px/1.1 ${ROUND}}
-& .nxInfo{order:3;flex-basis:100%;font-size:12px;font-weight:600;color:#4A4570;display:none}
+& .nxHora{order:1;padding:3px 9px;border-radius:99px;background:#F1EFF8;color:#4F4C66;font:700 12px/1.2 ${ROUND}}
+& .nxHora.vivo{background:#FDE8E4;color:#C3302B}
+& .nxTit{order:2;flex-basis:100%;font:800 16px/1.15 ${ROUND};color:#1C1A2E}
+& .nxInfo{order:3;flex-basis:100%;font-size:12px;font-weight:600;color:#6E6B85;display:none}
 & .game.open .nxInfo{display:block}
-& .nxVs{display:flex;align-items:center;justify-content:center;gap:2px}
-& .nxSide{display:flex;flex-direction:column;align-items:center;width:42px}
-& .nxLogo{width:42px;height:42px;border:3px solid #fff;font-size:12px}
-& .nxSide.a .nxLogo{background:var(--ta,#6D6890)}
-& .nxSide.h .nxLogo{background:var(--th,#6D6890)}
+& .nxVs{display:flex;align-items:center;justify-content:center;gap:6px}
+& .nxSide{display:flex;flex-direction:column;align-items:center;width:40px}
+& .nxLogo{width:38px;height:38px;border:1px solid #E6E3F2;font-size:11.5px;background:#F7F6FC!important;color:#4F4C66}
 & .nxAb,& .nxNom,& .nxPc{display:none}
-& .nxFoto{position:absolute;right:-3px;bottom:-4px;width:22px;height:22px;border:2px solid #fff;box-shadow:0 4px 8px -3px rgba(22,19,43,.5)}
+& .nxFoto{position:absolute;right:-3px;bottom:-4px;width:22px;height:22px;border:2px solid #fff;box-shadow:0 4px 8px -3px rgba(22,19,43,.4)}
 & .game.open .nxFoto{width:30px;height:30px}
-& .nxMid{position:relative;width:60px;height:60px;flex:0 0 60px}
-& .nxR0{stroke:rgba(22,19,43,.12)}
-& .nxR1{stroke:#16132B}
-& .nxRn{font:800 20px/1 ${ROUND}}
+& .nxMid{position:relative;width:58px;height:58px;flex:0 0 58px}
+& .nxR0{stroke:#ECEAF6}
+& .nxR1{stroke:var(--nxTile)}
+& .nxRn{font:800 19px/1 ${ROUND};color:#1C1A2E}
 & .nxRn::after{content:"%";font-size:11px}
 & .nxRl{display:none}
 & .nxBar{display:none}
-& .nxFoot{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+& .nxFoot{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;padding-top:8px;border-top:1px dashed #E6E3F2}
 & .nxPcF{display:none}
-& .nxSello{padding:5px 10px;border-radius:12px;background:#16132B;color:#fff;font-size:12.5px}
-& .nxSello.si{background:#B6FF6A;color:#14201A}
-& .nxSello.gris{background:rgba(22,19,43,.12);color:#16132B}
+& .nxSello{padding:4px 9px;border-radius:10px;background:#F1EFF8;color:#4F4C66;font-size:12px;font-weight:700}
+& .nxSello.si{background:#E3F6EE;color:#0B7F57}
+& .nxSello.gris{background:#F4F4F7;color:#6E6B85}
 & .nxC{font-size:12px}
-& .nxC small{display:inline;font-weight:600;color:#4A4570;margin-right:4px}
-& .nxC b{display:inline;font-size:13px}
+& .nxC small{display:inline;font-weight:600;color:#6E6B85;margin-right:4px}
+& .nxC b{display:inline;font-size:13.5px;color:#1C1A2E}
 & .nxArt{display:none}
 & .game .body{background:#FFFFFF!important}
-& .bug{--hot:#B6FF6A;--good:#7CFFB2;--bad:#FF9A9A}
-& .bug .caja{background:#16132B!important;max-width:100%;box-sizing:border-box;overflow:hidden}
+& .bug{--hot:#5B3FD6;--good:#0B7F57;--bad:#C3302B}
+& .bug .caja{background:#F7F6FC!important;color:#1C1A2E!important;border:1px solid #E6E3F2;max-width:100%;box-sizing:border-box;overflow:hidden}
 & .game:not(.open) .bug .caja{padding:8px 6px;gap:4px 8px;flex-wrap:wrap;justify-content:center}
 & .game:not(.open) .bug .caja.fin{padding:8px 6px}
 & .game:not(.open) .bug .fq{font-size:12px;gap:4px}
@@ -263,59 +262,76 @@ var BENTO=dis('bento',`
 & .game:not(.open) .bug .dia,& .game:not(.open) .bug .cnt{display:none}
 & .game .body{--hot:#0B7F57}
 & .nxSum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 12px}
-& .nxSum div{border-radius:22px;padding:11px 10px;line-height:1.1;animation:nxRise .5s both}
-& .nxSum div:nth-child(1){background:#CFE9FF}
-& .nxSum div:nth-child(2){background:#FFD6BD;animation-delay:.07s}
-& .nxSum div:nth-child(3){background:#E3D7FF;animation-delay:.14s}
-& .nxSum small{display:block;font-size:12px;font-weight:700;color:#4A4570}
-& .nxSum b{display:block;margin-top:3px;font:800 19px/1.1 ${ROUND};color:#16132B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+& .nxSum div{border-radius:18px;padding:11px 10px;line-height:1.1;background:#FFFFFF;border:1px solid #E6E3F2;animation:nxRise .5s both}
+& .nxSum div:nth-child(2){animation-delay:.07s}
+& .nxSum div:nth-child(3){animation-delay:.14s}
+& .nxSum small{display:block;font-size:12px;font-weight:700;color:#6E6B85}
+& .nxSum b{display:block;margin-top:4px;font:800 17px/1.1 ${ROUND};color:#1C1A2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+& .nxSum div:nth-child(3) b{color:#5B3FD6}
 `);
 
-/* ===================================================================== 4 · AGENDA */
+/* ===================================================================== 4 · AGENDA (v2, 8-nov-2026: pase de abordar)
+   Antes era un listado con la hora al lado. Ahora cada juego es un pase de abordar: a la izquierda el talón con la hora
+   (o EN VIVO / FINAL) y un corte perforado; a la derecha los dos nombres completos con su %, y la «ruta» del vuelo:
+   el ✈ se para justo donde se reparte la probabilidad. La «puerta» es la liga o el torneo. */
 var AGENDA=dis('agenda',`
-&{--bg:#E9F3FF;--bg1:#FFFFFF;--bg2:#EEF5FF;--bg3:#DFEAFA;--line:#D3E2F5;--line2:#AAC3E3;--txt:#14213D;--mut:#44597D;--mut2:#5B7094;--acc:#14213D;--acc2:#44597D;--accTx:#FFFFFF;--hot:#FF6B57;--hotTx:#14213D;--good:#0B7A70;--bad:#C2410C;--info:#0369A1;--ia:#44597D;--r:18px;--r2:24px;--body:system-ui,-apple-system,sans-serif;color-scheme:light}
-&,& body{background:#E9F3FF!important;color:var(--txt)!important}
+&{--bg:#EEF3FA;--bg1:#FFFFFF;--bg2:#F3F7FC;--bg3:#E3EBF6;--line:#DCE5F1;--line2:#B9CAE0;--txt:#14213D;--mut:#44597D;--mut2:#5B7094;--acc:#14213D;--acc2:#44597D;--accTx:#FFFFFF;--hot:#FF6B57;--hotTx:#14213D;--good:#0B7A70;--bad:#C2410C;--info:#0369A1;--ia:#44597D;--r:18px;--r2:22px;--body:system-ui,-apple-system,sans-serif;color-scheme:light}
+&,& body{background:#EEF3FA!important;color:var(--txt)!important}
 & body{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 100px)!important}
-& :is(.topbar,header){background:#E9F3FF!important;border-bottom:0!important}
+& :is(.topbar,header){background:#EEF3FA!important;border-bottom:0!important}
 & :is(.brand,header h1){font:700 26px/1 "DM Serif Display",Georgia,"Times New Roman",serif!important;letter-spacing:.02em;color:#14213D!important;background:none!important;-webkit-text-fill-color:currentColor!important}
-& :is(.navbar,.tabbar){left:14px!important;right:14px!important;bottom:calc(env(safe-area-inset-bottom,0px) + 14px)!important;width:auto!important;border-radius:24px!important;padding:7px!important;gap:2px!important;background:#FFFFFF!important;border:0!important;box-shadow:0 18px 32px -16px rgba(20,33,61,.55)!important}
+& :is(.navbar,.tabbar){left:14px!important;right:14px!important;bottom:calc(env(safe-area-inset-bottom,0px) + 14px)!important;width:auto!important;border-radius:24px!important;padding:7px!important;gap:2px!important;background:#FFFFFF!important;border:0!important;box-shadow:0 14px 30px -16px rgba(20,33,61,.5)!important}
 & :is(.navbar button,.tabbar .tbar-btn){color:#44597D!important}
 & :is(.navbar button.on,.tabbar .tbar-btn.on){background:#14213D!important;color:#FFFFFF!important;border-radius:16px!important}
-& :is(#slate,#juegos){position:relative;display:block;padding-left:60px}
-& :is(#slate,#juegos)::before{content:"";position:absolute;left:47px;top:8px;bottom:8px;border-left:2px dashed #AAC3E3}
-& :is(#slate,#juegos)>.diaHead{margin-left:-60px;position:relative;z-index:1;background:#E9F3FF}
-& :is(#slate,#juegos)>.dsSepConf{margin-left:-60px}
-& .game{position:relative;margin:0 0 12px;border-radius:24px!important;border:0!important;background:#FFFFFF!important;overflow:visible;box-shadow:0 14px 26px -18px rgba(20,33,61,.55)!important;animation:nxRise .5s cubic-bezier(.2,.9,.3,1) both}
-& .game::before{content:attr(data-nxh);position:absolute;left:-60px;top:19px;width:40px;text-align:right;font:800 13.5px/1.05 system-ui,sans-serif;color:#14213D;white-space:pre-line}
-& .game::after{content:"";position:absolute;left:-21px;top:21px;width:16px;height:16px;border-radius:50%;background:var(--nxDot,#38BDF8);border:3px solid #E9F3FF}
-& .game[data-nxv="si"]{--nxDot:#14B8A6}
-& .game[data-nxv="gris"]{--nxDot:#9AA9C2}
+& :is(#slate,#juegos){display:block}
+& :is(#slate,#juegos)>.diaHead{margin:14px 2px 6px}
+& .game{--nxDot:#2F6FDB;position:relative;margin:0 0 14px;border-radius:20px!important;border:0!important;background:#FFFFFF!important;overflow:hidden;box-shadow:0 12px 24px -18px rgba(20,33,61,.6)!important;animation:nxRise .5s cubic-bezier(.2,.9,.3,1) both}
+& .game[data-nxv="si"]{--nxDot:#0B7A70}
+& .game[data-nxv="gris"]{--nxDot:#7D8BA6}
 & .game.live{--nxDot:#FF6B57}
-& .game.live::after{animation:nxPulse 1.6s ease-out infinite}
-& .game .head{padding:0!important;background:transparent!important;position:relative!important;top:auto!important;display:block!important;border-radius:24px}
+& .game .head{padding:0!important;background:transparent!important;position:relative!important;top:auto!important;display:block!important}
 & .game .head>:not(.nxT):not(.bug){display:none!important}
-& .game .head .bug{margin:0;padding:0 14px 10px}
-& .nxT{display:flex;align-items:center;gap:10px;padding:12px 14px;color:#14213D}
-& .nxVs{order:1;display:flex;flex:0 0 auto}
-& .nxSide{display:block;width:auto}
-& .nxSide.h{margin-left:6px}
-& .nxLogo{width:40px;height:40px;border:3px solid #fff;font-size:11.5px}
-& .nxSide.a .nxLogo{background:var(--ta,#5B7094)}
-& .nxSide.h .nxLogo{background:var(--th,#5B7094)}
-& .nxAb,& .nxNom,& .nxPc,& .nxMid,& .nxBar,& .nxArt{display:none}
-& .nxFoto{position:absolute;right:-5px;bottom:-5px;width:21px;height:21px;border:2px solid #fff;box-shadow:0 3px 6px -2px rgba(20,33,61,.5)}
-& .nxTop{order:2;flex:1;min-width:0;display:block;line-height:1.15}
-& .nxHora{display:none}
-& .nxTit{display:block;font-weight:800;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-& .nxInfo{display:block;font-size:12.5px;font-weight:600;color:#5B7094;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-& .nxFoot{order:3;display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-align:right}
-& .nxPcF{display:block;font-weight:800;font-size:22px;line-height:1}
-& .nxSello{font-size:12.5px;color:#0369A1}
-& .nxSello.si{color:#0B7A70}
-& .nxSello.gris{color:#5B7094}
-& .nxFoot .sp,& .nxC{display:none}
+& .game .head .bug{margin:0;padding:0 14px 10px 92px}
+& .nxT{display:grid;grid-template-columns:78px minmax(0,1fr);grid-template-areas:"hora info" "hora vs" "hora bar" "hora foot";column-gap:14px;row-gap:6px;padding:0 14px 0 0;color:#14213D;position:relative}
+& .nxTop{display:contents}
+& .nxHora{grid-area:hora;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px 6px;background:var(--nxDot);color:#FFFFFF;font:800 15px/1.1 system-ui,sans-serif;letter-spacing:.02em;position:relative;white-space:normal;word-break:break-word}
+& .nxHora::after{content:"";position:absolute;right:-1px;top:6px;bottom:6px;border-right:2px dashed rgba(255,255,255,.55)}
+& .nxT::before,& .nxT::after{content:"";position:absolute;left:68px;width:20px;height:20px;border-radius:50%;background:#EEF3FA;z-index:1}
+& .nxT::before{top:-10px}
+& .nxT::after{bottom:-10px}
+& .game.live .nxHora{animation:nxPulse 1.6s ease-out infinite}
+& .nxTit{display:none}
+& .nxInfo{grid-area:info;display:block;padding-top:11px;font:700 10.5px/1.2 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#5B7094;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+& .nxInfo:empty{visibility:hidden}
+& .nxVs{grid-area:vs;display:flex;align-items:center;justify-content:space-between;gap:8px}
+& .nxSide{display:grid;grid-template-columns:34px minmax(0,1fr);grid-template-rows:auto auto;column-gap:8px;align-items:center;min-width:0;width:auto;flex:1}
+& .nxSide .nxLogo{grid-row:1/3;grid-column:1}
+& .nxSide.h{grid-template-columns:minmax(0,1fr) 34px;text-align:right}
+& .nxSide.h .nxLogo{grid-column:2}
+& .nxSide.h .nxNom,& .nxSide.h .nxPc{grid-column:1}
+& .nxLogo{width:34px;height:34px;flex:0 0 34px;border:1px solid #DCE5F1;font-size:11px;background:#F3F7FC!important;color:#44597D}
+& .nxSide .nxAb{display:none}
+& .nxSide .nxNom{display:block;font-weight:800;font-size:14.5px;line-height:1.15;min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+& .nxSide .nxPc{display:block;font:700 12.5px/1.2 system-ui,sans-serif;color:#5B7094}
+& .nxSide.gana .nxPc{font-weight:800;font-size:15px;color:var(--nxDot)}
+& .nxSide.gana .nxNom{color:var(--nxDot)}
+& .nxMid,& .nxArt{display:none}
+& .nxFoto{position:absolute;right:-5px;bottom:-5px;width:20px;height:20px;border:2px solid #fff}
+& .nxBar{grid-area:bar;display:flex;height:4px;margin:6px 0 2px;border-radius:2px;overflow:visible;background:repeating-linear-gradient(90deg,#B9CAE0 0 6px,transparent 6px 11px)}
+& .nxBar i{display:block;height:100%;border-radius:2px;background:transparent;position:relative}
+& .nxBar i.w{background:var(--nxDot)}
+& .nxBar i:first-child::after{content:"✈";position:absolute;right:-10px;top:-10px;font-size:17px;line-height:1;color:#14213D;background:#FFFFFF;border-radius:50%;padding:0 1px}
+& .nxFoot{grid-area:foot;display:flex;align-items:center;gap:8px;padding:2px 0 12px;flex-wrap:wrap}
+& .nxPcF{display:none}
+& .nxSello{font-size:12px;font-weight:700;color:#44597D;background:#F3F7FC;border-radius:8px;padding:3px 8px}
+& .nxSello.si{color:#0B7A70;background:#E2F4F1}
+& .nxFoot .sp{flex:1}
+& .nxC{font-size:12px;text-align:right}
+& .nxC small{display:block;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5B7094}
+& .nxC b{font-size:14px}
+& .nxEmpty{font-size:12.5px;color:#5B7094}
 & .game.open{box-shadow:0 0 0 2px #14213D,0 18px 30px -18px rgba(20,33,61,.6)!important}
-& .game .body{background:#FFFFFF!important;border-radius:0 0 24px 24px}
+& .game .body{background:#FFFFFF!important;border-top:1px dashed #DCE5F1}
 & .nxAhora{display:flex;align-items:center;gap:8px;margin:0 0 12px;padding:8px 12px;border-radius:14px;background:#FF6B57;color:#fff;font:800 13px/1 system-ui,sans-serif;letter-spacing:.06em}
 `);
 
@@ -806,7 +822,7 @@ function decorar(u,t,o,tiene,pf,aA,aH){
     });
   }
   if(u==='recibo') t.appendChild(T('div','nxCod'));
-  if(u==='paneles'&&tiene){ var ss=t.querySelectorAll('.nxSide'); if(ss.length===2) ss[o.pa>o.ph?0:1].classList.add('gana'); }
+  if((u==='paneles'||u==='agenda')&&tiene){ var ss=t.querySelectorAll('.nxSide'); if(ss.length===2) ss[o.pa>o.ph?0:1].classList.add('gana'); }
 }
 
 function armar(g,u){
