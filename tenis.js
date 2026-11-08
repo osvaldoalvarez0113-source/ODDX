@@ -23,7 +23,20 @@
   async function getJSON(url) { const r = await fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }
 
   let R = null;              // ratings-tenis.json
-  let PART = [];             // partidos de ESPN
+  let KAL = [];              // precios de Kalshi (rama kalshi, robot scripts/kalshi.js)
+  const KURL = 'https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/kalshi/kalshi-tenis.json';
+  const apellido = s => { const p = T.normNombre(s).split(' '); return p[p.length - 1] || ''; };
+  // Kalshi del partido: mismo día (±1) y los dos apellidos. Devuelve {cA, cB} en centavos de compra y el % sin margen para A
+  function kalshiDe(m) {
+    const a = apellido(m.a.nombre), b = apellido(m.b.nombre); if (!a || !b || a === b) return null;
+    const d0 = Date.parse(new Date(m.ts).toISOString().slice(0, 10));
+    const g = KAL.find(x => Math.abs(Date.parse(x.d) - d0) <= 864e5 && x.e.length === 2 && x.e.some(e => apellido(e.n) === a) && x.e.some(e => apellido(e.n) === b));
+    if (!g) return null;
+    const eA = g.e.find(e => apellido(e.n) === a), eB = g.e.find(e => apellido(e.n) === b);
+    return { cA: eA.c, cB: eB.c, pA: Math.min(Math.max((eA.c + 100 - eB.c) / 200, 0.01), 0.99), vol: (eA.vol || 0) + (eB.vol || 0) };
+  }
+  let PART = [];             // partidos de ESPN (ayer a pasado mañana)
+  let TODOS = [];            // todo el cuadro de los torneos (para saber qué jugó cada uno ayer)
   let DIA = null, TOUR = LS.get(K.tour) || 't';
   const DIAG = { errores: [], pedidos: 0 };
   const setEstado = (t, c) => { const e = $('estado'); e.textContent = t; e.className = 'estado' + (c ? ' ' + c : ''); };
@@ -32,7 +45,7 @@
   function jugador(id, nombre, rk, tour) {
     const r = R && R.jug && R.jug[id];
     const P = R && R.params && R.params[tour];
-    if (r) return { id, nombre: r[0] || nombre, pais: r[1], all: r[3], sup: { H: r[4], C: r[5], G: r[6] }, n: r[7], nS: { H: r[8], C: r[9], G: r[10] }, rk: rk || r[11], forma: r[13] || '', conocido: true };
+    if (r) return { id, nombre: r[0] || nombre, pais: r[1], all: r[3], sup: { H: r[4], C: r[5], G: r[6] }, n: r[7], nS: { H: r[8], C: r[9], G: r[10] }, rk: rk || r[11], forma: r[13] || '', pico: r[14] || r[3], conocido: true };
     const e = (P && P.prior && P.prior.usar !== false) ? T.prior(rk, P.prior) : (rk ? T.prior(rk) : 1500);
     return { id, nombre, pais: '', all: e, sup: { H: e, C: e, G: e }, n: 0, nS: { H: 0, C: 0, G: 0 }, rk: rk || 0, forma: '', conocido: false };
   }
@@ -74,6 +87,7 @@
     await Promise.all(urls.map(u => getJSON(u).then(j => { DIAG.pedidos++; leer(j, mapa); }).catch(e => DIAG.errores.push(u.replace(ESPN, '') + ': ' + e.message))));
     // solo partidos de ayer a pasado mañana (ESPN manda el cuadro entero del torneo)
     const lim0 = ahora - 36 * 3600e3, lim1 = ahora + 60 * 3600e3;
+    TODOS = Object.values(mapa);
     return Object.values(mapa).filter(m => (m.ts >= lim0 && m.ts <= lim1) || m.estado === 'in').sort((x, y) => x.ts - y.ts);
   }
 
@@ -86,10 +100,11 @@
     const P = (R && R.params && R.params[m.tour]) || { w: 0.25, bo5: false };
     const A = jugador(m.a.id, m.a.nombre, m.a.rk, m.tour), B = jugador(m.b.id, m.b.nombre, m.b.rk, m.tour);
     const bestOf = (m.ev.mj && m.tour === 'a' && !esQ(m.ronda)) ? 5 : 3;
-    const rA = T.rating(A, sup, P.w), rB = T.rating(B, sup, P.w), p3 = T.probElo(rA, rB);
+    const rA = T.rating(A, sup, P.w), rB = T.rating(B, sup, P.w), pElo = T.probElo(rA, rB);
+    const p3 = T.ajustar(pElo, T.rasgos(A, B), P.aj);   // corrección medida: pocos partidos en la base y lejos de su mejor nivel
     let pGana = p3;
     if (bestOf === 5 && P.bo5 === true) { const d = T.ventaja(p3, 0.63, 0.63); pGana = T.pMatchRapido(0.63 + d, 0.63 - d, 5); }
-    const an = { sup, bestOf, rA, rB, p3, pGana, A, B };
+    const an = { sup, bestOf, rA, rB, pElo, p3, pGana, A, B };
     an.favA = pGana >= 0.5; an.pFav = Math.max(pGana, 1 - pGana);
     an.fav = an.favA ? A : B; an.rival = an.favA ? B : A;
     an.poco = Math.min(A.n, B.n) < 10;
@@ -103,6 +118,12 @@
     const lista = (!poco && M.bandasConDatos) ? M.bandasConDatos : M.bandas;
     const b = (lista || []).find(x => p >= x.de && p < x.a + (x.a >= 1 ? 0.01 : 0));
     return b && b.n ? b : null;
+  }
+  // ¿jugó hace menos de 30 h un partido largo? (medido: el favorito cansado gana menos de lo que dice el modelo)
+  function cansado(m, j) {
+    let mejor = null;
+    TODOS.forEach(x => { if (x.estado !== 'post' || x.id === m.id || !(x.ts < m.ts && m.ts - x.ts < 30 * 3600e3)) return; if (x.a.id !== j.id && x.b.id !== j.id) return; const g = x.a.sets.concat(x.b.sets).reduce((s, v) => s + (+v || 0), 0); if (!mejor || x.ts > mejor.ts) mejor = { ts: x.ts, g }; });
+    return mejor && mejor.g >= 30 ? mejor : null;
   }
   function senal(an) {
     const g = an.hist ? an.hist.gano : an.pFav;
@@ -219,6 +240,11 @@
     const pTxt = an.bestOf === 5 ? 'a 5 sets' : 'a 3 sets';
     let o = `<div class="hero"><div class="side${an.favA ? ' fav' : ''}">${an.A.pais || m.a.pais ? `<img src="${flagUrl(m.a.pais || an.A.pais)}" alt="" onerror="this.remove()">` : ''}<span class="ab">${esc(m.a.corto || m.a.nombre)}</span><span class="pc">${pct(an.pGana)}</span></div><div class="mid"><b>${amer(an.pFav)}</b><small>cuota justa del favorito</small></div><div class="side${!an.favA ? ' fav' : ''}">${an.B.pais || m.b.pais ? `<img src="${flagUrl(m.b.pais || an.B.pais)}" alt="" onerror="this.remove()">` : ''}<span class="ab">${esc(m.b.corto || m.b.nombre)}</span><span class="pc">${pct(1 - an.pGana)}</span></div></div>`;
     o += `<div class="rv"><div class="rvMain"><div class="rvT">Pick · ganador del partido</div><div class="rvH">${esc(fav.nombre)}</div><div class="rvP">El modelo le da <b>${pct(an.pFav, 1)}</b> ${pTxt} contra ${esc(riv.nombre)} en ${T.SUP_TXT[an.sup].toLowerCase()}.${h ? ` En la medición (${h.n.toLocaleString('es')} partidos ${m.tour === 'a' ? 'ATP' : 'WTA'} del ${Math.round(h.de * 100)} al ${Math.round(Math.min(h.a, 1) * 100)}%), el favorito ganó el <b>${pct(h.gano, 1)}</b>.` : ''}</div><span class="rvSig ${s.c}">${esc(s.t)}</span></div>`;
+    const k = kalshiDe(m);
+    if (k) {
+      const kf = an.favA ? k.pA : 1 - k.pA, cF = an.favA ? k.cA : k.cB, de = Math.abs(kf - an.pFav) * 100;
+      o += `<div class="nota" style="margin-top:10px">📈 <b>Kalshi:</b> ${esc(fav.nombre)} ${cF}¢ · el mercado le da <b>${pct(kf)}</b> (modelo ${pct(an.pFav)}).${kf < 0.5 ? ' El mercado tiene de favorito al otro.' : de >= 8 ? ' Se separan bastante: el mercado suele saber algo (lesión, cansancio).' : ''}</div>`;
+    }
     // resumen de sets y games (tablas medidas, vistas desde el favorito)
     const t = an.t, Md = R && R.medicion && R.medicion[m.tour] || {};
     const med = (k) => { const x = Md[k] && Md[k][an.sup]; return x && x.n ? ` <small>· medido: acierta ${pct(x.acierto)}</small>` : ''; };
@@ -228,11 +254,14 @@
       const items = [lado(t.set1, F + ' gana el 1er set', Rv + ' gana el 1er set'), lado(t.sinSet, F + ' gana sin perder set', Rv + ' gana al menos un set'), lado(t.cubre(-3.5), F + ' −3.5 games', Rv + ' +3.5 games')];
       o += `<h4>Lo más probable</h4><div class="rvLs"><div><i class="ok">✓</i><span><b>${F}</b> gana el partido: ${pct(an.pFav)}</span></div>${items.map(([p, txt]) => `<div><i class="${p >= 0.6 ? 'ok' : 'w'}">${p >= 0.6 ? '✓' : '~'}</i><span>${txt}: ${pct(p)}</span></div>`).join('')}<div><i class="x">·</i><span>Total: lo normal son ${t.mediana} games (más de ${lT}: ${pct(t.masDe(lT))}). <small>Sin ventaja medida: solo referencia.</small></span></div></div>`;
     }
+    const cF = cansado(m, fav), cR = cansado(m, riv), Cm = R && R.medicion && R.medicion[m.tour] && R.medicion[m.tour].cansancio;
+    if (cF) o += `<div class="aviso">😮‍💨 ${esc(fav.nombre)} jugó hace poco un partido de ${cF.g} games.${Cm && Cm.fav.n ? ` En la medición, el favorito en esa situación ganó el ${pct(Cm.fav.gano, 1)} cuando el modelo decía ${pct(Cm.fav.dice, 1)} (${Cm.fav.n} partidos).` : ''} El cálculo no lo descuenta.</div>`;
+    if (cR) o += `<div class="nota">${esc(riv.nombre)} jugó hace poco un partido de ${cR.g} games.${Cm && Cm.rival.n ? ` Medido: el favorito ganó el ${pct(Cm.rival.gano, 1)} (decía ${pct(Cm.rival.dice, 1)}).` : ''}</div>`;
     if (an.poco) o += `<div class="aviso">${esc(an.A.n < an.B.n ? an.A.nombre : an.B.nombre)} tiene ${Math.min(an.A.n, an.B.n)} partidos en la base (ATP/WTA desde 2023). Su rating sale casi todo del ranking: el número es menos fiable.</div>`;
     if (an.bestOf === 5) o += `<div class="nota">Grand Slam a 5 sets. Medido en ${R && R.medicion && R.medicion.a && R.medicion.a.bo5 ? R.medicion.a.bo5.n : 'los'} partidos: subirle el % al favorito por jugar a 5 sets no mejoró la predicción, así que se usa el mismo %. Sets y games salen de lo que pasó en Grand Slams.</div>`;
     o += `<div class="rvIn"><label>¿Te dan una cuota por ${esc(fav.nombre)}? (americana o decimal)</label><input class="cuotaIn" inputmode="decimal" placeholder="ej. -250 o 1.40"></div><div class="rvVal"></div>`;
     o += `<div class="ajuste" style="margin-top:12px"><div><label>Superficie (si ESPN no la dice bien, cámbiala)</label><select class="supSel">${['H', 'C', 'G'].map(k => `<option value="${k}"${k === an.sup ? ' selected' : ''}>${T.SUP_TXT[k]}</option>`).join('')}</select></div></div>`;
-    o += `<details class="comoLee"><summary>Cómo se calcula</summary><div class="nota">Cada jugador tiene un rating Elo general y uno por superficie, hechos con todos sus partidos ATP/WTA desde 2023 (ESPN). Se mezclan con el peso medido (${R && R.params && R.params[m.tour] ? Math.round(R.params[m.tour].w * 100) : 50}% superficie). Con eso sale quién gana. Sets y games salen de tablas de lo que pasó de verdad en miles de partidos con un favorito de ese mismo %. El % "ganó en la medición" sale de predecir cada partido de 2024-2026 solo con lo que había antes.</div></details></div>`;
+    o += `<details class="comoLee"><summary>Cómo se calcula</summary><div class="nota">Cada jugador tiene un rating Elo general y uno por superficie, hechos con todos sus partidos ATP/WTA desde 2023 (ESPN). Se mezclan con el peso medido (${R && R.params && R.params[m.tour] ? Math.round(R.params[m.tour].w * 100) : 25}% superficie). Después se corrige con dos cosas que el Elo no ve bien y que se midieron: al que casi no tiene partidos en la base el Elo lo infla, y al que está lejos de su mejor nivel lo castiga de más. Con eso sale quién gana. Sets y games salen de tablas de lo que pasó de verdad en miles de partidos con un favorito de ese mismo %. El % "ganó en la medición" sale de predecir cada partido de 2024-2026 solo con lo que había antes.</div></details></div>`;
     return o;
   }
   function htmlMercados(m, an) {
@@ -252,7 +281,7 @@
   function htmlJugadores(m, an) {
     const fila = (j, mj) => {
       const f = (j.forma || '').split('').map(x => `<span class="${x}">${x}</span>`).join('');
-      return `<div class="observ"><b>${esc(mj.nombre)}</b>${j.rk ? ' · #' + j.rk : ''}<div class="kpi"><div><b>${Math.round(j.all)}</b><small>Elo general</small></div><div><b>${Math.round(j.sup[an.sup] == null ? j.all : j.sup[an.sup])}</b><small>Elo ${T.SUP_TXT[an.sup].toLowerCase()}</small></div><div><b>${j.n}</b><small>partidos (${j.nS[an.sup] || 0} en ${T.SUP_TXT[an.sup].toLowerCase()})</small></div></div>${f ? `<div class="nota" style="margin:0 0 4px">Últimos ${j.forma.length} (más reciente a la derecha)</div><div class="forma">${f}</div>` : '<div class="nota">Sin partidos en la base: rating sacado del ranking.</div>'}</div>`;
+      return `<div class="observ"><b>${esc(mj.nombre)}</b>${j.rk ? ' · #' + j.rk : ''}<div class="kpi"><div><b>${Math.round(j.all)}</b><small>Elo general</small></div><div><b>${Math.round(j.sup[an.sup] == null ? j.all : j.sup[an.sup])}</b><small>Elo ${T.SUP_TXT[an.sup].toLowerCase()}</small></div><div><b>${j.n}</b><small>partidos (${j.nS[an.sup] || 0} en ${T.SUP_TXT[an.sup].toLowerCase()})</small></div><div><b>${Math.round(j.pico || j.all)}</b><small>su mejor Elo</small></div></div>${f ? `<div class="nota" style="margin:0 0 4px">Últimos ${j.forma.length} (más reciente a la derecha)</div><div class="forma">${f}</div>` : '<div class="nota">Sin partidos en la base: rating sacado del ranking.</div>'}</div>`;
     };
     return fila(an.A, m.a) + fila(an.B, m.b) + `<div class="nota">Elo: 1500 es un jugador promedio de la base; +100 puntos ≈ 64% de ganar. La forma es V (ganó) / D (perdió).</div>`;
   }
@@ -357,7 +386,7 @@
   async function iniciar() {
     try {
       setEstado('Cargando ratings y partidos…');
-      const [r, p] = await Promise.all([getJSON('ratings-tenis.json?t=' + Math.floor(Date.now() / 600000)).catch(e => { DIAG.errores.push('ratings: ' + e.message); return null; }), cargarPartidos()]);
+      const [r, p] = await Promise.all([getJSON('ratings-tenis.json?t=' + Math.floor(Date.now() / 600000)).catch(e => { DIAG.errores.push('ratings: ' + e.message); return null; }), cargarPartidos(), getJSON(KURL + '?t=' + Math.floor(Date.now() / 600000)).then(j => { KAL = (j && j.juegos) || []; }).catch(() => { KAL = []; })]);
       R = r; PART = p;
       if (!R) setEstado('⚠ No cargaron los ratings: se usa solo el ranking. Toca 🔍 Diagnóstico.', 'warn');
       pintarTodo(); registrar(PART);

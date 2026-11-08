@@ -112,6 +112,7 @@ function games(m) { let a = 0, b = 0; (m[7] ? m[7].split(' ') : []).forEach(s =>
 function recorrer(lista, db, op) {
   const w = op.w, pr = op.prior, kM = op.kM || 1, desde = op.desde || '20240101';
   const R = {};   // id → {all, n, sup:{H,C,G}, nS:{H,C,G}, rk, last, forma:[]}
+  const H2H = {};   // 'ganador|perdedor' → veces
   const preds = [];
   const ini = (id, rk) => { if (R[id]) return R[id]; const e = pr ? T.prior(rk, pr) : 1500; return (R[id] = { all: e, n: 0, sup: { H: e, C: e, G: e }, nS: { H: 0, C: 0, G: 0 }, rk: rk || 0, last: 0, forma: [] }); };
   const desdeTs = deYmd(desde).getTime() / 1000;
@@ -123,7 +124,13 @@ function recorrer(lista, db, op) {
     const rW = T.mezcla(W.all, W.sup[sup], w), rL = T.mezcla(L.all, L.sup[sup], w);
     const pW = T.probElo(rW, rL);
     if (m[1] >= desdeTs && op.guardar) {
-      preds.push({ ts: m[1], tour: m[2], sup, q: esQ(m[4]), fin: m[8], pW, nW: W.n, nL: L.n, rkW: m[9], rkL: m[10], bo5: bo5De(m, ev), mj: !!ev.mj, g: games(m), sets: m[7], wId: m[5], lId: m[6] });
+      const pr0 = { ts: m[1], tour: m[2], sup, q: esQ(m[4]), fin: m[8], pW, nW: W.n, nL: L.n, rkW: m[9], rkL: m[10], bo5: bo5De(m, ev), mj: !!ev.mj, g: games(m), sets: m[7], wId: m[5], lId: m[6] };
+      if (op.factores) {   // lo que sabe cada uno ANTES del partido (para medir huecos del modelo)
+        const hh = H2H[m[5] + '|' + m[6]] || 0, hl = H2H[m[6] + '|' + m[5]] || 0;
+        const f = j => ({ dias: j.last ? (m[1] - j.last) / 86400 : null, gPrev: j.gPrev, setsPrev: j.setsPrev, v10: j.forma.filter(x => x === 'V').length, n10: j.forma.length, all: Math.round(j.all), sup: Math.round(j.sup[sup]), pico: Math.round(j.pico || j.all) });
+        Object.assign(pr0, { id: m[0], ev: ev.n || '', ronda: m[4], fW: f(W), fL: f(L), h2h: [hh, hl], pAll: T.probElo(W.all, L.all), pSup: T.probElo(W.sup[sup], L.sup[sup]) });
+      }
+      preds.push(pr0);
     }
     // actualizar
     const kW = T.kElo(W.n, kM), kL = T.kElo(L.n, kM);
@@ -134,6 +141,9 @@ function recorrer(lista, db, op) {
     W.sup[sup] += ksW * (1 - pS); L.sup[sup] -= ksL * (1 - pS);
     W.n++; L.n++; W.nS[sup]++; L.nS[sup]++;
     W.last = L.last = m[1];
+    const gg = games(m); W.gPrev = L.gPrev = gg[0] + gg[1]; W.setsPrev = L.setsPrev = m[7] ? m[7].split(' ').length : 0;
+    H2H[m[5] + '|' + m[6]] = (H2H[m[5] + '|' + m[6]] || 0) + 1;
+    W.pico = Math.max(W.pico || 0, W.all); L.pico = Math.max(L.pico || 0, L.all);
     W.forma.push('V'); L.forma.push('D'); if (W.forma.length > 10) W.forma.shift(); if (L.forma.length > 10) L.forma.shift();
   });
   return { R, preds };
@@ -196,6 +206,19 @@ function probar(ps, prob, si, ladoComunSi) {
   return { n, acierto: n ? +(ac / n).toFixed(3) : null, siempreLoComun: n ? +(base / n).toFixed(3) : null, fuertes: { n: nF, acierto: nF ? +(acF / nF).toFixed(3) : null } };
 }
 
+const PREDS = [];
+// logística sin constante (los datos van en las dos direcciones, así el ajuste es simétrico)
+function logitSin(X, y) {
+  const k = X[0].length; let b = new Array(k).fill(0); b[0] = 1;
+  for (let it = 0; it < 40; it++) {
+    const g = new Array(k).fill(0), H = Array.from({ length: k }, () => new Array(k).fill(0));
+    X.forEach((x, i) => { const p = 1 / (1 + Math.exp(-x.reduce((s, v, j) => s + v * b[j], 0))), w = p * (1 - p); for (let a = 0; a < k; a++) { g[a] += (y[i] - p) * x[a]; for (let c = 0; c < k; c++) H[a][c] += w * x[a] * x[c]; } });
+    const M = H.map((r, i) => [...r, g[i]]);
+    for (let i = 0; i < k; i++) { let q = i; for (let r = i + 1; r < k; r++) if (Math.abs(M[r][i]) > Math.abs(M[q][i])) q = r; [M[i], M[q]] = [M[q], M[i]]; for (let r = 0; r < k; r++) if (r !== i) { const f = M[r][i] / M[i][i]; for (let c = i; c <= k; c++) M[r][c] -= f * M[i][c]; } }
+    const d = M.map((r, i) => r[k] / r[i]); b = b.map((v, j) => v + d[j]); if (Math.max(...d.map(Math.abs)) < 1e-9) break;
+  }
+  return b;
+}
 function main() {
   return bajar().then(db => {
     const lista = Object.values(db.m).sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1));
@@ -222,8 +245,30 @@ function main() {
       variantes.sort((a, b) => a.ent.logloss - b.ent.logloss);
       const mejor = variantes[0];
       console.log(nomTour, 'mejor variante:', JSON.stringify(mejor));
-      const fin = recorrer(L, db, { w: mejor.w, prior: mejor.prior ? pr : null, kM: mejor.kM, guardar: true });
+      const fin = recorrer(L, db, { w: mejor.w, prior: mejor.prior ? pr : null, kM: mejor.kM, guardar: true, factores: true });
+      PREDS.push(...fin.preds.map(p => Object.assign({}, p, { a: (db.jug[p.wId] || [''])[0], b: (db.jug[p.lId] || [''])[0] })));
       const P = fin.preds;
+      // ajuste medido (scripts/medicion/tenis_mercado.js, «huecos»): el Elo se pasa con los que casi no tienen partidos
+      // en la base y se queda corto con los que están lejos de su mejor nivel. Se elige con 2024-2025 y se prueba en 2026.
+      const rasgos = p => [Math.log(1 + Math.min(p.nW, 10)) - Math.log(1 + Math.min(p.nL, 10)), ((p.fW.pico - p.fW.all) - (p.fL.pico - p.fL.all)) / 100];
+      const C26a = Date.UTC(2026, 0, 1) / 1000;
+      const entA = P.filter(p => p.fin === 'F' && p.ts < C26a);
+      const X = [], Y = [];
+      entA.forEach(p => { const lp = Math.log(Math.min(Math.max(p.pW, .005), .995) / (1 - Math.min(Math.max(p.pW, .005), .995))), r = rasgos(p); X.push([lp, ...r]); Y.push(1); X.push([-lp, ...r.map(x => -x)]); Y.push(0); });
+      const co = logitSin(X, Y);
+      const aj = { b: +co[0].toFixed(4), cn: +co[1].toFixed(4), cp: +co[2].toFixed(4) };
+      const llA = (q) => -Math.log(Math.max(q, 1e-9));
+      const t26 = P.filter(p => p.fin === 'F' && p.ts >= C26a);
+      const dif = t26.map(p => llA(p.pW) - llA(T.ajustar(p.pW, rasgos(p), aj)));
+      const mD = dif.reduce((a, b) => a + b, 0) / (dif.length || 1), sD = Math.sqrt(dif.reduce((a, b) => a + (b - mD) * (b - mD), 0) / Math.max(dif.length - 1, 1) / Math.max(dif.length, 1));
+      const acAntes = t26.filter(p => p.pW > .5).length / (t26.length || 1);
+      P.forEach(p => { p.pW0 = p.pW; p.pW = T.ajustar(p.pW, rasgos(p), aj); });
+      const acDespues = t26.filter(p => p.pW > .5).length / (t26.length || 1);
+      const ajusteMed = { coef: aj, prueba2026: { n: t26.length, mejora: +(1000 * mD).toFixed(2), z: +(sD ? mD / sD : 0).toFixed(1), aciertoAntes: +acAntes.toFixed(4), aciertoDespues: +acDespues.toFixed(4) } };
+      console.log(nomTour, 'ajuste', JSON.stringify(ajusteMed));
+      // cansancio: jugó hace menos de 30 h un partido de 30+ games (se avisa en la app, no entra al cálculo)
+      const cans = quien => { const z = P.filter(p => p.fin === 'F').map(p => { const favW = p.pW >= .5, fv = favW ? p.fW : p.fL, rv = favW ? p.fL : p.fW, j = quien === 'fav' ? fv : rv; return (j.dias != null && j.dias < 1.25 && (j.gPrev || 0) >= 30) ? { d: Math.max(p.pW, 1 - p.pW), g: favW ? 1 : 0 } : null; }).filter(Boolean); const n = z.length || 1; return { n: z.length, dice: +(z.reduce((a, b) => a + b.d, 0) / n).toFixed(3), gano: +(z.reduce((a, b) => a + b.g, 0) / n).toFixed(3) }; };
+      const cansancio = { fav: cans('fav'), rival: cans('rival') };
       // sets y games: tablas de lo que pasó de verdad según la probabilidad del favorito (no Markov: el Markov
       // daba menos 2-0 de los reales y su total de games acertaba menos que una moneda)
       const C26 = Date.UTC(2026, 0, 1) / 1000;
@@ -265,7 +310,7 @@ function main() {
       const rkAc = conRk.filter(p => p.rkW < p.rkL).length / (conRk.length || 1);
       const modAc = conRk.filter(p => p.pW > 0.5).length / (conRk.length || 1);
       const anios = {}; P.forEach(p => { const y = new Date(p.ts * 1000).getUTCFullYear(); (anios[y] = anios[y] || []).push(p); });
-      out.params[tour] = { w: mejor.w, kM: mejor.kM, prior: mejor.prior ? pr : { a: pr.a, b: pr.b, base: 1500, usar: false }, bo5: bo5 ? bo5.usar5 : true };
+      out.params[tour] = { aj, w: mejor.w, kM: mejor.kM, prior: mejor.prior ? pr : { a: pr.a, b: pr.b, base: 1500, usar: false }, bo5: bo5 ? bo5.usar5 : true };
       out.emp = out.emp || {}; out.emp[tour] = emp;
       if (out.params[tour].prior.usar === undefined) out.params[tour].prior.usar = true;
       out.medicion[tour] = {
@@ -280,7 +325,7 @@ function main() {
         bandas: porBanda(P), bandas2026: porBanda(P, p => p.ts >= Date.UTC(2026, 0, 1) / 1000), bandasConDatos: porBanda(P, p => Math.min(p.nW, p.nL) >= 10),
         ranking: { n: conRk.length, mejorRanking: +rkAc.toFixed(4), modelo: +modAc.toFixed(4) },
         retiros: { retirados: P.filter(p => p.fin === 'R').length, total: P.length },
-        totales, handicap: hcp, sinSet: sets20, sets: bS, bo5
+        ajuste: ajusteMed, cansancio, totales, handicap: hcp, sinSet: sets20, sets: bS, bo5
       };
       // jugadores (activos desde 2025)
       const corte = Date.UTC(2025, 0, 1) / 1000;
@@ -288,11 +333,13 @@ function main() {
         if (j.last < corte || j.n < 1) return;
         const info = db.jug[id] || ['', ''];
         const r = x => Math.round(x);
-        out.jug[id] = [info[0], info[1], tour, r(j.all), r(j.sup.H), r(j.sup.C), r(j.sup.G), j.n, j.nS.H, j.nS.C, j.nS.G, j.rk || 0, Math.round(j.last / 86400), j.forma.join('')];
+        out.jug[id] = [info[0], info[1], tour, r(j.all), r(j.sup.H), r(j.sup.C), r(j.sup.G), j.n, j.nS.H, j.nS.C, j.nS.G, j.rk || 0, Math.round(j.last / 86400), j.forma.join(''), r(j.pico || j.all)];
       });
     });
-    out.campos = ['nombre', 'pais', 'circuito', 'eloGeneral', 'eloDura', 'eloArcilla', 'eloHierba', 'partidos', 'pDura', 'pArcilla', 'pHierba', 'ranking', 'ultimoDia', 'forma'];
+    out.campos = ['nombre', 'pais', 'circuito', 'eloGeneral', 'eloDura', 'eloArcilla', 'eloHierba', 'partidos', 'pDura', 'pArcilla', 'pHierba', 'ranking', 'ultimoDia', 'forma', 'mejorElo'];
     fs.writeFileSync(SALIDA, JSON.stringify(out));
+    // predicciones partido a partido (solo con lo de antes) para las mediciones contra el mercado: van a la rama datos-tenis
+    fs.writeFileSync(path.join(RAIZ, 'preds-tenis.json'), JSON.stringify(PREDS));
     console.log('ratings-tenis.json:', (fs.statSync(SALIDA).size / 1024).toFixed(0), 'KB ·', Object.keys(out.jug).length, 'jugadores');
     console.log(JSON.stringify({ params: out.params, medicion: Object.fromEntries(Object.entries(out.medicion).map(([k, v]) => [k, Object.assign({}, v, { variantes: undefined })])) }, null, 1));
   });

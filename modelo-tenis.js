@@ -191,5 +191,15 @@
     };
   }
 
-  Object.assign(API, { tablaDe, deTabla, normNombre, superficie, SUP_TXT, probElo, kElo, mezcla, prior, pGame, pTB, setDist, partido, pMatchRapido, ventaja, analizar, rating });
+  /* ---------- ajuste medido encima del Elo ----------
+     r = [ln(1+min(partidos A,10)) − ln(1+min(partidos B,10)), ((mejor Elo A − Elo A) − (mejor Elo B − Elo B))/100]
+     aj = {b, cn, cp} de ratings-tenis.json → params[circuito].aj (elegido con 2024-2025, probado en 2026) */
+  function ajustar(p, r, aj) {
+    if (!aj) return p;
+    const q = Math.min(Math.max(p, 0.005), 0.995), x = aj.b * Math.log(q / (1 - q)) + aj.cn * r[0] + aj.cp * r[1];
+    return 1 / (1 + Math.exp(-x));
+  }
+  const rasgos = (jA, jB) => [Math.log(1 + Math.min(jA.n || 0, 10)) - Math.log(1 + Math.min(jB.n || 0, 10)), (((jA.pico || jA.all) - jA.all) - ((jB.pico || jB.all) - jB.all)) / 100];
+
+  Object.assign(API, { ajustar, rasgos, tablaDe, deTabla, normNombre, superficie, SUP_TXT, probElo, kElo, mezcla, prior, pGame, pTB, setDist, partido, pMatchRapido, ventaja, analizar, rating });
 })();

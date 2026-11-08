@@ -6,7 +6,7 @@
    =================================================================== */
 const fs = require('fs');
 const API = 'https://api.elections.kalshi.com/trade-api/v2';
-const SERIES = { nba: 'KXNBAGAME', nhl: 'KXNHLGAME', nfl: 'KXNFLGAME' };
+const SERIES = { nba: 'KXNBAGAME', nhl: 'KXNHLGAME', nfl: 'KXNFLGAME', tenis: ['KXATPMATCH', 'KXWTAMATCH'] };   // tenis: ATP y WTA juntos (n = nombre del jugador)
 const MES = { JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06', JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12' };
 
 /* la API trae centavos (yes_ask) o dólares en texto (yes_ask_dollars), según la versión */
@@ -36,12 +36,15 @@ if (require.main !== module) return;
 (async () => {
   fs.mkdirSync('salida-kalshi', { recursive: true });
   for (const dep of Object.keys(SERIES)) {
-    let eventos = [], cursor = '', ok = false;
-    for (let i = 0; i < 5; i++) {
-      const u = API + '/events?series_ticker=' + SERIES[dep] + '&status=open&with_nested_markets=true&limit=200' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '');
-      const r = await fetch(u, { headers: { accept: 'application/json', 'user-agent': 'ova-kalshi/1.0' } }).catch(e => ({ ok: false, status: String(e.message) }));
-      if (!r.ok) { console.log(dep + ': HTTP ' + r.status); break; }
-      const j = await r.json(); ok = true; eventos = eventos.concat(j.events || []); cursor = j.cursor || ''; if (!cursor) break;
+    let eventos = [], ok = false;
+    for (const serie of [].concat(SERIES[dep])) {
+      let cursor = '';
+      for (let i = 0; i < 5; i++) {
+        const u = API + '/events?series_ticker=' + serie + '&status=open&with_nested_markets=true&limit=200' + (cursor ? '&cursor=' + encodeURIComponent(cursor) : '');
+        const r = await fetch(u, { headers: { accept: 'application/json', 'user-agent': 'ova-kalshi/1.0' } }).catch(e => ({ ok: false, status: String(e.message) }));
+        if (!r.ok) { console.log(dep + ' ' + serie + ': HTTP ' + r.status); break; }
+        const j = await r.json(); ok = true; eventos = eventos.concat(j.events || []); cursor = j.cursor || ''; if (!cursor) break;
+      }
     }
     const juegos = parsear(eventos);
     console.log(dep + ': eventos ' + eventos.length + ' · juegos usables ' + juegos.length);

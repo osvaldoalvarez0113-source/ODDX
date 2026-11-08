@@ -1,6 +1,6 @@
 name: Precios de Kalshi
 
-# Baja de la API publica de Kalshi el precio de quien gana en NBA, NHL y NFL y lo deja en la rama «kalshi». No usa OddsPapi.
+# Baja de la API publica de Kalshi el precio de quien gana en NBA, NHL, NFL y tenis (ATP y WTA) y lo deja en la rama «kalshi». No usa OddsPapi.
 on:
   workflow_dispatch:
   schedule:

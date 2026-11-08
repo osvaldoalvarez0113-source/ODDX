@@ -1592,6 +1592,12 @@ sec('Tenis');
  ok('tenis: el workflow corre a diario, no usa OddsPapi y guarda el historial en datos-tenis',/schedule:/.test(w)&&!/ODDSPAPI/.test(w)&&/datos-tenis/.test(w));
  ok('el service worker guarda la app de tenis',['tenis.html','tenis.js','modelo-tenis.js'].every(f=>rd('sw.js').indexOf("'"+f+"'")>=0));
  ok('partidos-tenis.json (pesado) no entra en main',/partidos-tenis\.json/.test(rd('.gitignore')));
+ ok('tenis: el ajuste medido no cambia nada sin coeficientes y es simétrico',T.ajustar(.7,[1,1],null)===.7&&Math.abs(T.ajustar(.7,[.5,.2],{b:.9,cn:.5,cp:.1})+T.ajustar(.3,[-.5,-.2],{b:.9,cn:.5,cp:.1})-1)<1e-9);
+ ok('tenis: el que casi no tiene partidos en la base baja; el que está lejos de su mejor nivel sube',T.ajustar(.6,T.rasgos({n:30,all:1800,pico:1800},{n:1,all:1700,pico:1700}),{b:1,cn:.5,cp:.1})>.6&&T.ajustar(.6,T.rasgos({n:30,all:1800,pico:2000},{n:30,all:1700,pico:1700}),{b:1,cn:.5,cp:.1})>.6);
+ ok('tenis.js aplica el ajuste medido y avisa del cansancio',/T\.ajustar\(pElo, T\.rasgos\(A, B\), P\.aj\)/.test(rd('tenis.js'))&&/function cansado/.test(rd('tenis.js')));
+ { const Kp=require(path.join(__dirname,'scripts','kalshi.js')); ok('kalshi robot: también baja tenis (ATP y WTA)',JSON.stringify(Kp.SERIES.tenis)===JSON.stringify(['KXATPMATCH','KXWTAMATCH'])); }
+ ok('tenis.js muestra el precio de Kalshi del partido',/kalshi-tenis\.json/.test(rd('tenis.js'))&&/function kalshiDe/.test(rd('tenis.js')));
+ ok('tenis: la batería de pruebas existe y corre cada mes (huecos, fórmula, Kalshi)',fs.existsSync(path.join(__dirname,'scripts','medicion','tenis_mercado.js'))&&/schedule:/.test(rd('.github/workflows/medir-tenis.yml'))&&/resultados-tenis/.test(rd('.github/workflows/medir-tenis.yml')));
 }
 
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{

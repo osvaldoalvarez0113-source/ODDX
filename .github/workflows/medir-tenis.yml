@@ -1,0 +1,36 @@
+name: Medir tenis (huecos, formula y Kalshi)
+
+# Solo mide: la misma bateria de pruebas que las otras apps, pero de tenis. Deja resultado_tenis.md en la rama resultados-tenis.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "41 11 3 * *"
+  push:
+    branches: [tenis-dev]
+    paths:
+      - scripts/medicion/tenis_mercado.js
+      - .github/workflows/medir-tenis.yml
+
+permissions:
+  contents: write
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Partidos ya bajados
+        run: git fetch -q origin datos-tenis && git show FETCH_HEAD:partidos-tenis.json > partidos-tenis.json
+      - name: Predicciones partido a partido (solo con lo de antes)
+        run: node scripts/tenis_datos.js --sin-red | tail -5
+      - name: Bateria de pruebas
+        run: node scripts/medicion/tenis_mercado.js preds-tenis.json 2>&1 | tee salida_tenis.txt
+      - name: Guardar
+        run: |
+          mkdir -p /tmp/r && cp resultado_tenis.md salida_tenis.txt filas_tenis_kalshi.json /tmp/r/ 2>/dev/null || true
+          cd /tmp/r && git init -q -b resultados-tenis && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "medicion tenis" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" resultados-tenis
