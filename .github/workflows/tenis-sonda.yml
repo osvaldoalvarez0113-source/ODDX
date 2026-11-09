@@ -9,21 +9,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Catalogo de Kalshi (deportes)
+      - name: Muestra de mercados resueltos
         run: |
           mkdir -p /tmp/s && cd /tmp/s
-          node -e '
-          const API="https://api.elections.kalshi.com/trade-api/v2";
-          (async()=>{
-            const r=await fetch(API+"/series?category=Sports&limit=1000",{headers:{accept:"application/json"}}); const j=await r.json();
-            const ss=(j.series||[]); require("fs").writeFileSync("series.json",JSON.stringify(ss.map(s=>({t:s.ticker,n:s.title,f:s.frequency,tags:s.tags}))));
-            console.log("series deportes:",ss.length);
-            const out=[];
-            for(const s of ss){ const e=await fetch(API+"/events?series_ticker="+s.ticker+"&status=open&with_nested_markets=true&limit=200").then(x=>x.json()).catch(()=>({}));
-              const ev=e.events||[]; if(!ev.length) continue; let mk=0,vol=0,oi=0; ev.forEach(x=>(x.markets||[]).forEach(m=>{mk++;vol+=+(m.volume||m.volume_fp||0);oi+=+(m.open_interest||m.open_interest_fp||0);}));
-              out.push({t:s.ticker,n:s.title,ev:ev.length,mk,vol,oi}); await new Promise(r=>setTimeout(r,120)); }
-            out.sort((a,b)=>b.vol-a.vol); require("fs").writeFileSync("abiertas.json",JSON.stringify(out,null,0)); console.log("con eventos abiertos:",out.length);
-          })();'
+          A=https://api.elections.kalshi.com/trade-api/v2
+          for S in KXATPCHALLENGERMATCH KXITFMATCH KXATPMATCH; do
+            curl -sS -m 40 "$A/events?series_ticker=$S&status=settled&with_nested_markets=true&limit=3" -o ev-$S.json
+            T=$(python3 -c "import json;j=json.load(open('ev-$S.json'));print(j['events'][0]['markets'][0]['ticker'])")
+            O=$(python3 -c "import json;j=json.load(open('ev-$S.json'));m=j['events'][0]['markets'][0];import datetime as d;print(int(d.datetime.fromisoformat(m['open_time'].replace('Z','+00:00')).timestamp()), int(d.datetime.fromisoformat(m['close_time'].replace('Z','+00:00')).timestamp()))")
+            set -- $O
+            curl -sS -m 40 "$A/series/$S/markets/$T/candlesticks?start_ts=$1&end_ts=$2&period_interval=60" -o velas-$S.json
+            curl -sS -m 40 "$A/historical/events?series_ticker=$S&limit=2" -o hist-$S.json
+          done
+          ls -la
       - name: Guardar
         run: |
           cd /tmp/s && git init -q -b resultados-tenis-sonda && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
