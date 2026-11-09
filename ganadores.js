@@ -162,7 +162,7 @@ function pintar(){
  cuerpo.appendChild(cajaSemaforo(semaforo(items,APP,ahora,30)));
  var todas=filas.length, fuertes=filas.filter(function(x){ return esFuerte(x,APP); }).length;
  var ch=mk('div','gnChips');
- [['todos','Todos ('+todas+')'],['fuertes','💪 Fuertes ('+fuertes+')'],['las5','🌐 Las 5 apps']].forEach(function(o){ var c=boton('gnChip'+(FILTRO===o[0]?' on':''),o[1],function(){ FILTRO=o[0]; try{ root.localStorage.setItem('ova_gane_filtro',FILTRO); }catch(e){} pintar(); }); c.setAttribute('aria-pressed',String(FILTRO===o[0])); ch.appendChild(c); });
+ [['todos','Todos ('+todas+')'],['fuertes','💪 Fuertes ('+fuertes+')'],['las5','🌐 Todas']].forEach(function(o){ var c=boton('gnChip'+(FILTRO===o[0]?' on':''),o[1],function(){ FILTRO=o[0]; try{ root.localStorage.setItem('ova_gane_filtro',FILTRO); }catch(e){} pintar(); }); c.setAttribute('aria-pressed',String(FILTRO===o[0])); ch.appendChild(c); });
  cuerpo.appendChild(ch);
  if(FILTRO==='las5'&&root.OVATop5&&root.OVATop5.pintar){ var c5=mk('div'); cuerpo.appendChild(c5); root.OVATop5.pintar(c5); return; }
  if(FILTRO==='fuertes'){

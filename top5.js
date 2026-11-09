@@ -8,15 +8,15 @@
 (function(root){
 "use strict";
 var APPS=['mlb','fut','nba','nhl','nfl'];
-var EMO={mlb:'⚾',fut:'⚽',nba:'🏀',nhl:'🏒',nfl:'🏈'};
-var NOM={mlb:'MLB',fut:'Fútbol',nba:'NBA',nhl:'NHL',nfl:'NFL'};
-var LINK={mlb:'index.html',fut:'futbol.html',nba:'nba.html',nhl:'nhl.html',nfl:'nfl.html'};
+var EMO={mlb:'⚾',fut:'⚽',nba:'🏀',nhl:'🏒',nfl:'🏈',ten:'🎾'};
+var NOM={mlb:'MLB',fut:'Fútbol',nba:'NBA',nhl:'NHL',nfl:'NFL',ten:'Tenis'};
+var LINK={mlb:'index.html',fut:'futbol.html',nba:'nba.html',nhl:'nhl.html',nfl:'nfl.html',ten:'tenis.html'};
 var PIN={mlb:'pinnacle-datos.json',fut:'pinnacle-futbol.json',nba:'pinnacle-nba.json',nhl:'pinnacle-nhl.json',nfl:'pinnacle-nfl.json'};
 var ESPN='https://site.api.espn.com/apis/site/v2/sports/';
 var DEP={mlb:'baseball/mlb',nba:'basketball/nba',nhl:'hockey/nhl',nfl:'football/nfl'};
 var LIGAS=['eng.1','esp.1','ita.1','ger.1','fra.1','uefa.champions','uefa.europa','uefa.europa.conf','usa.1','mex.1'];
 /* mismo corte que «Solo fuertes» (ganadores.js) y mismo aviso de choque con el modelo */
-var FUERTE={mlb:.65,fut:.65,nba:.75,nhl:.65,nfl:.75};
+var FUERTE={mlb:.65,fut:.65,nba:.75,nhl:.65,nfl:.75,ten:.75};
 var ALERTA={mlb:11,fut:12,nba:16,nhl:9,nfl:15};
 var VENTANA=24*3600e3, MIN_ANTES=5*60e3;   /* juegos de las próximas 24 h; a 5 min del inicio ya no entra en la combinada */
 
@@ -52,6 +52,16 @@ function deRegistro(items,ahora){
   var k=sano(r.k1||r.k0), m=sano(r.m1||r.m0); if((r.app==='nba'||r.app==='nhl'||r.app==='nfl')&&!r.cr) m=null;
   if(!k&&!m) return;
   out.push({app:r.app,ts:r.ts,local:r.local,visita:r.visita,k:k,m:m,fuente:k?(r.ksrc==='pin'?'Pinnacle':'mercado'):'',liga:r.liga||''});
+ });
+ return out;
+}
+/* tenis: lo que guardó la app de tenis (ova_tenis_registro_v1) antes de cada partido. Con precio de Kalshi (mer) cuenta
+   como mercado; sin precio es solo el modelo y no entra en la lista ni en la combinada. El favorito siempre va como «local». */
+function deTenis(reg,ahora){
+ var out=[]; (reg||[]).forEach(function(r){
+  if(!r||r.res||!(r.ts>ahora)||!(r.p>=.5&&r.p<1)||!r.pick) return;
+  var otro=r.pick===r.a?r.b:r.a, q={L:+r.p,A:1-r.p};
+  out.push({app:'ten',ts:r.ts,local:r.pick,visita:otro,k:r.mer?q:null,m:r.mer?null:q,fuente:r.mer?'Kalshi':'modelo',liga:r.ev||''});
  });
  return out;
 }
@@ -116,7 +126,7 @@ function cuenta(ms){
 }
 function ymd(ts){ var d=new Date(ts); return d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2); }
 
-var API={APPS:APPS,FUERTE:FUERTE,norm:norm,mismoEq:mismoEq,mismoJuego:mismoJuego,dePinnacle:dePinnacle,deRegistro:deRegistro,deEspn:deEspn,unir:unir,fila:fila,combinada:combinada,americana:americana,cuenta:cuenta};
+var API={deTenis:deTenis,APPS:APPS,FUERTE:FUERTE,norm:norm,mismoEq:mismoEq,mismoJuego:mismoJuego,dePinnacle:dePinnacle,deRegistro:deRegistro,deEspn:deEspn,unir:unir,fila:fila,combinada:combinada,americana:americana,cuenta:cuenta};
 root.OVATop5=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
 if(!root.document||!root.fetch) return;
@@ -143,6 +153,8 @@ function css(){
  '.t5Big div{flex:1;border-radius:10px;background:rgba(255,255,255,.05);padding:8px;text-align:center;font-size:11.5px;color:var(--mut,#9aa)}.t5Big b{display:block;font-size:19px;color:var(--txt,#fff)}',
  '.t5Txt{font-size:12.5px;line-height:1.45;color:var(--mut,#9aa)}.t5Txt b{color:var(--txt,#fff)}',
  '.t5Fila{display:flex;gap:10px;align-items:center;padding:10px 12px;margin:0 0 8px;border-radius:12px;border:1px solid var(--line2,#2a3340);background:var(--bg1,#0d1420);text-decoration:none;color:var(--txt,#fff)}',
+ '.t5Wrap .gnTit{margin:0 2px 10px;font-size:13px;line-height:1.4;color:var(--mut,#9aa)}.t5Wrap .gnDia{margin:16px 0 6px;font-size:13px;font-weight:800;color:var(--mut,#9aa)}.t5Wrap .gnNota{margin:14px 0;font-size:12.5px;line-height:1.5;color:var(--mut,#9aa)}',
+ '.t5Tabs{display:flex;gap:8px;margin:12px 0 4px}.t5Tab{flex:1;text-align:center;border-radius:99px;padding:8px 6px;font-size:13px;font-weight:700;border:1px solid var(--line2,#2a3340);background:var(--bg1,#0d1420);color:var(--mut,#9aa)}.t5Tab.on{background:var(--hot,#fbbf24);color:#111;border-color:var(--hot,#fbbf24)}',
  '.t5Fila.fu{border-color:var(--hot,#fbbf24)}.t5Pct{font-size:20px;font-weight:800;min-width:56px}.t5Fila .t5Inf{flex:1;min-width:0;font-size:13.5px;line-height:1.35}.t5Fila .t5Inf small{display:block;color:var(--mut,#9aa);font-size:12px}'].join('');
  doc.head.appendChild(s);
 }
@@ -164,16 +176,16 @@ function cajaCombo(c,titulo){
 }
 function render(caja,data){
  while(caja.firstChild) caja.removeChild(caja.firstChild);
- var ahora=Date.now(), filas=unir(data.pin,deRegistro(json('ova_auto_v1'),ahora),data.esp,ahora);
+ var ahora=Date.now(), filas=unir(data.pin,deRegistro(json('ova_auto_v1'),ahora).concat(deTenis(json('ova_tenis_registro_v1'),ahora)),data.esp,ahora);
  var con=filas.filter(function(x){ return x.conMercado; }), fu=con.filter(function(x){ return x.fuerte; });
  var porApp={}; con.forEach(function(x){ porApp[x.app]=(porApp[x.app]||0)+1; });
- caja.appendChild(mk('div','gnTit','Próximas 24 horas · '+con.length+' juegos con precio · '+fu.length+' fuertes'+(con.length?' ('+APPS.filter(function(a){ return porApp[a]; }).map(function(a){ return EMO[a]+' '+porApp[a]; }).join(' · ')+')':'')));
+ caja.appendChild(mk('div','gnTit','Próximas 24 horas · '+con.length+' juegos con precio · '+fu.length+' fuertes'+(con.length?' ('+APPS.concat(['ten']).filter(function(a){ return porApp[a]; }).map(function(a){ return EMO[a]+' '+porApp[a]; }).join(' · ')+')':'')));
  if(!con.length){ caja.appendChild(mk('div','gnNota','No encontré juegos con precio en las próximas 24 horas. Prueba otra vez más tarde o abre cada app para que se guarden.')); return; }
  var c2=combinada(filas,2,ahora);
  if(c2) caja.appendChild(cajaCombo(c2,'🎯 Combinada del día (2 patas)'));
  var c3=combinada(filas,3,ahora);
  if(c3) caja.appendChild(mk('div','gnTit','Con una tercera pata ('+c3.patas[2].fav+') pegaría solo '+Math.round(c3.p*100)+'%, pago justo '+c3.am+'. Con 2 es más seguro.'));
- caja.appendChild(mk('div','gnDia','Los más probables de las 5 apps'));
+ caja.appendChild(mk('div','gnDia','Los más probables de todas las apps'));
  con.slice(0,15).forEach(function(x){
   var a=mk('a','t5Fila'+(x.fuerte?' fu':'')); a.href=LINK[x.app];
   var pc=mk('div','t5Pct',Math.round(x.p*100)+'%'); pc.style.color=color(x.p); a.appendChild(pc);
@@ -183,12 +195,12 @@ function render(caja,data){
   a.appendChild(i); caja.appendChild(a);
  });
  if(con.length>15) caja.appendChild(mk('div','gnTit','Y '+(con.length-15)+' juegos más, con menos probabilidad.'));
- caja.appendChild(mk('div','gnNota','💪 = fuerte: el mercado le da 65% o más (75% en NBA y NFL) y tu modelo no choca. Toca un juego para ir a su app. La combinada se arma sola otra vez cuando una pata empieza; si ya la metiste, no te guíes por la nueva.'));
+ caja.appendChild(mk('div','gnNota','💪 = fuerte: el mercado le da 65% o más (75% en NBA, NFL y tenis) y tu modelo no choca. Tenis solo sale si abriste su app hoy y el partido tiene precio de Kalshi. Toca un juego para ir a su app. La combinada se arma sola otra vez cuando una pata empieza; si ya la metiste, no te guíes por la nueva.'));
 }
 function pintar(caja){
  css(); CAJA=caja;
  while(caja.firstChild) caja.removeChild(caja.firstChild);
- caja.appendChild(mk('div','gnNota','Buscando los juegos de las 5 ligas…'));
+ caja.appendChild(mk('div','gnNota','Buscando los juegos de todas las apps…'));
  cargar().then(function(d){ if(CAJA===caja) render(caja,d); });
  if(RELOJ) root.clearInterval(RELOJ);
  RELOJ=root.setInterval(function(){
@@ -199,4 +211,21 @@ function pintar(caja){
  },30e3);
 }
 API.pintar=pintar;
+/* en la app de tenis: dos botones arriba de Al gane (🎾 Tenis / 🌐 Todas las apps) */
+function montarTenis(){
+ var v=doc.getElementById('vAlgane'), picks=doc.getElementById('picks'); if(!v||!picks||doc.getElementById('t5Tabs')) return;
+ css(); var tabs=mk('div','t5Tabs'); tabs.id='t5Tabs'; var caja=mk('div','t5Wrap'); caja.style.display='none';
+ var otros=Array.prototype.slice.call(v.children);
+ function poner(todas){
+  otros.forEach(function(e){ e.style.display=todas?'none':''; }); caja.style.display=todas?'':'none';
+  b1.className='t5Tab'+(todas?'':' on'); b2.className='t5Tab'+(todas?' on':'');
+  try{ root.localStorage.setItem('ova_tenis_vista',todas?'todas':'tenis'); }catch(e){}
+  if(todas) pintar(caja);
+ }
+ var b1=mk('div','t5Tab on','🎾 Tenis'), b2=mk('div','t5Tab','🌐 Todas las apps');
+ [b1,b2].forEach(function(b,i){ b.setAttribute('role','button'); b.tabIndex=0; b.addEventListener('click',function(){ poner(i===1); }); });
+ tabs.appendChild(b1); tabs.appendChild(b2); v.insertBefore(tabs,v.firstChild); v.appendChild(caja);
+ var g=null; try{ g=root.localStorage.getItem('ova_tenis_vista'); }catch(e){} if(g==='todas') poner(true);
+}
+if(/tenis/.test((root.location&&root.location.pathname)||'')){ if(doc.readyState==='loading') doc.addEventListener('DOMContentLoaded',montarTenis); else montarTenis(); }
 })(typeof window!=='undefined'?window:this);
