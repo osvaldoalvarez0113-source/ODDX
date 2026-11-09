@@ -38,3 +38,4 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 - Historia de precios: rama `historia-precios`, `historia/<archivo>-<AAAA-MM>.jsonl`, una línea por corrida (`scripts/historia_precios.sh`). Octubre relleno desde el historial de git.
 - Fútbol: piso 0.5 a la media de goles de liga (un arranque con 0-0 dejaba NaN).
 - Worker `ova-ia`: apagado por defecto (`ACTIVO = si` para encenderlo). Ninguna página lo llama. El cambio solo cuenta cuando se vuelve a publicar en Cloudflare.
+- [MEDICION-HANDICAP-2026-11.md](MEDICION-HANDICAP-2026-11.md): hándicap ±1.5 de NHL y spreads de NFL por tramo del favorito, con precio real.

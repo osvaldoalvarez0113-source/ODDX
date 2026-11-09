@@ -18,6 +18,27 @@ var PROPS={
  nhl:[['Ambos anotan (60 min)',.901],['Hay gol en el 1er periodo',.832],['El favorito gana el 1er periodo (sin empates)',.579],['Más de 1.5 goles en el 1er periodo',.539],['El favorito gana en los 60 minutos',.488],['Empate a los 60 minutos',.223]],
  nfl:[['Hay puntos en el 1er cuarto',.912],['Ambos anotan en la 1a mitad',.875],['El favorito gana la 1a mitad (sin empates)',.629],['Empate al medio tiempo',.072]]};
 
+/* Hándicap de NHL (puck line ±1.5) por tramo del favorito: [desde %, hasta %, juegos, rival +1.5 pegó, rinde, favorito −1.5 pegó, rinde].
+   Medido el 9-nov-2026 con datos-nhl.json: 5,258 juegos 2021-2026 con precio real de ESPN BET (docs/MEDICION-HANDICAP-2026-11.md).
+   El +1.5 pega mucho más que el moneyline, pero ninguno de los dos lados le gana al precio. Solo informativo. */
+var HCP={nhl:[[50,55,1405,.671,-6.5,.329,-2.4],[55,60,1680,.656,-2.4,.344,-8.4],[60,65,1056,.602,-2.6,.398,-5.7],[65,70,659,.557,-1.7,.443,-7.1],[70,100,458,.485,-2.6,.515,-6.4]]};
+function hcpDe(app,p){ var t=HCP[app]; if(!t) return null; var v=p*100; for(var i=0;i<t.length;i++){ var f=t[i]; if(v>=f[0]&&(v<f[1]||i===t.length-1)) return {desde:f[0],hasta:f[1],n:f[2],dog:f[3],rDog:f[4],fav:f[5],rFav:f[6]}; } return null; }
+/* «Solo los fuertes»: desde qué % del mercado se muestra, por deporte. Es donde el ⭐ de cada día pegó 71-84% en la medición. */
+var FUERTE={mlb:.65,fut:.65,nba:.75,nhl:.65,nfl:.75};
+function esFuerte(x,app){ return !!(x&&x.conMercado&&!x.alerta&&x.p>=(FUERTE[app]||.7)); }
+/* Semáforo: ¿la app está pegando lo normal? Últimos N días de juegos ya resueltos, favorito del mercado (k) y pick del modelo (m).
+   Compara lo que ganó contra lo que se esperaba por sus %; z = (ganó − esperado) / √Σp(1−p). */
+function semaforo(items,app,ahora,dias){
+ var desde=ahora-(dias||30)*864e5, mk={n:0,w:0,e:0,v:0}, md={n:0,w:0,e:0,v:0};
+ (items||[]).forEach(function(r){
+  if(!r||r.app!==app||!r.res||r.res==='X'||!(r.ts>=desde)||!(r.ts<ahora)) return;
+  var k=r.k1||r.k0||null, m=r.m1||r.m0||null;
+  if((app==='nba'||app==='nhl'||app==='nfl')&&!r.cr) m=null;
+  [[k,mk],[m,md]].forEach(function(z){ var q=z[0], o=z[1]; if(!q) return; var f=favDe(q), p=q[f]; if(!(p>0&&p<1)) return; o.n++; o.e+=p; o.v+=p*(1-p); if(r.res===f) o.w++; });
+ });
+ function cerrar(o){ o.z=o.v>0?(o.w-o.e)/Math.sqrt(o.v):0; o.color=o.n<15?'gris':(o.z<=-2?'rojo':(o.z<=-1?'ambar':'verde')); return o; }
+ return {mercado:cerrar(mk),modelo:cerrar(md),dias:dias||30};
+}
 function favDe(p){ return p.L>=p.A?'L':'A'; }
 /* cuántas victorias hacen falta para pagar una derrota a precio justo */
 function borra(p){ return p/(1-p); }
@@ -75,7 +96,7 @@ function marcadorMio(picks,app,mes){
  return o;
 }
 function esperados(filas){ var s=0; filas.forEach(function(x){ s+=x.p; }); return s; }
-var API={PROPS:PROPS,lista:lista,marcadorLista:marcadorLista,marcadorMio:marcadorMio,borra:borra,americana:americana,esperados:esperados,ALERTA:ALERTA};
+var API={HCP:HCP,hcpDe:hcpDe,FUERTE:FUERTE,esFuerte:esFuerte,semaforo:semaforo,PROPS:PROPS,lista:lista,marcadorLista:marcadorLista,marcadorMio:marcadorMio,borra:borra,americana:americana,esperados:esperados,ALERTA:ALERTA};
 root.OVAGanadores=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
 var doc=root.document; if(!doc) return;
@@ -102,8 +123,21 @@ var CSS=['#gane_zona,#algane,#vAlgane>.nota,#algane_btn,#pane-gane>.controls{dis
  '.gnAl{margin-top:8px;padding:8px 10px;border-radius:10px;font-size:12.5px;line-height:1.4;background:rgba(251,191,36,.12);color:var(--txt,#fff)}',
  '.gnNota{margin:14px 0;font-size:12.5px;line-height:1.5;color:var(--mut,#9aa)}.gnNota b{color:var(--txt,#fff)}',
  '.gnProps{margin:14px 0;border:1px solid var(--line2,#2a3340);border-radius:14px;background:var(--bg1,#0d1420);padding:10px 12px}.gnProps summary{font-weight:700;font-size:14.5px;cursor:pointer}.gnPr{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line2,#2a3340);font-size:13px}.gnPr b{white-space:nowrap}',
+ '.gnSem{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid var(--line2,#2a3340);background:var(--bg1,#0d1420);font-size:12.5px;line-height:1.45;color:var(--mut,#9aa)}.gnSem b{color:var(--txt,#fff)}.gnSem .gnLuz{font-size:14px;font-weight:800;color:var(--txt,#fff);margin-bottom:3px}',
+ '.gnChips{display:flex;gap:8px;margin:0 0 6px}.gnChip{flex:1;text-align:center;border-radius:99px;padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--line2,#2a3340);background:var(--bg1,#0d1420);color:var(--mut,#9aa)}.gnChip.on{background:var(--hot,#fbbf24);color:#111;border-color:var(--hot,#fbbf24)}',
+ '.gnHc{margin-top:6px;font-size:12px;line-height:1.4;color:var(--mut,#9aa)}.gnHc b{color:var(--txt,#fff)}',
  '.gnMini{display:inline-block;border-radius:99px;background:var(--bg2,#131c2a);color:var(--txt,#fff);padding:8px 13px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--line2,#2a3340)}'].join('');
-var cuerpo,APP;
+var cuerpo,APP,FILTRO='todos';
+try{ if(root.localStorage&&root.localStorage.getItem('ova_gane_filtro')==='fuertes') FILTRO='fuertes'; }catch(e){}
+var LUZ={verde:'🟢 Pegando lo normal',ambar:'🟡 Pegando un poco menos de lo esperado',rojo:'🔴 Mala racha: pega bastante menos de lo esperado',gris:'⚪ Todavía pocos juegos para juzgar'};
+function cajaSemaforo(S){
+ var c=mk('div','gnSem'), peor=[S.mercado,S.modelo].filter(function(o){ return o.n>=15; }).sort(function(a,b){ return a.z-b.z; })[0]||S.mercado;
+ c.appendChild(mk('div','gnLuz',LUZ[peor.color]));
+ function lin(nom,o){ if(!o.n) return; var d=mk('div'); d.appendChild(doc.createTextNode(nom+': ')); d.appendChild(mk('b','','ganó '+o.w+' de '+o.n)); d.appendChild(doc.createTextNode(' · se esperaban '+o.e.toFixed(1)+'.')); c.appendChild(d); }
+ lin('Favorito del mercado',S.mercado); lin('Pick de tu modelo',S.modelo);
+ c.appendChild(mk('div','',S.mercado.n||S.modelo.n?'Últimos '+S.dias+' días, juegos guardados en Auto. '+(peor.color==='rojo'?'Baja el tamaño de tus apuestas en esta app hasta que se enderece, o quédate solo con «Solo fuertes».':(peor.color==='ambar'?'Puede ser mala suerte; míralo otra vez en unos días.':'')):'Sin juegos resueltos en los últimos '+S.dias+' días.'));
+ return c;
+}
 function fila(x,i){
  var f=mk('div','gnFila'+(x.top?' gnEstrella':'')), t=mk('div','gnTop'), pc=mk('div','gnPct '+x.tramo,Math.round(x.p*100)+'%'), e=mk('div','gnEq');
  e.appendChild(mk('b','',(x.top?'⭐ ':'')+x.fav));
@@ -115,6 +149,7 @@ function fila(x,i){
  f.appendChild(d);
  if(x.alerta) f.appendChild(mk('div','gnAl','⚠️ Tu modelo le da '+Math.round(x.modelo*100)+'%, '+Math.abs(x.dif).toFixed(0)+' puntos '+(x.dif<0?'menos':'más')+'. Revisa bajas y alineaciones antes de jugar.'));
  if(!x.conMercado) f.appendChild(mk('div','gnAl','Sin precio del mercado todavía: este % es solo de tu modelo.'));
+ var hc=hcpDe(APP,x.p); if(hc&&x.conMercado){ var h=mk('div','gnHc'); h.appendChild(doc.createTextNode('🏒 Hándicap en este tramo: ')); h.appendChild(mk('b','',x.rival+' +1.5 pegó '+Math.round(hc.dog*100)+'%')); h.appendChild(doc.createTextNode(' · '+x.fav+' −1.5 pegó '+Math.round(hc.fav*100)+'% ('+hc.n.toLocaleString('en-US')+' juegos).')); f.appendChild(h); }
  return f;
 }
 function pintar(){
@@ -124,7 +159,17 @@ function pintar(){
  var a=mk('div','','Tus picks este mes'); a.appendChild(mk('b','',mio.g+'–'+mio.p)); a.appendChild(doc.createTextNode((mio.g+mio.p)?sg(mio.u)+(mio.sinCuota?' · '+mio.sinCuota+' sin cuota':''):'Sin picks resueltos'));
  var b=mk('div','','El ⭐ de cada día este mes'); b.appendChild(mk('b','',li.g+'–'+li.p)); b.appendChild(doc.createTextNode((li.g+li.p)?sg(li.u)+' con margen de casa':'Sin juegos resueltos'));
  mc.appendChild(a); mc.appendChild(b); cuerpo.appendChild(mc);
- if(!filas.length) cuerpo.appendChild(mk('div','gnNota','No hay juegos por empezar guardados. Abre Juegos para que se guarden y vuelve aquí.'+(APP==='fut'?' En fútbol solo salen las ligas que hayas abierto.':'')));
+ cuerpo.appendChild(cajaSemaforo(semaforo(items,APP,ahora,30)));
+ var todas=filas.length, fuertes=filas.filter(function(x){ return esFuerte(x,APP); }).length;
+ var ch=mk('div','gnChips');
+ [['todos','Todos ('+todas+')'],['fuertes','💪 Solo fuertes ('+fuertes+')']].forEach(function(o){ var c=boton('gnChip'+(FILTRO===o[0]?' on':''),o[1],function(){ FILTRO=o[0]; try{ root.localStorage.setItem('ova_gane_filtro',FILTRO); }catch(e){} pintar(); }); c.setAttribute('aria-pressed',String(FILTRO===o[0])); ch.appendChild(c); });
+ cuerpo.appendChild(ch);
+ if(FILTRO==='fuertes'){
+  cuerpo.appendChild(mk('div','gnTit','Solo favoritos de '+Math.round((FUERTE[APP]||.7)*100)+'% o más según el mercado, y sin choque con tu modelo. Menos juegos, más aciertos, pero pagan poco.'));
+  filas=filas.filter(function(x){ return esFuerte(x,APP); });
+  if(todas&&!filas.length) cuerpo.appendChild(mk('div','gnNota','Hoy no hay ningún juego fuerte. Mejor no forzar: vuelve a «Todos» si quieres ver el resto.'));
+ }
+ if(!todas) cuerpo.appendChild(mk('div','gnNota','No hay juegos por empezar guardados. Abre Juegos para que se guarden y vuelve aquí.'+(APP==='fut'?' En fútbol solo salen las ligas que hayas abierto.':'')));
  var dias={}; filas.forEach(function(x){ (dias[x.dia]=dias[x.dia]||[]).push(x); });
  Object.keys(dias).sort().forEach(function(d){
   var v=dias[d], con=v.filter(function(x){ return x.conMercado; }), cab=mk('div','gnDia',etiquetaDia(d,ahora));
@@ -138,6 +183,13 @@ function pintar(){
   dp.appendChild(mk('div','gnTit','Cuota justa = lo mínimo que te tienen que pagar. Si tu casa paga menos, pagas de más. Ninguna le ganó a la línea en las pruebas. Props de jugador (478 mil líneas de apertura): el lado más probable pasa casi lo que dice su precio y rinde entre −4% y −8%; el Más pierde más que el Menos.'));
   pr.slice().sort(function(a,b){ return b[1]-a[1]; }).forEach(function(x){ var f=mk('div','gnPr'); f.appendChild(mk('span','',x[0])); f.appendChild(mk('b','',Math.round(x[1]*1000)/10+'% · '+americana(x[1]))); dp.appendChild(f); });
   cuerpo.appendChild(dp);
+ }
+ var hcT=HCP[APP]; if(hcT){
+  var dh=mk('details','gnProps'); dh.appendChild(mk('summary','','🏒 Hándicap ±1.5: cuántas veces pasa'));
+  dh.appendChild(mk('div','gnTit','5,258 juegos de NHL (2021-2026) con el precio real de ESPN BET. El rival +1.5 pega mucho más que el moneyline, pero viene caro: ningún lado ganó dinero.'));
+  hcT.forEach(function(t){ var rg=t[1]>=100?t[0]+'%+':t[0]+'-'+t[1]+'%'; var f2=mk('div','gnPr'); f2.appendChild(mk('span','','Favorito '+rg+' · rival +1.5')); f2.appendChild(mk('b','',Math.round(t[3]*100)+'% · rinde '+t[4].toFixed(1)+'%')); dh.appendChild(f2);
+   var f3=mk('div','gnPr'); f3.appendChild(mk('span','','Favorito '+rg+' · favorito −1.5')); f3.appendChild(mk('b','',Math.round(t[5]*100)+'% · rinde '+t[6].toFixed(1)+'%')); dh.appendChild(f3); });
+  cuerpo.appendChild(dh);
  }
  cuerpo.appendChild(boton('gnMini','↻ Actualizar',alEntrar));
 }

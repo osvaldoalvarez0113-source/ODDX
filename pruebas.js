@@ -1560,6 +1560,17 @@ sec('Al gane');
  ok('marcador de MLB: entiende centavos de Kalshi y americana',Math.abs(mb.u-((40/60)+(100/120)))<1e-9&&mb.g===2);
  ok('fútbol con decimal',Math.abs(G.marcadorMio([{fecha:'2026-11-03',estado:'ganado',cuota:'1.85'}],'fut','2026-11').u-.85)<1e-9);
  ok('no usa innerHTML ni eval: los nombres entran como texto',!/innerHTML|eval\(|new Function/.test(gj));
+ const SD=Date.UTC(2026,10,9,12), sm=[];
+ for(let i=0;i<20;i++) sm.push({app:'nhl',cr:1,ts:SD-(i+1)*864e5,res:i<6?'L':'A',k1:{L:.7,A:.3},m1:{L:.6,A:.4}});
+ sm.push({app:'nhl',cr:1,ts:SD-40*864e5,res:'A',k1:{L:.7,A:.3}},{app:'nhl',cr:1,ts:SD-864e5,res:'X',k1:{L:.7,A:.3}},{app:'nba',cr:1,ts:SD-864e5,res:'A',k1:{L:.7,A:.3}});
+ const S=G.semaforo(sm,'nhl',SD,30);
+ ok('semáforo: solo últimos 30 días de esa app, sin anulados; 6 de 20 con 70% es rojo',S.mercado.n===20&&S.mercado.w===6&&Math.abs(S.mercado.e-14)<1e-9&&S.mercado.color==='rojo'&&S.modelo.n===20);
+ ok('semáforo: con menos de 15 juegos no juzga',G.semaforo(sm.slice(0,10),'nhl',SD,30).mercado.color==='gris');
+ const sv=[]; for(let i=0;i<20;i++) sv.push({app:'mlb',ts:SD-(i+1)*864e5,res:i<12?'L':'A',k1:{L:.6,A:.4}});
+ ok('semáforo: pegar lo esperado es verde',G.semaforo(sv,'mlb',SD,30).mercado.color==='verde');
+ ok('solo fuertes: necesita mercado, sin alerta y pasar el corte del deporte',G.esFuerte({conMercado:true,alerta:false,p:.76},'nba')&&!G.esFuerte({conMercado:true,alerta:false,p:.72},'nba')&&!G.esFuerte({conMercado:true,alerta:true,p:.9},'nba')&&!G.esFuerte({conMercado:false,alerta:false,p:.9},'nba')&&G.esFuerte({conMercado:true,alerta:false,p:.66},'mlb'));
+ ok('hándicap NHL: tramo correcto y el +1.5 pega más que el −1.5 en juegos parejos',G.hcpDe('nhl',.52).dog>.6&&G.hcpDe('nhl',.52).fav<.4&&G.hcpDe('nhl',.85).desde===70&&G.hcpDe('nba',.6)===null);
+ ok('hándicap NHL: cada tramo suma 100% entre los dos lados',G.HCP.nhl.every(t=>Math.abs(t[3]+t[5]-1)<.002));
  ['index.html','futbol.html','nba.html','nhl.html','nfl.html'].forEach(h=>ok(h+' carga ganadores.js después de autoregistro.js',rd(h).indexOf('<script src="ganadores.js">')>rd(h).indexOf('<script src="autoregistro.js">')&&rd(h).indexOf('<script src="autoregistro.js">')>0));
  ok('el service worker guarda ganadores.js',/'ganadores\.js'/.test(rd('sw.js')));
 }
