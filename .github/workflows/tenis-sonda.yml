@@ -1,28 +1,23 @@
-name: Sonda mercados chicos (temporal)
+name: Medir mercados chicos (temporal)
 on:
   push:
     branches: [tenis-dev]
 permissions:
   contents: write
 jobs:
-  sonda:
+  medir:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 240
     steps:
-      - name: Muestra de mercados resueltos
-        run: |
-          mkdir -p /tmp/s && cd /tmp/s
-          A=https://api.elections.kalshi.com/trade-api/v2
-          for S in KXATPCHALLENGERMATCH KXITFMATCH KXATPMATCH; do
-            curl -sS -m 40 "$A/events?series_ticker=$S&status=settled&with_nested_markets=true&limit=3" -o ev-$S.json
-            T=$(python3 -c "import json;j=json.load(open('ev-$S.json'));print(j['events'][0]['markets'][0]['ticker'])")
-            O=$(python3 -c "import json;j=json.load(open('ev-$S.json'));m=j['events'][0]['markets'][0];import datetime as d;print(int(d.datetime.fromisoformat(m['open_time'].replace('Z','+00:00')).timestamp()), int(d.datetime.fromisoformat(m['close_time'].replace('Z','+00:00')).timestamp()))")
-            set -- $O
-            curl -sS -m 40 "$A/series/$S/markets/$T/candlesticks?start_ts=$1&end_ts=$2&period_interval=60" -o velas-$S.json
-            curl -sS -m 40 "$A/historical/events?series_ticker=$S&limit=2" -o hist-$S.json
-          done
-          ls -la
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Medir
+        run: node scripts/medicion/mercados_chicos.js
       - name: Guardar
+        if: always()
         run: |
-          cd /tmp/s && git init -q -b resultados-tenis-sonda && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
-          git add -A && git commit -q -m sonda && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" resultados-tenis-sonda
+          mkdir -p /tmp/r && cp resultado_chicos.md /tmp/r/ 2>/dev/null || echo "sin resultado" > /tmp/r/resultado_chicos.md
+          cd /tmp/r && git init -q -b resultados-chicos && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "mercados chicos" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" resultados-chicos
