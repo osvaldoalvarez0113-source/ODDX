@@ -26,6 +26,8 @@ var ESTILOS=[
  {id:'mazo',n:'Mazo',d:'Cartas que se lanzan',sw:'linear-gradient(#FF8A3D,#FF8A3D) 50% 78%/58% 62% no-repeat,linear-gradient(#3DDC84,#3DDC84) 50% 62%/68% 62% no-repeat,linear-gradient(#F0CE6B,#F0CE6B) 50% 44%/78% 62% no-repeat,#0b0c12'},
  {id:'tablero',n:'Tablero',d:'Marcador de aeropuerto',sw:'repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 22%/86% 14% no-repeat,repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 50%/86% 14% no-repeat,repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 78%/86% 14% no-repeat,#16161a'}
 ];
+/* 9-nov-2026: tarjeta «Lo mejor de hoy» (todas.html) arriba de los deportes; solo en Oro negro (hub.html) y Paneles */
+var TOP={k:'top',href:'todas.html',n:'Lo mejor',d:'Las 6 apps juntas: más probables y combinada',e:'🎯'};
 var BY={};ESTILOS.forEach(function(e){BY[e.id]=e;});
 /* 8-nov-2026: Osvaldo eligió quedarse solo con Oro negro y Paneles. Los demás ya no se ofrecen; quien tenía uno guardado vuelve a Oro negro. */
 var VIS=['oro','paneles'];
@@ -91,7 +93,7 @@ html[data-hub="orbita"] body{background:#04050d}
 
 /* ============================ PANELES ============================ */
 html[data-hub="paneles"] body{background:#000}
-.L-paneles{--sk:3.4vh;--bg:clamp(38px,min(14.5vw,6.3vh),72px)}
+.L-paneles{--sk:3vh;--bg:clamp(32px,min(12.5vw,5.2vh),64px)}
 .L-paneles .stack{position:absolute;left:0;right:0;top:calc(-1*var(--sk));bottom:calc(-1*var(--sk));display:flex;flex-direction:column}
 .L-paneles .pn{position:relative;flex:1 1 0;display:block;overflow:hidden;clip-path:polygon(0 0,100% var(--sk),100% 100%,0 calc(100% - var(--sk)));-webkit-clip-path:polygon(0 0,100% var(--sk),100% 100%,0 calc(100% - var(--sk)));transition:filter .25s;animation:hlPnIn .9s cubic-bezier(.2,.9,.25,1) backwards}
 .L-paneles .pn:first-child{flex-grow:1.35}
@@ -102,6 +104,9 @@ html[data-hub="paneles"] body{background:#000}
 .L-paneles .pn:nth-child(4){animation-delay:.5s;--from:100vw}
 .L-paneles .pn:nth-child(5){animation-delay:.65s;--from:-100vw}
 .L-paneles .pn:nth-child(6){animation-delay:.8s;--from:100vw}
+.L-paneles .pn:nth-child(7){animation-delay:.95s;--from:-100vw}
+.L-paneles .pnTop{background:linear-gradient(115deg,#000,#1a1408 45%,#6b4a10 75%,#F0CE6B)}
+.L-paneles .pnTop .pat{background:repeating-linear-gradient(45deg,rgba(240,206,107,.1) 0 2px,transparent 2px 22px)}
 @keyframes hlPnIn{from{translate:var(--from) 0}}
 .L-paneles .pn:active{filter:brightness(1.3)}
 .L-paneles .pn .pat{position:absolute;inset:0;animation:hlSlide 6s linear infinite}
@@ -119,10 +124,10 @@ html[data-hub="paneles"] body{background:#000}
 .L-paneles .pn5 .pat{background:repeating-linear-gradient(0deg,rgba(255,255,255,.12) 0 2px,transparent 2px 34px),repeating-linear-gradient(90deg,rgba(255,255,255,.08) 0 2px,transparent 2px 60px)}
 .L-paneles .pn2 .pat{background:radial-gradient(circle at 78% 50%,transparent 0 22px,rgba(0,0,0,.2) 23px 25px,transparent 26px 56px,rgba(0,0,0,.2) 57px 59px,transparent 60px)}
 .L-paneles .pn .emo{position:absolute;right:-5vw;top:50%;margin-top:-11vw;font-size:22vw;line-height:1;transform:rotate(-12deg);filter:drop-shadow(0 14px 24px rgba(0,0,0,.45));animation:hlBob 5s ease-in-out infinite}
-.L-paneles .pn .big{position:absolute;left:6vw;bottom:calc(var(--sk) + 46px);font:900 italic var(--bg)/.9 Inter,system-ui,sans-serif;letter-spacing:-.03em;text-transform:uppercase;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.92);transition:color .25s}
+.L-paneles .pn .big{position:absolute;left:6vw;bottom:calc(var(--sk) + 40px);font:900 italic var(--bg)/.9 Inter,system-ui,sans-serif;letter-spacing:-.03em;text-transform:uppercase;color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.92);transition:color .25s}
 .L-paneles .pn:active .big{color:#fff}
 .L-paneles .pn .sm{position:absolute;left:6.4vw;bottom:calc(var(--sk) + 10px);font:600 11.5px/1.25 Inter;color:rgba(255,255,255,.9);letter-spacing:.03em;max-width:58vw;text-shadow:0 1px 8px rgba(0,0,0,.6)}
-.L-paneles .pn .liv{position:absolute;left:6.4vw;bottom:calc(var(--sk) + 46px + var(--bg)*.9 + 8px);--c:#fff}
+.L-paneles .pn .liv{position:absolute;left:6.4vw;bottom:calc(var(--sk) + 40px + var(--bg)*.9 + 4px);--c:#fff}
 .L-paneles .pn:last-child .big,.L-paneles .pn:last-child .sm,.L-paneles .pn:last-child .liv{margin-bottom:calc(env(safe-area-inset-bottom,0px) + 4px)}
 .L-paneles .hl-brand{text-shadow:0 2px 14px rgba(0,0,0,.9)}
 
@@ -314,8 +319,8 @@ function initOrbita(lay){
 /* ===================================================================== PANELES */
 function htmlPaneles(){
   var s='';
-  DEP.forEach(function(d,i){
-    s+='<a class="pn pn'+i+'" href="'+d.href+'"><div class="pat"></div><span class="emo">'+d.e+'</span>'+livHtml(d.k)+'<b class="big">'+d.n+'</b><span class="sm">'+d.d+'</span></a>';
+  [TOP].concat(DEP).forEach(function(d,i){
+    s+='<a class="pn '+(d.k==='top'?'pnTop':'pn'+(i-1))+'" href="'+d.href+'"><div class="pat"></div><span class="emo">'+d.e+'</span>'+(d.k==='top'?'':livHtml(d.k))+'<b class="big">'+d.n+'</b><span class="sm">'+d.d+'</span></a>';
   });
   return '<div class="stack">'+s+'</div>'+brand();
 }
@@ -510,7 +515,7 @@ function arrancar(){
   if(doc.readyState==='loading') doc.addEventListener('DOMContentLoaded',listo); else listo();
 }
 
-var API={VIS:VIS,ESTILOS:ESTILOS,DEP:DEP,css:CSS,_html:{carrusel:htmlCarrusel,orbita:htmlOrbita,paneles:htmlPaneles,mazo:htmlMazo,tablero:htmlTablero},aplicar:aplicar,abrirHoja:abrirHoja,cerrarHoja:cerrarHoja,actual:function(){ return ST.id; },leer:leer,_arrancar:arrancar};
+var API={TOP:TOP,VIS:VIS,ESTILOS:ESTILOS,DEP:DEP,css:CSS,_html:{carrusel:htmlCarrusel,orbita:htmlOrbita,paneles:htmlPaneles,mazo:htmlMazo,tablero:htmlTablero},aplicar:aplicar,abrirHoja:abrirHoja,cerrarHoja:cerrarHoja,actual:function(){ return ST.id; },leer:leer,_arrancar:arrancar};
 root.OVAHub=API;
 if(typeof module!=='undefined'&&module.exports){ module.exports=API; }
 else if(doc&&html){ try{ arrancar(); }catch(e){} }

@@ -102,6 +102,7 @@ h1{font-family:var(--cond);font-weight:800;font-size:27px;line-height:1.2;
 .card:nth-child(4){animation-delay:.88s}
 .card:nth-child(5){animation-delay:1s}
 .card:nth-child(6){animation-delay:1.12s}
+.card:nth-child(7){animation-delay:1.24s}
 @keyframes cardIn{to{opacity:1;transform:none}}
 .card:active{transform:scale(.975)}
 .card::before{
@@ -118,6 +119,8 @@ h1{font-family:var(--cond);font-weight:800;font-size:27px;line-height:1.2;
 .nhl .glow{background:radial-gradient(circle,rgba(90,200,250,.24),transparent 70%)}
 .nfl .glow{background:radial-gradient(circle,rgba(192,132,252,.24),transparent 70%)}
 .ten .glow{background:radial-gradient(circle,rgba(212,240,74,.22),transparent 70%)}
+.card.top{border-color:rgba(240,206,107,.55)}
+.top .glow{background:radial-gradient(circle,rgba(240,206,107,.4),transparent 70%)}
 
 .ico{position:relative;z-index:1;flex:0 0 auto;width:52px;height:52px;border-radius:14px;
  display:flex;align-items:center;justify-content:center;font-size:24px;
@@ -160,6 +163,13 @@ h1{font-family:var(--cond);font-weight:800;font-size:27px;line-height:1.2;
  <p class="sub">Ventaja calculada, cuota justa y valor real contra el mercado &mdash; MLB, f&uacute;tbol, NBA, NHL, NFL y tenis.</p>
 
  <div class="grid">
+  <a class="card top" href="todas.html">
+   <div class="glow"></div>
+   <div class="ico">&#127919;</div>
+   <div class="txt"><b>Lo mejor de hoy</b><span>Las 6 apps juntas: los m&aacute;s probables y la combinada</span></div>
+   <div class="badge">Nuevo</div>
+   <div class="arrow">&rsaquo;</div>
+  </a>
   <a class="card mlb" href="index.html">
    <div class="glow"></div>
    <div class="ico">&#9918;</div>

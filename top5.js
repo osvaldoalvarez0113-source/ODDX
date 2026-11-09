@@ -1,4 +1,4 @@
-/* OVA · «🌐 Las 5 apps» dentro de Al gane — window.OVATop5
+/* OVA · «🎯 Lo mejor de hoy» (todas.html, tarjeta del inicio) — window.OVATop5
    Junta los juegos que todavía no empiezan en MLB, fútbol, NBA, NHL y NFL (próximas 24 h) y los ordena por % del mercado.
    No hace falta abrir cada app: lee el precio justo de Pinnacle (pinnacle-*.json del repo), lo que ya guardó el registro
    automático (ova_auto_v1) y, si falta, la línea de ESPN del día. Prioridad del precio: Pinnacle > registro > ESPN.
@@ -137,8 +137,8 @@ function mk(t,c,x){ var e=doc.createElement(t); if(c) e.className=c; if(x!=null)
 function hora(ts){ try{ return new Date(ts).toLocaleTimeString('es-US',{hour:'numeric',minute:'2-digit',hour12:true}); }catch(e){ return ''; } }
 function json(k){ try{ var a=JSON.parse(root.localStorage.getItem(k)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 function traer(u){ return root.fetch(u).then(function(r){ return r.ok?r.json():null; }).catch(function(){ return null; }); }
-function cargar(){
- if(CACHE&&Date.now()-CACHE_T<10*60e3) return Promise.resolve(CACHE);
+function cargar(forzar){
+ if(!forzar&&CACHE&&Date.now()-CACHE_T<10*60e3) return Promise.resolve(CACHE);
  var hoy=Date.now(), dias=[ymd(hoy),ymd(hoy+864e5)], pin=[], esp=[], tareas=[];
  APPS.forEach(function(a){ tareas.push(traer(PIN[a]+'?v='+Math.floor(hoy/6e5)).then(function(j){ pin=pin.concat(dePinnacle(a,j)); })); });
  Object.keys(DEP).forEach(function(a){ dias.forEach(function(d){ tareas.push(traer(ESPN+DEP[a]+'/scoreboard?dates='+d).then(function(j){ esp=esp.concat(deEspn(a,j)); })); }); });
@@ -195,13 +195,13 @@ function render(caja,data){
   a.appendChild(i); caja.appendChild(a);
  });
  if(con.length>15) caja.appendChild(mk('div','gnTit','Y '+(con.length-15)+' juegos más, con menos probabilidad.'));
- caja.appendChild(mk('div','gnNota','💪 = fuerte: el mercado le da 65% o más (75% en NBA, NFL y tenis) y tu modelo no choca. Tenis solo sale si abriste su app hoy y el partido tiene precio de Kalshi. Toca un juego para ir a su app. La combinada se arma sola otra vez cuando una pata empieza; si ya la metiste, no te guíes por la nueva.'));
+ caja.appendChild(mk('div','gnNota','💪 = fuerte: el mercado le da 65% o más (75% en NBA, NFL y tenis) y tu modelo no choca. Tenis solo sale si abriste su app hoy y el partido tiene precio de Kalshi. Se actualiza solo al volver a esta pantalla. Toca un juego para ir a su app. La combinada se arma sola otra vez cuando una pata empieza; si ya la metiste, no te guíes por la nueva.'));
 }
-function pintar(caja){
+function pintar(caja,forzar){
  css(); CAJA=caja;
  while(caja.firstChild) caja.removeChild(caja.firstChild);
  caja.appendChild(mk('div','gnNota','Buscando los juegos de todas las apps…'));
- cargar().then(function(d){ if(CAJA===caja) render(caja,d); });
+ cargar(forzar).then(function(d){ if(CAJA===caja) render(caja,d); });
  if(RELOJ) root.clearInterval(RELOJ);
  RELOJ=root.setInterval(function(){
   if(!CAJA||!CAJA.isConnected||CAJA.offsetParent===null){ root.clearInterval(RELOJ); RELOJ=null; return; }
@@ -211,21 +211,4 @@ function pintar(caja){
  },30e3);
 }
 API.pintar=pintar;
-/* en la app de tenis: dos botones arriba de Al gane (🎾 Tenis / 🌐 Todas las apps) */
-function montarTenis(){
- var v=doc.getElementById('vAlgane'), picks=doc.getElementById('picks'); if(!v||!picks||doc.getElementById('t5Tabs')) return;
- css(); var tabs=mk('div','t5Tabs'); tabs.id='t5Tabs'; var caja=mk('div','t5Wrap'); caja.style.display='none';
- var otros=Array.prototype.slice.call(v.children);
- function poner(todas){
-  otros.forEach(function(e){ e.style.display=todas?'none':''; }); caja.style.display=todas?'':'none';
-  b1.className='t5Tab'+(todas?'':' on'); b2.className='t5Tab'+(todas?' on':'');
-  try{ root.localStorage.setItem('ova_tenis_vista',todas?'todas':'tenis'); }catch(e){}
-  if(todas) pintar(caja);
- }
- var b1=mk('div','t5Tab on','🎾 Tenis'), b2=mk('div','t5Tab','🌐 Todas las apps');
- [b1,b2].forEach(function(b,i){ b.setAttribute('role','button'); b.tabIndex=0; b.addEventListener('click',function(){ poner(i===1); }); });
- tabs.appendChild(b1); tabs.appendChild(b2); v.insertBefore(tabs,v.firstChild); v.appendChild(caja);
- var g=null; try{ g=root.localStorage.getItem('ova_tenis_vista'); }catch(e){} if(g==='todas') poner(true);
-}
-if(/tenis/.test((root.location&&root.location.pathname)||'')){ if(doc.readyState==='loading') doc.addEventListener('DOMContentLoaded',montarTenis); else montarTenis(); }
 })(typeof window!=='undefined'?window:this);

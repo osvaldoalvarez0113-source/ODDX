@@ -323,7 +323,7 @@ const t_sw=async()=>{
 sec('Hub limpio (solo las 5 tarjetas) y Panel aparte');
 {
  const hh=rd('hub.html');
- ok('el hub tiene SOLO las 6 tarjetas, sin Hoy ni Respaldo',(hh.match(/class="card /g)||[]).length===6&&!/id="hoy"|id="resp"|Respaldo|Favoritos/.test(hh));
+ ok('el hub tiene SOLO tarjetas: «Lo mejor de hoy» + los 6 deportes, sin Hoy ni Respaldo',(hh.match(/class="card /g)||[]).length===7&&/class="card top" href="todas.html"/.test(hh)&&!/id="hoy"|id="resp"|Respaldo|Favoritos/.test(hh));
  ok('el hub no enlaza al panel (no estorba)',!/panel\.html/.test(hh));
  ok('el hub ya no resetea tu tema cada vez que entras',/if\(!localStorage\.getItem\('ova_skin'\)\)/.test(hh));
  const h=rd('panel.html');
@@ -366,7 +366,7 @@ sec('Presentaciones del hub (6 diseños)');
  const HB=require(path.join(__dirname,'hubestilos.js'));
  const IDS=['oro','carrusel','orbita','paneles','mazo','tablero'];
  ok('hay 6 diseños: '+IDS.join(', '),JSON.stringify(HB.ESTILOS.map(e=>e.id))===JSON.stringify(IDS));
- ok('los 6 deportes llevan a MLB, fútbol, NBA, NHL, NFL y tenis',JSON.stringify(HB.DEP.map(d=>d.href))===JSON.stringify(['index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html'])&&HB.DEP.every(d=>fs.existsSync(D0(d.href))));
+ ok('los 6 deportes llevan a MLB, fútbol, NBA, NHL, NFL y tenis, y «Lo mejor» a todas.html',HB.TOP.href==='todas.html'&&fs.existsSync(D0('todas.html'))&&/pnTop/.test(HB._html.paneles())&&JSON.stringify(HB.DEP.map(d=>d.href))===JSON.stringify(['index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html'])&&HB.DEP.every(d=>fs.existsSync(D0(d.href))));
  function D0(f){return path.join(__dirname,f);}
  IDS.slice(1).forEach(id=>{const h=HB._html[id]();ok('diseño '+id+': arma sus 6 enlaces y el logo para cambiar de diseño',['index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html'].every(x=>h.indexOf('href="'+x+'"')>=0)&&h.indexOf('hl-brand')>=0);});
  const css=HB.css;
