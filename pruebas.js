@@ -1571,6 +1571,8 @@ sec('Al gane');
  ok('solo fuertes: necesita mercado, sin alerta y pasar el corte del deporte',G.esFuerte({conMercado:true,alerta:false,p:.76},'nba')&&!G.esFuerte({conMercado:true,alerta:false,p:.72},'nba')&&!G.esFuerte({conMercado:true,alerta:true,p:.9},'nba')&&!G.esFuerte({conMercado:false,alerta:false,p:.9},'nba')&&G.esFuerte({conMercado:true,alerta:false,p:.66},'mlb'));
  ok('hándicap NHL: tramo correcto y el +1.5 pega más que el −1.5 en juegos parejos',G.hcpDe('nhl',.52).dog>.6&&G.hcpDe('nhl',.52).fav<.4&&G.hcpDe('nhl',.85).desde===70&&G.hcpDe('nba',.6)===null);
  ok('hándicap NHL: cada tramo suma 100% entre los dos lados',G.HCP.nhl.every(t=>Math.abs(t[3]+t[5]-1)<.002));
+ const R5=G.resumenApp([{app:'nhl',cr:1,res:'L',k1:{L:.72,A:.28}},{app:'nhl',cr:1,res:'A',k1:{L:.72,A:.28}},{app:'nhl',cr:1,res:'A',k1:{L:.4,A:.6},m1:{L:.5,A:.5}},{app:'nhl',cr:1,res:'L',m1:{L:.55,A:.45}},{app:'nhl',cr:1,res:'X',k1:{L:.9,A:.1}},{app:'nhl',cr:1,k1:{L:.6,A:.4}},{app:'nba',cr:1,res:'L',k1:{L:.8,A:.2}}],'nhl');
+ ok('Mis picks: resumen de la app (mercado primero, anulados fuera, por jugarse aparte)',R5.n===4&&R5.w===3&&R5.pend===1&&R5.tramos[1].n===1&&R5.tramos[2].n===2&&R5.tramos[2].w===1&&Math.abs(R5.tramos[2].e-1.44)<1e-9&&R5.tramos[0].n===1);
  const T5=require(D+'top5.js'), N5=Date.UTC(2026,10,9,18), h5=36e5;
  const pin5=T5.dePinnacle('nba',{juegos:[{t:new Date(N5+3*h5).toISOString(),n:['Sacramento Kings','Miami Heat'],ml:[.1644,.8356]},{t:new Date(N5-h5).toISOString(),n:['A','B'],ml:[.5,.5]}]});
  const fut5=T5.dePinnacle('fut',{juegos:[{t:new Date(N5+5*h5).toISOString(),liga:'Serie A',n:['Inter','Lecce'],r:[.78,.15,.07]}]});

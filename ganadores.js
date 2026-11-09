@@ -39,6 +39,21 @@ function semaforo(items,app,ahora,dias){
  function cerrar(o){ o.z=o.v>0?(o.w-o.e)/Math.sqrt(o.v):0; o.color=o.n<15?'gris':(o.z<=-2?'rojo':(o.z<=-1?'ambar':'verde')); return o; }
  return {mercado:cerrar(mk),modelo:cerrar(md),dias:dias||30};
 }
+/* Resumen para arriba de «Mis picks»: lo que la app guardó sola antes de cada juego (ova_auto_v1). El pick es el favorito
+   del mercado; si no había precio, el de tu modelo (igual que el orden de Al gane). Mismo formato que la app de tenis. */
+function resumenApp(items,app){
+ var T=[[.5,.6],[.6,.7],[.7,.8],[.8,1.01]].map(function(t){ return {a:t[0],b:t[1],n:0,w:0,e:0}; }), o={n:0,w:0,pend:0,tramos:T};
+ (items||[]).forEach(function(r){
+  if(!r||r.app!==app) return;
+  var k=r.k1||r.k0||null, m=r.m1||r.m0||null; if((app==='nba'||app==='nhl'||app==='nfl')&&!r.cr) m=null;
+  var q=k||m; if(!q) return;
+  if(!r.res){ o.pend++; return; } if(r.res==='X') return;
+  var f=favDe(q), pp=q[f]; if(!(pp>0&&pp<1)) return;
+  var g=r.res===f?1:0; o.n++; o.w+=g;
+  for(var i=0;i<T.length;i++){ if(pp>=T[i].a&&pp<T[i].b){ T[i].n++; T[i].w+=g; T[i].e+=pp; break; } }
+ });
+ return o;
+}
 function favDe(p){ return p.L>=p.A?'L':'A'; }
 /* cuántas victorias hacen falta para pagar una derrota a precio justo */
 function borra(p){ return p/(1-p); }
@@ -96,7 +111,7 @@ function marcadorMio(picks,app,mes){
  return o;
 }
 function esperados(filas){ var s=0; filas.forEach(function(x){ s+=x.p; }); return s; }
-var API={HCP:HCP,hcpDe:hcpDe,FUERTE:FUERTE,esFuerte:esFuerte,semaforo:semaforo,PROPS:PROPS,lista:lista,marcadorLista:marcadorLista,marcadorMio:marcadorMio,borra:borra,americana:americana,esperados:esperados,ALERTA:ALERTA};
+var API={resumenApp:resumenApp,HCP:HCP,hcpDe:hcpDe,FUERTE:FUERTE,esFuerte:esFuerte,semaforo:semaforo,PROPS:PROPS,lista:lista,marcadorLista:marcadorLista,marcadorMio:marcadorMio,borra:borra,americana:americana,esperados:esperados,ALERTA:ALERTA};
 root.OVAGanadores=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
 var doc=root.document; if(!doc) return;
@@ -221,6 +236,45 @@ function armar(){
  root.addEventListener('ova-auto-cambio',function(){ if(visible()) pintar(); });
  pintar(); return true;
 }
+/* ---------- arriba de «Mis picks» ---------- */
+var CSS_RES='.gnRes{margin:4px 0 14px}.gnRes h3{margin:4px 2px 8px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut,#9aa)}'+
+ '.gnKpi{display:flex;gap:8px}.gnKpi div{flex:1;border-radius:12px;background:var(--bg1,#0d1420);border:1px solid var(--line2,#2a3340);padding:10px 6px;text-align:center;font-size:12px;color:var(--mut,#9aa)}'+
+ '.gnKpi b{display:block;font-size:21px;color:var(--txt,#fff);margin-bottom:2px}.gnRes details{margin-top:10px}.gnRes summary{font-size:13px;font-weight:700;color:var(--txt,#fff);cursor:pointer;padding:6px 2px}'+
+ '.gnRes table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}.gnRes th{text-align:left;color:var(--mut,#9aa);font-weight:700;padding:6px 4px;border-bottom:1px solid var(--line2,#2a3340)}'+
+ '.gnRes td{padding:7px 4px;border-bottom:1px solid var(--line2,#2a3340);color:var(--txt,#fff)}.gnRes th:not(:first-child),.gnRes td:not(:first-child){text-align:center}'+
+ '.gnRes .gnNota{margin:8px 2px 0}.gnRes .gnSep{margin:16px 2px 4px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut,#9aa)}';
+function esTenis(){ return doc.documentElement.getAttribute('data-app')==='tenis'||/tenis/.test((root.location&&root.location.pathname)||''); }
+function vistaPicks(){ return doc.getElementById('pane-picks')||doc.getElementById('vistaRegistro')||doc.getElementById('vReg'); }
+function pct(x){ return Math.round(x*100)+'%'; }
+function pintarRes(){
+ var v=vistaPicks(); if(!v) return false;
+ var box=doc.getElementById('gnRes');
+ if(!box){
+  if(!doc.getElementById('gnResCss')){ var st=mk('style'); st.id='gnResCss'; st.textContent=CSS_RES; (doc.head||doc.documentElement).appendChild(st); }
+  box=mk('div','gnRes'); box.id='gnRes'; v.insertBefore(box,v.firstChild);
+ }
+ var app=APP||appActual(), o=resumenApp(json(KEY),app), abierto=!!(box.querySelector('details')&&box.querySelector('details').open);
+ while(box.firstChild) box.removeChild(box.firstChild);
+ box.appendChild(mk('h3','','Aciertos de la app'));
+ var k=mk('div','gnKpi');
+ [[o.n?(Math.round(o.w/o.n*1000)/10)+'%':'—','aciertos'],[o.w+'-'+(o.n-o.w),'ganados-perdidos'],[String(o.pend),'por jugarse']].forEach(function(x){ var d=mk('div','',x[1]); d.insertBefore(mk('b','',x[0]),d.firstChild); k.appendChild(d); });
+ box.appendChild(k);
+ var det=mk('details'); det.open=abierto; det.appendChild(mk('summary','','Por tramo: lo que dijo contra lo que pasó'));
+ var tb=mk('table'), tr=mk('tr'); ['Prob. del pick','Picks','Acertó','Esperado'].forEach(function(h){ tr.appendChild(mk('th','',h)); }); tb.appendChild(tr);
+ o.tramos.forEach(function(t){ var r=mk('tr'); [Math.round(t.a*100)+'–'+Math.min(100,Math.round(t.b*100))+'%',String(t.n),t.n?pct(t.w/t.n):'—',t.n?pct(t.e/t.n):'—'].forEach(function(c){ r.appendChild(mk('td','',c)); }); tb.appendChild(r); });
+ det.appendChild(tb);
+ det.appendChild(mk('div','gnNota','La app guarda sola cada juego antes de que empiece: el favorito del mercado o, si no había precio, el de tu modelo. Con menos de 100 picks los % todavía brincan mucho. El detalle completo está en Herramientas → 🤖 Auto.'));
+ box.appendChild(det);
+ if(!o.n&&!o.pend) box.appendChild(mk('div','gnNota','Todavía no hay juegos guardados. Abre Juegos para que se vayan guardando.'));
+ box.appendChild(mk('div','gnSep','Tus apuestas'));
+ return true;
+}
+function arrancarRes(){
+ if(esTenis()) return;
+ var n=0; (function intento(){ try{ if(pintarRes()) return; }catch(e){ if(root.console) root.console.error('gnRes',e); return; } if(++n<40) root.setTimeout(intento,500); })();
+ doc.addEventListener('click',function(e){ var b=e.target&&e.target.closest&&e.target.closest('[data-v="vReg"],[data-vista="registro"],.navbar [data-p="picks"]'); if(b) root.setTimeout(function(){ try{ pintarRes(); }catch(er){} },0); });
+ root.addEventListener('ova-auto-cambio',function(){ try{ pintarRes(); }catch(er){} });
+}
 function arrancar(){ var n=0; (function intento(){ try{ if(armar()) return; }catch(e){ if(root.console) root.console.error('ganadores',e); return; } if(++n<40) root.setTimeout(intento,500); })(); }
-if(doc.readyState==='loading') doc.addEventListener('DOMContentLoaded',arrancar); else arrancar();
+if(doc.readyState==='loading'){ doc.addEventListener('DOMContentLoaded',arrancar); doc.addEventListener('DOMContentLoaded',arrancarRes); } else { arrancar(); arrancarRes(); }
 })(typeof window!=='undefined'?window:globalThis);
