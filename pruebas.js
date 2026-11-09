@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','prediccion.js','modelo-nhl.js','modelo-nfl.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','prediccion.js','modelo-nhl.js','modelo-nfl.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -1571,6 +1571,22 @@ sec('Al gane');
  ok('solo fuertes: necesita mercado, sin alerta y pasar el corte del deporte',G.esFuerte({conMercado:true,alerta:false,p:.76},'nba')&&!G.esFuerte({conMercado:true,alerta:false,p:.72},'nba')&&!G.esFuerte({conMercado:true,alerta:true,p:.9},'nba')&&!G.esFuerte({conMercado:false,alerta:false,p:.9},'nba')&&G.esFuerte({conMercado:true,alerta:false,p:.66},'mlb'));
  ok('hándicap NHL: tramo correcto y el +1.5 pega más que el −1.5 en juegos parejos',G.hcpDe('nhl',.52).dog>.6&&G.hcpDe('nhl',.52).fav<.4&&G.hcpDe('nhl',.85).desde===70&&G.hcpDe('nba',.6)===null);
  ok('hándicap NHL: cada tramo suma 100% entre los dos lados',G.HCP.nhl.every(t=>Math.abs(t[3]+t[5]-1)<.002));
+ const T5=require(D+'top5.js'), N5=Date.UTC(2026,10,9,18), h5=36e5;
+ const pin5=T5.dePinnacle('nba',{juegos:[{t:new Date(N5+3*h5).toISOString(),n:['Sacramento Kings','Miami Heat'],ml:[.1644,.8356]},{t:new Date(N5-h5).toISOString(),n:['A','B'],ml:[.5,.5]}]});
+ const fut5=T5.dePinnacle('fut',{juegos:[{t:new Date(N5+5*h5).toISOString(),liga:'Serie A',n:['Inter','Lecce'],r:[.78,.15,.07]}]});
+ const reg5=T5.deRegistro([{app:'nba',cr:1,ts:N5+3*h5,local:'Kings',visita:'Heat',k1:{L:.2,A:.8},m1:{L:.18,A:.82},ksrc:'espn'},{app:'nhl',cr:1,ts:N5+2*h5,local:'Panthers',visita:'Blackhawks',k1:{L:.72,A:.28},m1:{L:.7,A:.3}},{app:'nhl',ts:N5+2*h5,local:'X',visita:'Y',k1:{L:.9,A:.1},res:'L'}],N5);
+ const esp5=T5.deEspn('nfl',{events:[{date:new Date(N5+6*h5).toISOString(),status:{type:{state:'pre'}},competitions:[{competitors:[{homeAway:'home',team:{displayName:'Buffalo Bills'}},{homeAway:'away',team:{displayName:'Miami Dolphins'}}],odds:[{homeTeamOdds:{moneyLine:-400},awayTeamOdds:{moneyLine:310}}]}]},{date:new Date(N5+6*h5).toISOString(),status:{type:{state:'in'}},competitions:[{competitors:[{homeAway:'home',team:{displayName:'C'}},{homeAway:'away',team:{displayName:'D'}}],odds:[{homeTeamOdds:{moneyLine:-150},awayTeamOdds:{moneyLine:130}}]}]}]});
+ ok('top5: lee Pinnacle (NBA y fútbol 1X2) y ESPN; descarta lo empezado',pin5.length===2&&fut5.length===1&&Math.abs(fut5[0].k.D-.15)<1e-9&&esp5.length===1&&esp5[0].k.L>.75);
+ const u5=T5.unir(pin5.concat(fut5),reg5,esp5,N5);
+ ok('top5: une sin repetir, Pinnacle manda en el precio y el modelo sale del registro',u5.length===4&&u5.filter(x=>x.app==='nba').length===1&&Math.abs(u5.find(x=>x.app==='nba').p-.8356)<1e-9&&u5.find(x=>x.app==='nba').fuente==='Pinnacle'&&Math.abs(u5.find(x=>x.app==='nba').modelo-.82)<1e-9);
+ ok('top5: ordenado de mayor a menor y marca los fuertes',u5[0].p>=u5[1].p&&u5[1].p>=u5[2].p&&u5.find(x=>x.app==='nba').fuerte&&u5.find(x=>x.app==='nhl').fuerte);
+ const c5=T5.combinada(u5,2,N5);
+ ok('top5: combinada de 2 = las dos más fuertes, p1×p2 y pago justo',c5&&c5.patas.length===2&&c5.todasFuertes&&Math.abs(c5.p-u5[0].p*u5[1].p)<1e-12&&Math.abs(c5.dec-1/c5.p)<1e-12);
+ ok('top5: una pata a menos de 5 minutos ya no entra',T5.combinada(u5,2,u5[0].ts-60e3).patas.every(x=>x.ts!==u5[0].ts));
+ ok('top5: mismo equipo con nombre distinto',T5.mismoEq('Kings','Sacramento Kings')&&T5.mismoEq('LA Clippers','Los Angeles Clippers')&&!T5.mismoEq('Heat','Kings'));
+ const dup5=T5.unir([],[],[{app:'nfl',ts:N5+h5,local:'Buffalo Bills',visita:'Miami Dolphins',k:{L:.8,A:.2},fuente:'ESPN'},{app:'nfl',ts:N5+9*h5,local:'Buffalo Bills',visita:'Minnesota Vikings',k:{L:.78,A:.22},fuente:'ESPN'},{app:'nba',ts:N5+h5,local:'Boston Celtics',visita:'Utah Jazz',k:{L:.6,A:.4},fuente:'ESPN'}],N5);
+ ok('top5: nunca dos patas con el mismo equipo',T5.combinada(dup5,2,N5).patas.map(x=>x.fav).join()==='Buffalo Bills,Boston Celtics');
+ ok('top5: cuenta regresiva',T5.cuenta(2*h5+5*60e3)==='empieza en 2 h 05 min'&&T5.cuenta(9*60e3)==='empieza en 9 min'&&T5.cuenta(-1)==='ya empezó');
  ['index.html','futbol.html','nba.html','nhl.html','nfl.html'].forEach(h=>ok(h+' carga ganadores.js después de autoregistro.js',rd(h).indexOf('<script src="ganadores.js">')>rd(h).indexOf('<script src="autoregistro.js">')&&rd(h).indexOf('<script src="autoregistro.js">')>0));
  ok('el service worker guarda ganadores.js',/'ganadores\.js'/.test(rd('sw.js')));
 }

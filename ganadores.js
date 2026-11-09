@@ -124,11 +124,11 @@ var CSS=['#gane_zona,#algane,#vAlgane>.nota,#algane_btn,#pane-gane>.controls{dis
  '.gnNota{margin:14px 0;font-size:12.5px;line-height:1.5;color:var(--mut,#9aa)}.gnNota b{color:var(--txt,#fff)}',
  '.gnProps{margin:14px 0;border:1px solid var(--line2,#2a3340);border-radius:14px;background:var(--bg1,#0d1420);padding:10px 12px}.gnProps summary{font-weight:700;font-size:14.5px;cursor:pointer}.gnPr{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line2,#2a3340);font-size:13px}.gnPr b{white-space:nowrap}',
  '.gnSem{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid var(--line2,#2a3340);background:var(--bg1,#0d1420);font-size:12.5px;line-height:1.45;color:var(--mut,#9aa)}.gnSem b{color:var(--txt,#fff)}.gnSem .gnLuz{font-size:14px;font-weight:800;color:var(--txt,#fff);margin-bottom:3px}',
- '.gnChips{display:flex;gap:8px;margin:0 0 6px}.gnChip{flex:1;text-align:center;border-radius:99px;padding:8px 10px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--line2,#2a3340);background:var(--bg1,#0d1420);color:var(--mut,#9aa)}.gnChip.on{background:var(--hot,#fbbf24);color:#111;border-color:var(--hot,#fbbf24)}',
+ '.gnChips{display:flex;gap:8px;margin:0 0 6px}.gnChip{flex:1;text-align:center;border-radius:99px;padding:8px 6px;font-size:12.5px;white-space:nowrap;font-weight:700;cursor:pointer;border:1px solid var(--line2,#2a3340);background:var(--bg1,#0d1420);color:var(--mut,#9aa)}.gnChip.on{background:var(--hot,#fbbf24);color:#111;border-color:var(--hot,#fbbf24)}',
  '.gnHc{margin-top:6px;font-size:12px;line-height:1.4;color:var(--mut,#9aa)}.gnHc b{color:var(--txt,#fff)}',
  '.gnMini{display:inline-block;border-radius:99px;background:var(--bg2,#131c2a);color:var(--txt,#fff);padding:8px 13px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--line2,#2a3340)}'].join('');
 var cuerpo,APP,FILTRO='todos';
-try{ if(root.localStorage&&root.localStorage.getItem('ova_gane_filtro')==='fuertes') FILTRO='fuertes'; }catch(e){}
+try{ if(root.localStorage&&/^(fuertes|las5)$/.test(root.localStorage.getItem('ova_gane_filtro')||'')) FILTRO=root.localStorage.getItem('ova_gane_filtro'); }catch(e){}
 var LUZ={verde:'🟢 Pegando lo normal',ambar:'🟡 Pegando un poco menos de lo esperado',rojo:'🔴 Mala racha: pega bastante menos de lo esperado',gris:'⚪ Todavía pocos juegos para juzgar'};
 function cajaSemaforo(S){
  var c=mk('div','gnSem'), peor=[S.mercado,S.modelo].filter(function(o){ return o.n>=15; }).sort(function(a,b){ return a.z-b.z; })[0]||S.mercado;
@@ -162,8 +162,9 @@ function pintar(){
  cuerpo.appendChild(cajaSemaforo(semaforo(items,APP,ahora,30)));
  var todas=filas.length, fuertes=filas.filter(function(x){ return esFuerte(x,APP); }).length;
  var ch=mk('div','gnChips');
- [['todos','Todos ('+todas+')'],['fuertes','💪 Solo fuertes ('+fuertes+')']].forEach(function(o){ var c=boton('gnChip'+(FILTRO===o[0]?' on':''),o[1],function(){ FILTRO=o[0]; try{ root.localStorage.setItem('ova_gane_filtro',FILTRO); }catch(e){} pintar(); }); c.setAttribute('aria-pressed',String(FILTRO===o[0])); ch.appendChild(c); });
+ [['todos','Todos ('+todas+')'],['fuertes','💪 Fuertes ('+fuertes+')'],['las5','🌐 Las 5 apps']].forEach(function(o){ var c=boton('gnChip'+(FILTRO===o[0]?' on':''),o[1],function(){ FILTRO=o[0]; try{ root.localStorage.setItem('ova_gane_filtro',FILTRO); }catch(e){} pintar(); }); c.setAttribute('aria-pressed',String(FILTRO===o[0])); ch.appendChild(c); });
  cuerpo.appendChild(ch);
+ if(FILTRO==='las5'&&root.OVATop5&&root.OVATop5.pintar){ var c5=mk('div'); cuerpo.appendChild(c5); root.OVATop5.pintar(c5); return; }
  if(FILTRO==='fuertes'){
   cuerpo.appendChild(mk('div','gnTit','Solo favoritos de '+Math.round((FUERTE[APP]||.7)*100)+'% o más según el mercado, y sin choque con tu modelo. Menos juegos, más aciertos, pero pagan poco.'));
   filas=filas.filter(function(x){ return esFuerte(x,APP); });
