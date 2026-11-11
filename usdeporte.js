@@ -856,7 +856,7 @@
 
   /* ---------- diagnóstico ---------- */
   function armarDiag() {
-    const L = []; L.push('App ' + SP.nombre + ' v1.0 · ' + new Date().toLocaleString());
+    const L = []; L.push('App ' + SP.nombre + ' ' + ((window.OVA_SELLO && window.OVA_SELLO[DEP] && window.OVA_SELLO[DEP].f) || 'v1.0') + ' · ' + new Date().toLocaleString());
     L.push('Parámetros: ' + JSON.stringify(PARAMS));
     L.push('Partidos: ' + GAMES.length + ' · equipos: ' + Object.keys(TEAMS).length + ' · fuente: ' + DIAG.fuente + (DIAG.gen ? ' (archivo de ' + DIAG.gen.slice(0, 16).replace('T', ' ') + ' UTC)' : '') + ' · días completados directo de ESPN: ' + DIAG.topUp);
     if (ESTADO) L.push('Partidos en el modelo ' + ESTADO.n + ' · promedio de la liga ' + ESTADO.lg.toFixed(2) + ' ' + SP.uc + ' por juego');

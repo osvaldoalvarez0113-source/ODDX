@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -1332,7 +1332,7 @@ sec('Auditoría 3: pestaña Salud, cancha de cada deporte, íconos y repartició
  ok('los topes mensuales de los tres escáneres de Pinnacle suman 250 o menos (MLB '+t1+' + fútbol/NBA '+t2+' + NHL/NFL '+t3+')',t1&&t2&&t3&&t1+t2+t3<=250,String(t1+t2+t3));
  const wf=fs.readdirSync(path.join(__dirname,'.github','workflows'));
  ok('ningún workflow que gasta llamadas de OddsPapi corre solo porque se toque un archivo (push): solo por horario o a mano',wf.filter(f=>/ODDSPAPI/.test(rd('.github/workflows/'+f))).every(f=>!/^  push:/m.test(rd('.github/workflows/'+f))),wf.filter(f=>/ODDSPAPI/.test(rd('.github/workflows/'+f))&&/^  push:/m.test(rd('.github/workflows/'+f))).join(','));
- ok('los avisos de MLB solo corren de marzo a noviembre',/cron: "\*\/30 15-23,0-2 \* 3-11 \*"/.test(rd('.github/workflows/avisos-mlb.yml')));
+ ok('los avisos de MLB solo corren en temporada (marzo a octubre y los primeros días de noviembre)',/cron: "\*\/30 15-23,0-2 \* 3-10 \*"/.test(rd('.github/workflows/avisos-mlb.yml'))&&/cron: "\*\/30 15-23,0-2 1-5 11 \*"/.test(rd('.github/workflows/avisos-mlb.yml'))&&!/3-11/.test(rd('.github/workflows/avisos-mlb.yml')));
  ok('Al gane de fútbol rotula el porcentaje como «solo modelo» (el Escáner da el mezclado con el mercado)',/<em>solo modelo<\/em>/.test(rd('futbol.html')));
 }
 
@@ -1692,6 +1692,33 @@ sec('Auditoría 4: abreviaturas limpias, memoria del teléfono y detalles');
  ok('NBA: la versión de la cabecera es la misma que la del código',(rd('nba.html').match(/class="ver">(v[\d.]+)</)||[])[1]===(rd('nba.html').match(/const VERSION='(v[\d.]+)'/)||[])[1]);
  ok('el manifest nombra tenis',/tenis/i.test(rd('manifest.json')));
  ok('no hay archivos compilados de Python en el repo',!fs.existsSync(D+'scripts/medicion/__pycache__')||!/__pycache__/.test(rd('.gitignore'))===false);
+})();
+
+sec('Tenis en Herramientas, sello de actualización y horario de avisos');
+(()=>{
+ const H=require(D+'herramientas.js'), hj=rd('herramientas.js'), T0=Date.UTC(2026,10,11);
+ const reg=[{id:1,ts:T0-36e5,p:.72,res:'V',mer:true},{id:2,ts:T0-9*864e5,p:.55,res:'D'},{id:3,ts:T0-2*864e5,p:.6,res:'N'},{id:4,ts:T0+36e5,p:.8,res:null},{id:5,ts:T0-40*864e5,p:.85,res:'V',mer:true}];
+ const s=H.tenisStats(reg,T0);
+ ok('tenis: cuenta aciertos, fallos, pendientes y lo que no cuenta (W.O./retiro)',s.n===3&&s.g===2&&s.p===1&&s.pend===1&&s.anul===1);
+ ok('tenis: últimos 7 y 30 días, con precio y solo modelo',s.d7.n===1&&s.d7.g===1&&s.d30.n===2&&s.mer.n===2&&s.mer.g===2&&s.mod.n===1&&s.mod.g===0);
+ ok('tenis: tramos de probabilidad con lo esperado',s.tramos[0].n===1&&s.tramos[2].n===1&&s.tramos[3].n===1&&Math.abs(s.esp-(.72+.55+.85))<1e-9);
+ ok('tenis: registro vacío o roto no rompe',H.tenisStats([],T0).n===0&&H.tenisLeer({getItem:()=>'{mal'}).length===0&&H.tenisLeer({getItem:()=>JSON.stringify([{id:1,ts:5},null,{x:1}])}).length===1);
+ ok('Auto tiene el botón de Tenis y Salud su fila',/orden=\['mlb','fut','nba','nhl','nfl','ten'\]/.test(hj)&&/V\.dep==='ten'/.test(hj)&&/el\('td',\{text:'🎾 Tenis'\}\)/.test(hj));
+ ok('tenis no se mezcla con tus apuestas del Marcador',/\['mlb','fut','nba','nhl','nfl'\]\.forEach\(function\(a\)\{\s*var g=items\.filter/.test(hj)&&/Tenis no guarda apuestas a mano/.test(hj));
+ const G=require(D+'scripts/sello.js'), {OVASello:S}=require(D+'ovaextra.js');
+ const c1=G.calcular(null,'2026-11-11'), c2=G.calcular(c1,'2026-12-25'), viejo=JSON.parse(JSON.stringify(c1)); viejo.nhl.h='0000000000';
+ const c3=G.calcular(viejo,'2026-12-25');
+ ok('sello: una huella y una fecha por app',['nhl','nfl','tenis'].every(a=>/^[0-9a-f]{10}$/.test(c1[a].h)&&c1[a].f==='2026-11-11'));
+ ok('sello: si nada cambió la fecha se queda; si cambió la app, fecha nueva solo en esa',c2.nhl.f==='2026-11-11'&&c3.nhl.f==='2026-12-25'&&c3.nfl.f==='2026-11-11');
+ ok('sello: la huella sigue todos los .js que carga la página (menos sello.js)',G.archivos('nhl.html').indexOf('usdeporte.js')>0&&G.archivos('nhl.html').indexOf('periodos.js')>0&&G.archivos('tenis.html').indexOf('tenis.js')>0&&G.archivos('nhl.html').indexOf('sello.js')<0);
+ ok('sello: lo que escribe el generador lo lee igual la app',JSON.stringify(S.leer(G.texto(c1)))===JSON.stringify(c1)&&JSON.stringify(G.leer(G.texto(c1)))===JSON.stringify(c1)&&S.leer('basura')===null);
+ ok('sello.js del repo se puede leer y trae las tres apps',(()=>{const o=S.leer(rd('sello.js'));return !!o&&['nhl','nfl','tenis'].every(a=>o[a]&&o[a].f&&o[a].h);})());
+ ok('la cabecera dice la fecha en español',S.texto('2026-11-11')==='act. 11 nov'&&S.texto('2027-01-03')==='act. 3 ene'&&S.texto('x')===''&&S.texto('2026-13-01')==='');
+ ok('solo NHL, NFL y tenis llevan sello',S.app('/ODDX/nhl.html')==='nhl'&&S.app('/ODDX/tenis.html')==='tenis'&&S.app('/ODDX/nba.html')===null&&S.app('/ODDX/index.html')===null);
+ ok('avisa de versión nueva solo si la huella del servidor es otra',S.hayNueva(c1,viejo,'nhl')===true&&S.hayNueva(c1,c1,'nhl')===false&&S.hayNueva(c1,viejo,'nfl')===false&&S.hayNueva(c1,null,'nhl')===false);
+ ok('nhl, nfl y tenis cargan sello.js antes de ovaextra.js y el service worker lo guarda',['nhl.html','nfl.html','tenis.html'].every(f=>rd(f).indexOf('<script src="sello.js"></script>')>0&&rd(f).indexOf('sello.js')<rd(f).indexOf('ovaextra.js'))&&rd('sw.js').indexOf("'sello.js'")>0);
+ const wf=rd('.github/workflows/sello.yml');
+ ok('el workflow del sello corre al subir páginas o .js, no se dispara con su propio archivo y no usa claves',/"\*\.html"/.test(wf)&&/"\*\.js"/.test(wf)&&/"!sello\.js"/.test(wf)&&/contents:\s*write/.test(wf)&&!/secrets\./.test(wf)&&/node scripts\/sello\.js/.test(wf));
 })();
 
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{

@@ -384,6 +384,7 @@ function init(){
       snapshot(root.localStorage);
     }catch(e){}
   },2500);
+  SELLO.iniciar();
   vigilarExport();
   setTimeout(function(){
     try{ var r=recordatorio(root.localStorage); if(r) bannerExport(r); }catch(e){}
@@ -443,8 +444,39 @@ var MEM={
 try{ if(root.localStorage && root.Storage) MEM.proteger(root.localStorage,root.Storage.prototype); }catch(e){}
 
 root.OVAMemoria=MEM;
+
+/* ===================== 5. SELLO DE ACTUALIZACION (NHL, NFL y tenis) =====================
+   sello.js (lo genera scripts/sello.js en cada subida) trae la fecha del último cambio y una huella de la app.
+   Aquí: la cabecera muestra «act. 11 nov» en vez de un número a mano, y si el sello del servidor ya es otro, avisa. */
+var MESES_S=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+var SELLO={
+  app:function(ruta){ var m=/(?:^|\/)(nhl|nfl|tenis)\.html/.exec(String(ruta||'')); return m?m[1]:null; },
+  texto:function(f){ var m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(String(f||'')); return (m&&MESES_S[+m[2]-1])?'act. '+(+m[3])+' '+MESES_S[+m[2]-1]:''; },
+  leer:function(txt){ try{ var m=/OVA_SELLO=\n(.+)\n/.exec(String(txt||'')); return m?JSON.parse(m[1]):null; }catch(e){ return null; } },
+  hayNueva:function(mio,srv,ap){ return !!(mio&&srv&&mio[ap]&&srv[ap]&&mio[ap].h&&srv[ap].h&&mio[ap].h!==srv[ap].h); },
+  avisar:function(){
+    try{
+      var d=root.document; if(!d||!d.body||d.getElementById('ovaNueva')) return;
+      var b=d.createElement('button'); b.id='ovaNueva'; b.type='button';
+      b.setAttribute('style','position:fixed;left:10px;right:10px;top:calc(8px + env(safe-area-inset-top,0px));z-index:99998;background:#1d4d7a;color:#fff;border:0;border-radius:12px;padding:11px 14px;font:600 13.5px system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.5);text-align:left');
+      b.textContent='🔄 Hay una versión nueva de la app. Toca aquí para actualizar.';
+      b.addEventListener('click',function(){ try{ root.location.reload(); }catch(e){} });
+      d.body.appendChild(b);
+    }catch(e){}
+  },
+  iniciar:function(){
+    try{
+      var ap=SELLO.app(root.location&&root.location.pathname), S=root.OVA_SELLO; if(!ap||!S||!S[ap]) return;
+      var t=SELLO.texto(S[ap].f), sp=root.document.querySelector('h1 .ver');
+      if(sp&&t){ sp.textContent=t; sp.setAttribute('title','Último cambio de la app: '+S[ap].f); }
+      if(!root.fetch) return;
+      root.fetch('sello.js?t='+Date.now(),{cache:'no-store'}).then(function(r){ return r.ok?r.text():null; }).then(function(x){ if(SELLO.hayNueva(S,SELLO.leer(x),ap)) SELLO.avisar(); }).catch(function(){});
+    }catch(e){}
+  }
+};
+root.OVASello=SELLO;
 root.OVARespaldo=RESP; root.OVAHoy=HOY; root.OVACLV=CLV;
-if(typeof module!=='undefined' && module.exports){ module.exports={OVARespaldo:RESP,OVAHoy:HOY,OVACLV:CLV,OVAMemoria:MEM}; }
+if(typeof module!=='undefined' && module.exports){ module.exports={OVARespaldo:RESP,OVAHoy:HOY,OVACLV:CLV,OVAMemoria:MEM,OVASello:SELLO}; }
 else if(root.document){
   if(root.document.readyState==='loading') root.document.addEventListener('DOMContentLoaded',init); else init();
 }

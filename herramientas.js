@@ -254,7 +254,7 @@ function pantallaMarcador(cont,ls){
   var items=normalizar(function(k){ try{ return ls.getItem(k); }catch(e){ return null; } });
   if(!items.length){
     cont.appendChild(el('div',{class:'vacio'},[el('b',{text:'Todavía no hay picks guardados'}),
-      el('p',{text:'Guarda picks desde MLB, fútbol, NBA, NHL o NFL (Mis picks) y márcalos Ganó o Perdió. Aquí vas a ver tu récord real, la curva de unidades y si le ganas a la línea de cierre.'})]));
+      el('p',{text:'Guarda picks desde MLB, fútbol, NBA, NHL o NFL (Mis picks) y márcalos Ganó o Perdió. Aquí vas a ver tu récord real, la curva de unidades y si le ganas a la línea de cierre. Tenis no guarda apuestas a mano: sus aciertos están en 🤖 Auto.'})]));
     return;
   }
   var R=resumir(items), C=curva(items), w7=ventana(items,7), w30=ventana(items,30), rc=racha(items);
@@ -459,6 +459,52 @@ function autoStats(fs){
   return s;
 }
 function pct0(w,n){ return n?Math.round(w/n*100)+'%':'—'; }
+/* ----- Tenis en Auto: su app lleva su propio registro (ova_tenis_registro_v1): pick del favorito guardado antes del partido.
+   res: V = acertó · D = falló · N = no cuenta (W.O. o retiro) · null = por jugarse. Aquí solo se lee. ----- */
+var TEN_KEY='ova_tenis_registro_v1', TEN_TRAMOS=[[0.5,0.6],[0.6,0.7],[0.7,0.8],[0.8,1.01]];
+function tenisLeer(ls){ try{ var a=JSON.parse(ls.getItem(TEN_KEY)||'[]'); return Array.isArray(a)?a.filter(function(p){ return p&&p.id&&isFinite(+p.ts); }):[]; }catch(e){ return []; } }
+function tenisStats(reg,ahora){
+  var s={n:0,g:0,p:0,anul:0,pend:0,esp:0,ult:0,d7:{n:0,g:0},d30:{n:0,g:0},mer:{n:0,g:0},mod:{n:0,g:0},
+    tramos:TEN_TRAMOS.map(function(t){ return {a:t[0],b:t[1],n:0,g:0,esp:0}; })};
+  (reg||[]).forEach(function(r){
+    s.ult=Math.max(s.ult,+r.guardado||+r.ts||0);
+    if(r.res==='N'){ s.anul++; return; }
+    if(r.res!=='V'&&r.res!=='D'){ s.pend++; return; }
+    var ok=r.res==='V', pr=+r.p; s.n++; if(ok) s.g++; else s.p++;
+    if(isFinite(pr)&&pr>0&&pr<1){ s.esp+=pr; TEN_TRAMOS.some(function(t,i){ if(pr>=t[0]&&pr<t[1]){ var x=s.tramos[i]; x.n++; x.esp+=pr; if(ok) x.g++; return true; } return false; }); }
+    var q=r.mer?s.mer:s.mod; q.n++; if(ok) q.g++;
+    if(ahora-r.ts<=7*864e5){ s.d7.n++; if(ok) s.d7.g++; }
+    if(ahora-r.ts<=30*864e5){ s.d30.n++; if(ok) s.d30.g++; }
+  });
+  return s;
+}
+function cajaTenis(ls){
+  var reg=tenisLeer(ls), s=tenisStats(reg,Date.now()), caja=el('div',{class:'caja'});
+  caja.appendChild(el('h3',{text:'🎾 Tenis: ¿acierta el pick?'}));
+  caja.appendChild(el('p',{class:'nota',text:'La app de tenis guarda sola el favorito de cada partido antes de empezar y lo resuelve al terminar. Un W.O. o un retiro no cuenta. No son tus apuestas.'}));
+  caja.appendChild(el('div',{class:'kpis'},[
+    kpi(pct0(s.g,s.n),'acertó '+s.g+' de '+s.n,''),
+    kpi(s.n?Math.round(s.esp/s.n*100)+'%':'—','lo que esperaba',''),
+    kpi(String(s.pend),'por jugarse','')]));
+  var lin=[['Últimos 7 días',s.d7],['Últimos 30 días',s.d30],['Con precio de Kalshi',s.mer],['Solo modelo (sin precio)',s.mod]];
+  lin.forEach(function(x){ caja.appendChild(el('div',{class:'linA'},[el('span',{text:x[0]}),el('b',{text:x[1].n?x[1].g+'-'+(x[1].n-x[1].g)+' · '+pct0(x[1].g,x[1].n):'—'})])); });
+  if(s.anul) caja.appendChild(el('div',{class:'linA'},[el('span',{text:'W.O. o retiro (no cuentan)'}),el('b',{text:String(s.anul)})]));
+  var t=el('table',{class:'tab'},[el('tr',null,['Prob. del pick','Picks','Acertó','Esperado'].map(function(x){ return el('th',{text:x}); }))]);
+  s.tramos.forEach(function(x){ t.appendChild(el('tr',null,[el('td',{text:Math.round(x.a*100)+'–'+Math.min(100,Math.round(x.b*100))+'%'}),el('td',{class:'n',text:String(x.n)}),el('td',{class:'n',text:x.n?pct0(x.g,x.n):'—'}),el('td',{class:'n',text:x.n?Math.round(x.esp/x.n*100)+'%':'—'})])); });
+  caja.appendChild(t);
+  if(s.n<30) caja.appendChild(el('p',{class:'nota',text:'Con '+s.n+' partido'+(s.n===1?'':'s')+' terminado'+(s.n===1?'':'s')+' esto todavía es casi pura suerte. Mira otra vez cuando pase de 100.'}));
+  var cont=el('div',null,[caja]);
+  var ult=reg.filter(function(r){ return r.res==='V'||r.res==='D'||r.res==='N'; }).sort(function(a,b){ return b.ts-a.ts; }).slice(0,20);
+  if(ult.length){
+    var lista=el('div',{class:'caja'},[el('h3',{text:'🗓️ Últimos partidos ('+ult.length+')'})]);
+    ult.forEach(function(r){
+      var d=new Date(r.ts), ic=r.res==='V'?'✅':(r.res==='D'?'❌':'➖');
+      lista.appendChild(el('div',{class:'linA'},[el('span',{text:ic+' '+String(r.pick||'')+' ('+Math.round((+r.p||0)*100)+'%) · '+String(r.a||'')+' vs '+String(r.b||'')}),el('b',{text:d.getDate()+' '+MES_C[d.getMonth()]})]));
+    });
+    cont.appendChild(lista);
+  }
+  return cont;
+}
 /* prueba hacia adelante del Menos de NHL (scripts/adelante.js): reglas fijas, solo juegos desde el 3-nov-2026. Solo lee. */
 /* ¿sus porcentajes se cumplen? Juegos terminados, por rango de lo que dijo cada uno sobre su favorito. Solo lee. */
 var RANGOS=[[0,0.5,'Menos de 50%'],[0.5,0.55,'50–55%'],[0.55,0.6,'55–60%'],[0.6,0.7,'60–70%'],[0.7,1.01,'70% o más']];
@@ -504,20 +550,22 @@ function pantallaAuto(cont,ls){
     el('h3',{text:'🤖 ¿La app acierta?'}),
     el('p',{class:'nota',text:'Cada juego se guarda solo antes de empezar. Aquí ves a quién eligió tu modelo, a quién el mercado (Pinnacle; si se acaban las llamadas, la línea de ESPN sin margen) y quién ganó de verdad. No son tus picks: no tocan Mis picks, tu CLV ni tu banca.'}),
     el('div',{class:'pie2'},[el('button',{type:'button',text:'↻ Buscar resultados nuevos',onclick:function(){ A.resolver(true).then(repintar,repintar); }})])]));
-  if(!items.length){
+  var nTen=tenisLeer(ls).length;
+  if(!items.length&&!nTen){
     cont.appendChild(el('div',{class:'vacio'},[el('b',{text:'Todavía no hay juegos guardados'}),
-      el('p',{text:'Abre MLB, Fútbol, NBA, NHL o NFL con juegos por jugar y se guardan solos.'})]));
+      el('p',{text:'Abre MLB, Fútbol, NBA, NHL, NFL o Tenis con juegos por jugar y se guardan solos.'})]));
     return;
   }
   var cuenta={}; items.forEach(function(r){ if(r&&r.app) cuenta[r.app]=(cuenta[r.app]||0)+1; });
-  var orden=['mlb','fut','nba','nhl','nfl'];
+  if(nTen) cuenta.ten=nTen;
+  var orden=['mlb','fut','nba','nhl','nfl','ten'];
   if(!V.dep||!cuenta[V.dep]){ V.dep=orden.filter(function(a){ return cuenta[a]; }).sort(function(x,y){ return cuenta[y]-cuenta[x]; })[0]; }
 
   /* deporte */
   var chD=el('div',{class:'chips',role:'tablist'});
   orden.forEach(function(a){
     chD.appendChild(el('button',{type:'button',class:a===V.dep?'on':'',disabled:cuenta[a]?null:'disabled','aria-pressed':String(a===V.dep),
-      text:APPS[a]+' · '+(cuenta[a]||0),onclick:function(){ V.dep=a; V.off=0; guardarV(); pintar(); }}));
+      text:(APPS[a]||'🎾 Tenis')+' · '+(cuenta[a]||0),onclick:function(){ V.dep=a; V.off=0; guardarV(); pintar(); }}));
   });
   [].forEach.call(chD.querySelectorAll('button[disabled=null]'),function(b){ b.removeAttribute('disabled'); });
   cont.appendChild(chD);
@@ -526,6 +574,7 @@ function pantallaAuto(cont,ls){
   function pintar(){
     [].forEach.call(chD.children,function(b,i){ var on=orden[i]===V.dep; b.className=on?'on':''; b.setAttribute('aria-pressed',String(on)); });
     limpiar(cuerpo);
+    if(V.dep==='ten'){ cuerpo.appendChild(cajaTenis(ls)); return; }
     var todas=items.filter(function(r){ return r&&r.app===V.dep; }).map(function(r){ return autoFila(r,A); }).sort(function(x,y){ return y.t-x.t; });
     /* periodo elegido */
     var ini=null, fin=null, etq='Todo lo guardado';
@@ -693,6 +742,8 @@ function pantallaSalud(cont,ls){
     var ult=mios.reduce(function(m,r){ return Math.max(m,+r.ts||0); },0);
     t.appendChild(el('tr',null,[el('td',{text:APPS[a]}),el('td',{class:'n',text:String(mios.length)}),el('td',{class:'n',text:String(res)}),el('td',{class:'n',text:String(mios.length-res)}),el('td',{class:'n',text:ult?edadTxt(ahora-ult):'—'})]));
   });
+  var regT=tenisLeer(ls), sT=tenisStats(regT,ahora);
+  t.appendChild(el('tr',null,[el('td',{text:'🎾 Tenis'}),el('td',{class:'n',text:String(regT.length)}),el('td',{class:'n',text:String(sT.n+sT.anul)}),el('td',{class:'n',text:String(sT.pend)}),el('td',{class:'n',text:sT.ult?edadTxt(ahora-sT.ult):'—'})]));
   cajaG.appendChild(t); cont.appendChild(cajaG);
   /* 4. Respaldo */
   var cajaR=el('div',{class:'caja'},[el('h3',{text:'Respaldo de tus picks'})]);
@@ -746,7 +797,7 @@ function arrancar(){
 }
 
 var API={autoCalib:autoCalib,aDecimal:aDecimal,aAmericana:aAmericana,quitarMargen:quitarMargen,compararCasas:compararCasas,normalizar:normalizar,resumir:resumir,
-  curva:curva,ventana:ventana,porPeriodo:porPeriodo,racha:racha,clvDe:clvDe,impPctTxt:impPctTxt,pagoMlb:pagoMlb,numero:numero,arrancar:arrancar,TABS:TABS};
+  tenisStats:tenisStats,tenisLeer:tenisLeer,curva:curva,ventana:ventana,porPeriodo:porPeriodo,racha:racha,clvDe:clvDe,impPctTxt:impPctTxt,pagoMlb:pagoMlb,numero:numero,arrancar:arrancar,TABS:TABS};
 root.OVAHerr=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
 else if(root.document){ if(root.document.readyState==='loading') root.document.addEventListener('DOMContentLoaded',arrancar); else arrancar(); }

@@ -1,0 +1,42 @@
+name: Sello de actualización
+
+# Cada vez que cambia una página o un .js de la app, vuelve a calcular sello.js (la fecha «act. …» de NHL, NFL y tenis
+# y el aviso de «hay versión nueva»). No gasta OddsPapi ni llama a nadie.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "*.html"
+      - "*.js"
+      - "!sello.js"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sello
+  cancel-in-progress: false
+
+jobs:
+  sello:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Calcular y subir
+        run: |
+          for i in 1 2 3; do
+            git pull -q --rebase origin main || true
+            node scripts/sello.js
+            git diff --quiet -- sello.js && git ls-files --error-unmatch sello.js >/dev/null 2>&1 && { echo "sin cambios"; exit 0; }
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add sello.js && git commit -q -m "sello: $(date -u +%F)"
+            git push -q origin HEAD:main && exit 0
+            git reset -q --hard origin/main; sleep 5
+          done
+          exit 1

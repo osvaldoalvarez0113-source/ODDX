@@ -5,7 +5,8 @@ name: Avisos MLB
 on:
   workflow_dispatch:
   schedule:
-    - cron: "*/30 15-23,0-2 * 3-11 *"      # solo de marzo a noviembre: en invierno no hay juegos
+    - cron: "*/30 15-23,0-2 * 3-10 *"      # temporada: de marzo a octubre
+    - cron: "*/30 15-23,0-2 1-5 11 *"      # primeros dias de noviembre, por si la Serie Mundial se alarga
 
 permissions:
   contents: read
