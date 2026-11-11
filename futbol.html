@@ -2172,6 +2172,17 @@ function pintarRankingFutbol(panel, p){
 }
 
 /* ---- Resumen completo del Veredicto: pronóstico, modelo contra mercado, goles, qué tan confiable es y forma ---- */
+/* «Cómo vienen jugando» (forma.js): la forma de la temporada de los dos equipos, en palabras. No cambia ningún número. */
+function formaF(p, base){
+  try{
+    if(!window.OVAForma || !TERMINADOS || !TERMINADOS.length) return '';
+    var nm = function(x){ return mismoEquipo(x, p.local) ? '#L' : (mismoEquipo(x, p.visita) ? '#V' : x); };
+    var G = TERMINADOS.map(function(x){ return {h:nm(x.local), a:nm(x.visita), hs:(x.golesLocal==null?NaN:+x.golesLocal), as:(x.golesVisita==null?NaN:+x.golesVisita), ts:tsPartido(x)}; }).filter(function(x){ return x.ts>0 && isFinite(x.hs) && isFinite(x.as); });
+    var r = base.r, m = buscarMkF(p), f = m ? (m.inv ? [m.g.r[2], m.g.r[1], m.g.r[0]] : m.g.r) : [r.pL, r.pD, r.pV];
+    var ts = tsPartido(p); if(!(ts > 0)) ts = Date.now();
+    return window.OVAForma.html(G, {h:'#L', a:'#V', ts:ts}, {n:p.local}, {n:p.visita}, f[0]/(f[0]+f[2]), 'fut', Math.max(f[0], f[2]));
+  }catch(e){ return ''; }
+}
 function resumenVeredictoF(p, base, id){
   var escR = function(t){ return String(t==null?'':t).replace(/[<>&"']/g,function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]; }); };
   var r = base.r, pc = function(x){ return (x*100).toFixed(1)+'%'; }, pc0 = function(x){ return Math.round(x*100)+'%'; };
@@ -2259,7 +2270,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
       '<button class="tb" data-t="num">Números</button>' +
       '<button class="tb" data-t="for">Forma</button>' +
     '</div>' +
-    '<div class="pane on" id="'+id+'ver">' + base.veredictoHtml + resumenVeredictoF(p, base, id) +
+    '<div class="pane on" id="'+id+'ver">' + base.veredictoHtml + resumenVeredictoF(p, base, id) + formaF(p, base) +
       '<details class="comoLee"><summary>¿Cómo se lee y qué tan confiable es?</summary><div class="nota">'+
         '<b>Los tres porcentajes de arriba</b> son la probabilidad de que gane el local, empaten o gane la visita; suman 100%. '+
         '<b>Goles esp.</b> es el promedio de goles que el modelo espera de cada equipo. '+
@@ -3684,6 +3695,7 @@ h3{display:flex;align-items:center;gap:6px}
 </script>
 <!--OVAPATCH:ICONOS:END-->
  <script src="obsidiana.js"></script>
+<script src="forma.js"></script>
 <script src="mejoras.js"></script>
 <script src="selecciones.js"></script>
 

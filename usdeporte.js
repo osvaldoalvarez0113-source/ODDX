@@ -525,6 +525,7 @@
      <div class="bar"><span class="a" style="flex-grow:${Math.max(1 - pS, 0.08)}">${pct1(1 - pS)}</span><span class="h" style="flex-grow:${Math.max(pS, 0.08)}">${pct1(pS)}</span></div>
      <div class="nota" style="margin:6px 0 0;text-align:center">${pr.mk ? 'Probabilidades del mercado' + (pr.mk.src === 'pin' ? ' (Pinnacle)' : (pr.mk.src === 'pred' ? (pr.mk.live ? ' (Polymarket, en vivo)' : ' (Polymarket)') : ' (ESPN)')) : 'Probabilidades del modelo (sin precio de mercado)'}${DEP === 'nhl' ? ' · incluye tiempo extra' : ''}</div>
      ${resumenN(g, pr, H, A)}
+     ${window.OVAForma ? window.OVAForma.html(GAMES, g, H, A, pS, DEP) : ''}
      ${(g.odds || pinDe(g)) ? mercadoHtml(g, pr, H, A) : ''}
      ${pinNba(g, pr)}
      ${g.pre ? '<div class="aviso">🧪 Pretemporada: los equipos rotan jugadores y no cuentan para los ratings; toma estos números con mucha cautela.</div>' : ''}
@@ -605,14 +606,15 @@
      <h3>Lesionados (ESPN)</h3><div data-k="les" class="nota">Archivo grande (${DEP === 'nfl' ? 'unos 9 MB' : 'más de 1 MB'}): solo se baja cuando tú lo pides.</div><button class="btnAncho sec" data-a="les" style="margin-top:6px">Cargar lesionados</button>
      <div class="nota">Rating del modelo: ${esc(A.ab)} ${(pr.ma >= 0 ? '+' : '') + pr.ma.toFixed(SP.dec + 1)} · ${esc(H.ab)} ${(pr.mh >= 0 ? '+' : '') + pr.mh.toFixed(SP.dec + 1)} (con arrastre de temporada si aplica).</div>`;
 
-    body.innerHTML = `<div class="tabs"><button class="tb on" data-t="ver">Veredicto</button><button class="tb" data-t="cuo">Cuotas</button><button class="tb" data-t="num">Números</button><button class="tb" data-t="for">Forma</button></div>
-     <div class="pane on" data-p="ver">${ver}</div><div class="pane" data-p="cuo">${cuo}</div><div class="pane" data-p="num">${num}</div><div class="pane" data-p="for">${forPane}</div>`;
+    body.innerHTML = `<div class="tabs"><button class="tb on" data-t="ver">Veredicto</button><button class="tb" data-t="cuo">Cuotas</button><button class="tb" data-t="num">Números</button><button class="tb" data-t="for">Forma</button><button class="tb" data-t="jug">Jugadores</button></div>
+     <div class="pane on" data-p="ver">${ver}</div><div class="pane" data-p="cuo">${cuo}</div><div class="pane" data-p="num">${num}</div><div class="pane" data-p="for">${forPane}</div><div class="pane" data-p="jug"><div class="nota">Toca la pestaña para cargar las líneas de jugadores.</div></div>`;
 
     body.querySelectorAll('.tb').forEach(b => b.onclick = e => {
       e.stopPropagation();
       body.querySelectorAll('.tb').forEach(x => x.classList.remove('on')); b.classList.add('on');
       body.querySelectorAll('.pane').forEach(x => x.classList.remove('on'));
-      body.querySelector('.pane[data-p="' + b.dataset.t + '"]').classList.add('on');
+      const pn = body.querySelector('.pane[data-p="' + b.dataset.t + '"]'); pn.classList.add('on');
+      if (b.dataset.t === 'jug' && window.OVAJugadores && !pn.dataset.c) { pn.dataset.c = '1'; window.OVAJugadores.pintar.guardar = guardarPick; window.OVAJugadores.pintar(pn, g, H, A, DEP); }   /* props de jugador: jugadores.js */
     });
     (() => {
       const vi = body.querySelector('input[data-vl="o"]'), vr = body.querySelector('[data-vl="r"]'); if (!vi || !vr) return;
@@ -830,7 +832,7 @@
   async function verificarRegistro() {
     if (VERIF) return; VERIF = true;
     try {
-      const a = regGet(), pend = a.filter(p => p.estado === 'pendiente' && p.ts < Date.now() - 3.5 * 3600e3);
+      const a = regGet(), pend = a.filter(p => p.estado === 'pendiente' && p.mercado !== 'PROP' && p.ts < Date.now() - 3.5 * 3600e3);   /* las props las resuelve jugadores.js */
       if (pend.length) {
         const dias = new Set(); pend.forEach(p => { dias.add(ymdUTC(p.ts)); dias.add(ymdUTC(p.ts + 864e5)); });
         const res = await pool([...dias].map(k => () => bajarDia(k)), 4);
@@ -839,6 +841,7 @@
         pend.forEach(p => { const g = fin.find(x => x.h === p.hId && x.a === p.aId && Math.abs(x.ts - p.ts) < 36 * 3600e3); if (g) { p.estado = resolverPick(DEP, p, g); cambios = true; } });
         if (cambios) regSet(a);
       }
+      if (window.OVAJugadores) await window.OVAJugadores.resolver(regGet, regSet, DEP);
     } catch (e) { }
     VERIF = false; pintarRegistro();
   }

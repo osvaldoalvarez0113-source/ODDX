@@ -1735,6 +1735,56 @@ sec('Cómo vienen jugando: forma de la temporada en NBA (forma.js)');
  ok('forma.js no baja nada ni toca picks',!/fetch\(|localStorage/.test(rd('forma.js')));
 })();
 
+sec('Jugadores y forma en NHL, NFL, fútbol y tenis');
+(()=>{
+ const J=require(D+'jugadores.js'), F=require(D+'forma.js');
+ const it=(a,t,L,am)=>({athlete:{$ref:'http://x/athletes/'+a+'?l'},type:{name:t},odds:am===undefined?undefined:{american:{value:String(am)}},current:{target:{value:L}}});
+ /* NHL (TB @ BUF, 11-nov-2026) */
+ const Ph=J.leerProps([it('1','Total Points',1.5,100),it('1','Total Points',1.5,-135),it('1','Total Assists',0.5,-210),it('1','Total Assists',0.5,155),it('1','Assists Milestones',1,-210),
+  it('2','Total Points',0.5,-195),it('2','Total Points',0.5,140),it('2','Total Shots on Goal',3.5,105),it('2','Total Shots on Goal',3.5,-145),it('3','Total Saves',23.5,-120),it('3','Total Saves',23.5,-115),it('1','Anytime Goalscorer',null,150)],'nhl');
+ ok('NHL: lee puntos, asistencias, tiros y atajadas',Ph['1'].pts.L===1.5&&Ph['1'].ast.o===-210&&Ph['2'].sog.u===-145&&Ph['3'].sav.L===23.5&&!Ph['1'].gol);
+ ok('NHL: principales = patinadores con línea de puntos más alta (el portero no entra)',JSON.stringify(J.principales(Ph,['3','2','1'],{},'nhl'))==='["1","2"]');
+ const gh={names:['goals','assists','points','plusMinus','penaltyMinutes','shotsTotal'],seasonTypes:[{displayName:'2026-27 Regular Season',categories:[{type:'event',events:[{eventId:'9',stats:['1','1','2','-1','0','9']},{eventId:'8',stats:['0','0','0','0','0','3']}]}]}]};
+ const Lh=J.leerLog(gh,'nhl');
+ ok('NHL: gamelog con puntos y tiros; lo que no tiene (atajadas) queda vacío y no cuenta',Lh[0].pts===2&&Lh[0].sog===9&&Lh[0].sav===null&&J.tasa(Lh,'sav',20,'O')===null&&J.tasa(Lh,'sog',3.5,'O').h===1);
+ const bh={players:[{statistics:[{keys:['blockedShots','plusMinus','goals','assists','shotsTotal'],athletes:[{athlete:{id:'1'},stats:['0','-1','1','1','5']}]},{keys:['goalsAgainst','saves'],athletes:[{athlete:{id:'3'},stats:['3','28']}]}]}]};
+ const Bh=J.leerBox({boxscore:bh},'nhl');
+ ok('NHL: el boxscore suma gol + asistencia y resuelve',Bh['1'].pts===2&&Bh['3'].sav===28&&J.resolverUno({ath:'1',st:'pts',side:'O',linea:1.5},Bh)==='ganado'&&J.resolverUno({ath:'3',st:'sav',side:'U',linea:23.5},Bh)==='perdido');
+ /* NFL: ESPN trae la línea sin precio */
+ const O=' (incl. overtime)', Pn=J.leerProps([it('10','Total Passing Yards'+O,200.5),it('10','Total Passing Yards'+O,200.5),it('10','Total Rushing Yards'+O,37.5),it('10','Total Rushing Yards'+O,37.5),
+  it('11','Total Receiving Yards'+O,69.5),it('11','Total Receiving Yards'+O,69.5),it('11','Total Receptions'+O,5.5),it('11','Total Receptions'+O,5.5),it('12','Total Rushing Yards'+O,52.5),it('12','Total Rushing Yards'+O,52.5)],'nfl');
+ ok('NFL: sin precio guarda la línea y deja el % vacío',Pn['10'].pyd.L===200.5&&Pn['10'].pyd.pO===null&&Pn['11'].rec.L===5.5);
+ ok('NFL: principales = el mariscal + el de más yardas entre corredores y receptores',JSON.stringify(J.principales(Pn,['11','12','10'],{},'nfl'))==='["10","11"]'&&JSON.stringify(J.principales(Pn,['11','12','10'],{'11':1},'nfl'))==='["10","12"]');
+ const gn={names:['completions','passingAttempts','passingYards','passingTouchdowns','rushingAttempts','rushingYards'],seasonTypes:[{displayName:'2026 Regular Season',categories:[{type:'event',events:[['24','35','274','1','4','16'],['16','29','217','1','2','23'],['29','40','300','2','4','10'],['20','30','190','0','3','40']].map((s,i)=>({eventId:'e'+i,stats:s}))}]}]};
+ const cn=J.candidatas(Pn,['10','11'],{'10':J.leerLog(gn,'nfl')},'nfl');
+ ok('NFL: sin precio el lado sale del historial y el que no tiene juegos no opina',cn.length===2&&cn.every(x=>x.p===null&&x.cuota===null)&&cn.find(x=>x.k==='pyd').lado==='O'&&cn.find(x=>x.k==='ryd').lado==='U');
+ const tn=J.jugadas(cn);
+ ok('NFL: la jugada pide 4+ juegos y solo una por jugador',tn.length===1&&tn[0].id==='10'&&J.jugadas(J.candidatas(Pn,['10'],{'10':J.leerLog(gn,'nfl').slice(0,3)},'nfl')).length===0);
+ const Bn=J.leerBox({boxscore:{players:[{statistics:[{keys:['completions/passingAttempts','passingYards','yardsPerPassAttempt','passingTouchdowns'],athletes:[{athlete:{id:'q'},stats:['24/29','271','9.3','3']}]},{keys:['rushingAttempts','rushingYards'],athletes:[{athlete:{id:'q'},stats:['4','-3']}]}]}]}},'nfl');
+ ok('NFL: boxscore con yardas negativas y sin recepciones = 0',Bn.q.pyd===271&&Bn.q.ptd===3&&Bn.q.ryd===-3&&Bn.q.rec===0&&J.resolverUno({ath:'q',st:'pyd',side:'O',linea:200.5},Bn)==='ganado');
+ ok('«las 2 jugadas» deja fuera las líneas de más de 72%',J.jugadas([{id:'a',p:0.8,t:null,k:'x'},{id:'b',p:0.6,t:null,k:'x'}]).length===1&&J.TOPE===0.72);
+ ok('plantilla por grupos (NHL/NFL) y lista de lesionados',(()=>{const r=J.leerRoster({athletes:[{position:'offense',items:[{id:1,displayName:'A',injuries:[{status:'Questionable'}]}]},{position:'injuredReserveOrOut',items:[{id:2,displayName:'B'}]}]});return r.length===2&&r[0].est==='Questionable'&&r[1].est==='Out'&&J.leerRoster({athletes:[{id:3,displayName:'C'}]})[0].id==='3';})());
+ const us=rd('usdeporte.js');
+ ok('NHL y NFL: pestaña Jugadores, guardan con su propio registro y resuelven con su deporte',/data-t="jug">Jugadores</.test(us)&&/OVAJugadores\.pintar\.guardar = guardarPick/.test(us)&&/OVAJugadores\.pintar\(pn, g, H, A, DEP\)/.test(us)&&/OVAJugadores\.resolver\(regGet, regSet, DEP\)/.test(us)&&/p\.mercado !== 'PROP'/.test(us));
+ ok('nhl.html y nfl.html cargan forma.js y jugadores.js antes de usdeporte.js',['nhl.html','nfl.html'].every(f=>{const h=rd(f);return h.indexOf('forma.js')>0&&h.indexOf('jugadores.js')>h.indexOf('forma.js')&&h.indexOf('jugadores.js')<h.indexOf('usdeporte.js');}));
+ /* forma por deporte */
+ const d=(m,dia)=>new Date(2026,m,dia,19).getTime(), G=[]; const j=(ts,h,a,hs,as)=>G.push({ts,h,a,hs,as,done:true});
+ j(d(8,13),'X','Y',24,22); j(d(8,20),'Z','Y',37,20); j(d(8,27),'Y','W',33,31); j(d(9,4),'Y','X',13,30); j(d(9,11),'Y','Z',27,27); j(d(9,20),'W','Y',23,17); j(d(10,8),'Y','X',13,20);
+ const fy=F.calc(G,'Y',d(10,12),false,'nfl');
+ ok('NFL: ventana de 5 juegos, cuenta el empate y avisa la semana corta',fy.u10.n===5&&fy.u10.e===1&&fy.temp.w===1&&fy.temp.l===5&&fy.desc===4&&/1-5-1/.test(F.html(G,{h:'X',a:'Y',ts:d(10,12)},{n:'X'},{n:'Y'},0.6,'nfl'))&&/Semana corta/.test(F.html(G,{h:'X',a:'Y',ts:d(10,12)},{n:'X'},{n:'Y'},0.6,'nfl')));
+ ok('la temporada arranca en su mes: NFL agosto, fútbol julio, NBA/NHL septiembre',new Date(F.inicioTemp(d(10,12),'nfl')).getMonth()===7&&new Date(F.inicioTemp(d(1,3),'fut')).getMonth()===6&&new Date(F.inicioTemp(d(1,3),'fut')).getFullYear()===2025&&new Date(F.inicioTemp(d(10,12),'nhl')).getMonth()===8);
+ const Gf=[]; for(let i=0;i<8;i++){ Gf.push({ts:d(7,10+i*7),h:i%2?'#L':'R'+i,a:i%2?'R'+i:'#L',hs:i%2?2:(i<4?1:0),as:i%2?(i===1?2:0):(i<4?1:2)}); Gf.push({ts:d(7,11+i*7),h:'#V',a:'Q'+i,hs:0,as:i%3?1:0}); }
+ const hf=F.html(Gf,{h:'#L',a:'#V',ts:d(9,10)},{n:'Local FC'},{n:'Visita FC'},0.7,'fut',0.55);
+ ok('fútbol: récord ganados-empatados-perdidos, invicto y el % del favorito es el del 1X2',/ganados-empatados-perdidos/.test(hf)&&/sin perder/.test(hf)&&/\(55%\)/.test(hf)&&/La forma respalda al favorito/.test(hf)&&/class="E"/.test(hf));
+ ok('futbol.html pinta la forma en el Veredicto con los partidos terminados',/resumenVeredictoF\(p, base, id\) \+ formaF\(p, base\)/.test(rd('futbol.html'))&&/window\.OVAForma\.html\(G, \{h:'#L', a:'#V', ts:ts\}/.test(rd('futbol.html'))&&rd('futbol.html').indexOf('<script src="forma.js"></script>')>0);
+ const t=F.tira('DDVVDVVVVV');
+ ok('tenis: la tira viene del más viejo al más nuevo',t.w===7&&t.racha.res==='V'&&t.racha.n===5&&t.ult[0]==='V'&&t.etq==='caliente'&&F.tira('')===null);
+ const ht=F.tenis('DDVVDVVVVV','VVDDDDDDVD','<A>','B',0.3);
+ ok('tenis: avisa cuando el no favorito llega mejor y escapa nombres',/El no favorito llega mejor/.test(ht)&&ht.indexOf('<A>')<0&&F.tenis('','','A','B',0.6)===''&&/Muy pocos/.test(F.tenis('VV','DVD','A','B',0.6)));
+ ok('tenis.js lo pone en el Veredicto y tenis.html carga forma.js',/window\.OVAForma\.tenis\(an\.A\.forma, an\.B\.forma, an\.A\.nombre, an\.B\.nombre, pA\)/.test(rd('tenis.js'))&&rd('tenis.html').indexOf('forma.js')<rd('tenis.html').indexOf('<script src="tenis.js">')&&rd('tenis.html').indexOf('forma.js')>0);
+ ok('NHL y NFL ponen la forma en el Veredicto',/window\.OVAForma\.html\(GAMES, g, H, A, pS, DEP\)/.test(us));
+})();
+
 sec('Auditoría 4: abreviaturas limpias, memoria del teléfono y detalles');
 (()=>{
  const us=rd('usdeporte.js');
