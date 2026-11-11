@@ -5,7 +5,7 @@ const LIGAS=[['hockey','nhl','20261111-20261114'],['football','nfl','20261112-20
 (async()=>{
   const res={};
   for(const [sp,lg,fechas] of LIGAS){ const R=res[lg]={};
-    const sb=await j(`https://site.api.espn.com/apis/site/v2/sports/${sp}/${lg}/scoreboard?dates=${fechas}&limit=200`);
+    const sb=await j(`https://site.api.espn.com/apis/site/v2/sports/${sp}/${lg}/scoreboard?dates=${fechas}&limit=1000`);
     const evs=(sb.events||[]); R.eventos=evs.length; R.sbErr=sb.status||sb.err||Object.keys(sb).join(','); R.ej=evs.slice(0,3).map(e=>e.id+' '+e.shortName+' '+e.date+' '+(e.status&&e.status.type&&e.status.type.state));
     if(sp==='tennis') continue; try{
     let hecho=false;
@@ -25,7 +25,7 @@ const LIGAS=[['hockey','nhl','20261111-20261114'],['football','nfl','20261112-20
           W('gamelog_'+lg+'_'+aid+'.json',{status:gl.status,labels:gl.labels,names:gl.names,categories:gl.categories,seasonTypes:st,nST:(gl.seasonTypes||[]).length}); }
         break; }
     }
-    const fin=evs.find(e=>e.status&&e.status.type&&e.status.type.completed) || ((await j(`https://site.api.espn.com/apis/site/v2/sports/${sp}/${lg}/scoreboard?dates=20261101-20261110&limit=50`)).events||[]).find(e=>e.status.type.completed);
+    const fin=evs.find(e=>e.status&&e.status.type&&e.status.type.completed) || ((await j(`https://site.api.espn.com/apis/site/v2/sports/${sp}/${lg}/scoreboard?dates=20261101-20261110&limit=1000`)).events||[]).find(e=>e.status.type.completed);
     if(fin){ const s=await j(`https://site.api.espn.com/apis/site/v2/sports/${sp}/${lg}/summary?event=${fin.id}`); const bp=s.boxscore&&s.boxscore.players; R.boxEv=fin.id;
       W('box_'+lg+'.json',{keysSum:Object.keys(s),players:(bp||[]).map(t=>({team:t.team&&t.team.id,statistics:(t.statistics||[]).map(g=>({name:g.name,type:g.type,keys:g.keys,names:g.names,labels:g.labels,athletes:(g.athletes||[]).slice(0,2)}))})),rosters:s.rosters&&s.rosters.map(r=>({team:r.team&&r.team.id,roster:(r.roster||[]).slice(0,3)})),hdr:s.header&&s.header.competitions&&s.header.competitions[0].status}); }
     }catch(e){ R.error=String(e&&e.stack||e).slice(0,400); } W('resumen.json',res);
