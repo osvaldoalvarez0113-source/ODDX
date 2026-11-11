@@ -5,6 +5,8 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 | Archivo | Tema |
 |---|---|
 | [`AUDITORIA-2-2026-10.md`](AUDITORIA-2-2026-10.md) | Segunda auditoría (octubre 2026) |
+| [`AUDITORIA-4-2026-11.md`](AUDITORIA-4-2026-11.md) | Cuarta auditoría (11 nov 2026): 6 apps con juegos simulados, seguridad, memoria del teléfono |
+| [`AUDITORIA-3-2026-10.md`](AUDITORIA-3-2026-10.md) | Tercera auditoría (25 oct 2026) |
 | [`AUDITORIA-2026-10.md`](AUDITORIA-2026-10.md) | Auditoría de octubre 2026 |
 | [`MEDICION-6-TEMPORADAS-2026-10.md`](MEDICION-6-TEMPORADAS-2026-10.md) | Medición con 6 temporadas — MLB, fútbol y NBA (octubre 2026) |
 | [`MEDICION-DIFERENCIA-CUOTAS-2026-10.md`](MEDICION-DIFERENCIA-CUOTAS-2026-10.md) | Diferencia de cuotas: ¿cuántas veces gana el favorito? (MLB y fútbol, octubre 2026) |

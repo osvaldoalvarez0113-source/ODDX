@@ -52,6 +52,8 @@
   const numE = v => { if (v && typeof v === 'object') v = v.value !== undefined ? v.value : v.displayValue; const n = parseInt(v, 10); return isFinite(n) ? n : null; };
   const RARO = /all.?star|pro bowl|skills|4 nations|face-?off|exhibition|rising|celebrity/i;
   // devuelve la lista de juegos de un marcador de ESPN; si se pasa 'teams', se llena con nombre, abreviatura y escudo
+  // la abreviatura se pinta en muchos sitios sin pasar por esc(): se deja solo en letras y numeros desde el origen (auditoria 4)
+  function abLimpia(v) { return String(v == null ? '' : v).replace(/[^A-Za-z0-9]/g, '').slice(0, 6); }
   function parseEventos(j, dep, teams) {
     const out = [];
     ((j && j.events) || []).forEach(function (e) {
@@ -63,7 +65,7 @@
       const hs = numE(h.score), as = numE(a.score), ty = parseInt(e.season && e.season.type, 10) || 2;
       const raro = RARO.test((e.name || '') + ' ' + (e.shortName || '') + ' ' + ((e.season && e.season.slug) || ''));
       const det = String(st.shortDetail || st.detail || '');
-      if (teams) [h, a].forEach(function (x) { teams[x.team.id] = { n: x.team.displayName || x.team.name, ab: x.team.abbreviation || '', logo: x.team.logo || '' }; });
+      if (teams) [h, a].forEach(function (x) { teams[x.team.id] = { n: x.team.displayName || x.team.name, ab: abLimpia(x.team.abbreviation), logo: x.team.logo || '' }; });
       const g = { id: String(e.id), ts: ts, h: String(h.team.id), a: String(a.team.id), hs: hs, as: as,
         done: st.completed === true && hs !== null && as !== null, live: st.state === 'in', detail: det,
         ty: ty, skip: raro || ty === 1 || ty >= 4, pre: ty === 1, neutral: c.neutralSite === true, odds: parseOdds(c), wk: e.week && e.week.number != null ? +e.week.number : null };
@@ -152,7 +154,7 @@
     catch (e) { h = LS.get(K.hist); DIAG.fuente = h ? 'copia guardada en el teléfono' : 'ESPN directo'; if (!h) DIAG.errores.push('archivo: ' + e.message); }
     if (h && h.g) {
       DIAG.gen = h.generado || '';
-      Object.keys(h.teams || {}).forEach(id => { const t = h.teams[id]; TEAMS[id] = { n: t[0], ab: t[1], logo: logoDe(t[1]) }; });
+      Object.keys(h.teams || {}).forEach(id => { const t = h.teams[id], ab = abLimpia(t[1]); TEAMS[id] = { n: t[0], ab: ab, logo: logoDe(ab) }; });
       h.g.forEach(r => { const g = unpack(r); mapa.set(g.id, g); });
     }
     const hoy = Date.now(); let ult = 0; mapa.forEach(g => { if (g.ts > ult) ult = g.ts; });

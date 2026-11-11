@@ -1667,6 +1667,33 @@ sec('Por tramos: 1er cuarto, 1a mitad y 1er periodo (periodos.js)');
  ok('el service worker guarda periodos.js',rd('sw.js').indexOf("'periodos.js'")>0);
 })();
 
+sec('Auditoría 4: abreviaturas limpias, memoria del teléfono y detalles');
+(()=>{
+ const us=rd('usdeporte.js');
+ ok('NHL/NFL: la abreviatura de ESPN se limpia en el origen (no puede meter HTML en la tarjeta)',/function abLimpia\(v\)/.test(us)&&/ab: abLimpia\(x\.team\.abbreviation\)/.test(us)&&/abLimpia\(t\[1\]\)/.test(us));
+ const abL=new Function(us.match(/function abLimpia\(v\) \{[^\n]+\}/)[0]+';return abLimpia;')();
+ ok('abLimpia deja letras y números y nada más',abL('BUF<i id=x>')==='BUFiid'&&abL('T.B')==='TB'&&abL(null)===''&&abL('NYR')==='NYR');
+ const {OVAMemoria:M}=require(D+'ovaextra.js');
+ class Falso{constructor(tope){this.d={};this.tope=tope;}get length(){return Object.keys(this.d).length;}key(i){return Object.keys(this.d)[i];}getItem(k){return k in this.d?this.d[k]:null;}removeItem(k){delete this.d[k];}
+  setItem(k,v){const o=Object.assign({},this.d);o[k]=String(v);let n=0;for(const x in o)n+=x.length+o[x].length;if(n>this.tope)throw new Error('QuotaExceededError');this.d=o;}}
+ const ls=new Falso(1000);
+ ok('la guardia se instala una sola vez',M.proteger(ls,Falso.prototype)===true&&M.proteger(ls,Falso.prototype)===false);
+ ls.setItem('ova_nhl_hist_v2','x'.repeat(600));ls.setItem('ova_les_nfl','y'.repeat(200));ls.setItem('ova_nfl_registro_v1','[1]');
+ let fallo=false;try{ls.setItem('ventaja_picks_v1','p'.repeat(500));}catch(e){fallo=true;}
+ ok('memoria llena: borra las copias de datos y el pick SÍ se guarda',!fallo&&ls.getItem('ventaja_picks_v1').length===500&&ls.getItem('ova_nhl_hist_v2')===null&&ls.getItem('ova_les_nfl')===null);
+ ok('nunca borra picks, banca ni ajustes',ls.getItem('ova_nfl_registro_v1')==='[1]'&&['ventaja_picks_v1','ova_nfl_registro_v1','ova_futbol_registro_v1','ova_auto_v1','ova_banca_v1','ova_skin','ova_tenis_registro_v1','ova_nba_params_v1','ova_les_vistas_nfl'].every(k=>!M.CACHE_RE.test(k)));
+ ok('reconoce las copias que se vuelven a bajar',['ova_nhl_hist_v2','ova_nfl_hist_v2','ova_nba_temp_2026','ova_les_nba','ova_odds_nhl','ova_futbol_actual_PL_2026','ova_futbol_pasada_PD_2025','ova_futbol_tiros_PL','ova_sel_hist_v1'].every(k=>M.CACHE_RE.test(k)));
+ let f2=false;try{ls.setItem('ova_futbol_registro_v1','z'.repeat(2000));}catch(e){f2=true;}
+ ok('si ni así cabe, el error no se esconde (y los picks de antes siguen ahí)',f2&&ls.getItem('ventaja_picks_v1').length===500);
+ const u=M.uso(ls);ok('mide lo usado',u.total>1000&&u.cache===0&&u.claves===2);
+ const otro=new Falso(10);let f3=false;try{otro.setItem('a','b'.repeat(50));}catch(e){f3=true;}
+ ok('no toca otros almacenes (sessionStorage)',f3);
+ ok('Salud muestra la memoria usada y un botón para liberar copias',/Memoria del teléfono/.test(rd('herramientas.js'))&&/Liberar copias de datos/.test(rd('herramientas.js'))&&/M\.liberar\(ls\)/.test(rd('herramientas.js')));
+ ok('NBA: la versión de la cabecera es la misma que la del código',(rd('nba.html').match(/class="ver">(v[\d.]+)</)||[])[1]===(rd('nba.html').match(/const VERSION='(v[\d.]+)'/)||[])[1]);
+ ok('el manifest nombra tenis',/tenis/i.test(rd('manifest.json')));
+ ok('no hay archivos compilados de Python en el repo',!fs.existsSync(D+'scripts/medicion/__pycache__')||!/__pycache__/.test(rd('.gitignore'))===false);
+})();
+
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);

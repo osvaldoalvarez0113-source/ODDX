@@ -703,6 +703,19 @@ function pantallaSalud(cont,ls){
     else{ linea.className='flag ambar'; linea.textContent='Todavía no hay copia interna (se crea sola cuando guardas tu primer pick).'; }
   },function(){ linea.textContent='No se pudo leer la copia interna.'; });
   else linea.textContent='El módulo de respaldo no cargó.';
+  /* 4b. Memoria del teléfono (auditoría 4) */
+  var M=root.OVAMemoria;
+  if(M&&M.uso){
+    var cajaM=el('div',{class:'caja'},[el('h3',{text:'Memoria del teléfono'}),
+      el('p',{class:'nota',text:'Safari da unos 5 MB para todas las apps de OVA juntas. Lo que más pesa son copias de datos que se vuelven a bajar solas (archivo de partidos, lesionados, ligas). Si se llena, la app borra esas copias antes que fallar al guardar un pick.'})]);
+    var lineaM=el('div',{class:'flag',style:'margin:6px 0'},['']);
+    var pintarM=function(){ var u=M.uso(ls), kb=function(b){ return Math.round(b/1024).toLocaleString('en-US')+' KB'; };
+      lineaM.className='flag '+(u.pct<0.7?'verde':'ambar');
+      lineaM.textContent='Usado: '+kb(u.total)+' de unos 5,000 KB ('+Math.round(u.pct*100)+'%) · '+kb(u.cache)+' son copias de datos · '+kb(u.total-u.cache)+' son tus picks, banca y ajustes.'; };
+    pintarM(); cajaM.appendChild(lineaM);
+    cajaM.appendChild(el('div',{class:'pie2'},[el('button',{type:'button',text:'🧹 Liberar copias de datos',onclick:function(){ M.liberar(ls); pintarM(); }})]));
+    cont.appendChild(cajaM);
+  }
   /* 5. Forzar actualización */
   var cajaU=el('div',{class:'caja'},[el('h3',{text:'¿La app se ve vieja?'}),
     el('p',{class:'nota',text:'La app se actualiza sola cada vez que abres con internet. Si algo se ve desactualizado, este botón borra la copia guardada en el teléfono y vuelve a bajar todo. No toca tus picks, tu banca ni tus ajustes.'}),

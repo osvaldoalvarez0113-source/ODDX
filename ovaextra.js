@@ -394,8 +394,57 @@ function init(){
   }catch(e){}
 }
 
+/* ===================== 4. MEMORIA DEL TELEFONO (auditoria 4) =====================
+   Safari da ~5 MB para todo el sitio. Las apps guardan copias de datos que se pueden volver a bajar (archivo de NHL/NFL,
+   temporada de NBA, lesionados, ligas de futbol). Antes, si se llenaba, guardar un pick fallaba EN SILENCIO.
+   Ahora: si no cabe, se borran esas copias (nunca picks, banca ni ajustes) y se reintenta; si aun asi no cabe, se avisa. */
+var CACHE_RE=/^(ova_(nhl|nfl)_hist_v2|ova_nba_temp_\d+|ova_les_(nba|nhl|nfl)|ova_odds_(nba|nhl|nfl)|ova_futbol_(actual|pasada|tiros)_.+|ova_sel_hist_v1)$/;
+var MEM={
+  CACHE_RE:CACHE_RE, TOPE:5*1024*1024, avisado:false,
+  uso:function(ls){
+    var t=0,c=0,n=0;
+    try{ for(var i=0;i<ls.length;i++){ var k=ls.key(i), v=ls.getItem(k)||'', b=(k.length+v.length)*2; t+=b; n++; if(CACHE_RE.test(k)) c+=b; } }catch(e){}
+    return {total:t,cache:c,claves:n,pct:t/MEM.TOPE};
+  },
+  liberar:function(ls,menos){
+    var ks=[];
+    try{ for(var i=0;i<ls.length;i++){ var k=ls.key(i); if(k!==menos && CACHE_RE.test(k)) ks.push(k); } ks.forEach(function(k){ ls.removeItem(k); }); }catch(e){}
+    return ks.length;
+  },
+  avisar:function(){
+    if(MEM.avisado) return; MEM.avisado=true;
+    try{
+      var d=root.document; if(!d||!d.body) return;
+      var b=d.createElement('div');
+      b.setAttribute('style','position:fixed;left:10px;right:10px;bottom:84px;z-index:99999;background:#7a1d1d;color:#fff;border-radius:12px;padding:12px 14px;font:600 13.5px system-ui,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.5)');
+      b.textContent='⚠️ La memoria del teléfono para OVA está llena: lo último no se pudo guardar. Abre Herramientas → 🩺 Salud y exporta tus picks. (Toca para cerrar)';
+      b.addEventListener('click',function(){ if(b.parentNode) b.parentNode.removeChild(b); });
+      d.body.appendChild(b);
+    }catch(e){}
+  },
+  /* envuelve setItem: si no cabe, libera copias y reintenta una vez */
+  proteger:function(ls,Proto){
+    try{
+      if(!ls||!Proto||Proto.__ovaMem) return false;
+      var orig=Proto.setItem;
+      Proto.setItem=function(k,v){
+        try{ return orig.call(this,k,v); }
+        catch(err){
+          if(this!==ls) throw err;
+          if(MEM.liberar(ls,String(k))>0){ try{ return orig.call(this,k,v); }catch(err2){ if(!CACHE_RE.test(String(k))) MEM.avisar(); throw err2; } }
+          if(!CACHE_RE.test(String(k))) MEM.avisar();
+          throw err;
+        }
+      };
+      Proto.__ovaMem=true; return true;
+    }catch(e){ return false; }
+  }
+};
+try{ if(root.localStorage && root.Storage) MEM.proteger(root.localStorage,root.Storage.prototype); }catch(e){}
+
+root.OVAMemoria=MEM;
 root.OVARespaldo=RESP; root.OVAHoy=HOY; root.OVACLV=CLV;
-if(typeof module!=='undefined' && module.exports){ module.exports={OVARespaldo:RESP,OVAHoy:HOY,OVACLV:CLV}; }
+if(typeof module!=='undefined' && module.exports){ module.exports={OVARespaldo:RESP,OVAHoy:HOY,OVACLV:CLV,OVAMemoria:MEM}; }
 else if(root.document){
   if(root.document.readyState==='loading') root.document.addEventListener('DOMContentLoaded',init); else init();
 }

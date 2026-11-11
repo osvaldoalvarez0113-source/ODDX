@@ -5,3 +5,5 @@ node_modules/
 nhl-box.json
 partidos-tenis.json
 preds-tenis.json
+__pycache__/
+*.pyc

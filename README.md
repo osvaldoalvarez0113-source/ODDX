@@ -9,7 +9,7 @@ Página pública: https://osvaldoalvarez0113-source.github.io/ODDX/
 
 | Ruta | Qué es |
 |---|---|
-| `hub.html` | Pantalla de inicio: seis tarjetas (MLB, Fútbol, NBA, NHL, NFL, Tenis). Es lo que abre el icono del iPhone (`manifest.json` → `start_url`). |
+| `hub.html` | Pantalla de inicio: «🎯 Lo mejor de hoy» y seis tarjetas (MLB, Fútbol, NBA, NHL, NFL, Tenis). Es lo que abre el icono del iPhone (`manifest.json` → `start_url`). |
 | `index.html` | App de **MLB** (la más grande). Fórmula de ventaja en carreras, cuotas, ranking por valor, registro de picks con CLV. |
 | `futbol.html` | App de **fútbol**: Poisson / Dixon-Coles, ligas de clubes, copas y (vía `selecciones.js`) selecciones. |
 | `nba.html` | App de **NBA**: rating tipo Elo de margen, márgenes y totales. |
