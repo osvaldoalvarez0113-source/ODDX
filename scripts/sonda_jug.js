@@ -1,12 +1,12 @@
 const fs=require('fs'); fs.mkdirSync('sj',{recursive:true});
 const W=(n,o)=>fs.writeFileSync('sj/'+n,JSON.stringify(o));
-async function j(u){ try{ const r=await fetch(u); return r.ok?r.json():{status:r.status}; }catch(e){ return {err:e.message}; } }
+async function j(u){ try{ const r=await fetch(u,{headers:{'user-agent':'Mozilla/5.0 ova-sonda'}}); return r.ok?r.json():{status:r.status}; }catch(e){ return {err:e.message}; } }
 const LIGAS=[['hockey','nhl','20261111-20261114'],['football','nfl','20261112-20261117'],['soccer','eng.1','20261111-20261125'],['soccer','esp.1','20261111-20261125'],['soccer','uefa.champions','20261111-20261127'],['baseball','mlb','20261015-20261105'],['tennis','atp','20261111-20261113']];
 (async()=>{
   const res={};
   for(const [sp,lg,fechas] of LIGAS){ const R=res[lg]={};
     const sb=await j(`https://site.api.espn.com/apis/site/v2/sports/${sp}/${lg}/scoreboard?dates=${fechas}&limit=200`);
-    const evs=(sb.events||[]); R.eventos=evs.length; R.ej=evs.slice(0,3).map(e=>e.id+' '+e.shortName+' '+e.date+' '+(e.status&&e.status.type&&e.status.type.state));
+    const evs=(sb.events||[]); R.eventos=evs.length; R.sbErr=sb.status||sb.err||Object.keys(sb).join(','); R.ej=evs.slice(0,3).map(e=>e.id+' '+e.shortName+' '+e.date+' '+(e.status&&e.status.type&&e.status.type.state));
     if(sp==='tennis') continue; try{
     let hecho=false;
     for(const e of evs.slice(0,12)){ if(hecho) break; const id=e.id, base=`https://sports.core.api.espn.com/v2/sports/${sp}/leagues/${lg}/events/${id}/competitions/${id}`;
