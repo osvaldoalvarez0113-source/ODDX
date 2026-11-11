@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -1665,6 +1665,48 @@ sec('Por tramos: 1er cuarto, 1a mitad y 1er periodo (periodos.js)');
  ok('nba, nfl y nhl cargan periodos.js antes de pintar',['nba.html','nfl.html','nhl.html'].every(f=>rd(f).indexOf('<script src="periodos.js"></script>')>0)&&['nfl.html','nhl.html'].every(f=>rd(f).indexOf('periodos.js')<rd(f).indexOf('usdeporte.js')));
  ok('usdeporte.js y nba.html lo ponen en la pestaña Números',/OVAPeriodos\.html\(DEP/.test(rd('usdeporte.js'))&&/data-p="num">\$\{tramos\}\$\{num\}/.test(rd('nba.html')));
  ok('el service worker guarda periodos.js',rd('sw.js').indexOf("'periodos.js'")>0);
+})();
+
+sec('Jugadores: props de NBA (jugadores.js)');
+(()=>{
+ const J=require(D+'jugadores.js');
+ /* forma real de ESPN/DraftKings (11-nov-2026, WSH @ IND): Más y Menos vienen sin etiqueta */
+ const it=(a,t,L,am)=>({athlete:{$ref:'http://x/seasons/2027/athletes/'+a+'?lang=en'},type:{name:t},odds:{american:{value:String(am)}},current:{target:{value:L}}});
+ const items=[it('6583','Total Points',22.5,-121),it('6583','Total Points',22.5,-106),it('6583','Points Milestones',23,-121),
+  it('6583','Total Assists',2.5,119),it('6583','Total Assists',2.5,-157),
+  it('9','Total Points',15.5,-102),it('9','Total Points',15.5,-125),it('9','Points Milestones',16,-124),   /* aquí el Más viene segundo */
+  it('7','Total Points',30.5,-110),it('7','Total Points',30.5,-110),
+  it('8','Total Rebounds',5.5,-130),                                                                       /* un solo lado: no sirve */
+  it('6583','First Basket',null,800)];
+ const P=J.leerProps(items);
+ ok('reconoce el Más por el hito «23+» de DraftKings',P['6583'].pts.o===-121&&P['6583'].pts.u===-106);
+ ok('si el Más viene segundo, el hito lo voltea',P['9'].pts.o===-125&&P['9'].pts.u===-102);
+ ok('sin hito: el primero es el Más (comprobado con 3 juegos)',P['7'].pts.o===-110&&P['7'].pts.L===30.5);
+ ok('quita el margen: Más + Menos = 100% y el margen queda en 5-8%',Math.abs(P['6583'].pts.pO-0.5155)<0.001&&P['6583'].pts.vig>0.05&&P['6583'].pts.vig<0.08);
+ ok('ignora líneas de un solo lado y mercados que no son de jugador',!P['8']&&!P['6583'].fb&&Object.keys(P['6583']).join()==='pts,ast');
+ ok('los 2 principales: los de línea de puntos más alta, sin los que están fuera',JSON.stringify(J.principales(P,['9','6583','7'],{}))==='["7","6583"]'&&JSON.stringify(J.principales(P,['9','6583','7'],{'7':1}))==='["6583","9"]');
+ const gl={names:['minutes','fieldGoalsMade-fieldGoalsAttempted','threePointFieldGoalsMade-threePointFieldGoalsAttempted','totalRebounds','assists','points'],
+  seasonTypes:[{displayName:'2026-27 Regular Season',categories:[{type:'event',events:[{eventId:'3',stats:['34','16-21','2-4','13','1','44']},{eventId:'2',stats:['30','12-19','0-1','10','3','26']}]},
+   {type:'event',events:[{eventId:'1',stats:['32','3-12','0-2','9','0','9']}]}]},{displayName:'2026-27 Preseason',categories:[{type:'event',events:[{eventId:'0',stats:['20','5-9','1-1','4','2','15']}]}]}]};
+ const L=J.leerLog(gl);
+ ok('gamelog: lee pts, rebotes, asistencias, triples y PRA, del más nuevo al más viejo, sin pretemporada',L.length===3&&L[0].pts===44&&L[0].tri===2&&L[0].pra===58&&L[2].id==='1');
+ ok('últimos 10 y promedio',JSON.stringify(J.tasa(L,'pts',22.5,'O',10))==='{"h":2,"n":3}'&&JSON.stringify(J.tasa(L,'pts',22.5,'U',10))==='{"h":1,"n":3}'&&Math.abs(J.prom(L,'pts')-79/3)<1e-9&&J.tasa([],'pts',1,'O')===null);
+ const c=J.candidatas(P,['6583','9'],{'6583':L});
+ ok('cada línea va con su lado más probable (≥ 50%)',c.length===3&&c.every(x=>x.p>=0.5)&&c.find(x=>x.id==='6583'&&x.k==='ast').lado==='U');
+ const top=J.jugadas(c);
+ ok('las 2 jugadas: las más probables, nunca dos del mismo jugador',top.length===2&&top[0].id!==top[1].id&&top[0].p>=top[1].p&&top[0].k==='ast');
+ ok('«respaldo» solo si la pasó 6+ de sus últimos 10 (con 5+ juegos)',top.every(x=>x.respaldo===false));
+ const box={players:[{statistics:[{keys:['minutes','points','fieldGoalsMade-fieldGoalsAttempted','threePointFieldGoalsMade-threePointFieldGoalsAttempted','rebounds','assists'],
+  athletes:[{athlete:{id:'6583'},stats:['34','23','9-17','1-2','10','2']},{athlete:{id:'5'},stats:[],didNotPlay:true}]}]}]};
+ const B=J.leerBox({boxscore:box});
+ ok('boxscore: lee al que jugó y deja fuera al que no',B['6583'].pts===23&&B['6583'].tri===1&&!B['5']);
+ ok('resuelve el pick: Más 22.5 con 23 gana, Menos pierde, PRA suma, exacto = push',J.resolverUno({ath:'6583',st:'pts',side:'O',linea:22.5},B)==='ganado'&&J.resolverUno({ath:'6583',st:'pts',side:'U',linea:22.5},B)==='perdido'&&J.resolverUno({ath:'6583',st:'pra',side:'O',linea:35.5},B)==='perdido'&&J.resolverUno({ath:'6583',st:'reb',side:'O',linea:10},B)==='push');
+ ok('si no jugó, la casa devuelve: push',J.resolverUno({ath:'5',st:'pts',side:'O',linea:10},B)==='push');
+ const nb=rd('nba.html');
+ ok('nba.html carga jugadores.js y tiene la pestaña Jugadores (se carga al tocarla)',nb.indexOf('<script src="jugadores.js"></script>')>0&&/data-t="jug">Jugadores</.test(nb)&&/data-p="jug"/.test(nb)&&/window\.OVAJugadores\.pintar\(pn,g,H,A\)/.test(nb));
+ ok('Mis picks: las props no pasan por el resolver de equipo y las resuelve jugadores.js',/p\.mercado!=='PROP'/.test(nb)&&/window\.OVAJugadores\.resolver\(regGet,regSet\)/.test(nb));
+ ok('el service worker guarda jugadores.js',rd('sw.js').indexOf("'jugadores.js'")>0);
+ ok('solo lee de ESPN (DraftKings), sin claves',!/apiKey|token|ODDSPAPI/i.test(rd('jugadores.js'))&&/odds\/' \+ CASA \+ '\/propBets/.test(rd('jugadores.js')));
 })();
 
 sec('Auditoría 4: abreviaturas limpias, memoria del teléfono y detalles');
