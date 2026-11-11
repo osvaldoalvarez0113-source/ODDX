@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -1707,6 +1707,32 @@ sec('Jugadores: props de NBA (jugadores.js)');
  ok('Mis picks: las props no pasan por el resolver de equipo y las resuelve jugadores.js',/p\.mercado!=='PROP'/.test(nb)&&/window\.OVAJugadores\.resolver\(regGet,regSet\)/.test(nb));
  ok('el service worker guarda jugadores.js',rd('sw.js').indexOf("'jugadores.js'")>0);
  ok('solo lee de ESPN (DraftKings), sin claves',!/apiKey|token|ODDSPAPI/i.test(rd('jugadores.js'))&&/odds\/' \+ CASA \+ '\/propBets/.test(rd('jugadores.js')));
+})();
+
+sec('Cómo vienen jugando: forma de la temporada en NBA (forma.js)');
+(()=>{
+ const F=require(D+'forma.js');
+ const d=(m,dia,h)=>new Date(2026,m,dia,h||19).getTime(), G=[]; let k=0;
+ const j=(ts,h,a,hs,as)=>G.push({id:'g'+(k++),ts,h,a,hs,as,done:true});
+ /* A gana 8 de 10 y cada vez por más; B pierde 8 de 10; C y D rellenan */
+ for(let i=0;i<10;i++){ j(d(9,22+i*2),i%2?'A':'C','A'===(i%2?'A':'C')?'C':'A',i%2?(i<2?100:120+i):(i<2?110:100),i%2?(i<2?110:100):(i<2?100:118+i));
+  j(d(9,23+i*2),i%2?'B':'D',i%2?'D':'B',i%2?(i<2?115:98):(i<2?100:117),i%2?(i<2?100:114):(i<2?112:99)); }
+ j(d(3,10),'A','B',90,130);                                  /* temporada pasada: no cuenta */
+ const ts=d(10,12), a=F.calc(G,'A',ts,true), b=F.calc(G,'B',ts,false);
+ ok('solo cuenta la temporada en curso y los juegos de antes',a.n===10&&b.n===10&&F.calc(G,'A',d(9,23),true).n===1&&F.calc(G,'Z',ts,true)===null);
+ ok('últimos 10, racha y cuadritos del más nuevo al más viejo',a.u10.w===8&&a.u10.l===2&&a.racha.w===true&&a.racha.n===8&&a.ult.join('')==='VVVVVVVVDD'&&b.racha.w===false&&b.racha.n===8);
+ ok('en casa / de visita se cuentan aparte',a.sede.n===5&&F.calc(G,'A',ts,false).sede.n===5&&a.sede.w+F.calc(G,'A',ts,false).sede.w===8);
+ ok('margen de los últimos 5 contra el de la temporada',a.m5>a.mT&&b.m5<b.mT&&Math.abs(a.pf5-a.pc5-a.m5)<1e-9);
+ ok('etiquetas: caliente y frío',a.etq==='caliente'&&b.etq==='frio'&&F.calc(G,'A',d(9,27),true).etq==='poco');
+ ok('nivel de rivales entre 0 y 1, sin contar los juegos contra el propio equipo',a.rivales===null||a.rivales>=0&&a.rivales<=1);
+ ok('descanso en días y juegos en 7 días',a.desc===F.calc(G,'A',ts,true).desc&&a.desc>=1&&a.en7>=0&&F.calc(G,'A',d(10,10,22),true).desc===1);
+ ok('lectura: respalda si el favorito llega mejor, en contra si es al revés',F.lectura(a,b,true).k==='respalda'&&F.lectura(a,b,false).k==='contra'&&F.lectura(a,a,true).k==='pareja'&&F.lectura(a,null,true).k==='poco');
+ const h1=F.html(G,{h:'A',a:'B',ts},{n:'<i>Local',ab:'A'},{n:'Visita',ab:'B'},0.3);
+ ok('pinta el aviso del no favorito y escapa nombres',/El no favorito llega mejor/.test(h1)&&h1.indexOf('<i>Local')<0&&/8 victorias seguidas/.test(h1)&&/8 derrotas seguidas/.test(h1));
+ ok('con el favorito en forma lo respalda; sin juegos no pinta nada',/La forma respalda al favorito/.test(F.html(G,{h:'A',a:'B',ts},{n:'L'},{n:'V'},0.7))&&F.html(G,{h:'X',a:'Y',ts},{n:'L'},{n:'V'},0.6)==='');
+ const nb=rd('nba.html');
+ ok('nba.html carga forma.js y lo pone en el Veredicto con el % del mercado',nb.indexOf('<script src="forma.js"></script>')>0&&/window\.OVAForma\.html\(GAMES,g,H,A,pS\)/.test(nb)&&rd('sw.js').indexOf("'forma.js'")>0);
+ ok('forma.js no baja nada ni toca picks',!/fetch\(|localStorage/.test(rd('forma.js')));
 })();
 
 sec('Auditoría 4: abreviaturas limpias, memoria del teléfono y detalles');

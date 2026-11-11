@@ -15,6 +15,7 @@
 <script src="interior2.js"></script>
 <script src="periodos.js"></script>
 <script src="jugadores.js"></script>
+<script src="forma.js"></script>
 <style>
 :root{
  --bg:#070B12;--bg1:#0D1420;--bg2:#131D2C;--bg3:#1B2838;
@@ -736,6 +737,7 @@ function pintarCuerpo(body,g){
    <div class="bar"><span class="a" style="flex-grow:${Math.max(1-pS,0.08)}">${pct1(1-pS)}</span><span class="h" style="flex-grow:${Math.max(pS,0.08)}">${pct1(pS)}</span></div>
    <div class="nota" style="margin:6px 0 0;text-align:center">${pmk!==null?'Probabilidades del mercado ('+(mkH.src==='pin'?'Pinnacle':(mkH.src==='pred'?(mkH.live?'Polymarket, en vivo':'Polymarket'):'ESPN'))+')':'Probabilidades del modelo (sin precio de mercado)'}</div>
    ${resumenN(g,pr,H,A)}
+   ${window.OVAForma?window.OVAForma.html(GAMES,g,H,A,pS):''}
    ${g.odds?mercadoHtml(g,pr,H,A):''}
    ${g.pre?'<div class="aviso">🧪 Pretemporada: los equipos rotan jugadores y no cuentan para los ratings; toma estos números con mucha cautela.</div>':''}
    <details class="comoLee"><summary>Ajuste manual por lesiones (opcional)</summary>
