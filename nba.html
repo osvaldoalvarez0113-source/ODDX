@@ -13,6 +13,7 @@
 <title>NBA — OVA</title>
 <script src="interior.js"></script>
 <script src="interior2.js"></script>
+<script src="periodos.js"></script>
 <style>
 :root{
  --bg:#070B12;--bg1:#0D1420;--bg2:#131D2C;--bg3:#1B2838;
@@ -778,13 +779,14 @@ function pintarCuerpo(body,g){
    <h3>Escalera de totales</h3><div class="lineas">${esc2}</div>
    <div class="nota">Cada línea: probabilidad de que el local cubra / de que el total pase, y su cuota justa. Con línea entera hay "push" (devuelven la apuesta) y aquí no se cuenta como acierto.</div>`;
 
+  const tramos=window.OVAPeriodos?window.OVAPeriodos.html('nba',{pm:pr.pm,pt:pr.pt,pH:pr.pH},H.ab,A.ab):'';
   const forPane=`<h3>Forma reciente</h3>${formaHtml(g.a,A)}${formaHtml(g.h,H)}
    <h3>Cara a cara</h3>${caraHtml(g.a,g.h,A,H)}
    <h3>Lesionados (ESPN)</h3><div data-k="les" class="nota">Cargando…</div>
    <div class="nota">Rating del modelo: ${esc(A.ab)} ${(pr.ma>=0?'+':'')+pr.ma.toFixed(1)} · ${esc(H.ab)} ${(pr.mh>=0?'+':'')+pr.mh.toFixed(1)} (con arrastre de temporada si aplica).</div>`;
 
   body.innerHTML=`<div class="tabs"><button class="tb on" data-t="ver">Veredicto</button><button class="tb" data-t="cuo">Cuotas</button><button class="tb" data-t="num">Números</button><button class="tb" data-t="for">Forma</button></div>
-   <div class="pane on" data-p="ver">${ver}</div><div class="pane" data-p="cuo">${cuo}</div><div class="pane" data-p="num">${num}</div><div class="pane" data-p="for">${forPane}</div>`;
+   <div class="pane on" data-p="ver">${ver}</div><div class="pane" data-p="cuo">${cuo}</div><div class="pane" data-p="num">${tramos}${num}</div><div class="pane" data-p="for">${forPane}</div>`;
 
   body.querySelectorAll('.tb').forEach(b=>b.onclick=e=>{
     e.stopPropagation();

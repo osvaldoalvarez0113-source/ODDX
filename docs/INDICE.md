@@ -12,6 +12,7 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 | [`MEDICION-FUTBOL-PENDIENTES-2026-11.md`](MEDICION-FUTBOL-PENDIENTES-2026-11.md) | **Fútbol: lo que faltaba**: Ambos anotan, cuota previa, alineaciones, copas europeas, copas nacionales y selecciones |
 | [`MEDICION-FORMULA-CALIBRADA-2026-11.md`](MEDICION-FORMULA-CALIBRADA-2026-11.md) | **¿Una fórmula que corrija al modelo con su diferencia contra el mercado?** No mejora en ningún deporte |
 | [`MEDICION-MLB-RIVAL-2026-11.md`](MEDICION-MLB-RIVAL-2026-11.md) | **MLB ajustado por rival y con curva**: no mejora; la fórmula queda igual |
+| [`MEDICION-PERIODOS-2026-11.md`](MEDICION-PERIODOS-2026-11.md) | **Por tramos**: 1er cuarto, 1a mitad y 1er periodo juego por juego en NBA, NFL y NHL (`periodos.js`) |
 | [`MEDICION-PROPS-JUGADOR-2026-11.md`](MEDICION-PROPS-JUGADOR-2026-11.md) | **Props de jugador** con líneas de apertura de ESPN: NBA, NHL, MLB y NFL |
 | [`MEDICION-PICKS-GANADORES-2026-11.md`](MEDICION-PICKS-GANADORES-2026-11.md) | **Picks ganadores**: cuánto acierta cada tramo, qué ayuda a encontrar ganadores y la pantalla nueva |
 | [`MEDICION-KALSHI-JUGADORES-2026-11.md`](MEDICION-KALSHI-JUGADORES-2026-11.md) | **Kalshi contra las casas y Pinnacle**, y cambios de jugadores en NBA (regresos, traspasos, continuidad) |

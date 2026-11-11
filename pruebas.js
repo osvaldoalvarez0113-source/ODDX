@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','prediccion.js','modelo-nhl.js','modelo-nfl.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -1640,6 +1640,32 @@ sec('Tenis');
  ok('tenis.js muestra el precio de Kalshi del partido',/kalshi-tenis\.json/.test(rd('tenis.js'))&&/function kalshiDe/.test(rd('tenis.js')));
  ok('tenis: la batería de pruebas existe y corre cada mes (huecos, fórmula, Kalshi)',fs.existsSync(path.join(__dirname,'scripts','medicion','tenis_mercado.js'))&&/schedule:/.test(rd('.github/workflows/medir-tenis.yml'))&&/resultados-tenis/.test(rd('.github/workflows/medir-tenis.yml')));
 }
+
+sec('Por tramos: 1er cuarto, 1a mitad y 1er periodo (periodos.js)');
+(()=>{
+ const P=require(D+'periodos.js');
+ const en01=v=>v>0&&v<1;
+ ['nba','nfl'].forEach(dep=>{
+  const T=dep==='nba'?228:44.5, a=P.calc(dep,{pm:2,pt:T}), b=P.calc(dep,{pm:9,pt:T}), c=P.calc(dep,{pm:-9,pt:T});
+  ok(dep+': probabilidades entre 0 y 1',['q1','h1'].every(k=>en01(a[k].pH)&&en01(a[k].pE)&&en01(a[k].cover(-1.5))&&en01(a[k].over(a[k].totJ))));
+  ok(dep+': más favorito = más probable que gane el tramo',b.q1.pH>a.q1.pH&&b.h1.pH>a.h1.pH&&b.h1.pH>b.q1.pH);
+  ok(dep+': al revés da el espejo',Math.abs(b.h1.pH-c.h1.pA)<1e-9&&c.h1.spJ>0&&b.h1.spJ<0);
+  ok(dep+': el hándicap justo del tramo es más chico que el del juego',Math.abs(b.q1.spJ)<Math.abs(b.h1.spJ)&&Math.abs(b.h1.spJ)<9);
+  ok(dep+': la escalera va en orden (línea más alta, menos pasa; más puntos a favor, más cubre)',[0,1,2,3].every(i=>a.h1.over(a.h1.totJ+i+1)<=a.h1.over(a.h1.totJ+i)&&a.h1.cover(i+1.5)>=a.h1.cover(i+0.5)));
+  ok(dep+': en la línea justa queda cerca de 50%',Math.abs(a.h1.over(a.h1.medT)-0.5)<0.03&&Math.abs(a.h1.cover(-a.h1.med)-0.5)<0.03);
+  ok(dep+': total más alto del juego = total más alto del tramo',P.calc(dep,{pm:2,pt:T+10}).h1.totJ>a.h1.totJ);
+ });
+ const h=P.calc('nhl',{pH:0.62,pt:6}).p1, h2=P.calc('nhl',{pH:0.62,pt:7}).p1;
+ ok('nhl: local, empate y visita suman 100%',Math.abs(h.pH+h.pE+h.pA-1)<1e-9&&h.pH>h.pA);
+ ok('nhl: gol en el 1er periodo cerca de lo medido (83%) y sube con el total',h.pGol>0.78&&h.pGol<0.88&&h2.pGol>h.pGol&&h.pO15>h.pO25);
+ ok('sin datos no pinta nada (no rompe la tarjeta)',P.html('nhl',{pH:NaN,pt:6},'A','B')===''&&P.html('nba',{pm:undefined,pt:228},'A','B')===''&&P.html('otro',{pm:1,pt:2},'A','B')==='');
+ const hx=P.html('nfl',{pm:-3,pt:44.5},'<b>X','PHI');
+ ok('escapa los nombres de equipo',hx.indexOf('<b>X')<0&&hx.indexOf('&lt;b&gt;X')>=0);
+ ok('pinta 1er cuarto y 1a mitad (NBA/NFL) y 1er periodo (NHL)',/1er cuarto/.test(hx)&&/1a mitad/.test(hx)&&/1er periodo/.test(P.html('nhl',{pH:0.6,pt:6},'A','B')));
+ ok('nba, nfl y nhl cargan periodos.js antes de pintar',['nba.html','nfl.html','nhl.html'].every(f=>rd(f).indexOf('<script src="periodos.js"></script>')>0)&&['nfl.html','nhl.html'].every(f=>rd(f).indexOf('periodos.js')<rd(f).indexOf('usdeporte.js')));
+ ok('usdeporte.js y nba.html lo ponen en la pestaña Números',/OVAPeriodos\.html\(DEP/.test(rd('usdeporte.js'))&&/data-p="num">\$\{tramos\}\$\{num\}/.test(rd('nba.html')));
+ ok('el service worker guarda periodos.js',rd('sw.js').indexOf("'periodos.js'")>0);
+})();
 
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));

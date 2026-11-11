@@ -596,6 +596,8 @@
        <h3>Escalera de totales</h3><div class="lineas">${esc2}</div>
        <div class="nota">Cada línea: probabilidad de que el local cubra / de que el total pase, y su cuota justa. El gol del shootout no cuenta para los totales. Con línea entera (5 ó 6) hay "push" y se muestra aparte.</div>`;
     }
+    // por tramos (1er cuarto / 1a mitad / 1er periodo): periodos.js
+    if (window.OVAPeriodos) num = window.OVAPeriodos.html(DEP, { pm: pr.pm, pt: pr.pt, pH: pr.pH }, H.ab, A.ab) + num;
     const forPane = `<h3>Forma reciente</h3>${formaHtml(g.a, A)}${formaHtml(g.h, H)}
     <h3>Cara a cara</h3>${caraHtml(g.a, g.h, A, H)}
      <h3>Lesionados (ESPN)</h3><div data-k="les" class="nota">Archivo grande (${DEP === 'nfl' ? 'unos 9 MB' : 'más de 1 MB'}): solo se baja cuando tú lo pides.</div><button class="btnAncho sec" data-a="les" style="margin-top:6px">Cargar lesionados</button>
