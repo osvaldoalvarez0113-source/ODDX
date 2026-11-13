@@ -1,8 +1,8 @@
 /* OVA · presentaciones del inicio (hub)  v2
-   6 diseños con ESTRUCTURA distinta:
-     Oro negro (el clásico, intacto) · Carrusel 3D · Órbita · Paneles · Mazo · Tablero
+   7 diseños con ESTRUCTURA distinta:
+     Oro negro (el clásico, intacto) · Carrusel 3D · Órbita · Paneles · Mazo · Tablero · Cartas (12-nov-2026)
    Cómo cambiar: mantén presionado el logo "O V A" unos 0.7 segundos.
-   También por enlace:  hub.html?estilo=carrusel   (oro · carrusel · orbita · paneles · mazo · tablero)
+   También por enlace:  hub.html?estilo=carrusel   (oro · carrusel · orbita · paneles · mazo · tablero · cartas)
    No toca las apps, ni sus enlaces, ni ningún cálculo. Si un diseño fallara, vuelve solo al clásico. */
 (function(root){
 "use strict";
@@ -24,13 +24,15 @@ var ESTILOS=[
  {id:'orbita',n:'Órbita',d:'Planetas que giran',sw:'radial-gradient(circle at 50% 50%,#F0CE6B 0 9px,transparent 10px),radial-gradient(circle at 22% 62%,#3DDC84 0 7px,transparent 8px),radial-gradient(circle at 78% 62%,#FF8A3D 0 7px,transparent 8px),radial-gradient(circle at 50% 22%,#F0CE6B 0 6px,transparent 7px),radial-gradient(ellipse 36% 26% at 50% 50%,transparent 94%,#ffffff33 96%,transparent 98%),#05060f'},
  {id:'paneles',n:'Paneles',d:'Pantalla partida',sw:'linear-gradient(172deg,#F0CE6B 0 33%,#0a0a0a 33% 34%,#3DDC84 34% 66%,#0a0a0a 66% 67%,#FF8A3D 67%)'},
  {id:'mazo',n:'Mazo',d:'Cartas que se lanzan',sw:'linear-gradient(#FF8A3D,#FF8A3D) 50% 78%/58% 62% no-repeat,linear-gradient(#3DDC84,#3DDC84) 50% 62%/68% 62% no-repeat,linear-gradient(#F0CE6B,#F0CE6B) 50% 44%/78% 62% no-repeat,#0b0c12'},
- {id:'tablero',n:'Tablero',d:'Marcador de aeropuerto',sw:'repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 22%/86% 14% no-repeat,repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 50%/86% 14% no-repeat,repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 78%/86% 14% no-repeat,#16161a'}
+ {id:'tablero',n:'Tablero',d:'Marcador de aeropuerto',sw:'repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 22%/86% 14% no-repeat,repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 50%/86% 14% no-repeat,repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 78%/86% 14% no-repeat,#16161a'},
+ {id:'cartas',n:'Cartas',d:'Se reparten y brillan',sw:'linear-gradient(115deg,transparent 30%,rgba(255,255,255,.35) 46%,rgba(127,227,255,.3) 52%,rgba(255,143,208,.3) 58%,transparent 72%),linear-gradient(#b9831f,#ffe08a) 18% 50%/26% 64% no-repeat,linear-gradient(#b9831f,#ffe08a) 50% 50%/26% 64% no-repeat,linear-gradient(#b9831f,#ffe08a) 82% 50%/26% 64% no-repeat,radial-gradient(ellipse at 50% 0%,#3b1d52,#0d0714)'}
 ];
 /* 9-nov-2026: tarjeta «Lo mejor de hoy» (todas.html) arriba de los deportes; solo en Oro negro (hub.html) y Paneles */
 var TOP={k:'top',href:'todas.html',n:'Lo mejor',d:'Las 6 apps juntas: más probables y combinada',e:'🎯'};
 var BY={};ESTILOS.forEach(function(e){BY[e.id]=e;});
 /* 8-nov-2026: Osvaldo eligió quedarse solo con Oro negro y Paneles. Los demás ya no se ofrecen; quien tenía uno guardado vuelve a Oro negro. */
-var VIS=['oro','paneles'];
+/* 12-nov-2026: se suma Cartas (holográficas, con el logo OVA dibujado), elegida por Osvaldo para el inicio. */
+var VIS=['oro','paneles','cartas'];
 
 /* ===================================================================== CSS */
 var CSS=`
@@ -199,6 +201,53 @@ html[data-hub="tablero"] body{background:#0a0a0c}
 #hubSheet .tile .tx{display:block;padding:8px 10px 9px;background:rgba(255,255,255,.05)}
 #hubSheet .tile b{display:block;font-size:13.5px}
 #hubSheet .tile span span{display:block;font-size:11px;color:#CBBFA5;margin-top:1px}
+
+/* ---------- CARTAS (12-nov-2026): cartas holográficas que se reparten ---------- */
+html[data-hub="cartas"] body{background:#0d0714}
+#hubLay.L-cartas{touch-action:manipulation;box-sizing:border-box;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 70px) 0 calc(env(safe-area-inset-bottom,0px) + 14px);background:radial-gradient(ellipse at 50% 0%,#3b1d52 0%,#1a0e26 60%,#0d0714 100%)}
+.L-cartas .rays{position:absolute;left:50%;top:38%;width:160vmax;height:160vmax;margin:-80vmax 0 0 -80vmax;background:repeating-conic-gradient(rgba(255,214,107,.1) 0deg 6deg,transparent 6deg 18deg);animation:hlCSpin 60s linear infinite;-webkit-mask-image:radial-gradient(circle,#000 0,transparent 55%);mask-image:radial-gradient(circle,#000 0,transparent 55%);pointer-events:none}
+.L-cartas .dust{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.L-cartas .hl-brand{padding:12px 30px;letter-spacing:0;transition:opacity .4s}
+.L-cartas .hl-brand svg{display:block;height:34px;width:93px;filter:drop-shadow(0 0 10px rgba(255,214,107,.45))}
+.L-cartas .lg .ln{stroke-dasharray:1;stroke-dashoffset:1}
+.L-cartas .lg.done .ln{stroke-dashoffset:0}
+.L-cartas .play .lg .ln{animation:hlCDraw .75s cubic-bezier(.5,0,.2,1) forwards;animation-delay:calc(.15s + var(--i)*.2s)}
+.L-cartas .cbk{display:block;border-radius:16px;padding:3px;background:linear-gradient(135deg,#ffe08a,#b9831f 40%,#fff1c2 60%,#a8731a)}
+.L-cartas .cbk>span{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:13px;background-color:#1c0f29;background-image:repeating-linear-gradient(45deg,rgba(255,214,107,.13) 0 2px,transparent 2px 12px),repeating-linear-gradient(-45deg,rgba(255,214,107,.13) 0 2px,transparent 2px 12px)}
+.L-cartas .spl{position:absolute;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;pointer-events:none;background:radial-gradient(ellipse at 50% 0%,#3b1d52 0%,#1a0e26 60%,#0d0714 100%);transition:opacity .6s}
+.L-cartas .spl.out{opacity:0}
+.L-cartas .spl .box{width:210px;height:290px;border-radius:18px;padding:4px;box-shadow:0 30px 60px rgba(0,0,0,.6),0 0 60px rgba(255,214,107,.35);animation:hlCHov 2s ease-in-out infinite;transition:transform .7s cubic-bezier(.5,0,.2,1)}
+.L-cartas .spl .box svg{width:150px}
+.L-cartas .spl.out .box{animation-name:hlCNo;transform:scale(.25) rotate(25deg)}
+.L-cartas .deck{position:relative;z-index:2;flex:0 1 auto;width:100%;height:100%;max-height:152vw;margin:auto 0;display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:minmax(0,.7fr) minmax(0,1fr) minmax(0,1fr);gap:10px;padding:0 14px;box-sizing:border-box}
+.L-cartas .tc{position:relative;opacity:0;min-height:0;perspective:700px;-webkit-perspective:700px}
+.L-cartas .tc.wide{grid-column:1/-1}
+.L-cartas.in .tc{animation:hlCDeal .75s cubic-bezier(.2,1,.3,1) both;animation-delay:calc(var(--i)*.1s)}
+.L-cartas .tfl{display:block;position:relative;width:100%;height:100%;transform-style:preserve-3d;-webkit-transform-style:preserve-3d;transform:rotateY(180deg)}
+.L-cartas.in .tfl{animation:hlCFup .75s cubic-bezier(.3,1.35,.5,1) both;animation-delay:calc(.55s + var(--i)*.1s)}
+.L-cartas .tbk{position:absolute;inset:0;transform:rotateY(180deg);backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.L-cartas .tbk svg{width:54%;max-width:90px}
+.L-cartas .tci{display:block;position:relative;width:100%;height:100%;border-radius:16px;overflow:hidden;padding:3px;background:linear-gradient(135deg,#ffe08a,#b9831f 40%,#fff1c2 60%,#a8731a);box-shadow:0 14px 24px rgba(0,0,0,.5);transition:transform .25s;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.L-cartas .tci .cara{display:flex;flex-direction:column;justify-content:flex-end;position:relative;width:100%;height:100%;border-radius:13px;overflow:hidden;padding:10px;background:radial-gradient(circle at 50% 34%,var(--c) -30%,var(--c2) 55%,#150a1f 130%)}
+.L-cartas .tci .cara::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.5) 1px,transparent 1.5px);background-size:14px 14px;opacity:.22}
+.L-cartas .tci .bw{position:absolute;left:50%;top:42%;width:66%;max-width:120px;transform:translate(-50%,-50%)}
+.L-cartas .tci .bw svg{display:block;width:100%;filter:drop-shadow(0 12px 16px rgba(0,0,0,.45));animation:hlCBob 3.6s ease-in-out infinite;animation-delay:calc(var(--i)*-.5s)}
+.L-cartas .tc.wide .bw{left:auto;right:7%;top:50%;width:auto;height:74%;aspect-ratio:1/1;transform:translateY(-50%)}
+.L-cartas .tci .liv{position:absolute;top:8px;left:8px;--c:#fff;font-size:9px;letter-spacing:.04em;padding:3px 7px;gap:4px;background:rgba(0,0,0,.5)}
+.L-cartas .tci b{position:relative;font:800 14px/1.1 Unbounded,Inter,-apple-system,system-ui,sans-serif;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.7)}
+.L-cartas .tc.wide b{font-size:21px;max-width:60%}
+.L-cartas .tci::after{content:"";position:absolute;inset:0;border-radius:inherit;background:linear-gradient(115deg,transparent 22%,rgba(255,240,150,.5) 38%,rgba(255,255,255,.6) 44%,rgba(120,225,255,.5) 50%,rgba(255,130,220,.5) 56%,rgba(150,255,180,.4) 62%,transparent 76%);background-size:260% 100%;background-position:var(--mx,120%) 0;mix-blend-mode:screen;pointer-events:none;animation:hlCSheen 4s ease-in-out infinite;animation-delay:calc(2s + var(--i,0)*.3s)}
+.L-cartas.sale .tc:not(.ir){opacity:0!important;transition:opacity .35s}
+.L-cartas.sale .hl-brand,.L-cartas.sale .hl-herr{opacity:0}
+.L-cartas .tc.ir{z-index:50}
+@keyframes hlCSpin{to{transform:rotate(360deg)}}
+@keyframes hlCDraw{to{stroke-dashoffset:0}}
+@keyframes hlCHov{50%{transform:translateY(-10px) rotate(2deg)}}
+@keyframes hlCNo{to{opacity:1}}
+@keyframes hlCDeal{from{opacity:1;transform:translate(var(--dx,0),var(--dy,60vh)) rotate(calc(var(--r)*1deg)) scale(.45)}to{opacity:1;transform:none}}
+@keyframes hlCFup{from{transform:rotateY(180deg)}to{transform:rotateY(0deg)}}
+@keyframes hlCBob{50%{transform:translateY(-7px) rotate(8deg)}}
+@keyframes hlCSheen{0%,50%{background-position:130% 0}100%{background-position:-40% 0}}
 
 @media (prefers-reduced-motion:reduce){#hubLay *,#hubLay *::before,#hubLay *::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important}}
 `;
@@ -419,12 +468,113 @@ function initTablero(lay){
 }
 
 /* ===================================================================== armado */
+
+/* ===================================================================== CARTAS (12-nov-2026) */
+var ctN=0;
+function ctLogo(done){
+  var g='hlCg'+(ctN++);
+  return '<svg class="lg'+(done?' done':'')+'" viewBox="0 0 300 110" role="img" aria-label="OVA"><defs><linearGradient id="'+g+'" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="300" y2="110"><stop offset="0" stop-color="#ffe08a"/><stop offset=".5" stop-color="#fff1c2"/><stop offset="1" stop-color="#d99a2b"/></linearGradient></defs><g fill="none" stroke="url(#'+g+')" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"><circle class="ln" pathLength="1" style="--i:0" cx="55" cy="55" r="40" transform="rotate(-90 55 55)"/><path class="ln" pathLength="1" style="--i:1" d="M112 16l38 78 38-78"/><path class="ln" pathLength="1" style="--i:2" d="M206 94l39-78 39 78"/><path class="ln" pathLength="1" style="--i:3" d="M228 68h34"/></g></svg>';
+}
+function ctBall(k){
+  var g='hlCs'+(ctN++);
+  var defs='<defs><radialGradient id="'+g+'" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></radialGradient></defs>';
+  var ov='<circle cx="50" cy="50" r="46" fill="url(#'+g+')"/>',b;
+  if(k==='mlb')b='<circle cx="50" cy="50" r="46" fill="#f5f1e6"/><path d="M22 14c16 18 16 54 0 72M78 14c-16 18-16 54 0 72" fill="none" stroke="#d2302c" stroke-width="3" stroke-dasharray="2.5 3.5"/>'+ov;
+  else if(k==='fut')b='<circle cx="50" cy="50" r="46" fill="#f4f4f4"/><polygon points="50,33 66,45 60,64 40,64 34,45" fill="#1b1b1b"/><path d="M50 33V14M66 45l18-7M60 64l11 16M40 64L29 80M34 45l-18-7M36 8l14 6 14-6M88 30l-4 8 8 14M78 84l-7-4-16 6M22 84l7-4 16 6M12 30l4 8-8 14" fill="none" stroke="#1b1b1b" stroke-width="3"/>'+ov;
+  else if(k==='nba')b='<circle cx="50" cy="50" r="46" fill="#e8762c"/><path d="M4 50h92M50 4v92M18 16c18 18 18 50 0 68M82 16c-18 18-18 50 0 68" fill="none" stroke="#2a1608" stroke-width="2.6"/>'+ov;
+  else if(k==='nhl')b='<path d="M6 42v20c0 11 20 20 44 20s44-9 44-20V42z" fill="#15181c"/><ellipse cx="50" cy="42" rx="44" ry="20" fill="#3a404a"/><ellipse cx="50" cy="42" rx="30" ry="12" fill="none" stroke="#6b7482" stroke-width="2"/><path d="M6 52c0 11 20 20 44 20s44-9 44-20" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="2"/>';
+  else if(k==='nfl')b='<g transform="rotate(-30 50 50)"><ellipse cx="50" cy="50" rx="46" ry="28" fill="#8a4b24"/><path d="M34 50h32M40 44v12M46 44v12M54 44v12M60 44v12" stroke="#fff" stroke-width="3"/><path d="M14 40c2 6 2 14 0 20M86 40c-2 6-2 14 0 20" stroke="#fff" stroke-width="3" fill="none"/><ellipse cx="50" cy="50" rx="46" ry="28" fill="url(#'+g+')"/></g>';
+  else if(k==='ten')b='<circle cx="50" cy="50" r="46" fill="#d7f04a"/><path d="M8 34c24 0 44 22 44 58M48 6c0 24 22 44 46 44" fill="none" stroke="#fff" stroke-width="3.5"/>'+ov;
+  else b='<circle cx="50" cy="50" r="46" fill="#f6c343"/><circle cx="50" cy="50" r="31" fill="#fff"/><circle cx="50" cy="50" r="17" fill="#d2302c"/><circle cx="50" cy="50" r="5" fill="#fff"/>'+ov;
+  return '<svg viewBox="0 0 100 100" aria-hidden="true">'+defs+b+'</svg>';
+}
+function htmlCartas(){
+  var s='';
+  [TOP].concat(DEP).forEach(function(d,i){
+    var top=d.k==='top';
+    s+='<div class="tc'+(top?' wide':'')+'" style="--i:'+i+';--r:'+((i%2?1:-1)*(25+i*12))+'"><span class="tfl"><a class="tci" href="'+d.href+'" style="--i:'+i+';--c:'+(top?'#F0CE6B':d.c)+';--c2:'+(top?'#6b4a10':d.c2)+'"><span class="cara"><span class="bw">'+ctBall(d.k)+'</span>'+(top?'':livHtml(d.k))+'<b>'+(top?'Lo mejor de hoy':d.n)+'</b></span></a><span class="tbk cbk"><span>'+ctLogo(1)+'</span></span></span></div>';
+  });
+  return '<div class="rays"></div><canvas class="dust"></canvas><div class="hl-brand">'+ctLogo(1)+'</div><div class="deck">'+s+'</div><div class="spl"><div class="box cbk"><span>'+ctLogo(0)+'</span></div></div>';
+}
+function initCartas(lay){
+  /* letra del nombre de las cartas (si no carga, queda Inter) */
+  try{ if(!doc.getElementById('hlCFont')){ var lk=doc.createElement('link'); lk.id='hlCFont'; lk.rel='stylesheet'; lk.href='https://fonts.googleapis.com/css2?family=Unbounded:wght@800&display=swap'; (doc.head||html).appendChild(lk); } }catch(e){}
+  var spl=lay.querySelector('.spl'), deck=lay.querySelector('.deck'), cv=lay.querySelector('.dust');
+  var vivo=true, raf=0, saliendo=false, P=[], W=0, H=0;
+  /* la entrada con el logo sale solo la primera vez de cada día */
+  var hoy='', visto=false;
+  try{ hoy=new Date().toDateString(); visto=root.localStorage.getItem('ova_hub_cartas_dia')===hoy; root.localStorage.setItem('ova_hub_cartas_dia',hoy); }catch(e){}
+  function medir(){
+    try{
+      var R=lay.getBoundingClientRect(), cx=R.left+R.width/2, cy=R.top+R.height/2;
+      [].forEach.call(deck.children,function(el){ var r=el.getBoundingClientRect(); el.style.setProperty('--dx',(cx-r.left-r.width/2)+'px'); el.style.setProperty('--dy',(cy-r.top-r.height/2)+'px'); });
+    }catch(e){}
+  }
+  function quitarSpl(){ if(spl&&spl.parentNode) spl.parentNode.removeChild(spl); spl=null; }
+  medir();
+  if(visto||reduce){ quitarSpl(); tm(function(){ lay.classList.add('in'); },60); }
+  else{
+    spl.classList.add('play');
+    tm(function(){ if(spl) spl.classList.add('out'); lay.classList.add('in'); },1600);
+    tm(quitarSpl,2300);
+  }
+  /* polvo dorado */
+  function polvo(){
+    try{
+      var c=cv.getContext('2d'); W=cv.width=cv.clientWidth; H=cv.height=cv.clientHeight; P=[];
+      for(var i=0;i<42;i++) P.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.8+.5,v:Math.random()*.4+.12,a:Math.random()*.5+.2});
+      root.cancelAnimationFrame(raf);
+      (function f(){
+        if(!vivo) return;
+        if(!doc.hidden){
+          c.clearRect(0,0,W,H);
+          P.forEach(function(p){ p.y-=p.v; p.x+=Math.sin(p.y/36)*.3; if(p.y<-6){ p.y=H+6; p.x=Math.random()*W; } c.globalAlpha=p.a; c.fillStyle='#ffd66b'; c.beginPath(); c.arc(p.x,p.y,p.r,0,6.3); c.fill(); });
+        }
+        raf=root.requestAnimationFrame(f);
+      })();
+    }catch(e){}
+  }
+  if(!reduce) polvo();
+  /* brillo e inclinación siguiendo el dedo */
+  function carta(e){ var t=e.target; return t&&t.closest?t.closest('.tci'):null; }
+  function mov(e){ var a=carta(e); if(!a||saliendo||reduce) return; var r=a.getBoundingClientRect(), x=(e.clientX-r.left)/r.width, y=(e.clientY-r.top)/r.height; a.style.transform='rotateY('+((x-.5)*26)+'deg) rotateX('+((.5-y)*26)+'deg) scale(1.05)'; a.style.setProperty('--mx',(130-x*170)+'%'); }
+  function suelta(){ [].forEach.call(lay.querySelectorAll('.tci'),function(a){ a.style.transform=''; a.style.removeProperty('--mx'); }); }
+  /* al tocar: la carta vuela al centro dando una vuelta y abre la app */
+  function clk(e){
+    var a=carta(e); if(!a||reduce) return;
+    if(saliendo){ e.preventDefault(); return; }
+    var tc=a.closest('.tc'), tf=a.closest('.tfl'); if(!tc||!tf) return;
+    e.preventDefault(); saliendo=true; suelta();
+    var r=tc.getBoundingClientRect(), R=lay.getBoundingClientRect();
+    var k=Math.min(R.width*.82/r.width, R.height*.58/r.height);
+    tc.style.animation='none'; tc.style.opacity='1'; tf.style.animation='none'; tf.style.transform='rotateY(0deg)';
+    tc.classList.add('ir'); lay.classList.add('sale'); void tc.offsetWidth;
+    tc.style.transition='transform .62s cubic-bezier(.3,.8,.2,1)'; tf.style.transition='transform .62s cubic-bezier(.3,.8,.2,1)';
+    tc.style.transform='translate('+(R.left+R.width/2-r.left-r.width/2)+'px,'+(R.top+R.height/2-r.top-r.height/2)+'px) scale('+k+')';
+    tf.style.transform='rotateY(360deg)';
+    var href=a.getAttribute('href');
+    tm(function(){ try{ root.location.href=href; }catch(x){} },600);
+  }
+  /* si vuelves con «atrás», las cartas regresan a su sitio */
+  function volver(){
+    saliendo=false; lay.classList.remove('sale');
+    [].forEach.call(deck.children,function(tc){ tc.classList.remove('ir'); tc.style.transition=''; tc.style.transform=''; tc.style.animation='none'; tc.style.opacity='1'; var tf=tc.querySelector('.tfl'); if(tf){ tf.style.transition=''; tf.style.animation='none'; tf.style.transform='rotateY(0deg)'; } });
+  }
+  function ps(e){ if(e&&e.persisted) volver(); }
+  function rz(){ if(!reduce) polvo(); }
+  lay.addEventListener('pointermove',mov); lay.addEventListener('pointerup',suelta); lay.addEventListener('pointercancel',suelta); lay.addEventListener('pointerleave',suelta);
+  lay.addEventListener('click',clk);
+  try{ root.addEventListener('pageshow',ps); root.addEventListener('resize',rz); }catch(e){}
+  return function(){ vivo=false; try{ root.cancelAnimationFrame(raf); root.removeEventListener('pageshow',ps); root.removeEventListener('resize',rz); }catch(e){} };
+}
+
 var BUILD={
  carrusel:{html:htmlCarrusel,init:initCarrusel},
  orbita:{html:htmlOrbita,init:initOrbita},
  paneles:{html:htmlPaneles,init:null},
  mazo:{html:htmlMazo,init:initMazo},
- tablero:{html:htmlTablero,init:initTablero}
+ tablero:{html:htmlTablero,init:initTablero},
+ cartas:{html:htmlCartas,init:initCartas}
 };
 function construir(id){
   var b=BUILD[id]; if(!b) return;
@@ -501,8 +651,10 @@ function params(){
 
 /* ===================================================================== arranque */
 function arrancar(){
-  var url=params(), id=url||leer();
-  aplicar(id,{inicial:true,guardar:!!url});   /* en <head>: solo marca el diseño (así no se ve el clásico un instante antes) */
+  var url=params(), id=url||leer(), estreno=false;
+  /* 12-nov-2026: Cartas se estrena sola UNA vez (Osvaldo la eligió para el inicio); después manda lo que él escoja con la pulsación larga */
+  try{ if(!url&&root.localStorage.getItem('ova_hub_cartas_v1')!=='1'){ root.localStorage.setItem('ova_hub_cartas_v1','1'); id='cartas'; estreno=true; } }catch(e){}
+  aplicar(id,{inicial:true,guardar:!!url||estreno});   /* en <head>: solo marca el diseño (así no se ve el clásico un instante antes) */
   function listo(){
     try{
       [].forEach.call(doc.querySelectorAll('.brandbar,h1'),pulsacion);
@@ -515,7 +667,7 @@ function arrancar(){
   if(doc.readyState==='loading') doc.addEventListener('DOMContentLoaded',listo); else listo();
 }
 
-var API={TOP:TOP,VIS:VIS,ESTILOS:ESTILOS,DEP:DEP,css:CSS,_html:{carrusel:htmlCarrusel,orbita:htmlOrbita,paneles:htmlPaneles,mazo:htmlMazo,tablero:htmlTablero},aplicar:aplicar,abrirHoja:abrirHoja,cerrarHoja:cerrarHoja,actual:function(){ return ST.id; },leer:leer,_arrancar:arrancar};
+var API={TOP:TOP,VIS:VIS,ESTILOS:ESTILOS,DEP:DEP,css:CSS,_html:{carrusel:htmlCarrusel,orbita:htmlOrbita,paneles:htmlPaneles,mazo:htmlMazo,tablero:htmlTablero,cartas:htmlCartas},aplicar:aplicar,abrirHoja:abrirHoja,cerrarHoja:cerrarHoja,actual:function(){ return ST.id; },leer:leer,_arrancar:arrancar};
 root.OVAHub=API;
 if(typeof module!=='undefined'&&module.exports){ module.exports=API; }
 else if(doc&&html){ try{ arrancar(); }catch(e){} }

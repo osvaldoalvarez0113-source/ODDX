@@ -364,8 +364,8 @@ sec('Presentaciones del hub (6 diseños)');
  globalThis.addEventListener=()=>{};globalThis.removeEventListener=()=>{};
  globalThis.document=D;globalThis.localStorage=mk();globalThis.sessionStorage=mk();globalThis.location={search:'',pathname:'/hub.html',reload(){recargas++;}};
  const HB=require(path.join(__dirname,'hubestilos.js'));
- const IDS=['oro','carrusel','orbita','paneles','mazo','tablero'];
- ok('hay 6 diseños: '+IDS.join(', '),JSON.stringify(HB.ESTILOS.map(e=>e.id))===JSON.stringify(IDS));
+ const IDS=['oro','carrusel','orbita','paneles','mazo','tablero','cartas'];
+ ok('hay 7 diseños: '+IDS.join(', '),JSON.stringify(HB.ESTILOS.map(e=>e.id))===JSON.stringify(IDS));
  ok('los 6 deportes llevan a MLB, fútbol, NBA, NHL, NFL y tenis, y «Lo mejor» a todas.html',HB.TOP.href==='todas.html'&&fs.existsSync(D0('todas.html'))&&/pnTop/.test(HB._html.paneles())&&JSON.stringify(HB.DEP.map(d=>d.href))===JSON.stringify(['index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html'])&&HB.DEP.every(d=>fs.existsSync(D0(d.href))));
  function D0(f){return path.join(__dirname,f);}
  IDS.slice(1).forEach(id=>{const h=HB._html[id]();ok('diseño '+id+': arma sus 6 enlaces y el logo para cambiar de diseño',['index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html'].every(x=>h.indexOf('href="'+x+'"')>=0)&&h.indexOf('hl-brand')>=0);});
@@ -387,6 +387,9 @@ sec('Presentaciones del hub (6 diseños)');
  ok('si un diseño falla al armarse, vuelve solo al clásico (nunca pantalla vacía)',root.getAttribute('data-hub')===null&&store.ova_hub==='oro'&&HB.actual()==='oro');
  HB.aplicar('paneles',{inicial:true});ok('el modo inicial solo marca el diseño (para no parpadear)',root.getAttribute('data-hub')==='paneles');
  globalThis.localStorage.setItem('ova_hub','<script>');ok('guardado corrupto se lee como clásico',HB.leer()==='oro');
+ {const hc=HB._html.cartas();ok('Cartas: «Lo mejor de hoy» arriba, las 7 cartas son enlaces reales y el logo OVA va dibujado (no dice ODDX)',hc.indexOf('href="todas.html"')>=0&&(hc.match(/class="tci" href=/g)||[]).length===7&&/aria-label="OVA"/.test(hc)&&!/ODDX/.test(hc));
+  const hs2=rd('hubestilos.js');ok('Cartas: se estrena una sola vez y la entrada con el logo sale una vez al día',/ova_hub_cartas_v1/.test(hs2)&&/ova_hub_cartas_dia/.test(hs2));
+  ok('Cartas: al volver con «atrás» las cartas regresan (pageshow) y con «reducir movimiento» el toque abre directo',/addEventListener\('pageshow',ps\)/.test(hs2)&&/if\(!a\|\|reduce\) return;/.test(hs2));}
  delete globalThis.addEventListener;delete globalThis.removeEventListener;delete globalThis.document;delete globalThis.localStorage;delete globalThis.sessionStorage;delete globalThis.location;
 }
 sec('Diseño interior de las apps (Clásico · Cristal · Broadcast · Pro · Boleto · Prensa · Radar)');
@@ -578,7 +581,7 @@ sec('Ajustes organizado (ajustes.js + pestañas de Apariencia)');
  ok('los botones del menú no son <button> (los diseños con !important no los pueden pintar de amarillo)',/mk\('div','ajRow'\)/.test(rd('ajustes.js')));
  ok('Apariencia: solo los 4 diseños que eligió Osvaldo (Oro negro, Cristal, Paneles, Bento); el tema de color va con el diseño',JSON.stringify(require(path.join(__dirname,'interior.js')).VIS)===JSON.stringify(['clasico','cristal','paneles','bento'])&&/\.uiSec \.uiSeg\{display:none\}/.test(ic)&&/var TEMA=\{clasico:'oro',cristal:'cristal'\}/.test(ic));
  ok('Clásico se llama Oro negro y un diseño viejo guardado pasa a Paneles',/\{id:'clasico',n:'Oro negro'/.test(ic)&&/root\.localStorage\.setItem\(KEY,'paneles'\); return 'paneles';/.test(ic));
- ok('Presentación del inicio: solo Oro negro y Paneles (lo demás vuelve a Oro negro)',JSON.stringify(require(path.join(__dirname,'hubestilos.js')).VIS)===JSON.stringify(['oro','paneles'])&&/VIS\.indexOf\(v\)>=0\?v:'oro'/.test(rd('hubestilos.js')));
+ ok('Presentación del inicio: solo Oro negro, Paneles y Cartas (lo demás vuelve a Oro negro)',JSON.stringify(require(path.join(__dirname,'hubestilos.js')).VIS)===JSON.stringify(['oro','paneles','cartas'])&&/VIS\.indexOf\(v\)>=0\?v:'oro'/.test(rd('hubestilos.js')));
  ok('fútbol y NBA: Ajustes tiene la entrada Apariencia que abre la hoja 🎨',/dsApar/.test(dj)&&/#ovaSheet/.test(dj));
 }
 
