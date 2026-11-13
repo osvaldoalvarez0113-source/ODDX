@@ -408,7 +408,7 @@ ok('19 diseños: los 8 de siempre, los 5 de la segunda tanda (historias, duelo, 
   const lum=h=>{h=h.replace('#','');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return 0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b);};
   const cr=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);};
   const paleta=(sel,pref)=>{const m=UI.css.split('\n').find(l=>l.indexOf(sel)===0&&l.indexOf(pref+'Bg1:')>0||(l.indexOf(sel)===0&&l.indexOf('--bg1:')>0&&pref===''));const g=n=>{const r=m.match(new RegExp('--'+n+':(#[0-9A-Fa-f]{6})'));return r&&r[1];};return {m,g};};
-  const casos=[['html[data-ui="boleto"]{','bz','Boleto'],['html[data-ui="boletonoche"]{','bz','Boleto noche'],['html[data-ui="prensa"][data-ui]{','','Prensa'],['html[data-ui="radar"][data-ui]{','','Radar']];
+  const casos=[['html[data-ui="cristal"]{','','Cristal vivo'],['html[data-ui="boleto"]{','bz','Boleto'],['html[data-ui="boletonoche"]{','bz','Boleto noche'],['html[data-ui="prensa"][data-ui]{','','Prensa'],['html[data-ui="radar"][data-ui]{','','Radar']];
   casos.forEach(([sel,pref,nombre])=>{
    const P=paleta(sel,pref);if(!P.m){ok(nombre+': paleta encontrada',false);return;}
    const b1=P.g(pref?'bzBg1':'bg1'),b2=P.g(pref?'bzBg2':'bg2'),b3=P.g(pref?'bzBg3':'bg3'),mu=P.g(pref?'bzMut':'mut'),m2=P.g(pref?'bzMut2':'mut2'),tx=P.g(pref?'bzTxt':'txt');

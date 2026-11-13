@@ -10,7 +10,7 @@ var doc=root.document, html=doc&&doc.documentElement;
 var KEY='ova_interior';
 var UIS=[
  {id:'clasico',n:'Oro negro',d:'Negro con dorado, sobrio y elegante',sw:'linear-gradient(135deg,#0A0908,#3b2d10 60%,#C9A24A)'},
- {id:'cristal',n:'Cristal',d:'Vidrio, dock flotante y versus',sw:'radial-gradient(circle at 25% 30%,#3b82f6aa,transparent 55%),radial-gradient(circle at 80% 70%,#a855f7aa,transparent 55%),#0a0f1d'},
+ {id:'cristal',n:'Cristal',d:'Vidrio sobre aurora que se mueve',sw:'radial-gradient(circle at 22% 28%,#35d6c4aa,transparent 50%),radial-gradient(circle at 80% 30%,#ff5fa8aa,transparent 48%),radial-gradient(circle at 70% 80%,#ffb347aa,transparent 50%),linear-gradient(165deg,#1b1147,#3a1a5e 48%,#5e2742)'},
  {id:'broadcast',n:'Broadcast',d:'Gráficos de TV deportiva',sw:'linear-gradient(115deg,#0a0f1d 0 60%,#FBBF24 60% 64%,#0a0f1d 64%)'},
  {id:'pro',n:'Pro',d:'Datos primero: barras de probabilidad y números tabulares',sw:'linear-gradient(90deg,#3b82f6 0 46%,#0b121c 46% 48%,#fbbf24 48%)'},
  {id:'boleto',n:'Boleto',d:'Cada juego es un ticket: números grandes, sello de veredicto y cuota justa',sw:'linear-gradient(135deg,#0b0d12 0 34%,#F6F7F9 34% 80%,#FFD84A 80%)'},
@@ -129,6 +129,21 @@ html[data-ui="cristal"] .fila,html[data-ui="cristal"] .fila-rank{border-radius:2
 html[data-ui="cristal"] .fila .pct,html[data-ui="cristal"] .fila-rank .pct{font-size:19px}
 html[data-ui="cristal"] .vacio{border-radius:30px;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.14)}
 html[data-ui="cristal"] .ajustes{border-radius:26px;background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12)}
+
+/* --- Cristal vivo (12-nov-2026): aurora que gira despacio, vidrio violeta y acento menta. Solo colores y fondo: no toca datos ni cálculos --- */
+html[data-ui="cristal"]{--bg:#150D33!important;--bg1:#1F1447!important;--bg2:#281A57!important;--bg3:#33226B!important;--line:#3B2B70!important;--line2:#56429A!important;--txt:#F8F6FF!important;--mut:#D6CFF0!important;--mut2:#B0A6D6!important;--acc:#52E6D4!important;--acc2:#A7F5EA!important;--accTx:#082028!important;background:#150D33}
+html[data-ui="cristal"]::before{content:"";position:fixed;z-index:-2;inset:0;pointer-events:none;background:linear-gradient(165deg,#1B1147 0%,#34185A 50%,#4E2040 100%)}
+html[data-ui="cristal"] body{background-color:transparent!important;background-image:none!important}
+html[data-ui="cristal"] body::after{content:"";display:block;position:fixed;z-index:-1;left:50%;top:50%;width:170vmax;height:170vmax;margin:-85vmax 0 0 -85vmax;pointer-events:none;opacity:.34;background:radial-gradient(circle at 28% 30%,#35D6C4 0,transparent 26%),radial-gradient(circle at 72% 34%,#FF5FA8 0,transparent 24%),radial-gradient(circle at 66% 72%,#FFB347 0,transparent 26%),radial-gradient(circle at 30% 70%,#5A6BFF 0,transparent 28%);animation:uiAurora 70s linear infinite}
+@keyframes uiAurora{to{transform:rotate(360deg)}}
+html[data-ui="cristal"] .game{background:linear-gradient(160deg,rgba(48,30,104,.66),rgba(26,15,66,.56));border-color:rgba(255,255,255,.3);-webkit-backdrop-filter:blur(20px) saturate(150%);backdrop-filter:blur(20px) saturate(150%);box-shadow:0 26px 52px -26px rgba(10,4,30,.9),inset 0 1px 0 rgba(255,255,255,.28)}
+html[data-ui="cristal"] .game::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:45%;pointer-events:none;background:linear-gradient(100deg,transparent,rgba(255,255,255,.2),transparent);animation:uiShim 1.5s .45s ease-out both}
+@keyframes uiShim{from{left:-60%}to{left:130%}}
+html[data-ui="cristal"] .fila,html[data-ui="cristal"] .fila-rank,html[data-ui="cristal"] .vacio,html[data-ui="cristal"] .ajustes{background:rgba(34,20,80,.6)!important;border-color:rgba(255,255,255,.24)!important;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)}
+html[data-ui="cristal"] .navbar,html[data-ui="cristal"] .tabbar{background:rgba(30,18,72,.62)!important;border-color:rgba(255,255,255,.3)!important}
+html[data-ui="cristal"] .bar{position:relative;overflow:hidden}
+html[data-ui="cristal"] .bar::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:30%;pointer-events:none;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);animation:uiShim 3.6s 1s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){html[data-ui="cristal"] body::after,html[data-ui="cristal"] .game::after,html[data-ui="cristal"] .bar::after{animation:none}}
 
 /* =========================================================== BROADCAST =========================================================== */
 html[data-ui="broadcast"] body{background-image:repeating-linear-gradient(115deg,rgba(255,255,255,.028) 0 2px,transparent 2px 16px),radial-gradient(120% 50% at 50% -10%,rgba(255,255,255,.07),transparent 60%);background-attachment:fixed}
