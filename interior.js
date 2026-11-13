@@ -143,7 +143,23 @@ html[data-ui="cristal"] .fila,html[data-ui="cristal"] .fila-rank,html[data-ui="c
 html[data-ui="cristal"] .navbar,html[data-ui="cristal"] .tabbar{background:rgba(30,18,72,.62)!important;border-color:rgba(255,255,255,.3)!important}
 html[data-ui="cristal"] .bar{position:relative;overflow:hidden}
 html[data-ui="cristal"] .bar::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:30%;pointer-events:none;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);animation:uiShim 3.6s 1s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){html[data-ui="cristal"] body::after,html[data-ui="cristal"] .game::after,html[data-ui="cristal"] .bar::after{animation:none}}
+/* Veredicto en Cristal (12-nov-2026, tras la captura de NFL): el color del % sigue al equipo (visita menta, local ámbar), igual que el anillo y la barra; al favorito se le nota por el brillo, no por cambiarle el color */
+html[data-ui="cristal"] .hero .side:first-child .pc{color:var(--acc)!important}
+html[data-ui="cristal"] .hero .side:last-child .pc{color:var(--hot)!important}
+html[data-ui="cristal"] .hero .side.fav .pc{text-shadow:0 0 20px currentColor}
+html[data-ui="cristal"] .hero .side:not(.fav){opacity:.74}
+html[data-ui="cristal"] .hero .gz svg{animation:uiRing 1.1s cubic-bezier(.2,.8,.2,1) backwards}
+@keyframes uiRing{from{opacity:0;transform:rotate(-220deg) scale(.55)}}
+html[data-ui="cristal"] .hero .side{animation:uiRise .6s cubic-bezier(.2,.8,.2,1) backwards}
+html[data-ui="cristal"] .hero .side:last-child{animation-delay:.12s}
+html[data-ui="cristal"] .bar{height:52px}
+html[data-ui="cristal"] .bar span{position:relative;overflow:hidden;font-size:16px}
+html[data-ui="cristal"] .bar .h{color:#2A1600!important}
+html[data-ui="cristal"] .bar span::before{content:"";position:absolute;left:0;right:-100px;top:0;height:10px;pointer-events:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='10'%3E%3Cpath d='M0 5Q25 -3 50 5T100 5V0H0Z' fill='%23150D33' fill-opacity='.45'/%3E%3C/svg%3E") repeat-x;animation:uiWave 2.6s linear infinite}
+html[data-ui="cristal"] .bar .h::before{animation-duration:3.4s;animation-direction:reverse}
+@keyframes uiWave{to{transform:translateX(-100px)}}
+
+@media (prefers-reduced-motion:reduce){html[data-ui="cristal"] body::after,html[data-ui="cristal"] .game::after,html[data-ui="cristal"] .bar::after,html[data-ui="cristal"] .bar span::before{animation:none}}
 
 /* =========================================================== BROADCAST =========================================================== */
 html[data-ui="broadcast"] body{background-image:repeating-linear-gradient(115deg,rgba(255,255,255,.028) 0 2px,transparent 2px 16px),radial-gradient(120% 50% at 50% -10%,rgba(255,255,255,.07),transparent 60%);background-attachment:fixed}
