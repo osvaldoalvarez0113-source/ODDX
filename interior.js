@@ -159,6 +159,13 @@ html[data-ui="cristal"] .bar span::before{content:"";position:absolute;left:0;ri
 html[data-ui="cristal"] .bar .h::before{animation-duration:3.4s;animation-direction:reverse}
 @keyframes uiWave{to{transform:translateX(-100px)}}
 
+/* Pestañas del juego en Cristal: son seis (con En vivo) y no caben legibles; se deslizan, el borde se difumina del lado donde hay más y la que tocas se centra sola */
+html[data-ui="cristal"] .tabs{scrollbar-width:none}
+html[data-ui="cristal"] .tabs::-webkit-scrollbar{display:none}
+html[data-ui="cristal"] .tabs[data-fin="d"]{-webkit-mask-image:linear-gradient(90deg,#000 80%,transparent);mask-image:linear-gradient(90deg,#000 80%,transparent)}
+html[data-ui="cristal"] .tabs[data-fin="i"]{-webkit-mask-image:linear-gradient(270deg,#000 80%,transparent);mask-image:linear-gradient(270deg,#000 80%,transparent)}
+html[data-ui="cristal"] .tabs[data-fin="id"]{-webkit-mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent);mask-image:linear-gradient(90deg,transparent,#000 18%,#000 82%,transparent)}
+
 @media (prefers-reduced-motion:reduce){html[data-ui="cristal"] body::after,html[data-ui="cristal"] .game::after,html[data-ui="cristal"] .bar::after,html[data-ui="cristal"] .bar span::before{animation:none}}
 
 /* =========================================================== BROADCAST =========================================================== */
@@ -743,6 +750,26 @@ function barra(){
     var alto=h.offsetHeight; if(alto>0){ html.style.setProperty('--barra',alto+'px'); html.__barraMia=1; }
   }catch(e){}
 }
+/* Cristal: borde difuminado y centrado de las pestañas del juego (12-nov-2026) */
+function finTabs(t){
+  try{
+    if(!t) return;
+    var i=t.scrollLeft>4, d=t.scrollLeft+t.clientWidth<t.scrollWidth-4, v=(i?'i':'')+(d?'d':'');
+    if(t.getAttribute('data-fin')!==v) t.setAttribute('data-fin',v);
+  }catch(e){}
+}
+function finTodas(){ try{ [].forEach.call(doc.querySelectorAll('.game.open .tabs'),finTabs); }catch(e){} }
+function pestanasCristal(){
+  try{
+    doc.addEventListener('scroll',function(e){ var t=e.target; if(t&&t.classList&&t.classList.contains('tabs')) finTabs(t); },true);
+    doc.addEventListener('click',function(e){
+      if(ST.id!=='cristal') return;
+      var b=e.target&&e.target.closest?e.target.closest('.tabs .tb'):null;
+      if(b){ var t=b.parentNode; try{ var r=b.getBoundingClientRect(), R=t.getBoundingClientRect(); t.scrollTo({left:t.scrollLeft+(r.left-R.left)-(R.width-r.width)/2,behavior:'smooth'}); }catch(x){} }
+      root.setTimeout(finTodas,80); root.setTimeout(finTodas,500);
+    },true);
+  }catch(e){}
+}
 function arrancar(){
   var url=params(), id=url||leer();
   aplicar(id,{inicial:true,guardar:!!url});     /* en <head>: marca el diseño antes de pintar (sin parpadeo) */
@@ -752,6 +779,7 @@ function arrancar(){
       iconos(); colorear(); montar(); barra();
       [250,800,1800,3500,6000].forEach(function(ms){ root.setTimeout(function(){ iconos(); colorear(); montar(); barra(); },ms); });
       root.addEventListener('resize',barra);
+      pestanasCristal(); finTodas();
       var slate=doc.getElementById('slate');
       if(slate&&root.MutationObserver) new root.MutationObserver(function(){ colorear(); }).observe(slate,{childList:true});
       var nav=doc.querySelector('.navbar, .tabbar');
