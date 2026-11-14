@@ -7,6 +7,7 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 const json = (o, st = 200) => new Response(JSON.stringify(o), { status: st, headers: { ...CORS, "Content-Type": "application/json" } });
+const HUELLA_DUENO = "c3b0d5fdf03f05234b566f5ca8bc8e56c51064f33968afced7591edf111b52b8";
 const LETRAS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // sin 0/O ni 1/I
 
 function nuevoCodigo() {
@@ -50,7 +51,11 @@ export default {
 
     // ---- dueño ----
     if (b.accion === "admin") {
-      if (!env.ADMIN_KEY || String(b.clave || "").trim() !== String(env.ADMIN_KEY).trim()) return json({ ok: false, msg: "Clave incorrecta" }, 403);
+      // La clave de dueño: vale la del secreto ADMIN_KEY o la que tiene esta huella SHA-256 (la clave misma no está en el código).
+      const dada = String(b.clave || "").trim();
+      const huella = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(dada)))).map((x) => x.toString(16).padStart(2, "0")).join("");
+      const vale = (env.ADMIN_KEY && dada === String(env.ADMIN_KEY).trim()) || huella === HUELLA_DUENO;
+      if (!dada || !vale) return json({ ok: false, msg: "Clave incorrecta" }, 403);
       const codigo = limpio(b.codigo);
       const leer = async () => (codigo ? await env.ACCESO.get("c:" + codigo, "json") : null);
       const guardar = (r) => env.ACCESO.put("c:" + codigo, JSON.stringify(r));
