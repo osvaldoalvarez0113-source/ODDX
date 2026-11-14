@@ -1,9 +1,9 @@
-name: Medir MLB ajustado por rival (solo mide)
+name: Medir formula propia MLB (solo mide)
 
 on:
   workflow_dispatch:
   push:
-    branches: [medir-mlb-rival]
+    branches: [medir-mi-formula]
 
 permissions:
   contents: write
@@ -34,5 +34,5 @@ jobs:
           git rm -rf . >/dev/null 2>&1 || true
           cp -f /tmp/res/* .
           git add -A
-          git commit -m "Rival ${{ matrix.dias }}" || true
-          git push -f origin HEAD:refs/heads/rival-${{ matrix.dias }}
+          git commit -m "Mia ${{ matrix.dias }}" || true
+          git push -f origin HEAD:refs/heads/mia-${{ matrix.dias }}
