@@ -431,6 +431,8 @@ function parseOdds(c,abH){
   const amN=v=>{ if(v==null) return null; const n=parseFloat(String(v).replace(/[−–—]/g,'-').replace(/[^0-9.+-]/g,'')); return (isFinite(n)&&Math.abs(n)>=100)?n:null; };
   const blq=x=>x&&(x.close||x.current||x.open);
   if(o.moneyline){ const h=amN(blq(o.moneyline.home)&&blq(o.moneyline.home).odds), a=amN(blq(o.moneyline.away)&&blq(o.moneyline.away).odds); if(h&&a){ r.mlH=h; r.mlA=a; } }
+  /* moneyline de apertura, para ver cuánto se movió la línea (igual que NHL y NFL en usdeporte.js) */
+  if(o.moneyline&&o.moneyline.home&&o.moneyline.away&&o.moneyline.home.open&&o.moneyline.away.open){ const oh=amN(o.moneyline.home.open.odds), oa=amN(o.moneyline.away.open.odds); if(oh&&oa){ r.mlHo=oh; r.mlAo=oa; } }
   if(r.mlH===undefined){ const mh=amN(o.homeTeamOdds&&o.homeTeamOdds.moneyLine), ma=amN(o.awayTeamOdds&&o.awayTeamOdds.moneyLine); if(mh&&ma){ r.mlH=mh; r.mlA=ma; } }
   return (r.total!==undefined||r.spread!==undefined||r.mlH!==undefined)?r:null;
 }
@@ -719,6 +721,8 @@ function resumenN(g,pr,H,A){
   else if(mk&&mk.src==='pred') li.push(L('ok','Precio del mercado de predicción (Polymarket): no hay Pinnacle ni línea de ESPN para este juego.'+poco));
   else li.push(L('w','Sin precio del mercado para este juego.'));
   if(mk&&!mk.live&&mk.src!=='pred'&&g.pred){ const d=Math.abs(g.pred.pH-mk.p)*100; li.push(L(d<=3?'ok':'w',`Mercado de predicción (Polymarket): ${esc(H.ab)} ${pct1(g.pred.pH)}${d<=3?', coincide con el precio principal.':' ('+d.toFixed(0)+' pts de diferencia con el precio principal; el principal suele tener razón).'}`)); }
+  if(!(mk&&mk.live)){ const o=g.odds; if(o&&o.mlH&&o.mlA&&o.mlHo&&o.mlAo){ const nv=(x,y)=>{ const p=impProb(x), q=impProb(y); return p/(p+q); }, p0=nv(o.mlHo,o.mlAo), p1=nv(o.mlH,o.mlA), dm=(p1-p0)*100;   /* cuánto se movió el ganador desde que abrió (ESPN, sin margen) */
+    li.push(Math.abs(dm)<2?L('ok','La línea casi no se ha movido desde que abrió ('+esc(H.ab)+' '+pct1(p0)+' → '+pct1(p1)+').'):L('w','<b>La línea se movió '+Math.abs(dm).toFixed(1)+' pts hacia '+esc(dm>0?H.ab:A.ab)+'</b> desde que abrió ('+esc(H.ab)+' '+pct1(p0)+' → '+pct1(p1)+'). El precio de ahora ya incluye esa noticia.')); } }
   li.push(pr.bH||pr.bA?L('ok','Back-to-back: '+[pr.bA?A.n:'',pr.bH?H.n:''].filter(Boolean).map(esc).join(' y ')+' jugó ayer (ya descontado).'):L('ok','Sin back-to-back.'));
   if(g.pre) li.push(L('w','Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
   li.push(`<div data-inj><i class="w">!</i><span>Buscando lesionados…</span></div>`);
