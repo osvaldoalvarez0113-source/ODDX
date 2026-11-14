@@ -62,7 +62,10 @@ function batQ(id,y){
 async function lineupX(pk,y){
   if(!BOX[pk]) BOX[pk]=gj(MLB+'/game/'+pk+'/boxscore').catch(function(){ return null; });
   var b=await BOX[pk]; if(!b||!b.teams) return null;
-  async function lado(t){ var ids=(t.battingOrder||[]).slice(0,9); if(ids.length<9) return null;
+  async function lado(t){   /* solo los titulares: battingOrder 100, 200 … 900 (los cambios llevan 101, 102 …) */
+    var pl=t.players||{}, ids=[];
+    Object.keys(pl).forEach(function(k){ var bo=+(pl[k].battingOrder||0); if(bo>0&&bo%100===0) ids[bo/100-1]=pl[k].person.id; });
+    ids=ids.filter(function(x){ return x; }); if(ids.length<9) return null;
     var qs=await Promise.all(ids.map(function(id){ return batQ(id,y); }));
     return {ids:ids, q:qs.reduce(function(a,x){return a+x.q;},0)/9, pa:qs.map(function(x){return Math.round(x.pa);})}; }
   return {h:await lado(b.teams.home), a:await lado(b.teams.away)};
