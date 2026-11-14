@@ -7,6 +7,14 @@ const fs = require('fs'), vm = require('vm'), path = require('path');
 const EXTRA = `
 /* ===== Features crudas por juego para la fórmula propia (medición nov-2026). Todo con datos de ANTES del juego. ===== */
 var HX={};
+function logPitcher(id,yr){
+  return cached('p'+id+'_'+yr,async function(){
+    var j=await gj(MLB+'/people/'+id+'/stats?stats=gameLog&group=pitching&season='+yr), sp=[];
+    try{ sp=j.stats[0].splits||[]; }catch(e){}
+    return sp.map(function(s){ var t=s.stat||{}; return {d:s.date,o:outs(t.inningsPitched),er:+t.earnedRuns||0,hr:+t.homeRuns||0,bb:+t.baseOnBalls||0,hbp:+t.hitByPitch||0,k:+t.strikeOuts||0,bf:+t.battersFaced||0}; })
+      .sort(function(a,b){ return a.d<b.d?-1:(a.d>b.d?1:0); });
+  });
+}
 function histX(id){
   if(!HX[id]) HX[id]=gj(MLB+'/people/'+id+'/stats?stats=yearByYear&group=pitching&gameType=R').then(function(d){
     var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[], h={};
@@ -22,11 +30,11 @@ function hist3(h,y){
   return {ip:o/3/(w||1), era:o>0?er*27/o:null, kp:bf>0?k/bf:null, bbp:bf>0?bb/bf:null, hr9:o>0?hr*27/o:null};
 }
 function pitX(arr,fecha){
-  var o=0,er=0,k=0,bb=0,hr=0,n=0,last=null;
-  for(var i=0;i<arr.length;i++){ var x=arr[i]; if(x.d>=fecha) break; o+=x.o; er+=x.er; k+=x.k; bb+=x.bb+x.hbp; hr+=x.hr; n++; last=x.d; }
+  var o=0,er=0,k=0,bb=0,hr=0,n=0,last=null,bf=0;
+  for(var i=0;i<arr.length;i++){ var x=arr[i]; if(x.d>=fecha) break; o+=x.o; er+=x.er; k+=x.k; bb+=x.bb+x.hbp; hr+=x.hr; bf+=(x.bf||0); n++; last=x.d; }
   var ip=o/3, bfe=o+k*0+bb+ (ip>0?ip*0.95:0);   /* bateadores aprox: outs + boletos + hits (~0.95 por inning) */
   var rest=last?Math.round((Date.parse(fecha)-Date.parse(last))/864e5):null;
-  return {ip:ip, n:n, ipg:n>0?ip/n:null, k9:ip>0?k*9/ip:null, bb9:ip>0?bb*9/ip:null, hr9:ip>0?hr*9/ip:null, kbb:bfe>0?(k-bb)/bfe:null, rest:rest};
+  return {ip:ip, n:n, ipg:n>0?ip/n:null, k9:ip>0?k*9/ip:null, kbbR:bf>0?(k-bb)/bf:null, bf:bf, bb9:ip>0?bb*9/ip:null, hr9:ip>0?hr*9/ip:null, kbb:bfe>0?(k-bb)/bfe:null, rest:rest};
 }
 function teamX(arr,fecha){
   var g=0,r=0,ra=0,w=0,l10=[],last=null,g7=0, ini7=sumaDias(fecha,-7);
