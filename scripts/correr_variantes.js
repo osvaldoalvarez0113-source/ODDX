@@ -43,6 +43,30 @@ function teamX(arr,fecha){
   return {g:g, rg:g?r/g:null, rag:g?ra/g:null, wp:g?w/g:null, py:py, l10:l10.length?l10.reduce(function(a,b){return a+b;},0)/l10.length:null,
     rest:last?Math.round((Date.parse(fecha)-Date.parse(last))/864e5):null, g7:g7};
 }
+/* Lineup del día: calidad de cada titular = OPS de las 3 temporadas anteriores (5/4/3), jalado a .700 con 200 PA. */
+var BAT={}, BOX={};
+function batQ(id,y){
+  if(!BAT[id]) BAT[id]=gj(MLB+'/people/'+id+'/stats?stats=yearByYear&group=hitting&gameType=R').then(function(d){
+    var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[], h={};
+    sp.forEach(function(s){ var yy=+s.season, st=s.stat||{}; var o=h[yy]||(h[yy]={pa:0,ob:0,tb:0,ab:0});
+      var pa=+st.plateAppearances||0; o.pa+=pa; o.ob+=(+st.hits||0)+(+st.baseOnBalls||0)+(+st.hitByPitch||0); o.tb+=(+st.totalBases||0); o.ab+=(+st.atBats||0); });
+    return h; }).catch(function(){ return {}; });
+  return BAT[id].then(function(h){
+    var P=[5,4,3], pa=0, obp=0, slg=0, w=0;
+    for(var i=0;i<3;i++){ var o=h[y-1-i]; if(!o||!(o.pa>0)) continue; pa+=P[i]*o.pa; obp+=P[i]*o.ob; slg+=P[i]*o.tb; w+=P[i]*o.ab; }
+    var ops=(pa>0&&w>0)? obp/pa + slg/w : 0.62;
+    var pn=pa/12;   /* PA por temporada, en promedio ponderado */
+    return {q:(ops*pn+0.700*200)/(pn+200), pa:pn};
+  });
+}
+async function lineupX(pk,y){
+  if(!BOX[pk]) BOX[pk]=gj(MLB+'/game/'+pk+'/boxscore').catch(function(){ return null; });
+  var b=await BOX[pk]; if(!b||!b.teams) return null;
+  async function lado(t){ var ids=(t.battingOrder||[]).slice(0,9); if(ids.length<9) return null;
+    var qs=await Promise.all(ids.map(function(id){ return batQ(id,y); }));
+    return {ids:ids, q:qs.reduce(function(a,x){return a+x.q;},0)/9, pa:qs.map(function(x){return Math.round(x.pa);})}; }
+  return {h:await lado(b.teams.home), a:await lado(b.teams.away)};
+}
 async function VARS(c,g,yr,L,pH,pA,rgH,rgA,sH,sA){
   var y=+yr;
   var lp=await Promise.all([logPitcher(c.pH,yr),logPitcher(c.pA,yr)]), hh=await Promise.all([histX(c.pH),histX(c.pA)]);
@@ -52,7 +76,7 @@ async function VARS(c,g,yr,L,pH,pA,rgH,rgA,sH,sA){
   return {P40:P40, L:L,
     eH:eraUsado(pH,L), eA:eraUsado(pA,L), rgH:rgH, rgA:rgA, bpH:sH.era, bpA:sA.era,
     sH:{ip:pH.ip,era:pH.era,fip:pH.fip,era5:pH.era5,ip5:pH.ip5,x:xH,h3:h3H}, sA:{ip:pA.ip,era:pA.era,fip:pA.fip,era5:pA.era5,ip5:pA.ip5,x:xA,h3:h3A},
-    tH:tH, tA:tA};
+    tH:tH, tA:tA, pk:g.pk, hId:g.hId, aId:g.aId, lu:await lineupX(g.pk,y)};
 }
 `;
 
