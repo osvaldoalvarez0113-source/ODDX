@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>OVA · Códigos</title>
+<style>
+  body{margin:0;background:#070707;color:#eee;font:15px -apple-system,system-ui,sans-serif;padding:20px 16px 60px}
+  h1{font-size:22px;margin:0 0 4px;background:linear-gradient(135deg,#f5d77a,#b8892b);-webkit-background-clip:text;color:transparent}
+  .sub{color:#888;font-size:13px;margin-bottom:18px}
+  input{width:100%;box-sizing:border-box;padding:12px;border-radius:10px;border:1px solid #444;background:#111;color:#eee;font-size:16px}
+  button{padding:11px 14px;border:0;border-radius:10px;font-weight:700;font-size:15px}
+  .oro{background:linear-gradient(135deg,#f5d77a,#b8892b);color:#111}
+  .gris{background:#222;color:#ddd}.rojo{background:#4a1a16;color:#ffb3a8}
+  .fila{display:flex;gap:8px;margin-top:10px}
+  .card{background:#121212;border:1px solid #2a2a2a;border-radius:14px;padding:14px;margin-top:12px}
+  .cod{font:700 22px monospace;letter-spacing:3px;color:#f5d77a}
+  .ok{color:#7dd99a}.bl{color:#ff8a7a}.mut{color:#888;font-size:13px}
+  #nuevo{margin-top:14px;padding:14px;border-radius:12px;background:#1b1708;border:1px solid #6b5a2a;display:none}
+</style>
+</head>
+<body>
+<h1>Códigos de acceso</h1>
+<div class="sub">Página tuya, no está enlazada en la app. Cada código abre en un solo teléfono.</div>
+
+<div id="login">
+  <input id="clave" type="password" placeholder="Tu clave de dueño (ADMIN_KEY)">
+  <div class="fila"><button class="oro" onclick="entrarAdmin()">Entrar</button></div>
+  <div id="msg" class="mut" style="margin-top:10px"></div>
+</div>
+
+<div id="panel" style="display:none">
+  <div class="fila"><input id="nombre" placeholder="Nombre (ej. Primo, Amigo Juan)"><button class="oro" onclick="crear()">Crear</button></div>
+  <div id="nuevo"></div>
+  <div id="lista"></div>
+  <div class="fila" style="margin-top:20px"><button class="gris" onclick="salir()">Salir</button></div>
+</div>
+
+<script>
+var URL_ACCESO='https://ova-acceso.osvaldoalvarez0113.workers.dev';
+var clave=localStorage.getItem('ova_admin_clave')||'';
+function api(op,extra){ var b=Object.assign({accion:'admin',clave:clave,op:op},extra||{});
+  return fetch(URL_ACCESO,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json();}); }
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function fecha(t){ return t?new Date(t).toLocaleString('es',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):'—'; }
+function entrarAdmin(){ clave=document.getElementById('clave').value.trim()||clave; cargar(); }
+function salir(){ localStorage.removeItem('ova_admin_clave'); location.reload(); }
+function cargar(){
+  api('lista').then(function(r){
+    if(!r.ok){ document.getElementById('msg').textContent=r.msg||'No se pudo'; return; }
+    localStorage.setItem('ova_admin_clave',clave);
+    document.getElementById('login').style.display='none'; document.getElementById('panel').style.display='';
+    var h=r.codigos.map(function(c){
+      var est=c.estado==='bloqueado'?'<span class="bl">🔒 Bloqueado</span>'+(c.motivo?' · '+esc(c.motivo):''):(c.dev?'<span class="ok">✅ Activo en su teléfono</span>':'<span class="mut">⏳ Sin usar todavía</span>');
+      return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><b>'+esc(c.nombre)+'</b><span class="cod">'+esc(c.codigo)+'</span></div>'+
+        '<div style="margin-top:6px">'+est+'</div><div class="mut" style="margin-top:4px">Creado '+fecha(c.creado)+' · última vez '+fecha(c.usado)+'</div>'+
+        '<div class="fila">'+(c.estado==='bloqueado'?'<button class="gris" onclick="op(\'desbloquear\',\''+c.codigo+'\')">Desbloquear</button>':'<button class="rojo" onclick="op(\'bloquear\',\''+c.codigo+'\')">Bloquear</button>')+
+        '<button class="gris" onclick="op(\'liberar\',\''+c.codigo+'\',\'¿Soltar el teléfono de este código? Sirve si cambió de celular: el próximo teléfono que lo use queda amarrado.\')">Cambió de cel</button>'+
+        '<button class="rojo" onclick="op(\'borrar\',\''+c.codigo+'\',\'¿Borrar este código para siempre?\')">Borrar</button></div></div>';
+    }).join('');
+    document.getElementById('lista').innerHTML=h||'<div class="mut" style="margin-top:14px">Todavía no hay códigos.</div>';
+  }).catch(function(){ document.getElementById('msg').textContent='No conecta con el Worker ova-acceso.'; });
+}
+function crear(){
+  var n=document.getElementById('nombre').value.trim(); if(!n){ alert('Ponle un nombre'); return; }
+  api('crear',{nombre:n}).then(function(r){
+    if(!r.ok){ alert(r.msg||'No se pudo'); return; }
+    document.getElementById('nombre').value='';
+    var d=document.getElementById('nuevo'); d.style.display='block';
+    d.innerHTML='Código para <b>'+esc(n)+'</b>:<div class="cod" style="font-size:30px;margin:8px 0">'+r.codigo+'</div>'+
+      '<div class="mut">Mándale el link de OVA y este código. Que primero añada OVA a la pantalla de inicio y lo escriba ahí.</div>'+
+      '<div class="fila"><button class="oro" onclick="copiar(\''+r.codigo+'\')">Copiar mensaje</button></div>';
+    cargar();
+  });
+}
+function copiar(c){
+  var t='Tu acceso a OVA:\n1) Abre https://osvaldoalvarez0113-source.github.io/ODDX/hub.html en Safari\n2) Compartir → Añadir a pantalla de inicio\n3) Abre OVA desde el icono y escribe tu código: '+c+'\nEl código sirve solo en tu teléfono.';
+  navigator.clipboard.writeText(t).then(function(){ alert('Copiado. Pégalo en WhatsApp.'); });
+}
+function op(o,c,pregunta){ if(pregunta&&!confirm(pregunta)) return; api(o,{codigo:c}).then(function(r){ if(!r.ok) alert(r.msg||'No se pudo'); cargar(); }); }
+if(clave) cargar();
+</script>
+</body>
+</html>

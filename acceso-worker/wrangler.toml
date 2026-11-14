@@ -1,0 +1,8 @@
+name = "ova-acceso"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Espacio KV donde se guardan los códigos. El id sale de Cloudflare → Storage & Databases → KV → ova-acceso.
+[[kv_namespaces]]
+binding = "ACCESO"
+id = "PON_AQUI_EL_ID_DEL_KV"
