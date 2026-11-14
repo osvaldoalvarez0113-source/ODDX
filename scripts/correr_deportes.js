@@ -335,6 +335,7 @@ async function main() {
     let ok = true; Object.keys(V).forEach(k => { const x = pred[k].get(g.id); if (!x) ok = false; else r.v[k] = x; });
     if (ok) rows.push(r);
   });
+  if (process.env.VOLCAR_PARTIDOS) fs.writeFileSync('juegos_nba.json', JSON.stringify(games.map(g => ({ id: g.id, ts: g.ts, h: g.h, a: g.a, hs: g.hs, as: g.as, ty: g.ty, n: !!g.neutral }))));
   if (process.env.VOLCAR_PARTIDOS) fs.writeFileSync('filas_nba.json', JSON.stringify(rows.map(r => ({ id: r.id, ts: r.ts, prov: r.prov, sk: r.sk, ty: r.ty, mar: r.mar, tot: r.tot, spread: r.spread, total: r.total, mlH: r.mlH, mlA: r.mlA, V0: r.v.V0, V3: r.v.V3 }))));
   const sks = [...new Set(rows.map(r => r.sk))].sort();
   log('Juegos con linea y con modelo listo (>=5 juegos previos de cada equipo): ' + rows.length + ' (' + sks.map(s => s + ': ' + rows.filter(r => r.sk === s).length).join(', ') + ')');
