@@ -1278,7 +1278,10 @@ html[data-app=fut] select#ligaSel{min-width:0;width:0}
 
   También se probaron y se descartaron tres cambios más, porque ayudaron en una temporada y estorbaron en
   la otra: subir el peso de la ofensiva a 0.80, sacar la localía de lo que va de temporada, y usar K-BB%
-  en lugar del ERA. Los pesos 0.65 / 0.50 / 0.25 y el 0.12 de localía se quedan.
+  en lugar del ERA. <b>Nov 2026:</b> con 6 temporadas (12,311 juegos) la fórmula cambió: el abridor se mide por
+  ERA × 0.20 + K-BB% de la temporada × 10 + K-BB% de 3 años × 5, la ofensiva pesa 0.75, el pitcheo del equipo
+  (carreras que permite por juego) 0.80 y la localía 0.55. Ajustada solo con temporadas anteriores, le ganó a la
+  de 0.65 / 0.50 / 0.25 en las 5 temporadas probadas (docs/MEDICION-FORMULA-PROPIA-MLB-2026-11.md).
 
   Al total se le suman 0.18 carreras por los innings extra. Los venue_id de la tabla de parques están
   verificados uno por uno contra /api/v1/teams?sportId=1 de la MLB.
@@ -1394,7 +1397,7 @@ var MULT=6;
    2,067 juegos, mostro que el modelo daba 50.7% al local cuando el mercado daba 53.2% y el local gano 53.4%. Ajustado en una mitad y
    probado en la otra salio +2.6 y +3.0 puntos extra (estable), y la muestra independiente de ago-oct 2026 dio la misma brecha (~2.8).
    2.8 puntos / x6 = 0.47 carreras extra  ->  0.12 + 0.47 = 0.59. */
-var BONO_LOCAL=0.59;
+var BONO_LOCAL=0.55;   /* fórmula de nov-2026: 0.54 medido en 2021-2026 (antes 0.59 con la fórmula vieja) */
 /* Cuantos innings de promedio de liga se le suman al abridor antes de creerle
    su ERA. Con 40, un novato de 10 innings entra con 20% de su propio numero y
    80% de la liga. Ese 40 es un SUPUESTO: nunca se midio, a diferencia del ×6.
@@ -1545,8 +1548,19 @@ function matriz(la,lh,fn){
 }
 
 /* ---------- formula ---------- */
+/* Fórmula de noviembre 2026 (docs/MEDICION-FORMULA-PROPIA-MLB-2026-11.md): 12,311 juegos de 2021-2026 contra el cierre de DraftKings.
+   Ajustada solo con temporadas anteriores, le ganó a la de 0.65/0.50/0.25 en las 5 temporadas probadas (2022-2026, z -2.5).
+   Abridor = ERA ×0.20 + K-BB% de la temporada ×10 + K-BB% de 3 años ×5 (el ERA solo dice poco una vez que está el K-BB%).
+   Pitcheo del equipo = carreras que permite por juego ×0.92 (abridores + bullpen + defensa), ×0.80. Ofensiva ×0.75. Localía 0.55. */
+var PESO_ERA=0.20, PESO_KBB=10, PESO_KBB3=5, PESO_OF=0.75, PESO_PIT=0.80, KBB_LIGA=0.12;
+function kbbUsado(se){   /* K-BB% de la temporada jalado a la liga con 60 innings */
+  if(!se||se.kbb==null||!(se.ip>0)) return KBB_LIGA;
+  return (se.kbb*se.ip+KBB_LIGA*60)/(se.ip+60);
+}
 function ventaja(d){
-  var p1=(d.eraA-d.eraH)*0.65, p2=(d.rgH-d.rgA)*0.5, p3=(d.bpA-d.bpH)*0.25;
+  var kA=(d.kbbA!=null?d.kbbA:KBB_LIGA), kH=(d.kbbH!=null?d.kbbH:KBB_LIGA), k3A=(d.k3A!=null?d.k3A:KBB_LIGA), k3H=(d.k3H!=null?d.k3H:KBB_LIGA);
+  var pitA=(d.raA!=null?d.raA:d.bpA), pitH=(d.raH!=null?d.raH:d.bpH);
+  var p1=(d.eraA-d.eraH)*PESO_ERA+(kH-kA)*PESO_KBB+(k3H-k3A)*PESO_KBB3, p2=(d.rgH-d.rgA)*PESO_OF, p3=(pitA-pitH)*PESO_PIT;
   var delta=p1+p2+p3+BONO_LOCAL;
   var pct=50+delta*MULT;
   var capped=pct>78||pct<22;
@@ -1909,7 +1923,7 @@ function temporada(id,year){
     var st=s?s.stat:{};
     var ip=ipToNum(st.inningsPitched);
     var hr=+(st.homeRuns||0), bb=+(st.baseOnBalls||0), hbp=+(st.hitByPitch||0), so=+(st.strikeOuts||0);
-    var gs=+(st.gamesStarted||0);
+    var gs=+(st.gamesStarted||0), bf=+(st.battersFaced||0);
     var era=(st.era!=null&&st.era!=='-.--')?parseFloat(st.era):null;
     /* Los hits NO entran al calculo, solo se enseñan. El FIP los ignora a
        proposito porque el BABIP es ruidoso, pero eso deja un hueco: un abridor
@@ -1921,11 +1935,27 @@ function temporada(id,year){
       w:+(st.wins||0), l:+(st.losses||0),
       fip: ip>=10 ? (13*hr+3*(bb+hbp)-2*so)/ip+3.15 : null,
       k9:  ip>0 ? so*9/ip : null,
+      kbb: bf>0 ? (so-bb-hbp)/bf : null, bf:bf,
       ipx: gs>0 ? ip/gs : null};
     cache.sea[k]=out; return out;
   }).catch(function(){
-    return {era:null,ip:0,so:0,gs:0,w:null,l:null,fip:null,k9:null,ipx:null};
+    return {era:null,ip:0,so:0,gs:0,w:null,l:null,fip:null,k9:null,kbb:null,bf:0,ipx:null};
   });
+}
+/* K-BB% de las 3 temporadas anteriores del abridor (pesos 5/4/3, como Marcel). Sin 20+ innings por temporada de promedio, cae a la liga. */
+var KBB3_C={};
+function kbb3(id,year){
+  var k=id+'-'+year;
+  if(KBB3_C[k]) return KBB3_C[k];
+  KBB3_C[k]=j(API+'/people/'+id+'/stats?stats=yearByYear&group=pitching&gameType=R').then(function(d){
+    var sp=(d.stats&&d.stats[0]&&d.stats[0].splits)||[], h={};
+    sp.forEach(function(s){ var y=+s.season, st=s.stat||{}; if(!(y<year&&y>=year-3)) return; var o=h[y]||(h[y]={ip:0,k:0,bb:0,bf:0});
+      o.ip+=ipToNum(st.inningsPitched); o.k+=+(st.strikeOuts||0); o.bb+=(+(st.baseOnBalls||0))+(+(st.hitByPitch||0)); o.bf+=+(st.battersFaced||0); });
+    var P=[5,4,3], ip=0,kk=0,bb=0,bf=0,w=0;
+    for(var i=0;i<3;i++){ var o=h[year-1-i]; if(!o||!(o.ip>0)) continue; ip+=P[i]*o.ip; kk+=P[i]*o.k; bb+=P[i]*o.bb; bf+=P[i]*o.bf; w+=P[i]; }
+    return (w>0&&ip/w>20&&bf>0)?(kk-bb)/bf:null;
+  }).catch(function(){ return null; });
+  return KBB3_C[k];
 }
 function ofensiva(teamId,year){
   var k=teamId+'-'+year+corteSufijo();
@@ -2017,6 +2047,7 @@ function standings(year){
         if(!t.team) return;
         o[t.team.id]={w:+(t.wins||0), l:+(t.losses||0),
           pct: t.winningPercentage!=null?parseFloat(t.winningPercentage):null,
+          ra: t.runsAllowed!=null?+t.runsAllowed:null, rs: t.runsScored!=null?+t.runsScored:null,
           streak:(t.streak&&t.streak.streakCode)||null};
       });
     });
@@ -3400,7 +3431,8 @@ function fila(g,year){
       kLiga(year),ligaEra(year),pw,mano(pa.id),mano(pih.id),
       quemados(a.team.id,fecha),quemados(h.team.id,fecha),
       standings(year),historial(a.team.id,fecha),historial(h.team.id,fecha),
-      ofensiva14(a.team.id,fecha,year),ofensiva14(h.team.id,fecha,year)])
+      ofensiva14(a.team.id,fecha,year),ofensiva14(h.team.id,fecha,year),
+      kbb3(pa.id,+year),kbb3(pih.id,+year)])
     .then(function(r){
       var mA=r[11], mH=r[12];
       return Promise.all([splitEquipo(a.team.id,mH,year), splitEquipo(h.team.id,mA,year)])
@@ -3410,7 +3442,7 @@ function fila(g,year){
                  techo:techo, cerrado:cerrado,
                  manoA:mA, manoH:mH, splitA:sp[0], splitH:sp[1],
                  qa:r[13], qh:r[14],
-                 stand:r[15], hia:r[16], hih:r[17], o14a:r[18], o14h:r[19],
+                 stand:r[15], hia:r[16], hih:r[17], o14a:r[18], o14h:r[19], k3a:r[20], k3h:r[21],
                  gamePk:g.gamePk, fecha:fecha, year:year};
           pintar(el);
           return el._d;
@@ -3494,7 +3526,10 @@ function detalle(x){
   var fA=fSplit(x.splitA,oa.ops), fH=fSplit(x.splitH,oh.ops);
   var rgA=rgSeasonA*fA, rgH=rgSeasonH*fH;
 
-  var r=ventaja({eraA:eA,eraH:eH,rgA:rgA,rgH:rgH,bpA:ba.era,bpH:bh.era});
+  /* pitcheo del equipo: carreras que permite por juego ×0.92 (escala del ERA), de la tabla de posiciones */
+  function raEq(id){ var t=x.stand&&x.stand[id]; if(!t||t.ra==null) return null; var g=(t.w||0)+(t.l||0); return g>=10?t.ra/g*0.92:null; }
+  var r=ventaja({eraA:eA,eraH:eH,rgA:rgA,rgH:rgH,bpA:ba.era,bpH:bh.era,raA:raEq(idA),raH:raEq(idH),
+                 kbbA:kbbUsado(sea),kbbH:kbbUsado(seh),k3A:x.k3a,k3H:x.k3h});
 
   function penal(q){
     if(!q) return 0;
@@ -3905,9 +3940,9 @@ function kBloque(p,abr,teamId,se,rival,abrRival,l5){
 function desglose(r,nomA,nomH){
   var sg=function(v){ return (v>=0?'+':'')+v.toFixed(3); };
   return '<div class="calc">'+
-    '<div><span>Abridores × 0.65</span><b>'+sg(r.p1)+'</b></div>'+
-    '<div><span>Ofensivas × 0.50</span><b>'+sg(r.p2)+'</b></div>'+
-    '<div><span>Bullpens × 0.25</span><b>'+sg(r.p3)+'</b></div>'+
+    '<div><span>Abridores (ERA × 0.20 + K-BB%)</span><b>'+sg(r.p1)+'</b></div>'+
+    '<div><span>Ofensivas × 0.75</span><b>'+sg(r.p2)+'</b></div>'+
+    '<div><span>Pitcheo del equipo × 0.80</span><b>'+sg(r.p3)+'</b></div>'+
     '<div><span>Localía</span><b>+'+BONO_LOCAL.toFixed(3)+'</b></div>'+
     '<div class="tot"><span>Δ carreras a favor de '+(r.delta>=0?nomH:nomA)+'</span><b>'+Math.abs(r.delta).toFixed(3)+'</b></div>'+
     '<div><span>50% + (Δ × '+MULT+')</span><b>'+(50+r.delta*MULT).toFixed(1)+'%</b></div>'+

@@ -77,7 +77,9 @@ Revisa sintaxis de todas las páginas, nombres usados sin existir, el service wo
 | Constante | Valor | De dónde salió |
 |---|---|---|
 | `MULT` | 6 | backtests de 2025 y 2026 (ganó al 13 y al 17) |
-| `BONO_LOCAL` | 0.59 | backtest contra el mercado, temporada 2025 completa (`backtests/backtestmercado.html`) |
+| `BONO_LOCAL` | 0.55 | fórmula de nov-2026, 2021-2026 (`docs/MEDICION-FORMULA-PROPIA-MLB-2026-11.md`); antes 0.59 |
+| `PESO_ERA` / `PESO_KBB` / `PESO_KBB3` | 0.20 / 10 / 5 | abridor: ERA + K-BB% de la temporada (jalado a 12% con 60 innings) + K-BB% de 3 años (5/4/3). Antes ERA × 0.65 sola |
+| `PESO_OF` / `PESO_PIT` | 0.75 / 0.80 | ofensiva y pitcheo del equipo (carreras permitidas por juego × 0.92, de la tabla). Antes 0.50 y bullpen ERA × 0.25. Las páginas de `backtests/` y `ova_formula.py` siguen con la fórmula vieja |
 | `PRIOR_ERA` | 40 innings | medido contra el mercado en 2021-2026: 20 a 120 no cambia nada (±0.001 de pérdida log) (`docs/MEDICION-MERCADO-MLB-2026-10.md`) |
 | `DISP` | 2.3 | `backtests/backtestforma.html` (razón varianza/media de 2.32 y 2.37) |
 | `ENCOGE` | 0.45 | backtest del total (pendiente medida 0.45 en 2026 y 0.44 en 2025) |
