@@ -5,4 +5,4 @@ compatibility_date = "2024-11-01"
 # Espacio KV donde se guardan los códigos. El id sale de Cloudflare → Storage & Databases → KV → ova-acceso.
 [[kv_namespaces]]
 binding = "ACCESO"
-id = "PON_AQUI_EL_ID_DEL_KV"
+id = "608d9cc26dc54b2680a5b3925342924d"
