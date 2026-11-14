@@ -32,3 +32,11 @@ Versión a mano (pesos de 2021-2024, probada en 2025-2026), escala de OVA (MULT 
 2025-2026: 0.6792 contra OVA 0.6813 (z −1.6), aciertos 56.1% contra 55.9%; mercado 0.6770 y 57.3%.
 
 **Lectura:** el abridor se mide mejor por K-BB% (temporada + 3 años) que por ERA; el ERA pesa mucho menos de lo que tiene OVA (0.14-0.25 contra 0.65) y el pitcheo del equipo más (0.7-0.9 contra 0.25). Mejora real pero chica (~1 acierto más cada 200 juegos) y no alcanza al mercado. Candidata para MLB 2027, junto con lo pendiente.
+
+## Lineup del día (14-nov-2026)
+
+Fuerza del lineup titular = OPS de 3 años de cada titular (5/4/3, jalado a .700 con 200 PA); se compara con el lineup normal del equipo (sus últimos 30 o 10 juegos). Rama `medir-mi-formula`, datos en `lu-S2021` … `lu-S2026`; script `scripts/medicion/propia/lineup_mlb.py`. Una primera corrida leyó el lineup del final del juego (con los cambios) y salió contaminada; la buena usa solo titulares (battingOrder 100…900).
+
+- Fórmula nueva 0.6782 → con lineup 0.6779 / 0.6774 (z −1.2 / −1.3), mejor en 3 de 5 temporadas. **No pasa; no se monta.**
+- El mercado ya lo tiene: cuando el lineup local viene 0.03+ de OPS más fuerte que su normal, el local ganó 61% y el mercado le daba 57%; la fórmula, 54%. En los otros tramos el mercado acierta su % casi exacto.
+- Diferencia típica del lineup contra su normal: 0.007 de OPS (90% de los juegos menos de 0.020). Pesa poco porque casi siempre juegan los mismos.
