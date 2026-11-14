@@ -50,7 +50,7 @@ export default {
 
     // ---- dueño ----
     if (b.accion === "admin") {
-      if (!env.ADMIN_KEY || b.clave !== env.ADMIN_KEY) return json({ ok: false, msg: "Clave incorrecta" }, 403);
+      if (!env.ADMIN_KEY || String(b.clave || "").trim() !== String(env.ADMIN_KEY).trim()) return json({ ok: false, msg: "Clave incorrecta" }, 403);
       const codigo = limpio(b.codigo);
       const leer = async () => (codigo ? await env.ACCESO.get("c:" + codigo, "json") : null);
       const guardar = (r) => env.ACCESO.put("c:" + codigo, JSON.stringify(r));
