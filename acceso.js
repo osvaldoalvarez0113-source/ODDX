@@ -2,7 +2,7 @@
    Va en el <head> de cada página, antes de todo lo demás. El control vive en el Worker ova-acceso (acceso-worker/).
    ACTIVO=false mientras el Worker no esté montado: así nadie se queda fuera. */
 (function () {
-  var ACTIVO = false;
+  var ACTIVO = true;
   var URL_ACCESO = 'https://ova-acceso.osvaldoalvarez0113.workers.dev';
   var GRACIA = 3 * 864e5;   // sin internet, deja entrar si se verificó en los últimos 3 días
   if (!ACTIVO) return;
