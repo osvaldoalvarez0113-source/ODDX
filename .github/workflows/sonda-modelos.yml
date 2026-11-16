@@ -1,0 +1,42 @@
+name: Sonda de modelos publicos
+# Prueba qué archivos de modelos públicos (nfelo, archivo de FiveThirtyEight, ClubElo) se pueden bajar y qué columnas traen. Solo mira.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [.github/workflows/sonda-modelos.yml]
+permissions:
+  contents: write
+jobs:
+  sonda:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Probar
+        run: |
+          mkdir -p /tmp/s && cd /tmp/s
+          p() { n="$1"; u="$2"; c=$(curl -sS -L -m 120 -A "ova-medicion (uso personal)" -o "$n.dat" -w "%{http_code} %{size_download}" "$u" 2>>err.txt || true); echo "== $n | $c | $u" >> info.txt; head -c 1500 "$n.dat" | head -3 >> info.txt 2>/dev/null; echo "..." >> info.txt; tail -c 700 "$n.dat" | tail -2 >> info.txt 2>/dev/null; echo >> info.txt; }
+          p nfelo_tree "https://api.github.com/repos/greerreNFL/nfelo/git/trees/main?recursive=1"
+          grep -o '"path": *"[^"]*\.csv"' nfelo_tree.dat | head -80 >> info.txt || true
+          p nfelo_games "https://raw.githubusercontent.com/greerreNFL/nfelo/main/output_data/nfelo_games.csv"
+          p d538_tree "https://api.github.com/repos/fivethirtyeight/data/git/trees/master?recursive=1"
+          grep -o '"path": *"\(nba-forecasts\|mlb-elo\|soccer-spi\|nfl-elo\|nhl-forecasts\|nba-elo\)[^"]*"' d538_tree.dat >> info.txt || true
+          p mlb_dh "https://datahub.io/fivethirtyeight/mlb-elo/_r/-/data/mlb_elo.csv"
+          p nba_dh_pkg "https://datahub.io/fivethirtyeight/nba-carmelo/_r/-/datapackage.json"
+          p nba_dh "https://datahub.io/fivethirtyeight/nba-carmelo/_r/-/data/nba_elo.csv"
+          p nbaf_dh_pkg "https://datahub.io/fivethirtyeight/nba-forecasts/_r/-/datapackage.json"
+          p spi_dh_pkg "https://datahub.io/fivethirtyeight/soccer-spi/_r/-/datapackage.json"
+          p spi_dh "https://datahub.io/fivethirtyeight/soccer-spi/_r/-/data/spi_matches.csv"
+          p nfl_dh_pkg "https://datahub.io/fivethirtyeight/nfl-elo/_r/-/datapackage.json"
+          p nfl_dh "https://datahub.io/fivethirtyeight/nfl-elo/_r/-/data/nfl_elo.csv"
+          p nba_538 "https://projects.fivethirtyeight.com/nba-model/nba_elo.csv"
+          p mlb_538 "https://projects.fivethirtyeight.com/mlb-api/mlb_elo.csv"
+          p spi_538 "https://projects.fivethirtyeight.com/soccer-api/club/spi_matches.csv"
+          p nfl_538 "https://projects.fivethirtyeight.com/nfl-api/nfl_elo.csv"
+          p clubelo "http://api.clubelo.com/2024-03-01"
+          p clubelo_club "http://api.clubelo.com/Barcelona"
+          for f in *_pkg.dat; do echo "== rutas en $f" >> info.txt; grep -o '"path": *"[^"]*"' "$f" | head -20 >> info.txt || true; done
+          ls -la >> info.txt
+          mkdir -p /tmp/res && cp info.txt err.txt /tmp/res/ 2>/dev/null || true
+          cd /tmp/res && git init -q -b sonda-modelos && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "sonda modelos" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" sonda-modelos
