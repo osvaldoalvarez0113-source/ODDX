@@ -1,3 +1,25 @@
+# Los modelos de OVA contra modelos públicos (15-nov-2026)
+
+¿Algún modelo público sabe algo que el de OVA no? Workflow **Medir contra modelos publicos** (rama `resultados-publicos`),
+`scripts/medicion/publico_nfl.js`, `publico_espn_bajar.js` y `publico_espn.py`. Pérdida logarítmica del ganador (más baja = mejor),
+siempre en juegos que el modelo de OVA no había visto. NHL contra MoneyPuck está en `MEDICION-XG-NHL-2026-11.md`. **No cambió nada en las apps.**
+
+| Deporte | Juegos | OVA | Modelo público | Mercado | Público − OVA (z) | ¿Le aporta a OVA? | ¿Le aporta al precio? |
+|---|---|---|---|---|---|---|---|
+| NFL | 1,462 (2019-2026) | 0.6423 | nfelo puro 0.6192 | 0.5982 | −4.9 | **Sí** (la mezcla óptima es 100% nfelo) | No |
+| NFL | 1,462 | 0.6423 | ESPN FPI 0.6302 | 0.5982 | −2.3 | **Sí** (peso 0.80, z −2.8) | No |
+| NBA | 6,748 (2020-21 a 2025-26) | 0.6177 | ESPN BPI 0.6086 | 0.5917 | −3.5 | **Sí** (peso 0.70, z −6.0) | No |
+| MLB | 6,017 (2024-2026) | 0.6791 (fórmula nueva) | ESPN 0.6808 | 0.6746 | +1.1 | No: la fórmula nueva ya está a su nivel | No |
+
+- **NFL y NBA: el modelo de OVA es más flojo que los públicos.** nfelo (Elo con ajuste de mariscal y ratings iniciales sacados de los
+  totales de victorias del mercado) y el BPI/FPI de ESPN aciertan más. Ninguno le gana al precio de cierre.
+- **MLB: la fórmula nueva (14-nov) empata con ESPN** y le gana a la anterior (0.6822). No hay nada que copiar.
+- **Fútbol: no se pudo medir.** El archivo de FiveThirtyEight que queda en línea termina en 2018 (las apps tienen datos desde 2020-21),
+  ClubElo no respondió y ESPN no publica pronóstico de fútbol ni de NHL.
+- **Ojo con NBA y NFL:** ESPN marca esos pronósticos como modificados al cierre de la temporada, así que no se puede comprobar que el número
+  sea exactamente el de antes del juego (en MLB sí: casi todos guardados antes de empezar). Como salen peores que el mercado, no parecen contaminados.
+- nfelo «final» (0.6064) ya viene mezclado con la línea de cierre: no cuenta como modelo independiente.
+
 ## NFL contra nfelo
 
 Pérdida logarítmica del ganador (más baja = mejor). nfelo: datos públicos de github.com/greerreNFL/nfelo.
