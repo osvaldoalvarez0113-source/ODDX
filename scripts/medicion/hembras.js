@@ -7,6 +7,9 @@
 const fs = require('fs'), path = require('path');
 const L = require('../lib_medir.js'), M = require('../../modelo-nhl.js');
 const d = JSON.parse(fs.readFileSync(process.argv[2] || path.join(__dirname, '../../datos-nhl.json')));
+// tiros a puerta del archivo diario: sin ellos el modelo corre «solo goles» y no es el de la app
+const hs = JSON.parse(fs.readFileSync(path.join(__dirname, '../../hist-nhl.json'))); const SH = {}; hs.g.forEach(r => { if (r.length > 10 && r[9] != null) SH[r[0]] = [r[9], r[10]]; });
+Object.keys(d.temps).forEach(s => d.temps[s].juegos.forEach(g => { const t = SH[g.id]; if (t && g.sh === undefined) { g.sh = t[0]; g.sa = t[1]; } }));
 const TEMPS = [2021, 2022, 2023, 2024, 2025, 2026], TEST = 2022, MINJ = 10;
 const todos = [].concat(...TEMPS.map(s => d.temps[s] ? d.temps[s].juegos : [])).filter(g => g.done && !g.skip).sort((a, b) => a.ts - b.ts);
 const hasta = sk => todos.filter(g => M.seasonOf(g.ts) <= sk);
