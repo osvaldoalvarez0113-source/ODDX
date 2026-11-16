@@ -71,7 +71,7 @@ async function leer() {
     });
     return o;
   }
-  const REJ = []; [0.004, 0.008, 0.015].forEach(kM => [0.03, 0.06, 0.09].forEach(kS => [0.04, 0.07, 0.1, 0.14].forEach(Ws => REJ.push({ kM, kS, Ws }))));
+  const REJ = []; [0.004, 0.008, 0.015].forEach(kM => [0.015, 0.03, 0.06, 0.09].forEach(kS => [0.04, 0.07, 0.1, 0.14, 0.2].forEach(Ws => REJ.push({ kM, kS, Ws }))));
   const PRUEBA = TEMPS.filter(s => s >= TEMPS[0] + 2);          // hacen falta 2 temporadas antes para elegir constantes
   const R = {};                                                   // R[variante][temporada] = { id: {ll,p,q,w} }
   const elegidos = {};
