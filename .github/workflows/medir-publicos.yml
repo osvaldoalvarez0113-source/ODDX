@@ -1,0 +1,48 @@
+name: Medir contra modelos publicos
+
+# Compara el modelo de cada app con modelos públicos (NFL: nfelo; NBA/NFL: ESPN BPI/FPI) y con el mercado. Solo mide: no toca las apps.
+# Informe en la rama "resultados-publicos".
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/medicion/publico_*.js
+      - .github/workflows/medir-publicos.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: medir-publicos
+  cancel-in-progress: true
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: NFL contra nfelo
+        continue-on-error: true
+        run: |
+          curl -sS -L --fail --retry 3 -o /tmp/nfelo_games.csv https://raw.githubusercontent.com/greerreNFL/nfelo/main/output_data/nfelo_games.csv
+          node scripts/medicion/publico_nfl.js /tmp/nfelo_games.csv datos-nfl.json resultado_publico_nfl.md 2>&1 | tee salida_publico_nfl.txt
+      - name: Sonda del pronóstico de ESPN (BPI / FPI)
+        continue-on-error: true
+        run: |
+          p() { echo "== $1 $2 $3" >> sonda_espn.txt; curl -sS -L -m 60 "https://sports.core.api.espn.com/v2/sports/$1/leagues/$2/events/$3/competitions/$3/predictor?lang=en&region=us" | head -c 1800 >> sonda_espn.txt; echo >> sonda_espn.txt; }
+          for id in 401307437 401360528 401468854 401585300 401705239 401810528; do p basketball nba $id; done
+          for id in $(node -e "const d=require('./datos-nfl.json');['2019','2021','2023','2025'].forEach(s=>{const j=d.temps[s].juegos.filter(g=>g.ty===2&&g.done);console.log(j[j.length>>1].id)})"); do p football nfl $id; done
+          for id in $(node -e "const d=require('./datos-nhl.json');['2022','2025'].forEach(s=>{const j=d.temps[s].juegos.filter(g=>g.ty===2&&g.done);console.log(j[j.length>>1].id)})"); do p hockey nhl $id; done
+          for par in "baseball mlb 20240615" "baseball mlb 20260615" "soccer eng.1 20240302" "soccer eng.1 20260307"; do set -- $par; id=$(curl -sS -m 60 "https://site.api.espn.com/apis/site/v2/sports/$1/$2/scoreboard?dates=$3" | grep -o '"id":"[0-9]*","uid":"s:[^"]*~e:' | head -1 | grep -o '[0-9]\{6,\}' | head -1); [ -n "$id" ] && p $1 $2 $id || echo "== $1 $2 $3 sin id" >> sonda_espn.txt; done
+      - name: Guardar informe
+        if: always()
+        continue-on-error: true
+        run: |
+          mkdir -p /tmp/res && cp -f resultado_publico_*.md salida_publico_*.txt sonda_espn.txt /tmp/res/ 2>/dev/null || true
+          cd /tmp/res && git init -q -b resultados-publicos && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "resultado modelos publicos" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" resultados-publicos
