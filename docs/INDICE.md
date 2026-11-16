@@ -43,3 +43,4 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 - Worker `ova-ia`: apagado por defecto (`ACTIVO = si` para encenderlo). Ninguna página lo llama. El cambio solo cuenta cuando se vuelve a publicar en Cloudflare.
 - [MEDICION-HANDICAP-2026-11.md](MEDICION-HANDICAP-2026-11.md): hándicap ±1.5 de NHL y spreads de NFL por tramo del favorito, con precio real.
 - [MEDICION-HEMBRAS-NHL-2026-11.md](MEDICION-HEMBRAS-NHL-2026-11.md): hembras (no favoritos) en NHL por precio, modelo, forma, descanso y movimiento; ninguna regla pasa.
+- [MEDICION-XG-NHL-2026-11.md](MEDICION-XG-NHL-2026-11.md): goles esperados de MoneyPuck contra tiros a puerta en el modelo de NHL; no entra.
