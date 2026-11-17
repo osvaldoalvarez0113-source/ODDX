@@ -54,3 +54,14 @@ El marcador de ESPN en copas incluye la prórroga, así que el 1X2 medido no es 
 ## Cómo repetirlo
 
 `node scripts/torneos_datos.js` (o `sel` / `copas` para uno solo). `TORNEOS_COMPLETO=1` vuelve a bajar los 4 años de selecciones.
+
+## Calibración del favorito en copas (17-nov-2026, aplicada)
+
+El 1X2 de copa se estira: q ∝ p^a. El exponente se eligió con la temporada 2024-25 (304 partidos) y se probó de 2025-26 en adelante (462 partidos, fuera de muestra).
+
+| | Pérdida | Acierto | Dice 50-60% → ganó | Dice 60-70% → ganó | Dice 70%+ → ganó |
+|---|---|---|---|---|---|
+| Antes (a = 1) | 0.9413 | 59.1% | 54.9% → 66.4% (128) | 64.5% → 84.2% (38) | 76.7% → 85.2% (27) |
+| **Estirado (a = 1.3)** | **0.9257** | 59.1% | 55.2% → 64.9% (114) | 64.5% → 71.8% (85) | 79.6% → 84.9% (53) |
+
+z −3.2. Los aciertos no cambian (el favorito sigue siendo el mismo); lo que cambia es que el porcentaje queda más cerca de lo que pasa, y más partidos suben a los tramos altos (60%+: de 65 a 138). Todavía se queda un poco corto. El workflow lo vuelve a elegir y probar en cada corrida, y solo se aplica si la prueba sale con z < −2.
