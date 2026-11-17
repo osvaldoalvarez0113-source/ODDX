@@ -25,6 +25,32 @@ def leer(dep):
     with gzip.open(p, 'rt') as f: return json.load(f)
 
 
+# MODO «contra el modelo» (noviembre 2026): OVA_CONTRA=modelo. La referencia de cada prop ya no sale de la línea de cierre sino de lo que
+# dijo el modelo de la app (total esperado y probabilidad del local, sin mirar el mercado). Así se ve si un patrón NUTRE al modelo.
+# Archivos extra en la carpeta de datos: nba.json (rama resultados-nba-6t), mod-nhl.json y mod-nfl.json (exportar_modelo.js) y fut.json
+# (rama resultados-futbol-6t). MLB queda fuera: sus archivos no traen el total del modelo ni con qué unir cada juego.
+MODELO = os.environ.get('OVA_CONTRA') == 'modelo'
+_MOD = {}
+def _cargar_modelo():
+    base = os.path.dirname(DIR.rstrip('/')) if os.path.basename(DIR.rstrip('/')) == 'props-datos' else DIR
+    def j(n):
+        q = os.path.join(base, n); return json.load(open(q)) if os.path.exists(q) else None
+    Phi = lambda x: 0.5 * (1 + math.erf(x / math.sqrt(2)))
+    m = {}
+    for r in (j('nba.json') or []):
+        v = r.get('V0')
+        if v and v.get('pm') is not None:
+            h = 1 - Phi((0.5 - v['pm']) / v['sM']); a = Phi((-0.5 - v['pm']) / v['sM']); m[str(r['id'])] = (v['pt'], h / (h + a))
+    _MOD['nba'] = m
+    for dep in ('nhl', 'nfl'):
+        _MOD[dep] = {k: (v['pt'], v['pH']) for k, v in (j('mod-%s.json' % dep) or {}).items()}
+    _MOD['fut'] = {(g['lg'], g['d'], g['h'], g['a']): (g['F0'], g['o0']) for g in (j('fut.json') or [])
+                   if g.get('F0') and all(v is not None for v in g['F0']) and g.get('o0') is not None}
+def modelo_de(dep, g):
+    v = _MOD.get(dep, {}).get(str(g['id']))
+    return v if v and 0 < v[1] < 1 else None
+
+
 def imp(a): return (-a) / (-a + 100) if a < 0 else 100 / (a + 100)
 
 
@@ -74,6 +100,9 @@ def filas_fut(d):
         vistos.add(clave)
         temp = int('20' + t[:2])
         x = None
+        if MODELO:
+            mm = _MOD['fut'].get((lg, ts, H, A)); x12 = ou = None
+            if mm and 0.02 < mm[1] < 0.98 and min(mm[0]) > 0.005: x12 = [1 / v for v in mm[0]]; ou = [1 / mm[1], 1 / (1 - mm[1])]
         if x12 and ou:
             i = [1 / v for v in x12]; s = sum(i); pH, pD, pA = [v / s for v in i]
             j = [1 / v for v in ou]; po = j[0] / sum(j)
@@ -184,7 +213,7 @@ def filas_por_periodo(d, dep):
         lh, la = g['lh'], g['la']
         need = {'nba': 4, 'nhl': 3, 'nfl': 4}[dep]
         if len(lh) < need: continue
-        m = mercado(g.get('ln'))
+        m = modelo_de(dep, g) if MODELO else mercado(g.get('ln'))
         x = None; T = ph = None
         if m:
             T, ph = m; pf = max(ph, 1 - ph); x = [1.0, T, ph, pf]
@@ -322,10 +351,12 @@ def medir(dep, nombre, filas, md, todas):
 def main():
     md = ['# Proposiciones de juego: ¿cuántas veces pasa y hay algún patrón que el mercado no vea?\n']
     todas = []
+    if MODELO: _cargar_modelo()
     fuentes = [('fut', '⚽ Fútbol (5 ligas, Pinnacle de cierre)', filas_fut), ('mlb', '⚾ MLB', filas_mlb),
                ('nba', '🏀 NBA', lambda d: filas_por_periodo(d, 'nba')), ('nhl', '🏒 NHL', lambda d: filas_por_periodo(d, 'nhl')),
                ('nfl', '🏈 NFL', lambda d: filas_por_periodo(d, 'nfl'))]
     for dep, nombre, fn in fuentes:
+        if MODELO and dep == 'mlb': continue
         d = leer(dep)
         if d is None: md.append(f'\n## {nombre}\n\nNo hay archivo de datos.\n'); continue
         medir(dep, nombre, fn(d), md, todas)

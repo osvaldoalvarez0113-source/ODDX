@@ -170,7 +170,20 @@
     return best;
   }
 
-  const api = { PDEF: PDEF, SIG_M: SIG_M, SIG_T: SIG_T, seasonOf: seasonOf, dayKey: dayKey, Phi: Phi, descanso: descanso, nuevoEstado: nuevoEstado, paso: paso, correr: correr, predecir: predecir,
+  /* ---------- viento y techo en el total (noviembre 2026) ----------
+     Medido contra el total del MODELO (no contra la línea) en 1,501 juegos 2019-2026 (docs/NUTRIR-MODELO-2026-11.md):
+     cada mph de viento a la hora del juego le quita 0.38 puntos al total (z -4.5, mismo signo en las 8 temporadas) y bajo techo
+     se anota como al aire libre sin viento. Probado en la temporada que quedó afuera: el error del total baja de 10.84 a 10.70 (z -2.5)
+     y el lado Más/Menos acierta 51.7% en vez de 49.2%. Devuelve los puntos que se suman al total esperado del modelo.
+     viento = mph (open-meteo, wind_speed_10m). Sin dato al aire libre se usa el viento medio (8.4 mph). */
+  const CLIMA = { base: 2.14, mph: -0.382, techo: 2.55, medio: 8.4, tope: 30 };
+  function ajusteClima(techado, viento) {
+    if (techado) return CLIMA.techo;
+    const v = (typeof viento === 'number' && isFinite(viento)) ? Math.min(Math.max(viento, 0), CLIMA.tope) : CLIMA.medio;
+    return CLIMA.base + CLIMA.mph * v;
+  }
+
+  const api = { CLIMA: CLIMA, ajusteClima: ajusteClima, PDEF: PDEF, SIG_M: SIG_M, SIG_T: SIG_T, seasonOf: seasonOf, dayKey: dayKey, Phi: Phi, descanso: descanso, nuevoEstado: nuevoEstado, paso: paso, correr: correr, predecir: predecir,
     pML: pML, pCover: pCover, pRango: pRango, pesosClave: pesosClave, distMargen: distMargen, pCoverK: pCoverK, pMLk: pMLk,
     evaluar: evaluar, dif: dif, verdTxt: verdTxt, gridMargen: gridMargen, gridTotal: gridTotal, sigmas: sigmas, pendiente: pendiente, zRecomendado: zRecomendado };
   root.OVA_NFL = api;

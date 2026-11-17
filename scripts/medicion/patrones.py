@@ -25,9 +25,93 @@ D = sys.argv[1] if len(sys.argv) > 1 else '.'
 random.seed(7); np.random.seed(7)
 
 # ------------------------------------------------------------------ utilidades
+_CACHE = {}
 def cargar(n):
-    p = os.path.join(D, n)
-    return json.load(open(p)) if os.path.exists(p) else None
+    if n not in _CACHE:
+        p = os.path.join(D, n)
+        _CACHE[n] = json.load(open(p)) if os.path.exists(p) else None
+    return _CACHE[n]
+
+# ------------------------------------------------------------------ MODO «contra el modelo» (noviembre 2026)
+# OVA_CONTRA=modelo: la referencia deja de ser el precio de cierre y pasa a ser lo que dijo EL MODELO de la app, sin mirar el mercado.
+# La pregunta cambia: ya no es «¿se puede apostar?» sino «¿el modelo se equivoca siempre para el mismo lado cuando pasa esto?».
+# Si la respuesta es sí, ese dato NUTRE al modelo (acierta más al sumarlo), aunque el precio de la casa ya lo supiera.
+# Antes de medir, la probabilidad del modelo se calibra (a + b·logit) con las OTRAS temporadas, para que un patrón no «salga»
+# solo porque el modelo en general exagera o se queda corto.
+MODELO = os.environ.get('OVA_CONTRA') == 'modelo'
+def _lg(p): p = min(max(p, 1e-4), 1 - 1e-4); return math.log(p / (1 - p))
+def _sig(z): return 1 / (1 + math.exp(-z))
+def _Phi(x): return 0.5 * (1 + math.erf(x / math.sqrt(2)))
+def calibrar(filas):
+    """filas = [(objeto, clave, p, y, temporada)] con y 1/0/None. Escribe objeto['_m'][clave] = p calibrada con las otras temporadas."""
+    from scipy.optimize import minimize
+    temps = sorted(set(f[4] for f in filas))
+    X = np.array([_lg(f[2]) for f in filas]); Y = np.array([np.nan if f[3] is None else f[3] for f in filas], float); T = np.array([f[4] for f in filas])
+    for t in temps:
+        m = (T != t) & ~np.isnan(Y)
+        if m.sum() < 200: a, b = 0.0, 1.0
+        else:
+            def nll(v): z = v[0] + v[1] * X[m]; return float(np.sum(np.log1p(np.exp(-z)) + (1 - Y[m]) * z))
+            a, b = minimize(nll, [0.0, 1.0], method='BFGS').x
+        for i in np.where(T == t)[0]:
+            filas[i][0].setdefault('_m', {})[filas[i][1]] = _sig(a + b * X[i])
+def calibrar3(filas):
+    """1X2 de fútbol: filas = [(objeto, [pH,pD,pA], y 0/1/2, temporada)]; calibra con exponente y sesgo por resultado."""
+    from scipy.optimize import minimize
+    L = np.log(np.clip(np.array([f[1] for f in filas], float), 1e-4, 1)); Y = np.array([f[2] for f in filas]); T = np.array([f[3] for f in filas])
+    def pr(v, l): z = v[0] * l + np.array([0.0, v[1], v[2]]); z = z - z.max(axis=1, keepdims=True); e = np.exp(z); return e / e.sum(axis=1, keepdims=True)
+    for t in sorted(set(T)):
+        m = T != t
+        v = minimize(lambda v: float(-np.sum(np.log(pr(v, L[m])[np.arange(m.sum()), Y[m]]))), [1.0, 0.0, 0.0], method='BFGS').x
+        q = pr(v, L[T == t])
+        for k, i in enumerate(np.where(T == t)[0]): filas[i][0].setdefault('_m', {})['x'] = [float(x) for x in q[k]]
+def preparar_modelo():
+    # fútbol: F0 = modelo de la app (1X2), o0 = su probabilidad de Más de 2.5
+    raw = cargar('fut.json') or []
+    f3 = [(g, g['F0'], g['y'], g['t']) for g in raw if g.get('F0') and all(v is not None for v in g['F0'])]
+    if f3: calibrar3(f3)
+    fo = [(g, 'o', g['o0'], 1 if g['gh'] + g['ga'] > 2.5 else 0, g['t']) for g in raw if g.get('o0') is not None]
+    if fo: calibrar(fo)
+    # NBA: V0 = modelo de la app (margen y total esperados con su desviación)
+    raw = cargar('nba.json') or []; fh, fs, ft = [], [], []
+    for g in raw:
+        v = g.get('V0')
+        if not v or v.get('pm') is None or g.get('mar') is None: continue
+        t = str(g['sk']); h = 1 - _Phi((0.5 - v['pm']) / v['sM']); a = _Phi((-0.5 - v['pm']) / v['sM'])
+        if g['mar'] != 0: fh.append((g, 'h', h / (h + a), 1 if g['mar'] > 0 else 0, t))
+        if g.get('spread') is not None:
+            x = g['mar'] + g['spread']; fs.append((g, 's', 1 - _Phi((-g['spread'] - v['pm']) / v['sM']), None if abs(x) < 1e-9 else (1 if x > 0 else 0), t))
+        if g.get('total') is not None and g.get('tot') is not None:
+            x = g['tot'] - g['total']; ft.append((g, 'o', 1 - _Phi((g['total'] - v['pt']) / v['sT']), None if abs(x) < 1e-9 else (1 if x > 0 else 0), t))
+    for f in (fh, fs, ft):
+        if f: calibrar(f)
+    # MLB: P40 = fórmula de la app con su prior de 40 innings (probabilidad del local)
+    fm = []
+    for y in range(2021, 2027):
+        for g in (cargar('mlb%d.json' % y) or []):
+            if g.get('v') and g['v'].get('P40') is not None: fm.append((g, 'h', g['v']['P40'], g['y'], str(y)))
+    if fm: calibrar(fm)
+    # NHL y NFL: mod-<dep>.json sale de scripts/medicion/exportar_modelo.js (walk-forward con el modelo de cada app)
+    for dep in ('nhl', 'nfl'):
+        d = cargar('d%s.json' % dep); mod = cargar('mod-%s.json' % dep)
+        if not d or not mod: continue
+        fh, fs, ft = [], [], []
+        for y, t in d['temps'].items():
+            for g in t['juegos']:
+                o = mod.get(str(g['id'])); l = g.get('linea') or {}
+                if not o or not g.get('done'): continue
+                if g['hs'] != g['as']: fh.append((g, 'h', o['pH'], 1 if g['hs'] > g['as'] else 0, y))
+                if o.get('sp') is not None and l.get('sp') is not None:
+                    x = (g['hs'] - g['as']) + l['sp']; fs.append((g, 's', o['sp'], None if abs(x) < 1e-9 else (1 if x > 0 else 0), y))
+                if o.get('ov') is not None and l.get('tot') is not None:
+                    x = g['hs'] + g['as'] - (1 if (dep == 'nhl' and g.get('so')) else 0) - l['tot']; ft.append((g, 'o', o['ov'], None if abs(x) < 1e-9 else (1 if x > 0 else 0), y))
+        for f in (fh, fs, ft):
+            if f: calibrar(f)
+def _pm(g, clave, lado_primero):
+    """probabilidad calibrada del modelo para el lado pedido (lado_primero = True: local / Más); None si el modelo no dijo nada"""
+    v = (g.get('_m') or {}).get(clave)
+    if v is None: return None
+    return v if lado_primero else 1 - v
 
 def am2dec(a):
     a = float(a)
@@ -114,6 +198,14 @@ def futbol():
 def fut_pruebas(g, lado):
     """devuelve Prueba de apostar a 'H','D','A' (1X2) o 'O','U' (2.5 goles) en este partido, o None"""
     mk = g.get('mk'); odds = g.get('ps') or g.get('avg')
+    if MODELO:
+        m = g.get('_m') or {}
+        if lado in 'HDA':
+            if 'x' not in m: return None
+            i = 'HDA'.index(lado); return Prueba(m['x'][i], 1 if g['y'] == (0, 1, 2)[i] else 0, 2.0, g['t'])
+        p = _pm(g, 'o', lado == 'O')
+        if p is None: return None
+        tot = g['gh'] + g['ga']; return Prueba(p, 1 if (tot > 2.5) == (lado == 'O') else 0, 2.0, g['t'])
     if lado in 'HDA':
         if not mk or not odds: return None
         i = 'HDA'.index(lado)
@@ -194,6 +286,9 @@ def correr_nba():
         dh, da = am2dec(mh), am2dec(ma); ih, ia = 1 / dh, 1 / da
         p = (ih if lado == 'H' else ia) / (ih + ia)
         w = 1 if (g['mar'] > 0) == (lado == 'H') else 0
+        if MODELO:
+            p = _pm(g, 'h', lado == 'H')
+            if p is None or g['mar'] == 0: return None
         return Prueba(p, w, dh if lado == 'H' else da, str(g['sk']))
     def ps_linea(sel, lado, tipo):
         out = []
@@ -202,7 +297,9 @@ def correr_nba():
             g = r['g']
             if tipo == 'spread': w = cubre(g, lado)
             elif tipo == 'total': w = over(g, lado)
-            if tipo in ('spread', 'total'): out.append(Prueba(0.5, w, 1.909, r['t']))
+            if tipo in ('spread', 'total'):
+                p = _pm(g, 's' if tipo == 'spread' else 'o', lado in ('H', 'O')) if MODELO else 0.5
+                if p is not None: out.append(Prueba(p, w, 1.909, r['t']))
             else:
                 x = ml(g, lado)
                 if x: out.append(x)
@@ -248,6 +345,7 @@ def correr_mlb():
         g = r['g']; ih, ia = g['iH'], g['iA']
         p = (ih if lado == 'H' else ia) / (ih + ia)
         w = 1 if (g['y'] == 1) == (lado == 'H') else 0
+        if MODELO: p = _pm(g, 'h', lado == 'H')
         return Prueba(p, w, g['dH'] if lado == 'H' else g['dA'], r['t'])
     def pm(r): g = r['g']; return g['iH'] / (g['iH'] + g['iA'])
     PAT = [
@@ -269,7 +367,8 @@ def correr_mlb():
             l = lado
             if lado == 'DOG': l = 'H' if pm(r) < 0.5 else 'A'
             if lado == 'FAV': l = 'H' if pm(r) >= 0.5 else 'A'
-            ps.append(ap(r, l))
+            x = ap(r, l)
+            if x.p is not None: ps.append(x)
         rr = resumen(ps)
         if rr: res.append(('MLB', nombre, rr))
     return res, juegos
@@ -332,6 +431,9 @@ def nn_ml(r, lado):
     dh, da = am_dec(l['ml'][0]), am_dec(l['ml'][1]); ih, ia = 1 / dh, 1 / da
     p = (ih if lado == 'H' else ia) / (ih + ia)
     if g['hs'] == g['as']: return None
+    if MODELO:
+        p = _pm(g, 'h', lado == 'H')
+        if p is None: return None
     return Prueba(p, 1 if (g['hs'] > g['as']) == (lado == 'H') else 0, dh if lado == 'H' else da, r['t'])
 
 def nn_sp(r, lado):
@@ -344,6 +446,9 @@ def nn_sp(r, lado):
     if ow and 1 <= am_dec(ow[0]) and 1 <= am_dec(ow[1]):
         ih, ia = 1 / am_dec(ow[0]), 1 / am_dec(ow[1]); p = (ih if lado == 'H' else ia) / (ih + ia); dec = am_dec(ow[0] if lado == 'H' else ow[1])
     else: p, dec = 0.5, 1.909
+    if MODELO:
+        p = _pm(g, 's', lado == 'H')
+        if p is None: return None
     return Prueba(p, 1 if (x > 0) == (lado == 'H') else 0, dec, r['t'])
 
 def nn_tot(r, lado, dep):
@@ -356,6 +461,9 @@ def nn_tot(r, lado, dep):
     if ou and am_dec(ou[0]) >= 1 and am_dec(ou[1]) >= 1:
         io, iu = 1 / am_dec(ou[0]), 1 / am_dec(ou[1]); p = (io if lado == 'O' else iu) / (io + iu); dec = am_dec(ou[0] if lado == 'O' else ou[1])
     else: p, dec = 0.5, 1.909
+    if MODELO:
+        p = _pm(g, 'o', lado == 'O')
+        if p is None: return None
     return Prueba(p, 1 if (x > 0) == (lado == 'O') else 0, dec, r['t'])
 
 PAT_NHL = [
@@ -502,5 +610,32 @@ def main():
     open(os.path.join(D, 'patrones-resultado.md'), 'w').write(texto + '\n')
     json.dump([dict(dep=d, patron=n_, **r) for d, n_, r in todo], open(os.path.join(D, 'patrones-resultado.json'), 'w'), ensure_ascii=False)
 
+def main_modelo():
+    preparar_modelo()
+    todo = []
+    rf, dfut = correr_futbol(); todo += rf
+    rn, _ = correr_nba(); todo += rn
+    rm, _ = correr_mlb(); todo += rm
+    rh, _ = correr_nhlnfl('nhl'); todo += rh
+    rl, _ = correr_nhlnfl('nfl'); todo += rl
+    ok = holm([r['p'] for _, _, r in todo])
+    L = []; pr = L.append
+    pr('# Patrones contra EL MODELO: ¿alguno lo nutre? (noviembre 2026)\n')
+    pr('Los mismos **%d patrones** de `docs/PATRONES-2026-10.md`, pero la referencia ya no es el precio de la casa: es lo que dijo el modelo de cada app, sin mirar el mercado (calibrado con las otras temporadas).' % len(todo))
+    pr('Diferencia = (lo que pasó) − (lo que el modelo decía). Si no es 0 y se repite por temporada, el modelo no está leyendo ese dato y sumarlo lo hace acertar más.\n')
+    pr('| Deporte | Patrón | Juegos | Pasó | El modelo decía | Diferencia | z | p | Temporadas a favor/contra | ¿Aguanta Holm? |')
+    pr('|---|---|---|---|---|---|---|---|---|---|')
+    for (dep, nom, r), o in zip(todo, ok):
+        pr('| %s | %s | %d | %.1f%% | %.1f%% | %+.1f pts | %+.1f | %.4f | %d / %d de %d | %s |' % (
+            dep, nom, r['n'], 100 * r['tasa'], 100 * r['esperada'], 100 * r['resid'], r['z'], r['p'], r['temps_pos'], r['temps_neg'], r['temps'], 'SÍ' if o else 'no'))
+    n_nom = sum(1 for _, _, r in todo if r['p'] < 0.05)
+    pr('\n**Resultado:** %d de %d con p < 0.05 sin corregir (se esperan ≈ %.1f por suerte). Después de Holm: **%d**.' % (n_nom, len(todo), 0.05 * len(todo), sum(ok)))
+    n, s5, s1, sd = control_azar(dfut)
+    pr('\n**Control con banderas al azar (fútbol, contra el modelo):** %d de %d (%.1f%%) con p < 0.05 y %d con p < 0.01; desviación de z %.2f (1.00 = el modelo calibrado se comporta como debe).' % (s5, n, 100 * s5 / max(n, 1), s1, sd))
+    texto = '\n'.join(L)
+    print(texto)
+    open(os.path.join(D, 'patrones-modelo-resultado.md'), 'w').write(texto + '\n')
+    json.dump([dict(dep=d, patron=n_, holm=bool(o), **r) for (d, n_, r), o in zip(todo, ok)], open(os.path.join(D, 'patrones-modelo-resultado.json'), 'w'), ensure_ascii=False)
+
 if __name__ == '__main__':
-    main()
+    main_modelo() if MODELO else main()

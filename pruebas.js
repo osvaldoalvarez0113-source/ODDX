@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -555,7 +555,7 @@ sec('Once diseños con cabecera propia: Historias, Duelo, Bento, Agenda, Radar d
  ok('siglas: un club que no está en la lista toma las 3 primeras letras de su nombre sin FC/CF/AC (Zzyzx Rovers→ZZY, FC Nowhere→NOW)',I2.sigla('Zzyzx Rovers')==='ZZY'&&I2.sigla('FC Nowhere')==='NOW'&&I2.sigla('')==='');
  ok('Paneles: muestra el logo de cada equipo además de la sigla',/\.nxLogo\{width:48px/.test(I2.css)&&!/\.nxTit,& \.nxLogo/.test(I2.css.slice(I2.css.indexOf('PANELES'))));
  {const nb=rd('nba.html'), us=rd('usdeporte.js');
-  ok('NBA: la columna «Modelo» del Veredicto es el modelo SOLO (igual que NHL/NFL), no la mezcla 95% mercado que siempre coincidía',/Modelo solo<\/div>/.test(nb)&&/row\(H\.n,pr\.pHMod,hit\)/.test(nb)&&/Math\.abs\(pr\.pHMod-hit\)/.test(nb));
+  ok('NBA: la columna «Modelo» del Veredicto es el modelo SOLO (igual que NHL/NFL), no la mezcla 95% mercado que siempre coincidía',/Modelo solo'\}<\/div>/.test(nb)&&/row\(H\.n,pr\.pHMod,hit\)/.test(nb)&&/Math\.abs\(pr\.pHMod-hit\)/.test(nb));
   ok('el aviso «se separa X pts» ahora dice los dos números: lo que dice el mercado y lo que dice el modelo solo (NBA, NHL y NFL)',/el mercado dice <strong>'\+quien\(mer\)\+'<\/strong> y el modelo solo dice/.test(nb)&&/el mercado dice <strong>' \+ quien\(hayS \? mer : pmM\) \+ '<\/strong> y el modelo solo dice/.test(us));}
  ok('fútbol: el aviso de diferencia dice el % del modelo y el % del mercado, no solo los puntos',/\(modelo '\+pc0\(mod\[mi\]\)\+', mercado '\+pc0\(f\[mi\]\)\+'\)/.test(rd('futbol.html')));
  ok('Veredicto NBA/NHL/NFL: el cartel de diferencia dice «pts de probabilidad» con el % del modelo solo y el del mercado (ya no se confunde con los pts de marcador)',/pts de probabilidad\$\{pctNf\}/.test(rd('nba.html'))&&/pts de probabilidad\$\{pctNf\}/.test(rd('usdeporte.js'))&&/Modelo solo: <b>/.test(rd('nba.html')));
@@ -1400,7 +1400,7 @@ sec('Línea de antes del juego: ESPN la quita al empezar (KC@SEA en vivo salía 
  ok('odds robot: escribe salida/odds-<dep>.json y mira 7 días',/salida\/odds-/.test(ls)&&/\[0, 1, 2, 3, 4, 5, 6\]/.test(ls));
  const us=rd('usdeporte.js'), nb=rd('nba.html');
  ok('apps: NFL/NHL y NBA rellenan la línea con la guardada en el teléfono o la del robot',/function rellenarOdds/.test(us)&&/odds-' \+ DEP/.test(us)&&/ova_odds_/.test(us)&&/async function rellenarOdds/.test(nb)&&/odds-nba\.json/.test(nb)&&/ova_odds_nba/.test(nb));
- ok('apps: rellenarOdds corre al terminar cargarProximos (antes de pintar)',/await rellenarOdds\(\);\s*await rellenarPred\(\);\s*\}\s*\/\/ lesionados/.test(us)&&/await rellenarOdds\(\);\s*await rellenarPred\(\);\s*\}\s*async function lesiones/.test(nb));
+ ok('apps: rellenarOdds corre al terminar cargarProximos (antes de pintar)',/await rellenarOdds\(\);\s*await rellenarPred\(\);\s*await Promise\.all\(\[rellenarPublico\(\), rellenarViento\(\)\]\);\s*\}\s*\/\/ lesionados/.test(us)&&/await rellenarOdds\(\);\s*await rellenarPred\(\);\s*await rellenarPublico\(\);\s*\}\s*async function lesiones/.test(nb));
 }
 
 sec('Pestañas pegajosas dentro del juego (se quedaban flotando a media pantalla en los diseños nuevos)');
@@ -1842,7 +1842,67 @@ sec('Tenis en Herramientas, sello de actualización y horario de avisos');
  ok('el workflow del sello corre al subir páginas o .js, no se dispara con su propio archivo y no usa claves',/"\*\.html"/.test(wf)&&/"\*\.js"/.test(wf)&&/"!sello\.js"/.test(wf)&&/contents:\s*write/.test(wf)&&!/secrets\./.test(wf)&&/node scripts\/sello\.js/.test(wf));
 })();
 
-(async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); })().then(()=>{
+/* ---------------- Modelo nutrido con el pronóstico público de ESPN (publico.js) ---------------- */
+async function t_publico(){
+ sec('Modelo nutrido con ESPN: NBA (BPI) y NFL (FPI) (publico.js)');
+ const P=require(D+'publico.js');
+ const resp=(h,a)=>({homeTeam:{statistics:[{name:'x',value:1},{name:'gameProjection',value:h}]},awayTeam:{statistics:[{name:'gameProjection',value:a}]}});
+ ok('lee la probabilidad del local de la respuesta de ESPN',Math.abs(P.leer(resp(63.5,36.5))-0.635)<1e-9);
+ ok('si solo viene la del visitante, saca la del local',Math.abs(P.leer({awayTeam:{statistics:[{name:'gameProjection',value:40}]}})-0.6)<1e-9);
+ ok('respuesta vacía, rota o imposible = nada (la app sigue con su modelo)',P.leer(null)===null&&P.leer({})===null&&P.leer({homeTeam:{statistics:[{name:'gameProjection',value:'abc'}]}})===null&&P.leer(resp(100,0))===null&&P.leer(resp(0,100))===null);
+ const m=P.mezclar(0.55,0.70,'nba'), f=P.mezclar(0.55,0.70,'nfl');
+ ok('la mezcla queda entre el modelo y ESPN, más cerca de ESPN',m>0.55&&m<0.70&&m-0.55>0.70-m&&f>m);
+ ok('pesos medidos: NBA 0.70 y NFL 0.80',P.W.nba===0.70&&P.W.nfl===0.80&&P.W.nhl===undefined);
+ ok('si los dos dicen lo mismo, la mezcla dice lo mismo',Math.abs(P.mezclar(0.62,0.62,'nba')-0.62)<1e-9);
+ ok('es simétrica (visitante = 1 − local)',Math.abs(P.mezclar(0.55,0.70,'nba')+P.mezclar(0.45,0.30,'nba')-1)<1e-9);
+ ok('sin ESPN, con deporte sin medir o con basura no mezcla',P.mezclar(0.6,null,'nba')===null&&P.mezclar(0.6,0.7,'nhl')===null&&P.mezclar(NaN,0.7,'nba')===null&&P.mezclar(0.6,1.2,'nba')===null);
+ const nb=rd('nba.html'),i0=nb.indexOf('<script id="modelo">')+20,mod=nb.slice(i0,nb.indexOf('</script>',i0)),N={};
+ new Function('N','module',mod+';Object.assign(N,{pML});')(N,undefined);
+ const pm2=P.margenDe(m,x=>N.pML(x,13.8));
+ ok('la mezcla se pasa a margen: ese margen da la misma probabilidad',Math.abs(N.pML(pm2,13.8)-m)<1e-6&&pm2>0&&pm2<45);
+ const AH=Date.UTC(2026,10,16,20), H=3600e3;
+ const js=[{id:'1',ts:AH+5*H},{id:'2',ts:AH-2*H},{id:'3',ts:AH+10*864e5},{id:'4',ts:AH+20*H},{id:'5',ts:AH+30*H}];
+ const mem={nba:{'2':{h:0.41,t:AH-20*H},'4':{h:0.6,t:AH-1*H},'5':{h:0.3,t:AH-9*H}}};
+ ok('solo pide juegos sin empezar, cercanos y sin número fresco',JSON.stringify(P.porPedir('nba',js,mem,AH))==='["1","5"]');
+ ok('NFL mira más días adelante que NBA',P.porPedir('nfl',[{id:'9',ts:AH+6*864e5}],{},AH).length===1&&P.porPedir('nba',[{id:'9',ts:AH+6*864e5}],{},AH).length===0);
+ const mkLS=o=>({_:o||{},getItem(k){return k in this._?this._[k]:null;},setItem(k,v){this._[k]=String(v);}});
+ const ls=mkLS({[P.KEY]:JSON.stringify(mem)}), pedidos=[], g0=globalThis.fetch;
+ globalThis.fetch=u=>{ pedidos.push(u); const id=/events\/(\d+)\//.exec(u)[1]; return Promise.resolve(id==='5'?{ok:false}:{ok:true,json:()=>Promise.resolve(resp(72,28))}); };
+ const J=js.map(x=>Object.assign({},x));
+ const n=await P.rellenar('nba',J,{ls:ls,ahora:AH,maxMs:2000});
+ ok('baja lo que falta y se lo pone al juego (g.espn)',n===1&&Math.abs(J[0].espn-0.72)<1e-9&&pedidos.length===2&&/basketball\/leagues\/nba\/events\/1\/competitions\/1\/predictor/.test(pedidos[0]));
+ ok('el juego ya empezado se queda con el número de antes del juego y no se vuelve a pedir',J[1].espn===0.41&&!pedidos.some(u=>/events\/2\//.test(u)));
+ ok('si ESPN falla en un juego, queda el número guardado (o nada) y no se rompe',J[4].espn===0.3&&J[2].espn===null);
+ ok('lo bajado queda guardado en el teléfono',JSON.parse(ls._[P.KEY]).nba['1'].h===0.72&&JSON.parse(ls._[P.KEY]).nba['4'].h===0.6);
+ pedidos.length=0; const J2=js.map(x=>Object.assign({},x)); await P.rellenar('nba',J2,{ls:ls,ahora:AH+H,maxMs:2000});
+ ok('la segunda vez no vuelve a pedir lo que ya tiene fresco',!pedidos.some(u=>/events\/1\//.test(u))&&J2[0].espn===0.72);
+ globalThis.fetch=()=>new Promise(()=>{});
+ const J3=[{id:'77',ts:AH+5*H}], t0=Date.now(); await P.rellenar('nfl',J3,{ls:mkLS(),ahora:AH,maxMs:60});
+ ok('si ESPN no contesta, no deja la app colgada',Date.now()-t0<1500&&J3[0].espn===null);
+ globalThis.fetch=()=>Promise.reject(new Error('sin red'));
+ const J4=[{id:'78',ts:AH+5*H}]; const n4=await P.rellenar('nfl',J4,{ls:mkLS(),ahora:AH,maxMs:500});
+ ok('sin internet devuelve 0 y la app sigue',n4===0&&J4[0].espn===null);
+ globalThis.fetch=g0;
+ const viejo={nba:{'a':{h:0.5,t:AH-13*864e5},'b':{h:0.5,t:AH-864e5}},x:5};
+ ok('borra lo guardado de hace más de 12 días',(l=>l.nba.a===undefined&&!!l.nba.b&&l.x===undefined)(P.limpiar(viejo,AH)));
+ const us=rd('usdeporte.js');
+ ok('NBA: carga publico.js, lo pide al cargar los juegos y mezcla antes de fijar «modelo»',nb.indexOf('<script src="publico.js"></script>')>0&&/await rellenarPublico\(\);/.test(nb)&&nb.indexOf("mezclar(pr.pH,g.espn,'nba')")>0&&nb.indexOf("mezclar(pr.pH,g.espn,'nba')")<nb.indexOf('pr.pmMod=pr.pm; pr.ptMod=pr.pt; pr.pHMod=pr.pH;'));
+ ok('NFL: carga publico.js antes de usdeporte.js y mezcla antes de fijar «modelo»',rd('nfl.html').indexOf('publico.js')>0&&rd('nfl.html').indexOf('publico.js')<rd('nfl.html').indexOf('usdeporte.js')&&us.indexOf("mezclar(pr.pH, g.espn, 'nfl')")>0&&us.indexOf("mezclar(pr.pH, g.espn, 'nfl')")<us.indexOf('pr.pmMod = pr.pm; pr.ptMod = pr.pt; pr.pHMod = pr.pH; pr.conLinea = false; pr.conML = false; pr.gH = gH; pr.gA = gA;\n      const sM0'));
+ ok('NHL no pide pronóstico público (ESPN no publica uno de NHL)',/DEP === 'nfl' && window\.OVAPublico/.test(us)&&rd('nhl.html').indexOf('publico.js')<0);
+ ok('en vivo sigue mandando el precio (la mezcla no toca ese camino)',/if \(mk && mk\.live\) \{ pr\.pH = mk\.p;/.test(us)&&/if\(pk2!==null&&vivoJ\(g\)\)\{ zb=logitP\(pk2\);/.test(nb));
+ ok('el service worker guarda publico.js',rd('sw.js').indexOf("'publico.js'")>0);
+ sec('NFL: el viento y el techo entran al total del modelo (modelo-nfl.js)');
+ const F=require(D+'modelo-nfl.js');
+ ok('cada mph de viento quita 0.38 puntos al total',Math.abs((F.ajusteClima(false,10)-F.ajusteClima(false,20))-3.82)<1e-9);
+ ok('bajo techo se suma como un juego sin viento (un poco más)',F.ajusteClima(true,25)===F.CLIMA.techo&&Math.abs(F.ajusteClima(true)-F.ajusteClima(false,0))<0.6&&F.ajusteClima(true)>0);
+ ok('sin dato de viento usa el viento medio (no deja el total sin ajustar ni lo dispara)',Math.abs(F.ajusteClima(false,null)-F.ajusteClima(false,F.CLIMA.medio))<1e-9&&Math.abs(F.ajusteClima(false,undefined)-F.ajusteClima(false,NaN))<1e-9&&F.ajusteClima(false,null)<0&&F.ajusteClima(false,null)>-2);
+ ok('viento absurdo queda topado (30 mph) y negativo cuenta como 0',F.ajusteClima(false,90)===F.ajusteClima(false,30)&&F.ajusteClima(false,-5)===F.ajusteClima(false,0)&&F.ajusteClima(false,30)>-10);
+ ok('en promedio no mueve el total de la liga (techados suben, al aire libre con viento medio bajan)',Math.abs((442*F.ajusteClima(true)+1059*F.ajusteClima(false,8.4))/1501)<0.05);
+ ok('la app lo suma antes de fijar el «total del modelo», solo en NFL y no en cancha neutral',us.indexOf('M.ajusteClima(!!g.indoor, g.viento)')>0&&us.indexOf('M.ajusteClima(!!g.indoor, g.viento)')<us.indexOf('pr.pmMod = pr.pm; pr.ptMod = pr.pt; pr.pHMod = pr.pH; pr.conLinea = false; pr.conML = false; pr.gH = gH; pr.gA = gA;\n      const sM0')&&/M\.ajusteClima && !g\.neutral/.test(us)&&require(D+'modelo-nhl.js').ajusteClima===undefined);
+ ok('el viento se pide solo para juegos al aire libre sin empezar y no cuelga la app (tope 3 s)',/!g\.indoor && !g\.neutral && CLIMA_NFL\[T\(g\.h\)\.ab\] && g\.ts > ahora/.test(us)&&/Promise\.race\(\[todo, new Promise\(r => setTimeout\(r, 3000\)\)\]\)/.test(us)&&/DEP !== 'nfl' \|\| !M\.ajusteClima\) return;/.test(us));
+}
+
+(async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);
 }).catch(e=>{console.log('ERROR en pruebas',e);process.exit(1);});

@@ -2,7 +2,7 @@
 
 ¿Algún modelo público sabe algo que el de OVA no? Workflow **Medir contra modelos publicos** (rama `resultados-publicos`),
 `scripts/medicion/publico_nfl.js`, `publico_espn_bajar.js` y `publico_espn.py`. Pérdida logarítmica del ganador (más baja = mejor),
-siempre en juegos que el modelo de OVA no había visto. NHL contra MoneyPuck está en `MEDICION-XG-NHL-2026-11.md`. **No cambió nada en las apps.**
+siempre en juegos que el modelo de OVA no había visto. NHL contra MoneyPuck está en `MEDICION-XG-NHL-2026-11.md`. El 15-nov no cambió nada en las apps; **el 16-nov la mezcla con ESPN entró a NBA y NFL** (`publico.js`, `docs/NUTRIR-MODELO-2026-11.md`).
 
 | Deporte | Juegos | OVA | Modelo público | Mercado | Público − OVA (z) | ¿Le aporta a OVA? | ¿Le aporta al precio? |
 |---|---|---|---|---|---|---|---|

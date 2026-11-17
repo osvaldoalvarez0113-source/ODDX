@@ -211,6 +211,26 @@
       aplicarPred();
     } catch (e) { }
   }
+  /* ---------- pronóstico público de ESPN (FPI): nutre al modelo de NFL (publico.js). Si ESPN falla, sigue el modelo solo ---------- */
+  async function rellenarPublico() { try { if (DEP === 'nfl' && window.OVAPublico) await window.OVAPublico.rellenar('nfl', PEND); } catch (e) { } }
+  /* ---------- NFL: viento a la hora del juego para el total del modelo (M.ajusteClima). Se guarda en el teléfono; si no llega, se usa el viento medio ---------- */
+  const K_VIENTO = 'ova_nfl_viento_v1';
+  function horaViento(j, ts) { const h = j && j.hourly, i = h && h.time ? h.time.indexOf(new Date(ts).toISOString().slice(0, 13) + ':00') : -1; return i >= 0 && isFinite(h.wind_speed_10m[i]) ? +h.wind_speed_10m[i] : null; }
+  async function rellenarViento() {
+    try {
+      if (DEP !== 'nfl' || !M.ajusteClima) return;
+      const ahora = Date.now(), mem = LS.get(K_VIENTO) || {};
+      Object.keys(mem).forEach(id => { if (!mem[id] || ahora - mem[id].t > 12 * 864e5) delete mem[id]; });
+      const poner = () => PEND.forEach(g => { const c = mem[g.id]; g.viento = c && isFinite(c.v) ? c.v : null; });
+      poner();
+      const faltan = PEND.filter(g => !g.indoor && !g.neutral && CLIMA_NFL[T(g.h).ab] && g.ts > ahora && g.ts - ahora < 8 * 864e5 && !(mem[g.id] && ahora - mem[g.id].t < 3 * 3600e3));
+      if (!faltan.length) return;
+      const todo = Promise.all(faltan.map(g => { const c = CLIMA_NFL[T(g.h).ab], f = new Date(g.ts).toISOString().slice(0, 10);
+        return fetch('https://api.open-meteo.com/v1/forecast?latitude=' + c[0] + '&longitude=' + c[1] + '&hourly=wind_speed_10m&wind_speed_unit=mph&timezone=GMT&start_date=' + f + '&end_date=' + f)
+          .then(r => r.ok ? r.json() : null).then(j => { const v = horaViento(j, g.ts); if (v !== null) mem[g.id] = { v: Math.round(v * 10) / 10, t: ahora }; }).catch(() => { }); })).then(() => { LS.set(K_VIENTO, mem); poner(); });
+      await Promise.race([todo, new Promise(r => setTimeout(r, 3000))]); poner();
+    } catch (e) { }
+  }
   function aplicarPred() {
     if (!PRED || !window.OVAPred) return;
     PEND.forEach(g => { const h = T(g.h), a = T(g.a); const p = window.OVAPred.buscar(PRED, h.n, a.n, g.ts); g.pred = p && !(p.edad !== null && p.edad > (vivoJ(g) ? 40 : 240) * 60000) ? p : null; });
@@ -224,6 +244,7 @@
     PEND.sort((a, b) => a.ts - b.ts);
     await rellenarOdds();
     await rellenarPred();
+    await Promise.all([rellenarPublico(), rellenarViento()]);
   }
   // lesionados: archivo grande (hockey ~1.4 MB, NFL ~9 MB). Solo se baja cuando lo pides.
   function lesiones() {
@@ -283,6 +304,10 @@
     let pr;
     if (DEP === 'nfl') {
       pr = predecir(ESTADO, PARAMS, base, { gH: gH, gA: gA });
+      // el modelo se nutre con el FPI de ESPN (peso 0.80, medido: 63.9% → 65.2% de aciertos); la mezcla se pasa a margen
+      if (window.OVAPublico && g.espn != null) { const mx = window.OVAPublico.mezclar(pr.pH, g.espn, 'nfl'); if (mx !== null) { pr.pHSolo = pr.pH; pr.pmSolo = pr.pm; pr.pEspn = g.espn; pr.pm = pmDeProbN(mx, pr.sM); pr.pH = mx; pr.conEspn = true; } }
+      // el total del modelo cuenta el viento y el techo (medido contra el modelo: -0.38 puntos por mph; bajo techo, como sin viento)
+      if (M.ajusteClima && !g.neutral) { const cl = M.ajusteClima(!!g.indoor, g.viento); if (isFinite(cl)) { pr.ptSolo = pr.pt; pr.dClima = cl; pr.pt += cl; } }
       pr.pmMod = pr.pm; pr.ptMod = pr.pt; pr.pHMod = pr.pH; pr.conLinea = false; pr.conML = false; pr.gH = gH; pr.gA = gA;
       const sM0 = pr.sM, pm0 = pr.pm;
       if (o && o.spread !== undefined && isFinite(o.spread)) { pr.pm = -o.spread + LAM_M * (pm0 + o.spread); pr.sM = sM0 * ESC_SIG; pr.conLinea = true; }
@@ -409,7 +434,7 @@
   const CLIMA_NFL = { ARI: [33.5, -112.3], ATL: [33.8, -84.4], BAL: [39.3, -76.6], BUF: [42.8, -78.8], CAR: [35.2, -80.9], CHI: [41.9, -87.6], CIN: [39.1, -84.5], CLE: [41.5, -81.7], DAL: [32.7, -97.1], DEN: [39.7, -105], DET: [42.3, -83], GB: [44.5, -88], HOU: [29.7, -95.4], IND: [39.8, -86.2], JAX: [30.3, -81.6], KC: [39, -94.5], LV: [36.1, -115.2], LAC: [33.95, -118.3], LAR: [33.95, -118.3], MIA: [25.96, -80.2], MIN: [45, -93.3], NE: [42.1, -71.3], NO: [30, -90.1], NYG: [40.8, -74.1], NYJ: [40.8, -74.1], PHI: [39.9, -75.2], PIT: [40.4, -80], SF: [37.4, -122], SEA: [47.6, -122.3], TB: [27.98, -82.5], TEN: [36.2, -86.8], WSH: [38.9, -76.9] };
   function textoClimaNfl(viento, temp, lluvia) {
     let t = 'Clima a la hora del juego: viento ' + Math.round(viento) + ' mph · ' + Math.round(temp) + '°F · lluvia o nieve ' + Math.round(lluvia) + '%.';
-    if (viento >= 15) t += ' Con viento así el total suele quedar un poco por debajo de la línea, pero apostar Menos no dio ganancia comprobada.';
+    if (viento >= 15) t += ' Con viento así se anota menos: el total del modelo ya lo descuenta.';
     return t;
   }
   function pintarClimaNfl(g, ab) {
@@ -495,7 +520,7 @@
      <div class="rvP">${pf >= umbral ? 'Es el favorito' + (hit !== null ? ' según el mercado (' + fuente + ').' : ' según el modelo.') : 'Ninguno pasa del ' + Math.round(umbral * 100) + '%. Lo más probable: ' + esc(nf) + ' ' + Math.round(pf * 100) + '%.'}${DEP === 'nhl' ? ' Incluye tiempo extra y shootout.' : ''}</div>${sig}${acH}
      <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amTxt(pf)}</b> por ${esc(nf)}${hit !== null ? '' : ' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(nf)}</label><input type="number" inputmode="decimal" data-vl="o" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${hit !== null ? 1 : 0}"><div class="rvVal" data-vl="r"></div></div></div>`;
     const row = (n, m, k) => `<div class="nm">${esc(n)} gana</div><div class="n md">${pct1(m)}</div><div class="n mk">${k === null ? '—' : pct1(k)}</div><div class="n">${amTxt(k === null ? m : k)}</div>`;
-    const tab = `<div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n, 1 - pr.pHMod, hit === null ? null : 1 - hit)}${row(H.n, pr.pHMod, hit)}</div>
+    const tab = `<div class="rvTab"><div class="th">Resultado</div><div class="th n">${pr.conEspn ? 'Modelo + ESPN' : 'Modelo'}</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n, 1 - pr.pHMod, hit === null ? null : 1 - hit)}${row(H.n, pr.pHMod, hit)}</div>
      <div class="nota" style="margin-top:6px">Mercado = ${mk ? fuente : 'sin precio todavía'}.</div>`;
     const L = (c, t) => `<div><i class="${c}">${c === 'ok' ? '✓' : (c === 'w' ? '!' : '✗')}</i><span>${t}</span></div>`;
     const li = [];
@@ -504,6 +529,8 @@
     else if (mk && mk.src === 'pred') li.push(L('ok', 'Precio del mercado de predicción (Polymarket): no hay Pinnacle ni línea de ESPN para este juego.' + (window.OVAPred && window.OVAPred.fino(g.pred) ? ' Ojo: hay poco dinero en este mercado.' : '')));
     else if (mk) li.push(L('ok', g.oddsViejo ? 'Precio de ESPN (DraftKings) de antes de que empezara el juego (ESPN lo quita en vivo); Pinnacle todavía no lo trae.' : 'Precio de ESPN (DraftKings) tomado del marcador; Pinnacle todavía no lo trae.'));
     else li.push(L('w', 'Sin precio del mercado para este juego.'));
+    if (isFinite(pr.dClima)) li.push(L('ok', `El total del modelo ya cuenta ${g.indoor ? 'el techo cerrado' : (isFinite(g.viento) ? 'el viento (' + Math.round(g.viento) + ' mph)' : 'el viento medio de un juego al aire libre')}: ${pr.dClima >= 0 ? '+' : '−'}${Math.abs(pr.dClima).toFixed(1)} puntos (de ${pr.ptSolo.toFixed(1)} a ${pr.ptMod.toFixed(1)}). Medido: cada mph de viento quita 0.38 puntos.`));
+    if (pr.conEspn) li.push(L('ok', `Modelo nutrido con el pronóstico de ESPN (FPI): el modelo solo daba ${esc(H.ab)} ${pct1(pr.pHSolo)}, ESPN ${pct1(pr.pEspn)}; juntos ${pct1(pr.pHMod)}. Medido: juntos aciertan más (65.2% contra 63.9%).`));
     if (mk && !mk.live && mk.src !== 'pred' && g.pred) { const d = Math.abs(g.pred.pH - mk.p) * 100; li.push(L(d <= 3 ? 'ok' : 'w', `Mercado de predicción (Polymarket): ${esc(H.ab)} ${pct1(g.pred.pH)}${d <= 3 ? ', coincide con el precio principal.' : ' (' + d.toFixed(0) + ' pts de diferencia con el precio principal; el principal suele tener razón).'}`)); }
     descansoTxt(g, pr, H, A).forEach(x => li.push(L(x[0], x[1])));
     if (!(mk && mk.live)) { const mv = movidaTxt(g, H, A); if (mv) li.push(L(mv[0], mv[1])); bajasTxt(g, H, A).forEach(x => li.push(L(x[0], x[1]))); }

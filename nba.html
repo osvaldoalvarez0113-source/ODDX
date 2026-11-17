@@ -17,6 +17,7 @@
 <script src="periodos.js"></script>
 <script src="jugadores.js"></script>
 <script src="forma.js"></script>
+<script src="publico.js"></script>
 <style>
 :root{
  --bg:#070B12;--bg1:#0D1420;--bg2:#131D2C;--bg3:#1B2838;
@@ -528,6 +529,7 @@ async function cargarProximos(){
   PEND.sort((a,b)=>a.ts-b.ts);
   await rellenarOdds();
   await rellenarPred();
+  await rellenarPublico();
 }
 async function lesiones(){
   if(INJ) return INJ;
@@ -556,6 +558,8 @@ const logitP=p=>Math.log(p/(1-p)), sigP=z=>1/(1+Math.exp(-z));
 function prediccion(g){
   const pr=predecir(ESTADO,PARAMS,{h:g.h,a:g.a,ts:g.ts,adjH:0,adjA:0},{dH:ultimoDia(g.h,g.ts),dA:ultimoDia(g.a,g.ts)});
   const o=g.odds, adj=(g.adjH||0)-(g.adjA||0);
+  // el modelo se nutre con el BPI de ESPN (peso 0.70, medido: 65.8% → 67.2% de aciertos); la mezcla se pasa a margen para que hándicap y demás salgan de ahí
+  if(window.OVAPublico&&g.espn!=null){ const mx=window.OVAPublico.mezclar(pr.pH,g.espn,'nba'); if(mx!==null){ pr.pHSolo=pr.pH; pr.pmSolo=pr.pm; pr.pEspn=g.espn; pr.pm=window.OVAPublico.margenDe(mx,x=>pML(x,pr.sM)); pr.pH=mx; pr.conEspn=true; } }
   pr.pmMod=pr.pm; pr.ptMod=pr.pt; pr.pHMod=pr.pH; pr.conLinea=false; pr.conML=false;
   const sM0=pr.sM, pm0=pr.pm;
   if(o&&o.spread!==undefined&&isFinite(o.spread)){ pr.pm=-o.spread+LAM_M*(pm0+o.spread); pr.sM=sM0*ESC_SIG; pr.conLinea=true; }
@@ -670,6 +674,8 @@ let PRED=null;
 async function rellenarPred(){
   try{ if(!window.OVAPred) return; PRED=await window.OVAPred.cargar('nba'); aplicarPred(); }catch(e){}
 }
+/* ---- Pronóstico público de ESPN (BPI): nutre al modelo (publico.js). Solo juegos sin empezar; si ESPN falla, sigue el modelo solo ---- */
+async function rellenarPublico(){ try{ if(window.OVAPublico) await window.OVAPublico.rellenar('nba',PEND); }catch(e){} }
 function aplicarPred(){
   if(!PRED||!window.OVAPred) return;
   PEND.forEach(g=>{ const p=window.OVAPred.buscar(PRED,T(g.h).n,T(g.a).n,g.ts); g.pred=p&&!(p.edad!==null&&p.edad>(vivoJ(g)?40:240)*60000)?p:null; });
@@ -711,7 +717,7 @@ function resumenN(g,pr,H,A){
    <div class="rvP">${pf>=0.6?'Es el favorito'+(hit!==null?' según el mercado ('+fuente+').':' según el modelo.'):'Ninguno pasa del 60%. Lo más probable: '+esc(nf)+' '+Math.round(pf*100)+'%.'}</div>${sig}${acN(pf,favM,hit!==null&&!(mk&&mk.live),mk&&mk.live)}
    <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amTxt(pf)}</b> por ${esc(nf)}${hit!==null?'':' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(nf)}</label><input type="number" inputmode="decimal" data-vl="o" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${hit!==null?1:0}"><div class="rvVal" data-vl="r"></div></div></div>`;
   const row=(n,m,k)=>`<div class="nm">${esc(n)} gana</div><div class="n md">${pct1(m)}</div><div class="n mk">${k===null?'—':pct1(k)}</div><div class="n">${amTxt(k===null?m:k)}</div>`;
-  const tab=`<div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo solo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n,1-pr.pHMod,hit===null?null:1-hit)}${row(H.n,pr.pHMod,hit)}</div>
+  const tab=`<div class="rvTab"><div class="th">Resultado</div><div class="th n">${pr.conEspn?'Modelo + ESPN':'Modelo solo'}</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n,1-pr.pHMod,hit===null?null:1-hit)}${row(H.n,pr.pHMod,hit)}</div>
    <div class="nota" style="margin-top:6px">Mercado = ${mk?fuente:'sin precio todavía'}.</div>`;
   const L=(c,t)=>`<div><i class="${c}">${c==='ok'?'✓':(c==='w'?'!':'✗')}</i><span>${t}</span></div>`;
   const li=[];
@@ -721,6 +727,7 @@ function resumenN(g,pr,H,A){
   else if(mk&&mk.src==='espn') li.push(L('ok','Precio de ESPN (DraftKings) tomado del marcador; Pinnacle todavía no lo trae.'));
   else if(mk&&mk.src==='pred') li.push(L('ok','Precio del mercado de predicción (Polymarket): no hay Pinnacle ni línea de ESPN para este juego.'+poco));
   else li.push(L('w','Sin precio del mercado para este juego.'));
+  if(pr.conEspn) li.push(L('ok',`Modelo nutrido con el pronóstico de ESPN (BPI): el modelo solo daba ${esc(H.ab)} ${pct1(pr.pHSolo)}, ESPN ${pct1(pr.pEspn)}; juntos ${pct1(pr.pHMod)}. Medido: juntos aciertan más (67.2% contra 65.8%).`));
   if(mk&&!mk.live&&mk.src!=='pred'&&g.pred){ const d=Math.abs(g.pred.pH-mk.p)*100; li.push(L(d<=3?'ok':'w',`Mercado de predicción (Polymarket): ${esc(H.ab)} ${pct1(g.pred.pH)}${d<=3?', coincide con el precio principal.':' ('+d.toFixed(0)+' pts de diferencia con el precio principal; el principal suele tener razón).'}`)); }
   if(!(mk&&mk.live)){ const o=g.odds; if(o&&o.mlH&&o.mlA&&o.mlHo&&o.mlAo){ const nv=(x,y)=>{ const p=impProb(x), q=impProb(y); return p/(p+q); }, p0=nv(o.mlHo,o.mlAo), p1=nv(o.mlH,o.mlA), dm=(p1-p0)*100;   /* cuánto se movió el ganador desde que abrió (ESPN, sin margen) */
     li.push(Math.abs(dm)<2?L('ok','La línea casi no se ha movido desde que abrió ('+esc(H.ab)+' '+pct1(p0)+' → '+pct1(p1)+').'):L('w','<b>La línea se movió '+Math.abs(dm).toFixed(1)+' pts hacia '+esc(dm>0?H.ab:A.ab)+'</b> desde que abrió ('+esc(H.ab)+' '+pct1(p0)+' → '+pct1(p1)+'). El precio de ahora ya incluye esa noticia.')); } }

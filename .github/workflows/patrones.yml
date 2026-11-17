@@ -11,6 +11,7 @@ on:
     branches: [main]
     paths:
       - scripts/medicion/patrones.py
+      - scripts/medicion/exportar_modelo.js
       - .github/workflows/patrones.yml
 
 permissions:
@@ -42,10 +43,23 @@ jobs:
           ls -la /tmp/pat
       - name: Medir
         run: python3 -I scripts/medicion/patrones.py /tmp/pat | tee /tmp/pat/salida.txt
+      # Segunda pasada (nov-2026): los mismos patrones, pero contra lo que dijo EL MODELO de cada app (sin mirar el precio).
+      # Sirve para ver qué dato le falta al modelo; ver docs/NUTRIR-MODELO-2026-11.md.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Lo que dijo el modelo en NHL y NFL
+        continue-on-error: true
+        run: |
+          node scripts/medicion/exportar_modelo.js nhl /tmp/pat/dnhl.json /tmp/pat/mod-nhl.json
+          node scripts/medicion/exportar_modelo.js nfl /tmp/pat/dnfl.json /tmp/pat/mod-nfl.json
+      - name: Medir contra el modelo
+        continue-on-error: true
+        run: OVA_CONTRA=modelo python3 -I scripts/medicion/patrones.py /tmp/pat | tee /tmp/pat/salida-modelo.txt
       - name: Guardar informe
         if: always()
         continue-on-error: true
         run: |
-          mkdir -p /tmp/res && cp -f /tmp/pat/patrones-resultado.md /tmp/pat/patrones-resultado.json /tmp/res/ 2>/dev/null || true
+          mkdir -p /tmp/res && cp -f /tmp/pat/patrones-resultado.md /tmp/pat/patrones-resultado.json /tmp/pat/patrones-modelo-resultado.md /tmp/pat/patrones-modelo-resultado.json /tmp/res/ 2>/dev/null || true
           cd /tmp/res && git init -q -b resultados-patrones && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
           git add -A && git commit -q -m "patrones" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" resultados-patrones
