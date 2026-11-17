@@ -216,3 +216,15 @@ El workflow *Patrones contra el mercado* corre ahora las dos pasadas cada mes (r
 | **5 ligas** (`scripts/medicion/fut_calibrar.js`) | 5,708 partidos de 2023-24 a 2026-27, `a` = 1.04 | pérdida 0.98577; dice 69.3% → gana 72.3%; dice 80% → gana 85.2% | 0.98520 (z −2.7, mejora en las 4 temporadas) | **No aplicado:** 0.6 milésimas; mueve un 70% a 71%. Aciertos iguales (52.8%) |
 
 En las ligas el modelo ya está casi bien calibrado: se queda 1.5 a 5 puntos corto arriba de 55%, nada parecido a las copas. Lo de «el favorito de 75%+ del mercado gana 80% y el modelo le daba 68.6%» no es un error de calibración del modelo. Es información que el precio tiene y el modelo no (alineaciones, lesiones, rotaciones). Para cerrar esa distancia hay que darle al modelo esa información, no estirarlo.
+
+## Alineaciones en fútbol (17-nov-2026): no entra
+
+¿Saber cuántos titulares de siempre faltan sube los aciertos? `scripts/medicion/fut_alineaciones.js` (workflow *Medir alineaciones en futbol*): 4,003 alineaciones titulares de ESPN de las 5 ligas desde 2024-25 (cache en la rama `datos-alineaciones`), con el motor real de la app y cada día solo con lo anterior. Ajuste: λ × e^(−α·faltan propios) × e^(β·faltan del rival). α y β se eligieron en 2024-25 (1,512 partidos) y se probaron en 2025-26 y 2026-27 (2,134).
+
+| Cómo se cuenta «faltan» | α / β | Pérdida antes → después | Aciertos antes → después |
+|---|---|---|---|
+| Los 11 que más arrancaron en los últimos 10, pesado por cuánto arrancaron | 0.03 / 0.06 | 0.98915 → 0.99026 (z +0.5) | 1,129 → 1,104 |
+| Los mismos 11, solo contando cuántos faltan | 0.02 / 0.05 | 0.98915 → 0.99134 (z +0.9) | 1,129 → 1,106 |
+| Solo titulares fijos (8+ de los últimos 10) | 0.01 / 0.07 | 0.98915 → 0.99169 (z +1.2) | 1,129 → 1,104 |
+
+Las tres versiones empeoran fuera de muestra, también en los 1,180 partidos con 2+ titulares fijos fuera. Contar ausencias no basta: un suplente de un equipo grande puede valer más que un titular de uno chico, y el modelo ya ve el efecto en los goles de los partidos recientes. Para que sirviera habría que saber cuánto vale cada jugador (minutos, goles, valor de mercado), y eso ESPN no lo da gratis de forma confiable.

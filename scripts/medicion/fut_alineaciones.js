@@ -77,7 +77,9 @@ function medir(cache) {
         const cnt = {}; prev.forEach(xi => xi.forEach(id => { cnt[id] = (cnt[id] || 0) + 1; }));
         const reg = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]).slice(0, 11), hoy = new Set(m.xi[s]);
         let w = 0, n = 0; reg.forEach(id => { if (!hoy.has(id)) { w += cnt[id] / prev.length; n++; } });
-        m.f[s] = { w, n };
+        /* c: titulares fijos (arrancaron 8+ de los últimos 10) que hoy no salen */
+        let c = 0; if (prev.length >= 8) Object.keys(cnt).forEach(id => { if (cnt[id] >= Math.ceil(prev.length * 0.8) && !hoy.has(id)) c++; });
+        m.f[s] = { w, n, c };
       }
     });
     if (m.xi) { (hist[m.hid] = hist[m.hid] || []).push(m.xi[0]); (hist[m.aid] = hist[m.aid] || []).push(m.xi[1]); }
@@ -112,15 +114,15 @@ function medir(cache) {
   const fw = o => { const v = o.map(x => x.fL.w).concat(o.map(x => x.fV.w)).sort((a, b) => a - b); return 'mediana ' + v[Math.floor(v.length / 2)].toFixed(2) + ' p90 ' + v[Math.floor(v.length * 0.9)].toFixed(2); };
   console.log('faltan titulares (pesado):', fw(out));
   const res = {};
-  for (const campo of ['w', 'n']) {
+  for (const campo of ['w', 'n', 'c']) {
     let best = [0, 0], bl = ev(train, 0, 0, campo).ll;
     for (let al = 0; al <= 0.3001; al += 0.01) for (let be = 0; be <= 0.3001; be += 0.01) { const e = ev(train, al, be, campo); if (e.ll < bl - 1e-9) { bl = e.ll; best = [Math.round(al * 100) / 100, Math.round(be * 100) / 100]; } }
     const A = ev(test, 0, 0, campo), B = ev(test, best[0], best[1], campo);
     const dif = test.map(x => LOG(pred(x, best[0], best[1], campo)[x.y]) - LOG(x.p[x.y])), md = dif.reduce((s, v) => s + v, 0) / dif.length;
     const se = Math.sqrt(dif.reduce((s, v) => s + (v - md) ** 2, 0) / dif.length / dif.length);
     const porT = {}; [2025, 2026].forEach(t => { const s = test.filter(x => x.t === t); if (s.length) porT[t] = { n: s.length, antes: +ev(s, 0, 0, campo).ll.toFixed(4), despues: +ev(s, best[0], best[1], campo).ll.toFixed(4), aciertosAntes: ev(s, 0, 0, campo).ok, aciertosDespues: ev(s, best[0], best[1], campo).ok }; });
-    /* donde más pesa: partidos con 3+ titulares de siempre fuera en algún equipo */
-    const rot = test.filter(x => x.fL.n >= 3 || x.fV.n >= 3), Ar = ev(rot, 0, 0, campo), Br = ev(rot, best[0], best[1], campo);
+    /* donde más pesa: partidos con 2+ titulares fijos fuera en algún equipo */
+    const rot = test.filter(x => x.fL.c >= 2 || x.fV.c >= 2), Ar = ev(rot, 0, 0, campo), Br = ev(rot, best[0], best[1], campo);
     res[campo] = { alfa: best[0], beta: best[1], prueba: { n: test.length, antes: +A.ll.toFixed(5), despues: +B.ll.toFixed(5), z: +(md / se).toFixed(2), aciertosAntes: A.ok, aciertosDespues: B.ok, acierto: [+(A.acierto * 100).toFixed(2), +(B.acierto * 100).toFixed(2)] },
       porTemporada: porT, conRotacion: { n: rot.length, antes: +Ar.ll.toFixed(4), despues: +Br.ll.toFixed(4), aciertosAntes: Ar.ok, aciertosDespues: Br.ok } };
     console.log('RESULTADO', campo, JSON.stringify(res[campo]));
