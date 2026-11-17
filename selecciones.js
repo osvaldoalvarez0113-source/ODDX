@@ -16,9 +16,19 @@ function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u
   var SEL = {
    uefanl:     {nombre:'UEFA Nations League',      slugs:['uefa.nations']},
    concacafnl: {nombre:'Concacaf Nations League',  slugs:['concacaf.nations.league']},
-   amistosos:  {nombre:'Amistosos de selecciones', slugs:['fifa.friendly']}
+   amistosos:  {nombre:'Amistosos de selecciones', slugs:['fifa.friendly']},
+   /* todos los torneos de selecciones (eliminatorias, Copa Asia, AFCON, Copa Oro...): la lista sale de hist-selecciones.json (torneos.yml) */
+   seltodas:   {nombre:'Selecciones: todos los torneos', slugs:['fifa.friendly'], todas:true}
   };
   var TIPO_LIGA = {uefanl:'liga de naciones', concacafnl:'liga de naciones', amistosos:'amistoso'};
+  var ARCH = null, ARCH_PROM = null;   /* hist-selecciones.json: 4 años de partidos + próximos 21 días + medición */
+  function cargarArchivo(){
+   if(ARCH_PROM) return ARCH_PROM;
+   ARCH_PROM = fetch('hist-selecciones.json?v='+Math.floor(Date.now()/36e5)).then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(j){ if(!j || !j.p || j.p.length < 500) throw new Error('archivo incompleto'); ARCH = j; return j; })
+    .catch(function(e){ ARCH_PROM = null; throw e; });
+   return ARCH_PROM;
+  }
   var DIAS_ATRAS = 1, DIAS_ADELANTE = 21;
 
   // Competencias de selecciones para armar el historial (el código de ESPN es mi mejor intento en varias:
@@ -58,12 +68,13 @@ function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u
   var sel = document.getElementById('ligaSel');
   if(sel && !sel.querySelector('optgroup[data-sel]')){
    var og = document.createElement('optgroup');
-   og.label = 'Selecciones (países, sin modelo)';
+   og.label = 'Selecciones (países)';
    og.setAttribute('data-sel','1');
    og.innerHTML =
     '<option value="uefanl">🇪🇺 UEFA Nations League</option>'+
     '<option value="concacafnl">🌎 Concacaf Nations League</option>'+
-    '<option value="amistosos">🌍 Amistosos de selecciones</option>';
+    '<option value="amistosos">🌍 Amistosos de selecciones</option>'+
+    '<option value="seltodas">🌐 Selecciones: todos los torneos</option>';
    sel.appendChild(og);
   }
 
@@ -157,7 +168,38 @@ function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u
    }), 8).then(function(arrs){ return [].concat.apply([], arrs); });
   }
 
+  /* v3: el historial sale de hist-selecciones.json (lo arma GitHub Actions con los 4 años y todos los torneos).
+     Antes el teléfono lo bajaba solo, pero ESPN dejó de aceptar rangos de fechas y se quedaba con 1 año y 4 torneos
+     (UAE salía con 1 partido y sin Elo). Encima del archivo solo se bajan los días que faltan. Si el archivo no baja, queda el modo viejo. */
   function iniciarHistorial(){
+   if(HIST_PROM) return HIST_PROM;
+   HIST_PROM = cargarArchivo().then(function(j){
+    var mapa = {}, hoy = new Date(), errores = [];
+    j.p.forEach(function(r){ mapa[r[0]] = {id:r[0], l:r[1], v:r[2], gl:r[3], gv:r[4], ts:r[5], t:r[6], sl:r[7]}; });
+    /* lo que falta desde que se armó el archivo (normalmente 0-1 día), solo de los torneos con partidos recientes */
+    var gen = Date.parse(j.generado) || Date.now(), desde = new Date(gen - 86400000);
+    var recientes = {}; j.p.forEach(function(r){ if(r[5] > Date.now()-45*86400000 && r[7]) recientes[r[7]] = 1; });
+    (j.prox||[]).forEach(function(x){ if(x.d < Date.now()+86400000) recientes[x.sl] = 1; });
+    var slugs = Object.keys(recientes).slice(0, 8);
+    var tipoDe = {}; SLUGS_H.forEach(function(s){ tipoDe[s[0]] = s[1]; }); j.p.forEach(function(r){ if(r[7]) tipoDe[r[7]] = r[6]; });
+    return Promise.all(slugs.map(function(sl){
+     return bajarPorDias(sl, desde, hoy, errores).then(function(evs){
+      evs.forEach(function(e){ if(e.terminado && e.id && e.ts) mapa[e.id] = {id:e.id, l:e.local, v:e.visita, gl:e.golesLocal, gv:e.golesVisita, ts:e.ts, t:tipoDe[sl]||'amistoso', sl:sl}; });
+     }).catch(function(){});
+    })).then(function(){
+     var corte = Date.now() - (4*366+10)*86400000;
+     var lst = Object.keys(mapa).map(function(k){ return mapa[k]; }).filter(function(m){ return m.ts >= corte; });
+     lst.forEach(function(m){ m.kl = claveEq(m.l); m.kv = claveEq(m.v); });
+     HIST = lst; HIST_ANIOS = j.anios || 4;
+     construirElo();
+     HIST_DIAG = {modo:'archivo del repo ('+String(j.generado).slice(0,16).replace('T',' ')+' UTC) + días nuevos', full:false, anios:HIST_ANIOS, total:lst.length,
+                  nuevos:lst.length-j.p.length, ok:Object.keys(j.slugs||{}), skip:j.sinRespuesta||[], errores:errores, equipos:Object.keys(ELO.mapa).length};
+     if(esSel()){ try{ if(PARTIDOS) pintarEstado(LIGAS[LIGA_ACTUAL]); }catch(e){} }
+    });
+   }, function(){ HIST_PROM = null; return iniciarHistorialViejo(); });
+   return HIST_PROM;
+  }
+  function iniciarHistorialViejo(){
    if(HIST_PROM) return HIST_PROM;
    var hoy = new Date(), errores = [];
    var cache = leerJSON(CK);
@@ -299,8 +341,8 @@ function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u
 
   function eloHtml(p){
    var kL = claveEq(p.local), kV = claveEq(p.visita);
-   var tipoComp = TIPO_LIGA[LIGA_ACTUAL] || 'amistoso';
-   var ha = HA[tipoComp] || 0;
+   var tipoComp = p.tipo || TIPO_LIGA[LIGA_ACTUAL] || 'amistoso';
+   var ha = p.neutral ? 0 : (HA[tipoComp] || 0);
    var eL = ELO.mapa[kL], eV = ELO.mapa[kV];
    if(!eL || !eV || eL.n < 5 || eV.n < 5){
     var falta = (!eL || eL.n<5) ? p.local : p.visita;
@@ -332,17 +374,82 @@ function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u
    } else {
     nota = 'Todavía no hay suficientes partidos para chequear qué tan bien acierta este Elo.';
    }
+   var mE = ARCH && ARCH.med && ARCH.med.elo && ARCH.med.elo.x12;
+   if(mE && mE.n) nota += ' En '+mE.n.toLocaleString()+' partidos de selecciones de los últimos 2 años (todos los torneos, cada uno con lo anterior) el favorito del Elo acertó '+(mE.acierto*100).toFixed(0)+'% del 1X2, contra '+(mE.aciertoBase*100).toFixed(0)+'% de ir siempre con el resultado más común.';
    nota += ' Contra las cuotas (2,197 partidos) el mercado le gana: error 0.829 contra 0.904, y apostar donde el Elo se separa perdió −21%. Es referencia, no valor.';
-   h += '<div class="nota" style="margin-top:6px">'+nota+' '+(ha ? 'Incluye ventaja de local (+'+ha+') por ser '+TIPO_TXT[tipoComp]+'.' : 'Sin ventaja de local.')+
+   h += '<div class="nota" style="margin-top:6px">'+nota+' '+(ha ? 'Incluye ventaja de local (+'+ha+') por ser '+TIPO_TXT[tipoComp]+'.' : (p.neutral ? 'Cancha neutral: sin ventaja de local.' : 'Sin ventaja de local.'))+
     ' No sabe de lesiones, alineaciones ni de lo que se juega cada equipo: úsalo como referencia, no como pick.</div>';
    return h;
   }
 
-  function htmlSel(p){
-   return '<h3>Rating Elo</h3>'+eloHtml(p)+
-    '<h3>Forma reciente</h3>'+formaHtml(p.local)+formaHtml(p.visita)+
-    '<h3>Cara a cara (últimos '+HIST_ANIOS+' '+(HIST_ANIOS===1?'año':'años')+')</h3>'+h2hHtml(p);
+  function probsPartido(p){
+   var kL = claveEq(p.local), kV = claveEq(p.visita), eL = ELO.mapa[kL], eV = ELO.mapa[kV];
+   if(!eL || !eV || eL.n < 5 || eV.n < 5) return null;
+   var tipo = p.tipo || TIPO_LIGA[LIGA_ACTUAL] || 'amistoso', ha = p.neutral ? 0 : (HA[tipo] || 0);
+   return probsDe(eL.r - eV.r + ha, ELO.d0);
   }
+  /* partidos de una selección (más reciente primero) en formato {f, c, ts} para rachas y goles */
+  function partidosEq(nombre){
+   var k = claveEq(nombre);
+   return HIST.filter(function(m){ return m.kl===k || m.kv===k; }).sort(function(a,b){ return b.ts-a.ts; })
+    .map(function(m){ var L = m.kl===k; return {f:L?m.gl:m.gv, c:L?m.gv:m.gl, ts:m.ts, casa:L}; });
+  }
+  /* goles: promedio de goles a favor de uno y en contra del otro (últimos 10), encogido hacia la media (K=4).
+     Mismo cálculo que mide scripts/torneos_datos.js (medirGolesSel). */
+  function golesSel(p){
+   var a = partidosEq(p.local).slice(0,10), b = partidosEq(p.visita).slice(0,10);
+   if(a.length < 5 || b.length < 5) return null;
+   var media = (ARCH && ARCH.med && ARCH.med.goles && ARCH.med.goles.media) || 1.3, K = 4;
+   function prom(xs, f){ var s = 0; xs.forEach(function(x){ s += f(x); }); return {s:s, n:xs.length}; }
+   var gfL = prom(a, function(x){ return x.f; }), gcV = prom(b, function(x){ return x.c; }), gfV = prom(b, function(x){ return x.f; }), gcL = prom(a, function(x){ return x.c; });
+   var lL = ((gfL.s+K*media)/(gfL.n+K) + (gcV.s+K*media)/(gcV.n+K))/2;
+   var lV = ((gfV.s+K*media)/(gfV.n+K) + (gcL.s+K*media)/(gcL.n+K))/2;
+   return {lamL:lL, lamV:lV};
+  }
+  function golesHtml(p){
+   var T = window.OVATorneos, g = golesSel(p);
+   if(!g || !T) return '<div class="nota">No hay 5+ partidos de cada selección en el historial para estimar goles.</div>';
+   var mg = ARCH && ARCH.med && ARCH.med.goles;
+   var nota = 'Goles esperados con lo que cada selección mete y recibe en sus últimos 10 partidos (de todos los torneos), encogido hacia la media. No sabe de alineaciones.';
+   if(mg && mg.o25 && mg.o25.n) nota += ' Medido en '+mg.o25.n.toLocaleString()+' partidos de los últimos 2 años: Más de 2.5 acertó '+(mg.o25.acierto*100).toFixed(0)+'% (ir siempre con lo más común: '+(mg.o25.aciertoBase*100).toFixed(0)+'%), Ambos anotan '+(mg.btts.acierto*100).toFixed(0)+'% ('+(mg.btts.aciertoBase*100).toFixed(0)+'%).'+
+    ((mg.o25.perdida < mg.o25.perdidaBase-0.003) ? ' Más/Menos le gana a la frecuencia.' : ' Más/Menos no le gana a la frecuencia: tómalo como referencia.')+
+    ((mg.btts.perdida < mg.btts.perdidaBase-0.003) ? ' Ambos anotan le gana a la frecuencia.' : ' Ambos anotan NO le gana a la frecuencia: no te guíes por ese número.');
+   return T.golesBloque(g.lamL, g.lamV, p.local, p.visita, 0, nota);
+  }
+  function htmlSel(p){
+   var T = window.OVATorneos;
+   if(!T) return '<h3>Rating Elo</h3>'+eloHtml(p)+'<h3>Forma reciente</h3>'+formaHtml(p.local)+formaHtml(p.visita)+'<h3>Cara a cara</h3>'+h2hHtml(p);
+   var obs = T.observacionesHtml([{nombre:p.local, escudo:p.escudoLocal, js:partidosEq(p.local)}, {nombre:p.visita, escudo:p.escudoVisita, js:partidosEq(p.visita)}]);
+   return T.tabsHtml([
+    {t:'Veredicto', html:'<h3>Rating Elo</h3>'+eloHtml(p)+'<h3>Observaciones</h3>'+obs},
+    {t:'Goles', html:golesHtml(p)},
+    {t:'Forma', html:formaHtml(p.local)+formaHtml(p.visita)+T.casaVisitaHtml(p.local, partidosEq(p.local), p.visita, partidosEq(p.visita))},
+    {t:'Cara a cara', html:'<h3>Últimos '+HIST_ANIOS+' '+(HIST_ANIOS===1?'año':'años')+'</h3>'+h2hHtml(p)}
+   ]);
+  }
+  /* Al gane de selecciones: el favorito del Elo en cada partido del día, de mayor a menor */
+  function alGaneSel(partidos){
+   var cont = document.getElementById('algane'); if(!cont) return;
+   cont.innerHTML = '<div class="estado">Calculando el Elo de los partidos…</div>';
+   iniciarHistorial().then(function(){
+    if(!esSel()) return;
+    var filas = [], reg = [];
+    (partidos||[]).forEach(function(p){
+     var pr = probsPartido(p); if(!pr) return;
+     var esL = pr.L >= pr.V;
+     filas.push({nombre:esL?p.local:p.visita, rival:esL?p.visita:p.local, escudo:esL?p.escudoLocal:p.escudoVisita, pct:Math.max(pr.L,pr.V), cuando:(p.horaLocal||'')+(p.tipoTxt?' · '+p.tipoTxt:'')});
+     if(p.ts && p.ts > Date.now()) reg.push({ts:p.ts, local:p.local, visita:p.visita, p:{L:pr.L, D:pr.D, A:pr.V}, liga:LIGAS[LIGA_ACTUAL].nombre, slug:p.sl||SEL[LIGA_ACTUAL].slugs[0], ext:p.id});
+    });
+    try{ if(window.OVARegAuto && reg.length) OVARegAuto.registrar('fut', reg); }catch(e){}
+    filas.sort(function(a,b){ return b.pct-a.pct; });
+    if(!filas.length){ cont.innerHTML = '<div class="estado">Ningún partido de este día tiene 5+ partidos de cada selección en el historial.</div>'; return; }
+    cont.innerHTML = filas.map(function(f,i){
+     return '<div class="fila-rank"><div class="pos">'+(i+1)+'</div><img src="'+escS(f.escudo)+'" alt="">'+
+      '<div class="nom">'+escS(f.nombre)+' vs '+escS(f.rival)+'<small>'+escS(f.cuando)+'</small></div><div class="pct">'+(f.pct*100).toFixed(1)+'%<em>Elo</em></div></div>';
+    }).join('')+'<div class="estado" style="margin-top:10px">Probabilidad de ganar según el Elo de selecciones (con ventaja de local según el tipo de partido). No sabe de alineaciones ni de lo que se juega cada uno.</div>';
+   }).catch(function(e){ cont.innerHTML = '<div class="estado bad">No pude bajar el historial: '+escS(e.message)+'</div>'; });
+  }
+  window.OVASel = {esSel:esSel, alGane:alGaneSel, probs:probsPartido};
 
   // ================= carga de una competencia de selecciones =================
   var _cargarLiga = cargarLiga;
@@ -367,7 +474,16 @@ function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u
     dias.push(new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + k));
    }
    var errores = [];
-   bajarSlug(SEL[clave].slugs[0], dias, errores).then(function(todos){
+   var fuente = SEL[clave].todas ? cargarArchivo().then(function(j){
+    var tipoTxt = {}; Object.keys(TIPO_TXT).forEach(function(k){ tipoTxt[k] = TIPO_TXT[k]; });
+    return (j.prox||[]).filter(function(x){ return x.d > Date.now()-2.5*3600e3; }).map(function(x){
+     var d = new Date(x.d);
+     return {id:x.id, local:nomSeguro(x.h), visita:nomSeguro(x.a), escudoLocal:urlSegura(x.eh), escudoVisita:urlSegura(x.ea), hrefLocal:null, hrefVisita:null,
+      ts:x.d, fecha:fechaPunto(d), hora:'', horaLocal:d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}),
+      terminado:false, enVivo:false, marcadorVivo:null, golesLocal:null, golesVisita:null, sl:x.sl, tipo:x.t, tipoTxt:tipoTxt[x.t]||x.t, neutral:!!x.n};
+    });
+   }, function(e){ errores.push('hist-selecciones.json: '+e.message); return []; }) : bajarSlug(SEL[clave].slugs[0], dias, errores);
+   fuente.then(function(todos){
     if(mio !== CARGA_ID) return;
     var vistos = {}, unicos = [];
     todos.forEach(function(p){ if(p.id && vistos[p.id]) return; if(p.id) vistos[p.id] = true; unicos.push(p); });
@@ -375,7 +491,7 @@ function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u
     var inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime();
     var pend = unicos.filter(function(p){ return !p.terminado && p.ts >= inicioHoy; })
                      .sort(function(a, b){ return a.ts - b.ts; });
-    DIAG.espn = {modo:'día por día', nota:'selecciones (' + SEL[clave].slugs[0] + ')', leidos:unicos.length,
+    DIAG.espn = {modo:SEL[clave].todas ? 'archivo del repo' : 'día por día', nota:'selecciones (' + (SEL[clave].todas ? 'todos los torneos' : SEL[clave].slugs[0]) + ')', leidos:unicos.length,
                  terminados:term.length, errores:errores, enCache:0, desde:ymd(dias[0])};
     if(!unicos.length && errores.length){
      estado.textContent = '✗ ESPN no respondió para ' + liga.nombre + ' (' + errores[0] + '). Toca 🔍 Diagnóstico.';
@@ -387,8 +503,6 @@ function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u
     DIA_SELECCIONADO = null;
     pintarSelectorDias();
     aplicarSelectorDias();
-    document.getElementById('algane').innerHTML =
-     '<div class="estado">"Al gane" no aplica a selecciones: aquí no hay modelo de goles, solo Elo dentro de cada partido.</div>';
     pintarEstado(liga);
     if(!unicos.length){
      estado.textContent = 'ESPN respondió pero no trae partidos de ' + liga.nombre + ' en estas fechas (o el código del torneo no es ese). Toca 🔍 Diagnóstico.';
@@ -409,7 +523,7 @@ function urlSegura(u){ u=String(u||''); return /^https?:\/\/[^\s"'<>`]+$/.test(u
    if(!esSel()) return _copa(bodyEl, p);
    var id = 's' + Math.random().toString(36).slice(2);
    bodyEl.innerHTML =
-    '<div class="aviso">🌍 Selecciones: pocos partidos y alineaciones que cambian mucho, así que aquí no se corre el modelo Poisson. En su lugar: Elo, forma y cara a cara de los últimos '+HIST_ANIOS+' años.</div>'+
+    (p.tipoTxt ? '<div class="nota" style="margin:0 0 8px">🏆 '+escS(p.tipoTxt)+(p.neutral?' · cancha neutral':'')+'</div>' : '')+
     '<div id="'+id+'" class="nota">Cargando historial de selecciones (la primera vez tarda; después queda guardado)...</div>';
    var box = document.getElementById(id);
    iniciarHistorial().then(function(){

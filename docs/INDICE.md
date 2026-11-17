@@ -46,3 +46,4 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 - [MEDICION-HEMBRAS-NHL-2026-11.md](MEDICION-HEMBRAS-NHL-2026-11.md): hembras (no favoritos) en NHL por precio, modelo, forma, descanso y movimiento; ninguna regla pasa.
 - [MEDICION-XG-NHL-2026-11.md](MEDICION-XG-NHL-2026-11.md): goles esperados de MoneyPuck contra tiros a puerta en el modelo de NHL; no entra.
 - [MEDICION-MODELOS-PUBLICOS-2026-11.md](MEDICION-MODELOS-PUBLICOS-2026-11.md): OVA contra nfelo (NFL) y el pronóstico de ESPN (NFL, NBA, MLB); los públicos le ganan a OVA en NFL y NBA, ninguno al mercado.
+- [MEDICION-TORNEOS-2026-11.md](MEDICION-TORNEOS-2026-11.md): selecciones (4 años, 19 torneos) y copas nacionales con el motor de las ligas; Elo 59% y copas 58.5% de acierto en 1X2.
