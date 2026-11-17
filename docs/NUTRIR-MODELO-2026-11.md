@@ -205,3 +205,14 @@ Ninguno pasa Holm; salieron 6 con p < 0.05 (se esperan 2). Los que se repiten to
 | `scripts/medicion/nutrir_mezcla.py`, `nutrir_viento_nfl.py`, `nutrir_nhl_descanso.js` | Las tres pruebas de este documento |
 
 El workflow *Patrones contra el mercado* corre ahora las dos pasadas cada mes (rama `resultados-patrones`, `patrones-modelo-resultado.md`).
+
+## Calibración del favorito (17-nov-2026)
+
+¿El modelo se queda corto con el favorito? Se probó estirar el 1X2 (q ∝ p^a), eligiendo `a` con unas temporadas y probándolo en las que quedaron afuera.
+
+| | Prueba | Antes | Estirado | Resultado |
+|---|---|---|---|---|
+| **Copas nacionales** (`torneos.js`) | 462 partidos de 2025-26 en adelante, `a` = 1.3 | pérdida 0.9413; dice 64.5% → gana 84.2% | **0.9257** (z −3.2); dice 64.5% → gana 71.8% | **Aplicado.** Aciertos iguales (59.1%) |
+| **5 ligas** (`scripts/medicion/fut_calibrar.js`) | 5,708 partidos de 2023-24 a 2026-27, `a` = 1.04 | pérdida 0.98577; dice 69.3% → gana 72.3%; dice 80% → gana 85.2% | 0.98520 (z −2.7, mejora en las 4 temporadas) | **No aplicado:** 0.6 milésimas; mueve un 70% a 71%. Aciertos iguales (52.8%) |
+
+En las ligas el modelo ya está casi bien calibrado: se queda 1.5 a 5 puntos corto arriba de 55%, nada parecido a las copas. Lo de «el favorito de 75%+ del mercado gana 80% y el modelo le daba 68.6%» no es un error de calibración del modelo. Es información que el precio tiene y el modelo no (alineaciones, lesiones, rotaciones). Para cerrar esa distancia hay que darle al modelo esa información, no estirarlo.
