@@ -175,6 +175,13 @@
     DCFIT = {eq:f.eq, c:f.c, gam:f.gam, hAvg:f.hAvg, aAvg:f.aAvg, wt:(FN.cfg && FN.cfg.wt)};
     var r = calcularDC({nombre:nL}, {nombre:nV});
     r.nL = eL.n; r.nV = eV.n;
+    /* calibración: el modelo se quedaba corto con el favorito en copa (decía 64%, ganaba 80%). Se estira solo si pasó la prueba
+       fuera de muestra en scripts/torneos_datos.js (cal.aplicado). Solo toca el 1X2; los goles quedan igual. */
+    var cal = FN.cal;
+    if(cal && cal.aplicado && cal.a > 0){
+     var qL = Math.pow(r.pL, cal.a), qD = Math.pow(r.pD, cal.a), qV = Math.pow(r.pV, cal.a), sq = qL+qD+qV;
+     r.pL0 = r.pL; r.pD0 = r.pD; r.pV0 = r.pV; r.pL = qL/sq; r.pD = qD/sq; r.pV = qV/sq; r.cal = cal.a;
+    }
     return r;
    } finally { DCFIT = antes; }
   }
@@ -187,6 +194,8 @@
    var tr = m.tramos && m.tramos['60-70'], tr7 = m.tramos && m.tramos['70+'];
    if(tr7 && tr7.n >= 20) t += ' Cuando dice 70%+, ganó el favorito '+pct0(tr7.favoritoGano)+' ('+tr7.n+').';
    else if(tr && tr.n >= 20) t += ' Cuando dice 60-70%, ganó el favorito '+pct0(tr.favoritoGano)+' ('+tr.n+').';
+   var c = FN.cal;
+   if(c && c.aplicado) t += ' Calibrado: los % de copa se estiran (exponente '+c.a+', elegido con 2024-25 y probado en '+c.prueba+' partidos después): pérdida '+c.antes.perdida+' → '+c.despues.perdida+'.';
    return t+' El marcador de ESPN en copas incluye la prórroga.';
   }
   function veredictoCopa(p, r){

@@ -218,7 +218,7 @@ function medirPais(lista, copasSl, medir) {
   /* cada semana con partidos de copa se ajusta el motor SOLO con lo jugado antes de esa semana */
   const copa = lista.filter(m => copasSl.includes(m.sl) && m.d >= medir).sort((a, b) => a.d - b.d);
   const semanas = new Map(); copa.forEach(m => { const w = Math.floor(m.d / (7 * DIA)); (semanas.get(w) || semanas.set(w, []).get(w)).push(m); });
-  const x12 = acum(), x12c = acum(), ou = acum(), bt = acum(), tramos = {};
+  const x12 = acum(), x12c = acum(), ou = acum(), bt = acum(), tramos = {}, preds = [];
   const fr = { L: 1, D: 1, V: 1 }; let nfr = 3, fo = { s: 1, n: 2 }, fb = { s: 1, n: 2 };
   /* frecuencias de arranque: copas de antes del periodo medido */
   lista.filter(m => copasSl.includes(m.sl) && m.d < medir).forEach(m => { fr[m.gh > m.ga ? 'L' : m.gh < m.ga ? 'V' : 'D']++; nfr++; fo.n++; if (m.gh + m.ga > 2.5) fo.s++; fb.n++; if (m.gh && m.ga) fb.s++; });
@@ -232,7 +232,7 @@ function medirPais(lista, copasSl, medir) {
       const eh = f.eq[claveEq(m.h)], ea = f.eq[claveEq(m.a)], conocidos = eh && ea && eh.n >= 8 && ea.n >= 8;
       const pb = { L: fr.L / nfr, D: fr.D / nfr, V: fr.V / nfr };
       if (conocidos) {
-        sumar(x12, { L: p.pL, D: p.pD, V: p.pV }, real, pb);
+        sumar(x12, { L: p.pL, D: p.pD, V: p.pV }, real, pb); preds.push({ d: m.d, p: { L: p.pL, D: p.pD, V: p.pV }, real });
         sumar(ou, { si: p.o25, no: 1 - p.o25 }, m.gh + m.ga > 2.5 ? 'si' : 'no', { si: fo.s / fo.n, no: 1 - fo.s / fo.n });
         sumar(bt, { si: p.btts, no: 1 - p.btts }, (m.gh && m.ga) ? 'si' : 'no', { si: fb.s / fb.n, no: 1 - fb.s / fb.n });
         const fav = Math.max(p.pL, p.pV), kF = p.pL >= p.pV ? 'L' : 'V', t = fav >= 0.7 ? '70+' : fav >= 0.6 ? '60-70' : fav >= 0.5 ? '50-60' : '<50';
@@ -242,7 +242,30 @@ function medirPais(lista, copasSl, medir) {
     });
   }
   const tr = {}; Object.keys(tramos).forEach(k => { const t = tramos[k]; tr[k] = { n: t.n, favoritoGano: r4(t.gano / t.n), decia: r4(t.pr / t.n) }; });
-  return { x12: resumen(x12), o25: resumen(ou), btts: resumen(bt), sinDatos: x12c.n, tramos: tr };
+  return { x12: resumen(x12), o25: resumen(ou), btts: resumen(bt), sinDatos: x12c.n, tramos: tr, preds };
+}
+/* estirar: q_k ∝ p_k^a (a > 1 le da más al favorito). Se elige a con la temporada vieja y se prueba en las nuevas. */
+function estirar(p, a) { const L = Math.pow(p.L, a), D = Math.pow(p.D, a), V = Math.pow(p.V, a), s = L + D + V; return { L: L / s, D: D / s, V: V / s }; }
+function evalCal(ps, a) {
+  let ll = 0, ok = 0; const tr = {};
+  ps.forEach(x => {
+    const q = estirar(x.p, a), k = Object.keys(q).reduce((u, v) => q[v] > q[u] ? v : u);
+    ll += -Math.log(Math.max(q[x.real], 1e-9)); if (k === x.real) ok++;
+    const fav = Math.max(q.L, q.V), kF = q.L >= q.V ? 'L' : 'V', t = fav >= 0.7 ? '70+' : fav >= 0.6 ? '60-70' : fav >= 0.5 ? '50-60' : '<50';
+    const b = tr[t] || (tr[t] = { n: 0, g: 0, pr: 0 }); b.n++; b.pr += fav; if (x.real === kF) b.g++;
+  });
+  const tramos = {}; Object.keys(tr).forEach(k => { const b = tr[k]; tramos[k] = { n: b.n, favoritoGano: r4(b.g / b.n), decia: r4(b.pr / b.n) }; });
+  return { n: ps.length, perdida: r4(ll / Math.max(ps.length, 1)), acierto: r4(ok / Math.max(ps.length, 1)), tramos };
+}
+function calibrar(preds, corte) {
+  const train = preds.filter(x => x.d < corte), test = preds.filter(x => x.d >= corte);
+  let mejor = 1, mll = Infinity;
+  for (let a = 0.8; a <= 2.501; a += 0.05) { const e = evalCal(train, a); if (e.perdida < mll) { mll = e.perdida; mejor = Math.round(a * 100) / 100; } }
+  const antes = evalCal(test, 1), despues = evalCal(test, mejor);
+  let s = 0, s2 = 0; test.forEach(x => { const d = -Math.log(Math.max(estirar(x.p, mejor)[x.real], 1e-9)) + Math.log(Math.max(x.p[x.real], 1e-9)); s += d; s2 += d * d; });
+  const n = Math.max(test.length, 1), md = s / n, se = Math.sqrt(Math.max(s2 / n - md * md, 1e-12) / n);
+  const z = r4(md / se);
+  return { a: mejor, entreno: train.length, prueba: test.length, antes, despues, z, aplicado: test.length >= 150 && md < -0.003 && z < -2 };
 }
 function juntarMed(meds) {
   const t = {}; ['x12', 'o25', 'btts'].forEach(k => {
@@ -279,12 +302,17 @@ async function copasNacionales() {
     const reciente = lista.filter(m => m.d >= ahora - 425 * DIA);
     fs.writeFileSync(ruta, JSON.stringify({ generado: salida.generado, p: reciente.map(m => [m.id, m.sl, m.h, m.a, m.gh, m.ga, m.d]) }) + '\n');
     const medir = Date.UTC(y - 2, 6, 1); /* dos temporadas y lo que va */
-    const m = medirPais(lista, conf.copas, medir); m.pais = pais; meds.push(m); salida.med[pais] = m;
+    const m = medirPais(lista, conf.copas, medir); m.pais = pais; meds.push(m);
+    const { preds, ...sinPreds } = m; salida.med[pais] = sinPreds;
     console.log('COPAS', pais, '| partidos', lista.length, '| equipos', Object.keys(eq).length, '| ligas', JSON.stringify(ok), '| sin respuesta', sin.join(', '));
-    console.log('COPAS medición', pais, JSON.stringify(m));
+    console.log('COPAS medición', pais, JSON.stringify(sinPreds));
   }
   if (!Object.keys(salida.paises).length) throw new Error('copas: ningún país se pudo ajustar');
   salida.med.total = juntarMed(meds);
+  /* calibración del 1X2 de copas: las 5 copas juntas, se elige con la temporada 2024-25 y se prueba de 2025-26 en adelante */
+  const todas = [].concat(...meds.map(m => m.preds || [])), corteCal = Date.UTC(y - 1, 6, 1);
+  salida.cal = calibrar(todas, corteCal);
+  console.log('COPAS calibración', JSON.stringify(salida.cal));
   fs.writeFileSync(path.join(RAIZ, 'fuerza-nacional.json'), JSON.stringify(salida) + '\n');
   console.log('COPAS medición total', JSON.stringify(salida.med.total));
   return salida.med;
@@ -295,5 +323,5 @@ async function principal() {
   if (!solo || solo === 'sel') await selecciones();
   if (!solo || solo === 'copas') await copasNacionales();
 }
-module.exports = { eloSel, medirGolesSel, lamSel, medirPais, probsDC, goles, CFG, SEL_GOL };
+module.exports = { estirar, calibrar, evalCal, eloSel, medirGolesSel, lamSel, medirPais, probsDC, goles, CFG, SEL_GOL };
 if (require.main === module) principal().catch(e => { console.error(e); process.exit(1); });
