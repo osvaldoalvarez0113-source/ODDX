@@ -336,6 +336,7 @@ function pintarMejoras(bodyEl, p){
       lesionadosDeEquipo(slug, ids[1])
     ]).then(function(res){
       if(sLes) sLes.innerHTML = htmlLesionados(p, res[0], res[1]);
+      try{ if(window.OVAAnFutLes) window.OVAAnFutLes(bodyEl, p, res[0].lista, res[1].lista); }catch(e){}   /* El análisis del Veredicto con las bajas */
     }).catch(function(){
       if(sLes) sLes.innerHTML = '<div class="fvac">No pude consultar las lesiones ahora.</div>';
     });

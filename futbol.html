@@ -2203,6 +2203,14 @@ function ctxAnF(p, r, mod, f, m){
     pMod: f ? mod[fi] : null, modMismo: (mod[0] >= mod[2]) === favL, vivo: vivo, ac: ac, fF: favL ? fL : fV, fR: favL ? fV : fL, mov: null,
     pE: fu[1], pDoble: fu[fi] + fu[1], extras: [{ t:'Gol en el 1er tiempo', p: gol1T(r.overLin[2.5]) }], alertas: [], aFavor: [] };
 }
+/* mejoras.js avisa cuando llegan los lesionados de ESPN: solo los que están fuera entran a El análisis */
+window.OVAAnFutLes = function(bodyEl, p, lesL, lesV){
+  var an = bodyEl && bodyEl.querySelector('[data-an]'); if(!an || !p || !p._an || !window.OVAAnalista) return;
+  var fuera = function(l){ return (l||[]).filter(function(x){ return /\((out|injur|suspen)/i.test(x); }).map(function(x){ return x.replace(/\s*\([^)]*\)\s*$/, ''); }); };
+  var favL = p._an.fav === p.local;
+  p._an.bajasFav = fuera(favL ? lesL : lesV); p._an.bajasRiv = fuera(favL ? lesV : lesL);
+  an.innerHTML = window.OVAAnalista.html(p._an);
+};
 function resumenVeredictoF(p, base, id){
   var escR = function(t){ return String(t==null?'':t).replace(/[<>&"']/g,function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]; }); };
   var r = base.r, pc = function(x){ return (x*100).toFixed(1)+'%'; }, pc0 = function(x){ return Math.round(x*100)+'%'; };
@@ -2263,7 +2271,7 @@ function resumenVeredictoF(p, base, id){
   li.push(L('x','No sabe de lesiones ni alineaciones: mira Forma y noticias.'));
   var conf = '<div class="rvLs">'+li.join('')+'</div>';
 
-  var anH = ''; try{ if(window.OVAAnalista) anH = window.OVAAnalista.html(ctxAnF(p, r, mod, f, m)); }catch(e){}   /* 🧠 El análisis (analista.js) */
+  var anH = ''; try{ if(window.OVAAnalista){ p._an = ctxAnF(p, r, mod, f, m); anH = '<div data-an>'+window.OVAAnalista.html(p._an)+'</div>'; } }catch(e){}   /* 🧠 El análisis (analista.js); mejoras.js lo repinta con las bajas */
   return '<div class="rv">'+anH+'<h4>Pronóstico y pick</h4>'+main+'<h4>Modelo contra mercado</h4>'+tab+'<h4>Goles y marcadores</h4>'+chips+'<h4>Qué tan confiable es</h4>'+conf+'</div>';
 }
 function pintarGameBody(bodyEl, p, eL, eV){

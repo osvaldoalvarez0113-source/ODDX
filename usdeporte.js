@@ -481,6 +481,14 @@
     }
     return li;
   }
+  /* El análisis con los que están fuera (Out) de cada equipo, cuando ya se bajó la lista de ESPN */
+  function repintarAn(body, g, m) {
+    try {
+      const an = body.querySelector('[data-an]'); if (!an || !g._an || !window.OVAAnalista || !m) return;
+      const out = id => { const t = T(id); return (m[id] || m[(t.n || '').toLowerCase()] || []).filter(x => /^out/i.test(x.s)).map(x => x.n); };
+      g._an.bajasH = out(g.h); g._an.bajasA = out(g.a); an.innerHTML = window.OVAAnalista.html(window.OVAAnalista.ctxUS(g._an));
+    } catch (e) { }
+  }
   /* bajas que pesan contra el favorito, para «El análisis»: mariscal en duda (NFL) o cambio de portero (NHL) */
   function alertasAn(g, H, A, favH) {
     const out = [], F = favH ? H : A; if (!LES) return out;
@@ -545,7 +553,7 @@
     if (!(mk && mk.live)) { const mv = movidaTxt(g, H, A); if (mv) li.push(L(mv[0], mv[1])); bajasTxt(g, H, A).forEach(x => li.push(L(x[0], x[1]))); }
     if (g.pre) li.push(L('w', 'Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
     li.push(`<div data-inj><i class="w">!</i><span>Lesionados: toca «Cargar lesionados» abajo (archivo grande).</span></div>`);
-    let anH = ''; try { if (window.OVAAnalista) anH = window.OVAAnalista.html(window.OVAAnalista.ctxUS({ dep: DEP, g, games: GAMES, H, A, pHMod: pr.pHMod, pMk: hit, vivo: !!(mk && mk.live), alertas: alertasAn(g, H, A, favM), nota: DEP === 'nhl' ? 'El % incluye tiempo extra y shootout.' : '' })); } catch (e) { }   /* 🧠 El análisis (analista.js) */
+    let anH = ''; try { if (window.OVAAnalista) { g._an = { dep: DEP, g, games: GAMES, H, A, pHMod: pr.pHMod, pMk: hit, vivo: !!(mk && mk.live), alertas: alertasAn(g, H, A, favM), nota: DEP === 'nhl' ? 'El % incluye tiempo extra y shootout.' : '' }; anH = '<div data-an>' + window.OVAAnalista.html(window.OVAAnalista.ctxUS(g._an)) + '</div>'; } } catch (e) { }   /* 🧠 El análisis (analista.js); se repinta con los lesionados */
     return `<div class="rv">${anH}<h4>Pronóstico y pick</h4>${main}${guiaNhl(g, pr, pf)}${kalshiN(g, mk, H, A)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
   }
 
@@ -682,6 +690,7 @@
       const c = pr.over(Lt), po = c.w / (1 - c.p);
       valorHtml(g, 'TOT', 'tot', [{ sel: 'Más de ' + Lt, side: 'O', odd: normCuota(q('toO').value), prob: po, linea: Lt }, { sel: 'Menos de ' + Lt, side: 'U', odd: normCuota(q('toU').value), prob: 1 - po, linea: Lt }], body.querySelector('[data-o="to"]'));
     };
+    if (INJ) INJ.then(m => repintarAn(body, g, m)).catch(() => { });   /* si ya se bajó la lista en otro juego, El análisis la usa sin tocar el botón */
     body.querySelector('[data-a="les"]').onclick = function () {
       const btn = this, el = q('les'); btn.disabled = true; btn.textContent = 'Bajando…'; el.textContent = 'Bajando la lista de ESPN…';
       lesiones().then(m => {
@@ -689,6 +698,7 @@
         const key = id => { const t = T(id); return (m[id] || m[(t.n || '').toLowerCase()] || []).filter(x => /out|doubt|ir\b|injured reserve/i.test(x.s)); };
         const kA = key(g.a), kH = key(g.h), f = (Tm, k) => esc(Tm.ab) + ': ' + (k.length ? k.slice(0, 4).map(x => esc(x.n)).join(', ') + (k.length > 4 ? ' y ' + (k.length - 4) + ' más' : '') : 'ninguno');
         const hay = kA.length || kH.length;
+        repintarAn(body, g, m);
         if (w) w.innerHTML = '<i class="' + (hay ? 'w' : 'ok') + '">' + (hay ? '!' : '✓') + '</i><span>Baja/duda (ESPN) · ' + f(A, kA) + ' · ' + f(H, kH) + '.' + (hay ? ' El mercado ya lo descuenta; el modelo solo no.' : '') + '</span>';
         const ff = id => { const t = T(id); return m[id] || m[(t.n || '').toLowerCase()] || []; };
         const fila = id => { const l = ff(id).filter(x => /out|doubt|quest|day|ir\b|injured/i.test(x.s) || !x.s).slice(0, 8); return `<div class="observ"><b>${esc(T(id).n)}</b>: ${l.length ? l.map(x => esc(x.n) + (x.s ? ' (' + esc(x.s) + ')' : '')).join(', ') : 'sin lesionados listados'}</div>`; };

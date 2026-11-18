@@ -1934,6 +1934,10 @@ async function t_publico(){
  ok('mercado muy por debajo del modelo: avisa de bajas, baja la confianza y nombra a los que faltan',(()=>{const r=AN.analizar(Object.assign({},base,{p:0.66,pMod:0.76,ac:{pct:0.66,n:900},bajasFav:['Anthony Edwards'],bajasRiv:['Ja Morant']}));
    return /por debajo del modelo/.test(r.intro)&&r.k==='baja'&&r.enContra.some(x=>/Anthony Edwards/.test(x))&&r.aFavor.some(x=>/Ja Morant/.test(x));})());
  ok('NBA repinta El análisis cuando llegan los lesionados (solo los Out)',/an\.innerHTML=window\.OVAAnalista\.html/.test(rd2('nba.html'))&&/filter\(x=>\/\^out\/i\.test\(x\.s\)\)/.test(rd2('nba.html')));
+ ok('tenis: si los dos vienen de partido largo se empareja',(()=>{const r=AN.analizar({dep:'tenis',fav:'A',riv:'B',p:0.7,merc:true,pMod:0.69,ac:{pct:0.7,n:900},alertas:[[1.1,'A viene de un partido largo','largo']],aFavor:[[0.9,'B viene de un partido largo','largo']]});
+   return !r.aFavor.concat(r.enContra).some(x=>/largo/.test(x))&&/partido largo: el cansancio se empareja/.test(r.intro);})());
+ ok('NHL y NFL: El análisis se repinta al bajar los lesionados (y solo con los Out)',/repintarAn\(body, g, m\);/.test(rd2('usdeporte.js'))&&/if \(INJ\) INJ\.then\(m => repintarAn\(body, g, m\)\)/.test(rd2('usdeporte.js'))&&/filter\(x => \/\^out\/i\.test\(x\.s\)\)/.test(rd2('usdeporte.js')));
+ ok('fútbol: mejoras.js le pasa las bajas al análisis del Veredicto',/window\.OVAAnFutLes\(bodyEl, p, res\[0\]\.lista, res\[1\]\.lista\)/.test(rd2('mejoras.js'))&&/window\.OVAAnFutLes = function/.test(rd2('futbol.html')));
  ok('no baja nada, no guarda nada y el service worker lo guarda',!/fetch\(|localStorage/.test(rd2('analista.js'))&&rd2('sw.js').indexOf("'analista.js'")>0);
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{

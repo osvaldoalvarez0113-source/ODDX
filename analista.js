@@ -86,20 +86,20 @@
     var s3 = (ctx.ac && ctx.ac.n >= 50 && !ctx.vivo) ? 'Con un % así, el favorito ganó <b>' + Math.round(ctx.ac.pct * 100) + ' de cada 100</b> ' + QUE[dep] + ' en temporadas pasadas.' : '';
     /* 4. a favor y en contra */
     var rf = razonesForma(ctx.fF, fav, dep, ctx.favLocal === true, true), rr = razonesForma(ctx.fR, riv, dep, ctx.favLocal === false, false);
-    /* lo que les pasa a los DOS se empareja: no cuenta ni a favor ni en contra */
-    var neutro = '';
-    ['b2b', 'corta', 'libre', 'carga'].forEach(function (k2) {
-      var en = function (l) { return l.some(function (x) { return x[2] === k2; }); }, fuera = function (l) { return l.filter(function (x) { return x[2] !== k2; }); };
-      var los2 = (en(rf.c) && en(rr.c)) || (en(rf.a) && en(rr.a));
-      if (los2) { rf.c = fuera(rf.c); rr.c = fuera(rr.c); rf.a = fuera(rf.a); rr.a = fuera(rr.a); neutro += ({ b2b: 'Los dos jugaron ayer: el cansancio se empareja.', corta: 'Los dos vienen con poco descanso: se empareja.', libre: 'Los dos vienen de semana libre.', carga: 'Los dos vienen con mucha carga de juegos.' })[k2] + ' '; }
-    });
     var aFav = rf.a.concat(rr.c), cFav = rf.c.concat(rr.a);
+    (ctx.aFavor || []).forEach(function (x) { aFav.push(x); });
+    (ctx.alertas || []).forEach(function (x) { cFav.push(x); });
+    /* lo que les pasa a los DOS se empareja: sale de las dos listas y queda como nota */
+    var neutro = '', TXT2 = { b2b: 'Los dos jugaron ayer: el cansancio se empareja.', corta: 'Los dos vienen con poco descanso: se empareja.', libre: 'Los dos vienen de semana libre.',
+      carga: 'Los dos vienen con mucha carga de juegos.', largo: 'Los dos vienen de un partido largo: el cansancio se empareja.' };
+    Object.keys(TXT2).forEach(function (k2) {
+      var en = function (l) { return l.some(function (x) { return x[2] === k2; }); }, fuera = function (l) { return l.filter(function (x) { return x[2] !== k2; }); };
+      if (en(aFav) && en(cFav)) { aFav = fuera(aFav); cFav = fuera(cFav); neutro += TXT2[k2] + ' '; }
+    });
     if ((ctx.bajasFav || []).length) cFav.push([1.0 + 0.15 * Math.min(ctx.bajasFav.length, 4), F + ' tiene fuera a ' + lista3(ctx.bajasFav)]);
     if ((ctx.bajasRiv || []).length) aFav.push([0.9 + 0.15 * Math.min(ctx.bajasRiv.length, 4), R + ' tiene fuera a ' + lista3(ctx.bajasRiv)]);
     if (ctx.mov >= 2) aFav.push([1.0, 'la línea se movió ' + ctx.mov.toFixed(0) + ' pts hacia ' + F + ' desde que abrió']);
     if (ctx.mov <= -2) cFav.push([1.2, 'la línea se movió ' + Math.abs(ctx.mov).toFixed(0) + ' pts hacia ' + R + ' desde que abrió (alguien sabe algo)']);
-    (ctx.aFavor || []).forEach(function (x) { aFav.push(x); });
-    (ctx.alertas || []).forEach(function (x) { cFav.push(x); });
     var orden = function (l) { return l.sort(function (x, y) { return y[0] - x[0]; }).slice(0, 3).map(function (x) { return x[1]; }); };
     var A = orden(aFav), C = orden(cFav);
     var pesoC = cFav.reduce(function (s, x) { return s + x[0]; }, 0), pesoA = aFav.reduce(function (s, x) { return s + x[0]; }, 0);
