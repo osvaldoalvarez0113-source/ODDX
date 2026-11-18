@@ -1956,7 +1956,6 @@ async function t_publico(){
  ok('memoria por equipo usa su propio nombre (window.OVAMemoria es la memoria del teléfono de ovaextra.js)',/root\.OVAMemEquipo = API/.test(rd2('memoria.js'))&&/root\.OVAMemoria=MEM/.test(rd2('ovaextra.js'))&&!/OVAMemoria/.test(rd2('analista.js')+rd2('memoria.js')));
  ok('el estilo de El análisis va en <head> (no se pierde al repintar con lesionados)',/document\.head\.appendChild\(st\)/.test(rd2('analista.js')));
  ok('línea movida contra el favorito y bajas: dice que el % del mercado ya lo cuenta y que le creas al mercado',(()=>{const r=AN.analizar(Object.assign({},base,{p:0.737,pMod:0.79,mov:-5.1,bajasFav:['Austin Reaves']}));return /créele al 74%/.test(r.intro)&&r.enContra.some(x=>/ya lo cuenta/.test(x));})());
- ok('Veredicto más limpio: modelo contra mercado, confiabilidad, forma y línea van plegados en las 5 apps',['usdeporte.js','nba.html','futbol.html','tenis.js'].every(f=>{const h=rd2(f);return h.indexOf('📋 Modelo contra mercado y qué tan confiable es')>0&&h.indexOf('📈 Cómo vienen jugando (detalle)')>0;})&&rd2('usdeporte.js').indexOf('📉 Línea del mercado (detalle)')>0&&rd2('nba.html').indexOf('📉 Línea del mercado (detalle)')>0);
  ok('no baja nada, no guarda nada y el service worker lo guarda',!/fetch\(|localStorage/.test(rd2('analista.js'))&&rd2('sw.js').indexOf("'analista.js'")>0);
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{

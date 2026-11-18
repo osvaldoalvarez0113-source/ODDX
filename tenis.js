@@ -290,11 +290,11 @@
       }
     } catch (e) { }
     o += `<div class="rv">${anH}<h4>Pronóstico y pick</h4><div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf >= umbral ? esc(fav.nombre) + ' gana · ' + Math.round(pf * 100) + '%' : 'Partido parejo'}</div>
-     <div class="rvP">${pf >= umbral ? 'Es el favorito' + (k ? ' según el mercado (Kalshi, sin margen).' : ' según el modelo.') : 'Ninguno pasa del 60%. Lo más probable: ' + esc(fav.nombre) + ' ' + Math.round(pf * 100) + '%.'}${an.bestOf === 5 ? ' Grand Slam a 5 sets.' : ''}</div>
+     <div class="rvP">${pf >= umbral ? 'Es el favorito' + (k ? ' según el mercado (Kalshi, sin margen).' : ' según el modelo.') : 'Ninguno pasa del 60%. Lo más probable: ' + esc(fav.nombre) + ' ' + Math.round(pf * 100) + '%.'}${an.bestOf === 5 ? ' Grand Slam a 5 sets.' : ''}</div>${sig}${acH}
      <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amer(pf)}</b> por ${esc(fav.nombre)}${k ? '' : ' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(fav.nombre)}</label><input type="number" inputmode="decimal" class="cuotaIn" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${k ? 1 : 0}"><div class="rvVal"></div></div></div>`;
     // modelo contra mercado
     const row = (n, mo, mk) => `<div class="nm">${esc(n)} gana</div><div class="n md">${pct(mo, 1)}</div><div class="n mk">${mk === null ? '—' : pct(mk, 1)}</div><div class="n">${amer(mk === null ? mo : mk)}</div>`;
-    o += `<details class="comoLee"><summary>📋 Modelo contra mercado y qué tan confiable es</summary><div style="margin-top:8px">${sig}${acH}</div><h4>Modelo contra mercado</h4><div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(m.a.nombre, an.pMod, k ? k.pA : null)}${row(m.b.nombre, 1 - an.pMod, k ? 1 - k.pA : null)}</div>
+    o += `<h4>Modelo contra mercado</h4><div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(m.a.nombre, an.pMod, k ? k.pA : null)}${row(m.b.nombre, 1 - an.pMod, k ? 1 - k.pA : null)}</div>
      <div class="nota" style="margin-top:6px">Mercado = ${k ? `Kalshi (${esc(corto(m.a))} ${k.cA}¢ · ${esc(corto(m.b))} ${k.cB}¢)` : 'sin precio todavía'}.</div>`;
     // qué tan confiable es
     const L = (c, t) => `<div><i class="${c}">${c === 'ok' ? '✓' : (c === 'w' ? '!' : '✗')}</i><span>${t}</span></div>`;
@@ -307,7 +307,7 @@
     if (an.poco) li.push(L('w', `${esc(an.A.n < an.B.n ? an.A.nombre : an.B.nombre)} tiene ${Math.min(an.A.n, an.B.n)} partidos en la base (ATP/WTA desde 2023): su rating sale casi todo del ranking.${k ? ' Aquí el mercado sabe mucho más que el modelo.' : ''}`));
     if (/qualif/i.test(m.ronda)) li.push(L('w', 'Clasificación: es donde el modelo más se equivoca (acierta 63% contra 70% del mercado).'));
     li.push(L('w', 'Retiros: ~3% de los partidos terminan por retiro; cada casa los paga distinto.'));
-    o += `<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></details>`;
+    o += `<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div>`;
     // sets y games (lo propio del tenis)
     const t = an.t;
     if (t) {
@@ -317,7 +317,7 @@
       o += `<h4>Sets y games (medido)</h4><div class="rvLs">${items.map(([p, txt]) => L(p >= 0.6 ? 'ok' : 'w', txt + ': ' + pct(p))).join('')}${L('x', `Total: lo normal son ${t.mediana} games (más de ${lT}: ${pct(t.masDe(lT))}). Sin ventaja medida: solo referencia.`)}</div>`;
     }
     o += `</div>`;
-    try { if (window.OVAForma) { const fh = window.OVAForma.tenis(an.A.forma, an.B.forma, an.A.nombre, an.B.nombre, pA); if (fh) o += `<details class="comoLee"><summary>📈 Cómo vienen jugando (detalle)</summary>${fh}</details>`; } } catch (e) {}
+    try { if (window.OVAForma) o += window.OVAForma.tenis(an.A.forma, an.B.forma, an.A.nombre, an.B.nombre, pA); } catch (e) {}
     o += `<details class="comoLee"><summary>Superficie</summary><div class="ajuste" style="margin-top:8px"><div><label>Si ESPN no la dice bien, cámbiala</label><select class="supSel">${['H', 'C', 'G'].map(x => `<option value="${x}"${x === an.sup ? ' selected' : ''}>${T.SUP_TXT[x]}</option>`).join('')}</select></div></div></details>`;
     o += `<details class="comoLee"><summary>¿Cómo se lee y qué tan confiable es?</summary><div class="nota"><b>Los dos porcentajes de arriba</b> son la probabilidad de que gane cada jugador. <b>Cuota justa</b> es lo que tendría que pagar la casa para que apostar ahí no gane ni pierda. <b>Qué tan confiable es:</b> en 7,506 partidos con precio de Kalshi el mercado acertó 69.1% contra 65.6% del modelo, por eso si hay precio manda el mercado (95%). <b>El modelo:</b> Elo general + ${R && R.params && R.params[m.tour] ? Math.round(R.params[m.tour].w * 100) : 25}% superficie con todos los partidos ATP/WTA desde 2023, corregido por dos cosas medidas (pocos partidos en la base y lejos de su mejor nivel). Sets y games salen de lo que pasó en miles de partidos con un favorito de ese mismo %.</div></details>`;
     return o;
