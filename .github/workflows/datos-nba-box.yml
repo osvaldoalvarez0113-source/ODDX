@@ -1,0 +1,42 @@
+name: Datos NBA por jugador (boxscores)
+
+# Baja de ESPN quién jugó y cuánto en cada juego de la NBA (2021-22 en adelante) y lo guarda en la rama datos-nba-box.
+# Lo usan la medición del valor de cada jugador y el robot de valores de la app NBA.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 10 * 10-12,1-6 *"
+  push:
+    branches: [main]
+    paths:
+      - scripts/bajar_nba_box.js
+      - .github/workflows/datos-nba-box.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: datos-nba-box
+  cancel-in-progress: false
+
+jobs:
+  bajar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Recuperar lo ya bajado
+        continue-on-error: true
+        run: git fetch -q origin datos-nba-box && git show FETCH_HEAD:nba-box.json.gz > nba-box.json.gz || echo "sin cache"
+      - name: Bajar lo nuevo
+        run: node scripts/bajar_nba_box.js
+      - name: Guardar en la rama datos-nba-box
+        if: always()
+        run: |
+          [ -f nba-box.json.gz ] || exit 0
+          mkdir -p /tmp/box && cp -f nba-box.json.gz /tmp/box/ && cd /tmp/box
+          git init -q -b datos-nba-box && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "datos nba por jugador" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" datos-nba-box
