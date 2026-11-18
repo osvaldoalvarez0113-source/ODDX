@@ -19,3 +19,13 @@ Se tomó el % del modelo antes de cada juego y se miró si los grupos de la memo
 
 Nada pasa de z 2: el modelo ya lo trae. Por eso la memoria entra como **contexto** y **no mueve la confianza** del análisis.
 Los cortes de cada deporte quedaron relativos a lo normal (NHL: le cuesta si gana ≤ 45%, cumple ≥ 72%, sorprende ≥ 50%).
+
+## MLB (17-nov-2026, `scripts/medicion/memoria_equipo_mlb.js`, rama `datos-props`, 2021-2026, uno de cada tres juegos, contra la línea de cierre)
+
+| Grupo | Juegos | El mercado decía | Ganó | z |
+|---|---|---|---|---|
+| Al favorito le cuesta (de favorito gana ≤ 45%, 10+ juegos) | 274 | 56.2% | 56.2% | 0.0 |
+| El favorito cumple (≥ 70%) | 259 | 59.1% | 55.6% | −1.2 |
+| El rival da sorpresas (de no favorito ≥ 50%) | 830 | 56.0% | 56.4% | +0.2 |
+
+Igual que en NHL y NFL: el precio ya lo trae. En MLB también es contexto y no mueve la confianza.
