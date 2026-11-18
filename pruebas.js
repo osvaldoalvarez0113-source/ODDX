@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -1911,6 +1911,25 @@ async function t_publico(){
  ok('sube con el total: 35% → ~66%, 70% → ~77%',Math.abs(gol1T(0.35)-0.658)<0.01&&Math.abs(gol1T(0.70)-0.767)<0.01);
  ok('topado entre 60% y 83% (fuera de ahí no hay partidos medidos), y sin dato no inventa',gol1T(0.001)>0.60&&gol1T(0.999)<0.83&&gol1T(null)===null&&gol1T(NaN)===null);
  ok('el Veredicto lo pinta debajo de Ambos anotan',/fila\('Ambos anotan', r\.pBtts, null\)\+fila\('Gol en el 1er tiempo', gol1T\(r\.overLin\[2\.5\]\), null\)/.test(fh));
+}
+{
+ sec('🧠 El análisis del Veredicto (analista.js)');
+ const AN=require(D+'analista.js'), rd2=f=>fs.readFileSync(D+f,'utf8');
+ const base={dep:'nba',fav:'Boston',riv:'Miami',favLocal:true,p:0.74,merc:true,pMod:0.73,ac:{pct:0.73,n:800}};
+ const r1=AN.analizar(base);
+ ok('favorito claro y modelo de acuerdo → confianza alta',r1&&r1.k==='alta'&&/lo ven igual/.test(r1.intro)&&/73 de cada 100/.test(r1.intro));
+ ok('si el modelo se va con el otro, baja un escalón y lo dice',AN.analizar(Object.assign({},base,{pMod:0.45})).k==='media'&&/se va con/.test(AN.analizar(Object.assign({},base,{pMod:0.45})).intro));
+ ok('juego parejo nunca pasa de confianza baja',['baja','dejar'].includes(AN.analizar(Object.assign({},base,{p:0.53,pMod:0.52,ac:{pct:0.52,n:900}})).k));
+ ok('back-to-back del favorito sale en contra y el del rival a favor',(()=>{const f={n:20,u10:{w:5,e:0,l:5,n:10},racha:{res:'V',w:true,n:1},etq:'parejo',sede:{w:2,l:2,e:0,n:4},rivales:0.5,desc:1,en7:3};
+   const r=AN.analizar(Object.assign({},base,{fF:f,fR:Object.assign({},f,{desc:3})})); const q=AN.analizar(Object.assign({},base,{fF:Object.assign({},f,{desc:3}),fR:f}));
+   return r.enContra.some(x=>/jugó ayer/.test(x))&&q.aFavor.some(x=>/jugó ayer/.test(x));})());
+ ok('fútbol: ofrece doble oportunidad con empate alto y Gol en el 1er tiempo si pasa de 74%',(()=>{const r=AN.analizar({dep:'fut',fav:'A',riv:'B',favLocal:true,p:0.48,merc:true,pMod:0.5,modMismo:true,ac:{pct:0.5,n:900},pE:0.28,pDoble:0.76,extras:[{t:'Gol en el 1er tiempo',p:0.77}]});return /doble oportunidad/.test(r.cierre)&&/Gol en el 1er tiempo/.test(r.cierre);})());
+ ok('en vivo no da consejo de antes del juego',/ya empezó/.test(AN.analizar(Object.assign({},base,{vivo:true})).cierre));
+ ok('sin % válido no pinta nada',AN.html({dep:'nba',fav:'X',p:NaN})==='');
+ ok('el bloque escapa nombres',AN.html(Object.assign({},base,{fav:'<b>x'})).indexOf('<b>x')<0);
+ ok('NBA, NHL, NFL, fútbol y tenis lo cargan y lo ponen arriba del Veredicto',['nba.html','nhl.html','nfl.html','futbol.html','tenis.html'].every(f=>rd2(f).indexOf('<script src="analista.js"></script>')>0)&&
+   /\$\{anH\}<h4>Pronóstico y pick<\/h4>/.test(rd2('usdeporte.js'))&&/\$\{anH\}<h4>Pronóstico y pick<\/h4>/.test(rd2('nba.html'))&&/'<div class="rv">'\+anH\+'<h4>Pronóstico y pick/.test(rd2('futbol.html'))&&/<div class="rv">\$\{anH\}<h4>Pronóstico y pick/.test(rd2('tenis.js')));
+ ok('no baja nada, no guarda nada y el service worker lo guarda',!/fetch\(|localStorage/.test(rd2('analista.js'))&&rd2('sw.js').indexOf("'analista.js'")>0);
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));

@@ -481,6 +481,15 @@
     }
     return li;
   }
+  /* bajas que pesan contra el favorito, para «El análisis»: mariscal en duda (NFL) o cambio de portero (NHL) */
+  function alertasAn(g, H, A, favH) {
+    const out = [], F = favH ? H : A; if (!LES) return out;
+    try {
+      if (DEP === 'nfl' && LES.equipos) ((LES.equipos[F.n] && LES.equipos[F.n].l) || []).filter(x => x.p === 'QB' && !/decisi/i.test(x.s)).forEach(x => out.push([1.6, 'el mariscal ' + esc(x.n) + ' de ' + esc(F.ab) + ' está en la lista de lesionados (' + esc(x.s) + ')']));
+      if (DEP === 'nhl' && Array.isArray(LES.juegan)) { const j = LES.juegan.find(x => x.h === H.n && x.a === A.n && Math.abs(Date.parse(x.t) - g.ts) < 12 * 36e5); ((j && j.cambios) || []).filter(c => c.eq === F.n || c.eq === F.ab).forEach(c => out.push([1.4, 'cambió el portero de ' + esc(F.ab) + ': ' + esc(c.antes) + ' → ' + esc(c.ahora)])); }
+    } catch (e) { }
+    return out;
+  }
   /* cuánto se movió el ganador desde que abrió (ESPN, sin margen) */
   function movidaTxt(g, H, A) {
     const o = g.odds; if (!o || !o.mlH || !o.mlA || !o.mlHo || !o.mlAo) return null;
@@ -536,7 +545,8 @@
     if (!(mk && mk.live)) { const mv = movidaTxt(g, H, A); if (mv) li.push(L(mv[0], mv[1])); bajasTxt(g, H, A).forEach(x => li.push(L(x[0], x[1]))); }
     if (g.pre) li.push(L('w', 'Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
     li.push(`<div data-inj><i class="w">!</i><span>Lesionados: toca «Cargar lesionados» abajo (archivo grande).</span></div>`);
-    return `<div class="rv"><h4>Pronóstico y pick</h4>${main}${guiaNhl(g, pr, pf)}${kalshiN(g, mk, H, A)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
+    let anH = ''; try { if (window.OVAAnalista) anH = window.OVAAnalista.html(window.OVAAnalista.ctxUS({ dep: DEP, g, games: GAMES, H, A, pHMod: pr.pHMod, pMk: hit, vivo: !!(mk && mk.live), alertas: alertasAn(g, H, A, favM), nota: DEP === 'nhl' ? 'El % incluye tiempo extra y shootout.' : '' })); } catch (e) { }   /* 🧠 El análisis (analista.js) */
+    return `<div class="rv">${anH}<h4>Pronóstico y pick</h4>${main}${guiaNhl(g, pr, pf)}${kalshiN(g, mk, H, A)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
   }
 
   function pintarCuerpo(body, g) {

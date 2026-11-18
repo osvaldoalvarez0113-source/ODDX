@@ -276,7 +276,19 @@
       (k && !favModIgual ? `<div class="rvP" style="margin-top:7px">Modelo solo: <b>${esc(riv.nombre)}</b> (${Math.round((1 - modF) * 100)}%). Mercado: <b>${esc(fav.nombre)}</b> (${Math.round(pf * 100)}%).</div>` : '');
     const acH = h ? `<div class="rvP rvAc" style="margin-top:9px">📊 <b>Cuántas veces acierta este %:</b> cuando ${h.mer ? 'Kalshi' : 'el modelo'} le dio ${Math.round(h.de * 100)}-${Math.round(Math.min(h.a, 1) * 100)}% al favorito, ganó <b>${Math.round(h.gano * h.n).toLocaleString('es')} de ${h.n.toLocaleString('es')}</b> partidos (${Math.round(h.gano * 100)}%).</div>` : '';
     const umbral = 0.6;
-    o += `<div class="rv"><h4>Pronóstico y pick</h4><div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf >= umbral ? esc(fav.nombre) + ' gana · ' + Math.round(pf * 100) + '%' : 'Partido parejo'}</div>
+    let anH = '';   /* 🧠 El análisis (analista.js) */
+    try {
+      if (window.OVAAnalista) {
+        const Fm = window.OVAForma, tA = Fm ? Fm.tira(an.A.forma) : null, tB = Fm ? Fm.tira(an.B.forma) : null, cF0 = cansado(m, fav), cR0 = cansado(m, riv), al = [], af = [];
+        if (cF0) al.push([1.1, `${esc(fav.nombre)} viene de un partido largo (${cF0.g} games)`]);
+        if (cR0) af.push([0.9, `${esc(riv.nombre)} viene de un partido largo (${cR0.g} games)`]);
+        if (/qualif/i.test(m.ronda)) al.push([0.8, 'es clasificación, donde el modelo más se equivoca']);
+        anH = window.OVAAnalista.html({ dep: 'tenis', fav: fav.nombre, riv: riv.nombre, favLocal: null, p: pf, merc: !!k, pMod: k ? modF : null, vivo: false,
+          ac: h ? { pct: h.gano, n: h.n } : null, fF: an.favA ? tA : tB, fR: an.favA ? tB : tA, mov: null, alertas: al, aFavor: af, poco: !!an.poco,
+          nota: an.bestOf === 5 ? 'A 5 sets el favorito cumple más seguido (ya está contado en el %).' : '' });
+      }
+    } catch (e) { }
+    o += `<div class="rv">${anH}<h4>Pronóstico y pick</h4><div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf >= umbral ? esc(fav.nombre) + ' gana · ' + Math.round(pf * 100) + '%' : 'Partido parejo'}</div>
      <div class="rvP">${pf >= umbral ? 'Es el favorito' + (k ? ' según el mercado (Kalshi, sin margen).' : ' según el modelo.') : 'Ninguno pasa del 60%. Lo más probable: ' + esc(fav.nombre) + ' ' + Math.round(pf * 100) + '%.'}${an.bestOf === 5 ? ' Grand Slam a 5 sets.' : ''}</div>${sig}${acH}
      <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amer(pf)}</b> por ${esc(fav.nombre)}${k ? '' : ' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(fav.nombre)}</label><input type="number" inputmode="decimal" class="cuotaIn" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${k ? 1 : 0}"><div class="rvVal"></div></div></div>`;
     // modelo contra mercado

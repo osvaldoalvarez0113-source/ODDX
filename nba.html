@@ -17,6 +17,7 @@
 <script src="periodos.js"></script>
 <script src="jugadores.js"></script>
 <script src="forma.js"></script>
+<script src="analista.js"></script>
 <script src="publico.js"></script>
 <style>
 :root{
@@ -734,7 +735,8 @@ function resumenN(g,pr,H,A){
   li.push(pr.bH||pr.bA?L('ok','Back-to-back: '+[pr.bA?A.n:'',pr.bH?H.n:''].filter(Boolean).map(esc).join(' y ')+' jugó ayer (ya descontado).'):L('ok','Sin back-to-back.'));
   if(g.pre) li.push(L('w','Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
   li.push(`<div data-inj><i class="w">!</i><span>Buscando lesionados…</span></div>`);
-  return `<div class="rv"><h4>Pronóstico y pick</h4>${main}${kalshiN(g,mk,H,A)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
+  let anH=''; try{ if(window.OVAAnalista) anH=window.OVAAnalista.html(window.OVAAnalista.ctxUS({dep:'nba',g,games:GAMES,H,A,pHMod:pr.pHMod,pMk:hit,vivo:!!(mk&&mk.live)})); }catch(e){}   /* 🧠 El análisis (analista.js) */
+  return `<div class="rv">${anH}<h4>Pronóstico y pick</h4>${main}${kalshiN(g,mk,H,A)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
 }
 function pintarCuerpo(body,g){
   const pr=prediccion(g), H=T(g.h), A=T(g.a);
