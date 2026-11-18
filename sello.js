@@ -1,4 +1,4 @@
 /* generado por scripts/sello.js: no editar a mano */
 (function(r){r.OVA_SELLO=
-{"nhl":{"f":"2026-11-17","h":"75eb159a3f"},"nfl":{"f":"2026-11-17","h":"2d4689d452"},"tenis":{"f":"2026-11-17","h":"151687b0ef"}}
+{"nhl":{"f":"2026-11-17","h":"ef99436bcc"},"nfl":{"f":"2026-11-17","h":"c28998c59a"},"tenis":{"f":"2026-11-17","h":"211f168235"}}
 ;})(typeof window!=='undefined'?window:globalThis);
