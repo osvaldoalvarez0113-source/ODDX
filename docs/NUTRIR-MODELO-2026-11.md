@@ -228,3 +228,33 @@ En las ligas el modelo ya está casi bien calibrado: se queda 1.5 a 5 puntos cor
 | Solo titulares fijos (8+ de los últimos 10) | 0.01 / 0.07 | 0.98915 → 0.99169 (z +1.2) | 1,129 → 1,104 |
 
 Las tres versiones empeoran fuera de muestra, también en los 1,180 partidos con 2+ titulares fijos fuera. Contar ausencias no basta: un suplente de un equipo grande puede valer más que un titular de uno chico, y el modelo ya ve el efecto en los goles de los partidos recientes. Para que sirviera habría que saber cuánto vale cada jugador (minutos, goles, valor de mercado), y eso ESPN no lo da gratis de forma confiable.
+
+## Los candidatos de props, contra lo que de verdad muestra la app (17-nov-2026)
+
+Datos: rama `datos-props` (cuartos y medios tiempos) unida con lo que decía el modelo antes de cada juego (`resultados-nba-6t`, `resultados-futbol-6t`).
+Cada temporada se ajusta con las anteriores y se prueba en la siguiente. Scripts: `scripts/medicion/nutrir_nba_q1.py` y `nutrir_fut_1t.py`.
+
+**NBA · el favorito fuerte (≥ 75%) gana el 1er cuarto — no se toca.** El candidato salió contra una referencia simple; `periodos.js` ya lo tiene bien:
+
+| Temporada | Juegos | La app dice | Ganó |
+|---|---|---|---|
+| 2022-23 | 138 | 69.2% | 68.8% |
+| 2023-24 | 285 | 69.9% | 69.8% |
+| 2024-25 | 299 | 70.6% | 73.2% |
+| 2025-26 | 317 | 70.8% | 71.0% |
+
+Reajustar el % no mejora la pérdida (0.6698 → 0.6695 en 4,712 juegos). El lado que escoge no cambia, así que los aciertos tampoco.
+
+**Fútbol · gol en el 1er tiempo — aplicado.** Antes la app usaba un 71.7% fijo para todos los partidos. Ahora sale del Más de 2.5 del modelo:
+p = sig(0.882 + 0.366 · logit(Más de 2.5)), con el Más de 2.5 topado entre 25% y 85% (la app muestra entre ~62% y ~82%).
+
+| Temporada | Partidos | Pérdida con 71.7% fijo | Con el total del modelo | El tercio más alto acertó | Todos |
+|---|---|---|---|---|---|
+| 2022-23 | 1,826 | 0.5924 | 0.5910 | 73.5% | 72.1% |
+| 2023-24 | 1,752 | 0.5927 | 0.5890 | 78.3% | 72.0% |
+| 2024-25 | 1,751 | 0.5859 | 0.5834 | 76.8% | 72.8% |
+| 2025-26 | 1,752 | 0.6066 | 0.6045 | 73.3% | 70.5% |
+
+Mejora en las 4 temporadas, z 3.8. Jugando solo el tercio de partidos con el % más alto: **75.5%** de aciertos contra 71.9% jugándolos todos (7,081 partidos).
+Por liga sola mejora menos (0.5931 contra 0.5919 del total) y sumar la liga al total no agrega nada, así que la liga no entra: Bundesliga y La Liga ya se notan en el total del modelo.
+Calibración fuera de muestra: dice 69% → ganó 67%; dice 72% → 73%; dice 76% → 80%.

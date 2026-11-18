@@ -1902,6 +1902,16 @@ async function t_publico(){
  ok('el viento se pide solo para juegos al aire libre sin empezar y no cuelga la app (tope 3 s)',/!g\.indoor && !g\.neutral && CLIMA_NFL\[T\(g\.h\)\.ab\] && g\.ts > ahora/.test(us)&&/Promise\.race\(\[todo, new Promise\(r => setTimeout\(r, 3000\)\)\]\)/.test(us)&&/DEP !== 'nfl' \|\| !M\.ajusteClima\) return;/.test(us));
 }
 
+{
+ sec('Fútbol: Gol en el 1er tiempo sale del Más de 2.5 del modelo (futbol.html)');
+ const fh=fs.readFileSync(__dirname+'/futbol.html','utf8'), m=fh.match(/function gol1T[^\n]+/);
+ ok('existe gol1T',!!m);
+ const gol1T=m?new Function(m[0]+'; return gol1T;')():()=>null;
+ ok('con Más de 2.5 parejo (52%) da cerca del 71.7% de siempre',Math.abs(gol1T(0.52)-0.713)<0.01,gol1T(0.52));
+ ok('sube con el total: 35% → ~66%, 70% → ~77%',Math.abs(gol1T(0.35)-0.658)<0.01&&Math.abs(gol1T(0.70)-0.767)<0.01);
+ ok('topado entre 60% y 83% (fuera de ahí no hay partidos medidos), y sin dato no inventa',gol1T(0.001)>0.60&&gol1T(0.999)<0.83&&gol1T(null)===null&&gol1T(NaN)===null);
+ ok('el Veredicto lo pinta debajo de Ambos anotan',/fila\('Ambos anotan', r\.pBtts, null\)\+fila\('Gol en el 1er tiempo', gol1T\(r\.overLin\[2\.5\]\), null\)/.test(fh));
+}
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
  process.exit(fallas?1:0);

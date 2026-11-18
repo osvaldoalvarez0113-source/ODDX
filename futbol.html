@@ -1637,6 +1637,9 @@ function distribucion(lamL, lamV, rho, conMarcadores){
   if(marc){ marc.forEach(function(m){ m.p/=suma; }); marc.sort(function(a,b){ return b.p-a.p; }); }
   return {pL:pL/suma, pD:pD/suma, pV:pV/suma, o15:o15/suma, o25:o25/suma, o35:o35/suma, btts:pBtts/suma, marcadores:marc};
 }
+/* Gol en el 1er tiempo, a partir del Más de 2.5 del modelo (docs/NUTRIR-MODELO-2026-11.md): 10,731 partidos de las 5 ligas,
+   ajustado con las temporadas anteriores y probado en la siguiente (4 de 4 mejoran, z 3.8). Antes era un 71.7% fijo para todos. */
+function gol1T(o25){ if(!(o25>0&&o25<1)) return null; var q=Math.min(Math.max(o25,0.25),0.85); return 1/(1+Math.exp(-(0.882+0.366*Math.log(q/(1-q))))); }
 var CLAVES_1X2 = ['pL','pD','pV'], CLAVES_GOLES = ['o15','o25','o35','btts'];
 // Encoge las probabilidades (solo las claves indicadas) hacia las de un "partido promedio de la liga" (d0).
 function mezclar(d, d0, w, claves){
@@ -2217,8 +2220,8 @@ function resumenVeredictoF(p, base, id){
   var tab = '<div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>'+
     fila(p.local+' gana', r.pL, f?f[0]:null)+fila('Empate', r.pD, f?f[1]:null)+fila(p.visita+' gana', r.pV, f?f[2]:null)+
     fila('Más de 2.5', r.overLin[2.5], ou?ou[0]:null)+fila('Menos de 2.5', 1-r.overLin[2.5], ou?ou[1]:null)+
-    fila('Ambos anotan', r.pBtts, null)+'</div>'+
-    '<div class="nota" style="margin-top:6px">Mercado = '+(m&&m.src==='pred'?'Polymarket'+(m.vivo?' (en vivo)':'')+' (probabilidades de los precios en centavos, normalizadas a 100%)':'Pinnacle sin su margen')+'. Más/Menos 2.5 y Ambos anotan no tienen precio aquí.</div>';
+    fila('Ambos anotan', r.pBtts, null)+fila('Gol en el 1er tiempo', gol1T(r.overLin[2.5]), null)+'</div>'+
+    '<div class="nota" style="margin-top:6px">Mercado = '+(m&&m.src==='pred'?'Polymarket'+(m.vivo?' (en vivo)':'')+' (probabilidades de los precios en centavos, normalizadas a 100%)':'Pinnacle sin su margen')+'. Más/Menos 2.5, Ambos anotan y Gol en el 1er tiempo no tienen precio aquí.</div>';
 
   var chips = '<div class="rvChips"><div>'+escR(p.local)+'<small>'+r.lamL.toFixed(2)+' goles</small></div><div>'+escR(p.visita)+'<small>'+r.lamV.toFixed(2)+' goles</small></div>';
   r.marcadores.slice(0,3).forEach(function(mm){ chips += '<div>'+mm.i+'-'+mm.j+'<small>'+(mm.p*100).toFixed(1)+'%</small></div>'; });
