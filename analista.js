@@ -78,9 +78,9 @@
       else if (Math.abs(gap) <= 3) s2 = 'El modelo y el mercado lo ven igual (' + p0(ctx.pMod) + ' y ' + p0(p) + ').';
       else if (gap > 7) { s2 = 'El modelo lo ve menos claro (' + p0(ctx.pMod) + '): el precio sabe algo que los números no ven, normalmente lesiones o alineaciones.'; nivel -= 1; porque.push('el modelo lo ve bastante menos claro'); }
       else if (gap > 0) s2 = 'El modelo lo ve un poco menos claro (' + p0(ctx.pMod) + '), pero va con el mismo.';
-      else if (gap < -3 && ((ctx.bajasFav || []).length || ctx.mov <= -2)) s2 = 'El modelo le da un poco más (' + p0(ctx.pMod) + '), pero el modelo no ve ' + ((ctx.bajasFav || []).length ? 'las bajas de ' + F : 'por qué se movió la línea') + ': créele al ' + p0(p) + ' del mercado.';
       else if (gap < -7) { s2 = 'El modelo le da más (' + p0(ctx.pMod) + ') que el mercado (' + p0(p) + '). Cuando el precio está tan por debajo del modelo, casi siempre es por algo que el modelo no ve, normalmente bajas' +
         ((ctx.bajasFav || []).length ? ', y a ' + F + ' le faltan ' + ctx.bajasFav.length + (ctx.bajasFav.length === 1 ? ' jugador' : ' jugadores') + ' (abajo los nombres).' : '. Revisa los lesionados antes de jugarlo.'); nivel -= 1; porque.push('el mercado lo ve bastante menos claro que el modelo'); }
+      else if (gap < -3 && ((ctx.bajasFav || []).length || ctx.mov <= -2)) s2 = 'El modelo le da un poco más (' + p0(ctx.pMod) + '), pero el modelo no ve ' + ((ctx.bajasFav || []).length ? 'las bajas de ' + F : 'por qué se movió la línea') + ': créele al ' + p0(p) + ' del mercado.';
       else s2 = 'El modelo lo ve todavía más claro (' + p0(ctx.pMod) + ').';
     }
     /* 3. cuántas veces se cumple */
