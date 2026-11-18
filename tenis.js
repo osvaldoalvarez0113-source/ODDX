@@ -280,8 +280,8 @@
     try {
       if (window.OVAAnalista) {
         const Fm = window.OVAForma, tA = Fm ? Fm.tira(an.A.forma) : null, tB = Fm ? Fm.tira(an.B.forma) : null, cF0 = cansado(m, fav), cR0 = cansado(m, riv), al = [], af = [];
-        if (cF0) al.push([1.1, `${esc(fav.nombre)} viene de un partido largo (${cF0.g} games)`, 'largo']);
-        if (cR0) af.push([0.9, `${esc(riv.nombre)} viene de un partido largo (${cR0.g} games)`, 'largo']);
+        if (cF0) al.push([1.1, `<b class="anN">${esc(fav.nombre.split(' ').slice(1).join(' ') || fav.nombre)}</b> viene de un partido largo (${cF0.g} games)`, 'largo']);
+        if (cR0) af.push([0.9, `<b class="anN">${esc(riv.nombre.split(' ').slice(1).join(' ') || riv.nombre)}</b> viene de un partido largo (${cR0.g} games)`, 'largo']);
         if (/qualif/i.test(m.ronda)) al.push([0.8, 'es clasificación, donde el modelo más se equivoca']);
         anH = window.OVAAnalista.html({ dep: 'tenis', fav: fav.nombre, riv: riv.nombre, favLocal: null, p: pf, merc: !!k, pMod: k ? modF : null, vivo: false,
           ac: h ? { pct: h.gano, n: h.n } : null, fF: an.favA ? tA : tB, fR: an.favA ? tB : tA, mov: null, alertas: al, aFavor: af, poco: !!an.poco,

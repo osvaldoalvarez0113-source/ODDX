@@ -16,7 +16,8 @@
   /* nombre en negrita que no se parte entre dos renglones; en NBA, NHL y NFL, después de la primera vez, solo el apodo («Lakers») */
   var DOS = ['Trail Blazers', 'Red Wings', 'Maple Leafs', 'Golden Knights', 'Blue Jackets', 'Red Sox', 'White Sox', 'Blue Jays'];
   function corto(n, dep) {
-    n = String(n || ''); if (dep !== 'nba' && dep !== 'nhl' && dep !== 'nfl') return n;
+    n = String(n || ''); if (dep === 'tenis') { var t = n.split(' '); return t.length > 1 ? t.slice(1).join(' ') : n; }   /* tenis: el apellido («Djokovic», «de Minaur») */
+    if (dep !== 'nba' && dep !== 'nhl' && dep !== 'nfl') return n;
     for (var i = 0; i < DOS.length; i++) if (n.slice(-DOS[i].length) === DOS[i]) return DOS[i];
     var w = n.split(' '); return w.length > 1 ? w[w.length - 1] : n;
   }
