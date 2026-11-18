@@ -1947,12 +1947,13 @@ async function t_publico(){
   const r=ME.razones({fav:{n:8,w:3},dog:{n:2,w:1},n:10,w:4,esp:6},{fav:{n:2,w:1},dog:{n:8,w:5},n:10,w:6,esp:4},'A','B','nba',s=>s);
   ok('memoria: «de favorito le cuesta» y «da sorpresas» salen en contra, y no mueven la confianza',r.c.some(x=>/le cuesta/.test(x[1]))&&r.c.some(x=>/sorpresas/.test(x[1]))&&r.c.concat(r.a).every(x=>x[2]==='mem'));
   ok('tenis: lee la memoria del robot (12 meses)',(()=>{const t=ME.deTenis([10,8,4,1,95,9]);return t.fav.n===10&&t.dog.w===1&&t.esp===9.5;})()&&JSON.parse(rd2('ratings-tenis.json')).campos.indexOf('memoria')===15);
-  globalThis.OVAMemoria=ME;
+  globalThis.OVAMemEquipo=ME;
   const z=AN.analizar(Object.assign({},base,{memFav:{fav:{n:8,w:3},dog:{n:2,w:1},n:10,w:4,esp:6},memRiv:{fav:{n:2,w:1},dog:{n:8,w:5},n:10,w:6,esp:4}}));
   ok('El análisis trae la memoria de los dos y la confianza no baja por ella',z.mem&&z.mem.length===2&&z.k==='alta');
   ok('las 5 apps cargan memoria.js antes de analista.js',['nba.html','nhl.html','nfl.html','futbol.html','tenis.html'].every(f=>{const h=rd2(f);return h.indexOf('<script src="memoria.js">')>0&&h.indexOf('<script src="memoria.js">')<h.indexOf('<script src="analista.js">');}));
-  delete globalThis.OVAMemoria;
+  delete globalThis.OVAMemEquipo;
  }
+ ok('memoria por equipo usa su propio nombre (window.OVAMemoria es la memoria del teléfono de ovaextra.js)',/root\.OVAMemEquipo = API/.test(rd2('memoria.js'))&&/root\.OVAMemoria=MEM/.test(rd2('ovaextra.js'))&&!/OVAMemoria/.test(rd2('analista.js')+rd2('memoria.js')));
  ok('el estilo de El análisis va en <head> (no se pierde al repintar con lesionados)',/document\.head\.appendChild\(st\)/.test(rd2('analista.js')));
  ok('línea movida contra el favorito y bajas: dice que el % del mercado ya lo cuenta y que le creas al mercado',(()=>{const r=AN.analizar(Object.assign({},base,{p:0.737,pMod:0.79,mov:-5.1,bajasFav:['Austin Reaves']}));return /créele al 74%/.test(r.intro)&&r.enContra.some(x=>/ya lo cuenta/.test(x));})());
  ok('no baja nada, no guarda nada y el service worker lo guarda',!/fetch\(|localStorage/.test(rd2('analista.js'))&&rd2('sw.js').indexOf("'analista.js'")>0);

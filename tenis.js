@@ -285,7 +285,7 @@
         if (/qualif/i.test(m.ronda)) al.push([0.8, 'es clasificación, donde el modelo más se equivoca']);
         anH = window.OVAAnalista.html({ dep: 'tenis', fav: fav.nombre, riv: riv.nombre, favLocal: null, p: pf, merc: !!k, pMod: k ? modF : null, vivo: false,
           ac: h ? { pct: h.gano, n: h.n } : null, fF: an.favA ? tA : tB, fR: an.favA ? tB : tA, mov: null, alertas: al, aFavor: af, poco: !!an.poco,
-          memFav: window.OVAMemoria ? window.OVAMemoria.deTenis((an.favA ? an.A : an.B).mem) : null, memRiv: window.OVAMemoria ? window.OVAMemoria.deTenis((an.favA ? an.B : an.A).mem) : null,
+          memFav: window.OVAMemEquipo ? window.OVAMemEquipo.deTenis((an.favA ? an.A : an.B).mem) : null, memRiv: window.OVAMemEquipo ? window.OVAMemEquipo.deTenis((an.favA ? an.B : an.A).mem) : null,
           nota: an.bestOf === 5 ? 'A 5 sets el favorito cumple más seguido (ya está contado en el %).' : '' });
       }
     } catch (e) { }

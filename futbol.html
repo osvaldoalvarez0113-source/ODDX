@@ -2196,7 +2196,7 @@ function ctxAnF(p, r, mod, f, m){
       var G = TERMINADOS.map(function(x){ return {h:nm(x.local), a:nm(x.visita), hs:(x.golesLocal==null?NaN:+x.golesLocal), as:(x.golesVisita==null?NaN:+x.golesVisita), ts:tsPartido(x)}; }).filter(function(x){ return x.ts>0 && isFinite(x.hs) && isFinite(x.as); });
       var ts = tsPartido(p); if(!(ts > 0)) ts = Date.now();
       fL = F.calc(G, '#L', ts, true, 'fut'); fV = F.calc(G, '#V', ts, false, 'fut');
-      if(window.OVAMemoria) mem = window.OVAMemoria.calc(G, ts, 'fut');
+      if(window.OVAMemEquipo) mem = window.OVAMemEquipo.calc(G, ts, 'fut');
     }
   }catch(e){}
   try{ if(window.OVAAciertos) ac = window.OVAAciertos.fila('fut', fu[fi], favL, !!f); }catch(e){}

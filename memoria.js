@@ -1,5 +1,5 @@
 /* ===================================================================
-   OVA · MEMORIA POR EQUIPO (window.OVAMemoria) — NBA, NHL, NFL, fútbol y tenis
+   OVA · MEMORIA POR EQUIPO (window.OVAMemEquipo) — NBA, NHL, NFL, fútbol y tenis
    Lo que la app recuerda de cada equipo en la temporada, juego por juego:
      · cómo responde cuando entra de FAVORITO (récord) y cuando entra de NO FAVORITO (cuántas sorpresas da),
      · si gana más o menos de lo que se esperaba de él antes de cada juego.
@@ -71,6 +71,6 @@
     return '<b>' + esc(n) + '</b>: de favorito ' + r(m.fav) + ' · de no favorito ' + r(m.dog) + ' · ' + (Math.abs(df) < 1 ? 'gana lo esperado' : (df > 0 ? 'gana ' + df.toFixed(1) + ' más de lo esperado' : 'gana ' + Math.abs(df).toFixed(1) + ' menos de lo esperado')) + '.';
   }
   var API = { calc: calc, deTenis: deTenis, razones: razones, linea: linea, CFG: CFG, pElo: pElo };
-  root.OVAMemoria = API;
+  root.OVAMemEquipo = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

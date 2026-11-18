@@ -98,7 +98,7 @@
       if (en(aFav) && en(cFav)) { aFav = fuera(aFav); cFav = fuera(cFav); neutro += TXT2[k2] + ' '; }
     });
     /* memoria de la temporada (memoria.js): contexto, no mueve la confianza */
-    var MEM = root.OVAMemoria, memL = null;
+    var MEM = root.OVAMemEquipo, memL = null;
     if (MEM && (ctx.memFav || ctx.memRiv)) {
       var rm = MEM.razones(ctx.memFav, ctx.memRiv, fav, riv, dep, esc); rm.a.forEach(function (x) { aFav.push(x); }); rm.c.forEach(function (x) { cFav.push(x); });
       memL = [MEM.linea(ctx.memFav, fav, dep, esc), MEM.linea(ctx.memRiv, riv, dep, esc)];
@@ -163,7 +163,7 @@
   function ctxUS(o) {
     var g = o.g, merc = o.pMk !== null && o.pMk !== undefined, pH = merc ? o.pMk : o.pHMod, favH = pH >= 0.5, F = root.OVAForma, ac = null, fH = null, fA = null, mov = null;
     try { if (F) { fH = F.calc(o.games || [], g.h, g.ts, true, o.dep); fA = F.calc(o.games || [], g.a, g.ts, false, o.dep); } } catch (e) { }
-    var mem = null; try { if (root.OVAMemoria) mem = root.OVAMemoria.calc(o.games || [], g.ts, o.dep); } catch (e) { }
+    var mem = null; try { if (root.OVAMemEquipo) mem = root.OVAMemEquipo.calc(o.games || [], g.ts, o.dep); } catch (e) { }
     try { if (root.OVAAciertos) ac = root.OVAAciertos.fila(o.dep, Math.max(pH, 1 - pH), favH, merc); } catch (e) { }
     var od = g.odds; if (od && od.mlH && od.mlA && od.mlHo && od.mlAo && !o.vivo) {
       var nv = function (x, y) { var a = impP(x), b = impP(y); return a / (a + b); }, d = (nv(od.mlH, od.mlA) - nv(od.mlHo, od.mlAo)) * 100; mov = favH ? d : -d;
@@ -173,7 +173,7 @@
       alertas: o.alertas || [], aFavor: o.aFavor || [], pre: !!g.pre, nota: o.nota || '', bajasFav: (favH ? o.bajasH : o.bajasA) || [], bajasRiv: (favH ? o.bajasA : o.bajasH) || [], memFav: mem ? mem[favH ? g.h : g.a] : null, memRiv: mem ? mem[favH ? g.a : g.h] : null };
   }
   /* si la página que cargó este archivo es de una versión vieja (sin <script src="memoria.js">), la trae sola */
-  try { if (!root.OVAMemoria && typeof document !== 'undefined' && document.head && !document.querySelector('script[src*="memoria.js"]')) { var sm = document.createElement('script'); sm.src = 'memoria.js?v=' + Date.now(); document.head.appendChild(sm); } } catch (e) { }
+  try { if (!root.OVAMemEquipo && typeof document !== 'undefined' && document.head && !document.querySelector('script[src*="memoria.js"]')) { var sm = document.createElement('script'); sm.src = 'memoria.js?v=' + Date.now(); document.head.appendChild(sm); } } catch (e) { }
   var API = { analizar: analizar, html: html, razonesForma: razonesForma, ctxUS: ctxUS, CORTE: CORTE };
   root.OVAAnalista = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
