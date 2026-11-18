@@ -47,3 +47,5 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 - [MEDICION-XG-NHL-2026-11.md](MEDICION-XG-NHL-2026-11.md): goles esperados de MoneyPuck contra tiros a puerta en el modelo de NHL; no entra.
 - [MEDICION-MODELOS-PUBLICOS-2026-11.md](MEDICION-MODELOS-PUBLICOS-2026-11.md): OVA contra nfelo (NFL) y el pronóstico de ESPN (NFL, NBA, MLB); los públicos le ganan a OVA en NFL y NBA, ninguno al mercado.
 - [MEDICION-TORNEOS-2026-11.md](MEDICION-TORNEOS-2026-11.md): selecciones (4 años, 19 torneos) y copas nacionales con el motor de las ligas; Elo 59% y copas 58.5% de acierto en 1X2.
+- [MEDICION-MEMORIA-EQUIPO-2026-11.md](MEDICION-MEMORIA-EQUIPO-2026-11.md): memoria por equipo (de favorito / de no favorito) en NHL, NFL y MLB; no cambia lo que acierta el modelo, entra como contexto.
+- [MEDICION-VALOR-JUGADOR-NBA-2026-11.md](MEDICION-VALOR-JUGADOR-NBA-2026-11.md): valor de cada jugador y bajas en NBA; el modelo solo pasa de 66.0% a 66.7% de aciertos; aplicado en la app.

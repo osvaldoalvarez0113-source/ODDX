@@ -559,9 +559,24 @@ function ultimoDia(id,ts){
 // sobre la linea (peso optimo 0.00 en las 6 temporadas), asi que la linea manda y el modelo pesa 5%. Los ajustes manuales (lesiones) se suman despues.
 const LAM_M=0.05, LAM_T=0.05, ESC_SIG=0.96;   // ESC_SIG: la linea se equivoca ~4% menos que el modelo (13.9 vs 14.4 pts)
 const logitP=p=>Math.log(p/(1-p)), sigP=z=>1/(1+Math.exp(-z));
+/* Valor de cada jugador (valores-nba.json, robot scripts/valores_nba.js): los 8 de más minutos de cada equipo con su producción por juego.
+   Si ESPN lo pone «Out», el modelo le resta VALN.c puntos de margen por cada punto de producción que falta.
+   Medido (docs/MEDICION-VALOR-JUGADOR-NBA-2026-11.md): el modelo solo pasa de 66.0% a 66.7% de aciertos, mejor en la pérdida las 4 temporadas. */
+let VALN=null;
+try{ fetch('valores-nba.json?v='+Math.floor(Date.now()/36e5)).then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.eq) VALN=j; }).catch(()=>{}); }catch(e){}
+const normN=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,'').replace(/\b(jr|sr|ii|iii|iv)\b/g,'').replace(/\s+/g,' ').trim();
+/* de la lista de ESPN (nombres «Out») -> {v: producción que falta, l: [[nombre, pts de margen]]} usando los 8 regulares del equipo */
+function faltaValor(tid,outs){
+  const L=VALN&&VALN.eq&&VALN.eq[String(tid)]; if(!L) return {v:0,l:[]};
+  const fuera=new Set((outs||[]).map(normN)), l=[]; let v=0;
+  L.forEach(p=>{ if(fuera.has(normN(p[1]))){ v+=p[2]; l.push([p[1],VALN.c*p[2]]); } });
+  return {v,l};
+}
 function prediccion(g){
   const pr=predecir(ESTADO,PARAMS,{h:g.h,a:g.a,ts:g.ts,adjH:0,adjA:0},{dH:ultimoDia(g.h,g.ts),dA:ultimoDia(g.a,g.ts)});
   const o=g.odds, adj=(g.adjH||0)-(g.adjA||0);
+  // bajas de hoy contra el valor de cada jugador (antes de mezclar con ESPN)
+  if(g.lesV&&VALN&&!(g.lesV.h.v===0&&g.lesV.a.v===0)){ const aj=VALN.c*(g.lesV.a.v-g.lesV.h.v); pr.pmSinBajas=pr.pm; pr.pm+=aj; pr.pH=pML(pr.pm,pr.sM); pr.ajLes=aj; }
   // el modelo se nutre con el BPI de ESPN (peso 0.70, medido: 65.8% → 67.2% de aciertos); la mezcla se pasa a margen para que hándicap y demás salgan de ahí
   if(window.OVAPublico&&g.espn!=null){ const mx=window.OVAPublico.mezclar(pr.pH,g.espn,'nba'); if(mx!==null){ pr.pHSolo=pr.pH; pr.pmSolo=pr.pm; pr.pEspn=g.espn; pr.pm=window.OVAPublico.margenDe(mx,x=>pML(x,pr.sM)); pr.pH=mx; pr.conEspn=true; } }
   pr.pmMod=pr.pm; pr.ptMod=pr.pt; pr.pHMod=pr.pH; pr.conLinea=false; pr.conML=false;
@@ -731,6 +746,7 @@ function resumenN(g,pr,H,A){
   else if(mk&&mk.src==='espn') li.push(L('ok','Precio de ESPN (DraftKings) tomado del marcador; Pinnacle todavía no lo trae.'));
   else if(mk&&mk.src==='pred') li.push(L('ok','Precio del mercado de predicción (Polymarket): no hay Pinnacle ni línea de ESPN para este juego.'+poco));
   else li.push(L('w','Sin precio del mercado para este juego.'));
+  if(pr.ajLes) li.push(L('w',`Bajas contadas en el modelo: le faltan ${g.lesV.h.v?esc(H.ab)+' '+g.lesV.h.v.toFixed(0)+' de producción':''}${g.lesV.h.v&&g.lesV.a.v?' y ':''}${g.lesV.a.v?esc(A.ab)+' '+g.lesV.a.v.toFixed(0):''} → ${pr.ajLes>=0?'+':'−'}${Math.abs(pr.ajLes).toFixed(1)} pts para ${esc(H.ab)} (de ${pct1(pML(pr.pmSinBajas,pr.sM))} a ${pct1(pML(pr.pmSinBajas+pr.ajLes,pr.sM))} en el modelo solo). Medido: con esto el modelo acierta 66.7% en vez de 66.0%.`));
   if(pr.conEspn) li.push(L('ok',`Modelo nutrido con el pronóstico de ESPN (BPI): el modelo solo daba ${esc(H.ab)} ${pct1(pr.pHSolo)}, ESPN ${pct1(pr.pEspn)}; juntos ${pct1(pr.pHMod)}. Medido: juntos aciertan más (67.2% contra 65.8%).`));
   if(mk&&!mk.live&&mk.src!=='pred'&&g.pred){ const d=Math.abs(g.pred.pH-mk.p)*100; li.push(L(d<=3?'ok':'w',`Mercado de predicción (Polymarket): ${esc(H.ab)} ${pct1(g.pred.pH)}${d<=3?', coincide con el precio principal.':' ('+d.toFixed(0)+' pts de diferencia con el precio principal; el principal suele tener razón).'}`)); }
   if(!(mk&&mk.live)){ const o=g.odds; if(o&&o.mlH&&o.mlA&&o.mlHo&&o.mlAo){ const nv=(x,y)=>{ const p=impProb(x), q=impProb(y); return p/(p+q); }, p0=nv(o.mlHo,o.mlAo), p1=nv(o.mlH,o.mlA), dm=(p1-p0)*100;   /* cuánto se movió el ganador desde que abrió (ESPN, sin margen) */
@@ -850,8 +866,13 @@ function pintarCuerpo(body,g){
       const hay=kA.length||kH.length;
       w.innerHTML='<i class="'+(hay?'w':'ok')+'">'+(hay?'!':'✓')+'</i><span>Baja/duda (ESPN) · '+f(A,kA)+' · '+f(H,kH)+'.'+(hay?' El mercado ya lo descuenta; el modelo solo no.':'')+'</span>';
     }
-    try{ const an=body.querySelector('[data-an]'); if(an&&g._an&&window.OVAAnalista){ const out=id=>{ const t=T(id); return (m[id]||m[(t.n||'').toLowerCase()]||[]).filter(x=>/^out/i.test(x.s)).map(x=>x.n); };
-      g._an.bajasH=out(g.h); g._an.bajasA=out(g.a); an.innerHTML=window.OVAAnalista.html(window.OVAAnalista.ctxUS(g._an)); } }catch(e){}   /* El análisis con los que están fuera */
+    const outN=id=>{ const t=T(id); return (m[id]||m[(t.n||'').toLowerCase()]||[]).filter(x=>/^out/i.test(x.s)).map(x=>x.n); };
+    /* valor de los que faltan: si cambió, el modelo se recalcula (solo antes del juego) */
+    try{ if(VALN&&g.ts>Date.now()&&!g.done){ const nv={h:faltaValor(g.h,outN(g.h)),a:faltaValor(g.a,outN(g.a))}, sig=JSON.stringify([nv.h.v,nv.a.v]);
+      if(g._lesSig!==sig){ g._lesSig=sig; g.lesV=nv; pintarCuerpo(body,g); return; } } }catch(e){}
+    try{ const an=body.querySelector('[data-an]'); if(an&&g._an&&window.OVAAnalista){
+      const conV=(id,lado)=>{ const val={}; ((g.lesV&&g.lesV[lado]&&g.lesV[lado].l)||[]).forEach(x=>{ val[normN(x[0])]=x[1]; }); return outN(id).map(n=>val[normN(n)]?n+' (vale ~'+val[normN(n)].toFixed(1)+' pts)':n); };
+      g._an.bajasH=conV(g.h,'h'); g._an.bajasA=conV(g.a,'a'); an.innerHTML=window.OVAAnalista.html(window.OVAAnalista.ctxUS(g._an)); } }catch(e){}   /* El análisis con los que están fuera y lo que vale cada uno */
     const el=q('les'); if(!el) return;
     const f=id=>{ const t=T(id); return m[id]||m[(t.n||'').toLowerCase()]||[]; };
     const fila=(id)=>{ const l=f(id).filter(x=>/out|doubt|quest|day/i.test(x.s)||!x.s).slice(0,6); return `<div class="observ"><b>${esc(T(id).n)}</b>: ${l.length?l.map(x=>esc(x.n)+(x.s?' ('+esc(x.s)+')':'')).join(', '):'sin lesionados listados'}</div>`; };

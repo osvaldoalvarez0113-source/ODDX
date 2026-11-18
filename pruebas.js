@@ -1983,6 +1983,18 @@ async function t_publico(){
   ok('Cristal: el aro de MLB y fútbol sigue al equipo',/ovaHero\.mlb path\.sg:nth-of-type\(1\)\{stroke:var\(--acc\)/.test(rd2('interior.js'))&&/ovaHero\.fut \.row3>\.side:first-child \.pc\{color:var\(--hot\)/.test(rd2('interior.js')));
   delete globalThis.OVAMemEquipo; delete globalThis.OVAObs;
  }
+ {
+  sec('NBA: valor de cada jugador (valores-nba.json)');
+  const nb=rd2('nba.html'), fx=nb.match(/const normN=[^\n]+/)[0]+'\n'+nb.match(/function faltaValor[\s\S]*?\n\}/)[0];
+  const VALN={c:0.057,eq:{'13':[['1','Luka Dončić',49.4,36],['2','Austin Reaves',30.3,35],['3','Walker Kessler',23.5,31]]}};
+  const faltaValor=new Function('VALN',fx+'; return faltaValor;')(VALN);
+  const r=faltaValor('13',['Austin Reaves','Walker Kessler','Alguien Que No Es Regular']);
+  ok('suma la producción de los regulares que están Out y lo pasa a puntos',Math.abs(r.v-53.8)<0.01&&r.l.length===2&&Math.abs(r.l[0][1]-0.057*30.3)<1e-9);
+  ok('el nombre se compara sin acentos (Dončić = Doncic)',faltaValor('13',['Luka Doncic']).v===49.4);
+  ok('equipo sin valores o sin bajas: no resta nada',faltaValor('99',['X']).v===0&&faltaValor('13',[]).v===0);
+  ok('el modelo resta las bajas ANTES de mezclar con ESPN y solo antes del juego',nb.indexOf('pr.ajLes=aj')>0&&nb.indexOf('pr.ajLes=aj')<nb.indexOf('window.OVAPublico.mezclar(pr.pH,g.espn')&&/g\.ts>Date\.now\(\)&&!g\.done/.test(nb));
+  ok('el robot de valores existe, corre en el workflow y valores-nba.json trae los 30 equipos',fs.existsSync(D+'scripts/valores_nba.js')&&/valores_nba\.js/.test(rd2('.github/workflows/datos-nba-box.yml'))&&Object.keys(JSON.parse(rd2('valores-nba.json')).eq).length===30);
+ }
  ok('no baja nada, no guarda nada y el service worker lo guarda',!/fetch\(|localStorage/.test(rd2('analista.js'))&&rd2('sw.js').indexOf("'analista.js'")>0);
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{
