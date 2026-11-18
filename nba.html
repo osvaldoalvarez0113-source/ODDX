@@ -801,8 +801,11 @@ function pintarCuerpo(body,g){
      <div class="fila"><div><label>Cuota Más</label><input type="number" data-k="toO" placeholder="-110"></div><div><label>Cuota Menos</label><input type="number" data-k="toU" placeholder="-110"></div></div>
      <button class="btnAncho" data-a="to">Calcular valor</button><div class="veredictoCuota" data-o="to"></div></div>`;
 
+  /* hándicap en palabras («Lakers gana por 7 o más») con la línea de la casa chiquita al lado */
+  const nomH=window.OVAAnalista&&window.OVAAnalista.corto?window.OVAAnalista.corto(H.n,'nba'):H.ab, nomA=window.OVAAnalista&&window.OVAAnalista.corto?window.OVAAnalista.corto(A.n,'nba'):A.ab;
+  const enPal=(L)=>window.OVAPeriodos&&window.OVAPeriodos.enPalabras?esc(window.OVAPeriodos.enPalabras(nomH,L))+` <small style="color:var(--mut2);white-space:nowrap">(${esc(H.ab)} ${fmtL(L).replace('-','−')})</small>`:`${esc(H.ab)} ${fmtL(L)}`;
   let esc1=''; const base=Math.floor(-pr.pm)+0.5;
-  for(let d=-3;d<=3;d++){ const L=base+d; const c=pCover(pr.pm,pr.sM,-L); esc1+=`<div class="linea"><span>${esc(H.ab)} ${fmtL(L)}</span><b>${pct1(c.w)} · ${amTxt(c.w)}</b></div>`; }
+  for(let d=-3;d<=3;d++){ const L=base+d; const c=pCover(pr.pm,pr.sM,-L); esc1+=`<div class="linea"><span>${enPal(L)}</span><b>${pct1(c.w)} · ${amTxt(c.w)}</b></div>`; }
   let esc2=''; const bt=Math.floor(pr.pt)+0.5;
   for(let d=-3;d<=3;d++){ const L=bt+d*2; const c=pCover(pr.pt,pr.sT,L); esc2+=`<div class="linea"><span>Más de ${L}</span><b>${pct1(c.w)} · ${amTxt(c.w)}</b></div>`; }
   const rg=(mu,a,b)=>pct1(pRango(mu,pr.sM,a,b));
@@ -812,11 +815,11 @@ function pintarCuerpo(body,g){
     <div><b>${rg(-pr.pm,11,99)}</b><small>${esc(A.ab)} por 11+</small></div><div><b>${rg(-pr.pm,6,10)}</b><small>${esc(A.ab)} por 6–10</small></div><div><b>${rg(-pr.pm,1,5)}</b><small>${esc(A.ab)} por 1–5</small></div>
     <div><b>${rg(pr.pm,1,5)}</b><small>${esc(H.ab)} por 1–5</small></div><div><b>${rg(pr.pm,6,10)}</b><small>${esc(H.ab)} por 6–10</small></div><div><b>${rg(pr.pm,11,99)}</b><small>${esc(H.ab)} por 11+</small></div>
    </div>
-   <h3>Escalera de hándicap (${esc(H.ab)} cubre)</h3><div class="lineas">${esc1}</div>
+   <h3>Escalera de hándicap (${esc(nomH)})</h3><div class="lineas">${esc1}</div>
    <h3>Escalera de totales</h3><div class="lineas">${esc2}</div>
    <div class="nota">Cada línea: probabilidad de que el local cubra / de que el total pase, y su cuota justa. Con línea entera hay "push" (devuelven la apuesta) y aquí no se cuenta como acierto.</div>`;
 
-  const tramos=window.OVAPeriodos?window.OVAPeriodos.html('nba',{pm:pr.pm,pt:pr.pt,pH:pr.pH},H.ab,A.ab):'';
+  const tramos=window.OVAPeriodos?window.OVAPeriodos.html('nba',{pm:pr.pm,pt:pr.pt,pH:pr.pH},nomH,nomA):'';
   const forPane=`<h3>Forma reciente</h3>${formaHtml(g.a,A)}${formaHtml(g.h,H)}
    <h3>Cara a cara</h3>${caraHtml(g.a,g.h,A,H)}
    <h3>Lesionados (ESPN)</h3><div data-k="les" class="nota">Cargando…</div>

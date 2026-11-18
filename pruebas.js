@@ -1647,6 +1647,11 @@ sec('Tenis');
 sec('Por tramos: 1er cuarto, 1a mitad y 1er periodo (periodos.js)');
 (()=>{
  const P=require(D+'periodos.js');
+ ok('hándicap en palabras: da ventaja, la recibe, línea entera y cero',P.enPalabras('Lakers',-6.5)==='Lakers gana por 7 o más'&&P.enPalabras('Lakers',6.5)==='Lakers pierde por 6 o menos, o gana'&&
+   P.enPalabras('Lakers',-3)==='Lakers gana por 4 o más (si gana por 3, devuelven)'&&P.enPalabras('Lakers',7)==='Lakers pierde por 6 o menos, o gana (si pierde por 7, devuelven)'&&
+   P.enPalabras('Bruins',-0.5)==='Bruins gana'&&P.enPalabras('Bruins',0.5)==='Bruins no pierde'&&P.enPalabras('X',0)==='X gana (si empatan, devuelven)'&&P.enPalabras('Sinner',-3.5,'games')==='Sinner gana por 4 games o más');
+ ok('hándicap en palabras: tramos, escaleras de NBA, NFL, NHL y tenis ya no dicen «LAL −2.5» solo',/Lakers gana por 3 o más en el 1er cuarto/.test(P.html('nba',{pm:6.6,pt:221.6,pH:.74},'Lakers','Hornets'))&&/Lakers por 2<\/b><small>hándicap justo/.test(P.html('nba',{pm:6.6,pt:221.6,pH:.74},'Lakers','Hornets'))&&
+   /<span>\$\{enPal\(L\)\}<\/span>/.test(fs.readFileSync(D+'nba.html','utf8'))&&(fs.readFileSync(D+'usdeporte.js','utf8').match(/<span>\$\{enPal\(Lh\)\}<\/span>/g)||[]).length===2&&/filaP\(hp\(F, L\)/.test(fs.readFileSync(D+'tenis.js','utf8')));
  const en01=v=>v>0&&v<1;
  ['nba','nfl'].forEach(dep=>{
   const T=dep==='nba'?228:44.5, a=P.calc(dep,{pm:2,pt:T}), b=P.calc(dep,{pm:9,pt:T}), c=P.calc(dep,{pm:-9,pt:T});
@@ -1732,6 +1737,11 @@ sec('Cómo vienen jugando: forma de la temporada en NBA (forma.js)');
  ok('lectura: respalda si el favorito llega mejor, en contra si es al revés',F.lectura(a,b,true).k==='respalda'&&F.lectura(a,b,false).k==='contra'&&F.lectura(a,a,true).k==='pareja'&&F.lectura(a,null,true).k==='poco');
  const h1=F.html(G,{h:'A',a:'B',ts},{n:'<i>Local',ab:'A'},{n:'Visita',ab:'B'},0.3);
  ok('pinta el aviso del no favorito y escapa nombres',/El no favorito llega mejor/.test(h1)&&h1.indexOf('<i>Local')<0&&/8 victorias seguidas/.test(h1)&&/8 derrotas seguidas/.test(h1));
+ ok('frente a frente: barras de visitante (izquierda) y local (derecha) con quién va mejor',(()=>{const ff=h1.slice(h1.indexOf('ffBox'),h1.indexOf('</div></div></div>',h1.indexOf('ffBox')));
+   const filas=(h1.match(/class="ffR"/g)||[]).length, fu=F.filasEquipo(b,a,'nba');
+   return filas>=4&&/<span class="a">B<\/span><span class="h">A<\/span>/.test(h1)&&fu[0][5]==='h'&&fu[0][1]===b.u10.w+'-'+b.u10.l&&fu.every(f=>f[3]>=0&&f[3]<=1&&f[4]>=0&&f[4]<=1);})());
+ ok('frente a frente: MLB sin fila de descanso y tenis con últimos 10 y últimos 5',!F.filasEquipo(a,b,'mlb').some(f=>f[0]==='Descanso')&&F.filasEquipo(a,b,'nba').some(f=>f[0]==='Descanso')&&
+   ((F.tenis('VVVVVVVVDV','DDDDDDVVDV','Jannik Sinner','Ana Pérez',0.8).match(/class="ffR"/g)||[]).length===2));
  ok('con el favorito en forma lo respalda; sin juegos no pinta nada',/La forma respalda al favorito/.test(F.html(G,{h:'A',a:'B',ts},{n:'L'},{n:'V'},0.7))&&F.html(G,{h:'X',a:'Y',ts},{n:'L'},{n:'V'},0.6)==='');
  const nb=rd('nba.html');
  ok('nba.html carga forma.js y lo pone en el Veredicto con el % del mercado',nb.indexOf('<script src="forma.js"></script>')>0&&/window\.OVAForma\.html\(GAMES,g,H,A,pS\)/.test(nb)&&rd('sw.js').indexOf("'forma.js'")>0);
@@ -1929,6 +1939,12 @@ async function t_publico(){
  ok('el bloque escapa nombres',AN.html(Object.assign({},base,{fav:'<b>x'})).indexOf('<b>x')<0);
  ok('NBA, NHL, NFL, fútbol y tenis lo cargan y lo ponen arriba del Veredicto',['nba.html','nhl.html','nfl.html','futbol.html','tenis.html'].every(f=>rd2(f).indexOf('<script src="analista.js"></script>')>0)&&
    /\$\{anH\}<h4>Pronóstico y pick<\/h4>/.test(rd2('usdeporte.js'))&&/\$\{anH\}<h4>Pronóstico y pick<\/h4>/.test(rd2('nba.html'))&&/'<div class="rv">'\+anH\+'<h4>Pronóstico y pick/.test(rd2('futbol.html'))&&/<div class="rv">\$\{anH\}<h4>Pronóstico y pick/.test(rd2('tenis.js')));
+ ok('razones por lado: cada una va con el equipo al que ayuda (visitante izquierda, local derecha)',(()=>{const r={k:'alta'};const h=AN.html(Object.assign({},base,{bajasRiv:['Jimmy Butler'],mov:-4}));
+   const iz=h.indexOf('anCol iz'),de=h.indexOf('anCol de'),fB=h.indexOf('A favor de Boston'),fM=h.indexOf('A favor de Miami');
+   return iz>0&&de>iz&&fM>iz&&fM<de&&fB>de&&h.indexOf('Jimmy Butler')>de&&/se movió 4 pts hacia/.test(h.slice(iz,de));})());
+ ok('razones por lado: favorito de visita a la izquierda, y tenis/neutral respetan favIzq',(()=>{const v=AN.html(Object.assign({},base,{favLocal:false,bajasRiv:['X Y']})),t=AN.html(Object.assign({},base,{dep:'tenis',favLocal:null,favIzq:true,bajasRiv:['X Y']}));
+   return v.indexOf('A favor de Boston')<v.indexOf('anCol de')&&t.indexOf('A favor de Boston')<t.indexOf('anCol de');})());
+ ok('razones por lado: el lado vacío dice «Nada especial» y sin razones no pinta columnas',/Nada especial/.test(AN.html(Object.assign({},base,{bajasRiv:['X Y']})))&&AN.html(base).indexOf('<div class="anLados">')<0);
  ok('si los dos jugaron ayer, se empareja y no sale ni a favor ni en contra',(()=>{const f={n:12,u10:{w:5,e:0,l:5,n:10},racha:{res:'V',w:true,n:1},etq:'parejo',sede:{w:2,l:2,e:0,n:4},rivales:0.5,desc:1,en7:3};
    const r=AN.analizar(Object.assign({},base,{fF:f,fR:f}));return !r.aFavor.concat(r.enContra).some(x=>/jugó ayer/.test(x))&&/Los dos jugaron ayer/.test(r.intro);})());
  ok('mercado muy por debajo del modelo: avisa de bajas, baja la confianza y nombra a los que faltan',(()=>{const r=AN.analizar(Object.assign({},base,{p:0.66,pMod:0.76,ac:{pct:0.66,n:900},bajasFav:['Anthony Edwards'],bajasRiv:['Ja Morant']}));

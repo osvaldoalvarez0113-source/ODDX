@@ -49,6 +49,16 @@
   function pct(p) { return (p * 100).toFixed(1) + '%'; }
   function am(p) { if (!(p > 0 && p < 1)) return '—'; var a = p >= 0.5 ? -100 * p / (1 - p) : 100 * (1 - p) / p; return (a > 0 ? '+' : '') + Math.round(a); }
   function fmtL(L) { return (L > 0 ? '+' : (L < 0 ? '−' : '')) + Math.abs(L).toFixed(1).replace('.0', ''); }
+  /* hándicap en palabras: «Lakers gana por 3 o más» en vez de «LAL −2.5» (L = línea del equipo; negativa = da ventaja).
+     uni = unidad opcional («games» en tenis). Con línea entera dice cuándo devuelven. La línea de la casa queda chiquita al lado para compararla. */
+  function enPalabras(nom, L, uni) {
+    var a = Math.abs(L), ent = Math.abs(a - Math.round(a)) < 1e-9, u = uni ? ' ' + uni : '';
+    if (a < 1e-9) return nom + ' gana (si empatan, devuelven)';
+    if (L < 0) { var g = ent ? a + 1 : Math.ceil(a); return nom + (g <= 1 ? ' gana' : ' gana por ' + g + u + ' o más') + (ent ? ' (si gana por ' + a + ', devuelven)' : ''); }
+    var n = ent ? a - 1 : Math.floor(a);
+    return (n <= 0 ? nom + (ent ? ' gana' : ' no pierde') : nom + ' pierde por ' + n + u + ' o menos, o gana') + (ent ? ' (si pierde por ' + a + ', devuelven)' : '');
+  }
+  function lineaC(L) { return ' <small style="color:var(--mut2);white-space:nowrap">(' + fmtL(L) + ')</small>'; }
   function fila(t, p, extra) { return '<div class="linea"><span>' + t + '</span><b>' + pct(p) + ' · ' + am(p) + (extra || '') + '</b></div>'; }
   var FUERTE = ' <span style="color:var(--good,#3ddc97)">💪</span>';
   var NOTA = {
@@ -60,11 +70,11 @@
     var favH = t.pH >= 0.5, pf = favH ? t.pH : t.pA, fav = favH ? hAb : aAb, o = '';
     o += '<h3>' + nom + '</h3><div class="marcadores">' +
       '<div><b>' + pct(pf) + '</b><small>' + esc(fav) + ' gana ' + art + '</small></div>' +
-      '<div><b>' + (Math.abs(t.spJ) < 0.5 ? 'Parejo' : esc(fav) + ' ' + fmtL(-Math.abs(t.spJ))) + '</b><small>hándicap justo</small></div>' +
+      '<div><b>' + (Math.abs(t.spJ) < 0.5 ? 'Parejo' : esc(fav) + ' por ' + Math.abs(t.spJ).toFixed(1).replace('.0', '')) + '</b><small>hándicap justo</small></div>' +
       '<div><b>' + t.totJ.toFixed(1).replace('.0', '') + '</b><small>total justo</small></div></div><div class="lineas" style="margin-top:6px">';
     o += fila(esc(fav) + ' gana ' + art + ' (si empatan, devuelven)', pf, pf >= 0.65 ? FUERTE : '');
     o += fila('Empate ' + (art === 'el 1er cuarto' ? 'en el 1er cuarto' : 'al medio tiempo'), t.pE);
-    var b = Math.floor(-t.med) + 0.5; for (var d = -1; d <= 1; d++) { var L = b + d; o += fila(esc(hAb) + ' ' + fmtL(L) + ' en ' + art, t.cover(L)); }
+    var b = Math.floor(-t.med) + 0.5; for (var d = -1; d <= 1; d++) { var L = b + d; o += fila(enPalabras(esc(hAb), L) + ' en ' + art + lineaC(L), t.cover(L)); }
     var bt = Math.floor(t.medT) + 0.5; for (d = -1; d <= 1; d++) { var Lt = bt + d * pasoT; o += fila('Más de ' + Lt + ' en ' + art, t.over(Lt)); }
     return o + '</div>';
   }
@@ -86,7 +96,7 @@
       'Cada fila: probabilidad y cuota justa (lo mínimo que te tienen que pagar). Sale de lo que la app ya usa para el juego completo (' + (dep === 'nhl' ? '% de ganar y total de goles' : 'margen y total esperados') + '), convertido al tramo con lo que pasó en juegos reales. No es una ventaja sobre la casa: ella arma estos precios igual. Sirve para saber qué tan probable es cada cosa en ESTE juego y si te la están pagando bien.<br><br>' + NOTA[dep] + '</details></div>';
     return o;
   }
-  var API = { calc: calc, html: html, pmas: pmas, C: C };
+  var API = { calc: calc, html: html, pmas: pmas, C: C, enPalabras: enPalabras, fmtL: fmtL };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   root.OVAPeriodos = API;
 })(typeof window !== 'undefined' ? window : globalThis);

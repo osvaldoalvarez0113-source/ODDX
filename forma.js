@@ -100,6 +100,42 @@
     if (k === 'pareja') return '<span class="rvSig mid">≈ Forma pareja</span><div class="nota" style="margin:7px 0 0;font-size:13px">Ninguno llega claramente mejor. El momento no cambia lo que dicen los números.</div>';
     return '<span class="rvSig mid">… Muy pocos juegos para leer la forma</span>';
   }
+  /* ---------- frente a frente: los dos equipos cara a cara con barras (visitante a la izquierda, local a la derecha) ----------
+     fila = [etiqueta, texto visitante, texto local, barra visitante 0-1, barra local 0-1, quién va mejor: 'a' | 'h' | ''] */
+  var FCSS = '.ffBox{margin-top:10px;padding:9px 12px 4px;border-radius:14px;background:var(--bg2);border:1px solid var(--line2)}' +
+    '.ffHd{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px}.ffHd .a{color:var(--acc)}.ffHd .h{color:var(--hot);text-align:right}' +
+    '.ffR{display:grid;grid-template-columns:50px 1fr 84px 1fr 50px;align-items:center;gap:6px;padding:7px 0;border-top:1px solid var(--line2)}.ffHd+.ffR{border-top:0}' +
+    '.ffR .l{font-size:10px;font-weight:700;text-align:center;text-transform:uppercase;letter-spacing:.04em;color:var(--mut2);line-height:1.2}' +
+    '.ffR b{font-size:13.5px;font-weight:800;color:var(--mut2);white-space:nowrap}.ffR b.vh{text-align:right}.ffR b.g.va{color:var(--acc)}.ffR b.g.vh{color:var(--hot)}.ffR b.e{color:var(--txt)}' +
+    '.ffB{height:8px;border-radius:6px;background:rgba(127,127,127,.15);display:flex;overflow:hidden}.ffB.a{justify-content:flex-end}' +
+    '.ffB i{display:block;height:100%;border-radius:6px;animation:ffG 1s cubic-bezier(.2,.8,.2,1) both}.ffB.a i{background:var(--acc)}.ffB.h i{background:var(--hot)}.ffB i.m{opacity:.38}' +
+    '@keyframes ffG{from{width:0}}';
+  function ffCss() { try { if (typeof document !== 'undefined' && document.head && !document.getElementById('ffCss')) { var st = document.createElement('style'); st.id = 'ffCss'; st.textContent = FCSS; document.head.appendChild(st); } } catch (e) { } }
+  function frente(nA, nH, filas) {
+    filas = filas.filter(Boolean); if (!filas.length) return '';
+    ffCss();
+    var bar = function (v, lado, gana) { return '<div class="ffB ' + lado + '"><i class="' + (gana ? '' : 'm') + '" style="width:' + Math.round(Math.max(0.03, Math.min(1, v)) * 100) + '%"></i></div>'; };
+    return '<div class="ffBox"><div class="ffHd"><span class="a">' + esc(nA) + '</span><span class="h">' + esc(nH) + '</span></div>' + filas.map(function (f) {
+      var e = !f[5];
+      return '<div class="ffR"><b class="va' + (f[5] === 'a' ? ' g' : (e ? ' e' : '')) + '">' + f[1] + '</b>' + bar(f[3], 'a', f[5] !== 'h') + '<span class="l">' + f[0] + '</span>' + bar(f[4], 'h', f[5] !== 'a') + '<b class="vh' + (f[5] === 'h' ? ' g' : (e ? ' e' : '')) + '">' + f[2] + '</b></div>';
+    }).join('') + '</div>';
+  }
+  function nomC(T, dep) { return T.ab || (root.OVAAnalista && root.OVAAnalista.corto ? root.OVAAnalista.corto(T.n, dep || 'nba') : T.n); }
+  function mejor(a, h, umbral) { return Math.abs(a - h) < umbral ? '' : (a > h ? 'a' : 'h'); }
+  function filasEquipo(fA, fH, dep) {
+    var c = cfg(dep), o = [], cl = function (x) { return Math.max(0, Math.min(1, x)); };
+    if (!fA || !fH) return o;
+    o.push(['Últimos ' + c.n, recTxt(fA.u10, c), recTxt(fH.u10, c), fA.u10.pct, fH.u10.pct, mejor(fA.u10.pct, fH.u10.pct, 0.1)]);
+    if (fA.sede.n >= 2 && fH.sede.n >= 2) o.push(['De visita / En casa', recTxt(fA.sede, c), recTxt(fH.sede, c), fA.sede.pct, fH.sede.pct, mejor(fA.sede.pct, fH.sede.pct, 0.1)]);
+    var m = function (x) { return 0.5 + 0.5 * Math.max(-1, Math.min(1, x / c.esc)); };
+    o.push(['Margen últimos ' + c.m, sg(fA.m5), sg(fH.m5), m(fA.m5), m(fH.m5), mejor(fA.m5, fH.m5, c.esc / 6)]);
+    o.push(['Temporada', recTxt(fA.temp, c), recTxt(fH.temp, c), fA.temp.pct, fH.temp.pct, mejor(fA.temp.pct, fH.temp.pct, 0.08)]);
+    if (!c.sinDesc) {
+      var tope = c.b2b ? 3 : (c.sem ? 10 : 6), um = c.b2b ? 1 : (c.sem ? 3 : 2), dA = Math.min(fA.desc, 30), dH = Math.min(fH.desc, 30);
+      o.push(['Descanso', dA + ' d', dH + ' d', cl(dA / tope), cl(dH / tope), mejor(Math.min(dA, tope), Math.min(dH, tope), um)]);
+    }
+    return o;
+  }
   function pie(dep) {
     var c = cfg(dep);
     return '<details class="nota" style="margin-top:6px"><summary style="cursor:pointer;font-weight:700">¿Cómo se lee y cuánto pesa?</summary>' +
@@ -112,7 +148,8 @@
     var fH, fA; try { fH = calc(games, g.h, g.ts, true, dep); fA = calc(games, g.a, g.ts, false, dep); } catch (e) { return ''; }
     if (!fH && !fA) return '';
     var favH = pH >= 0.5, L = lectura(fH, fA, favH, dep), fav = favH ? H : A, no = favH ? A : H, pf = Math.round((pfVer > 0 ? pfVer : (favH ? pH : 1 - pH)) * 100);
-    return '<div class="rv"><h4>Cómo vienen jugando</h4>' + lecturaHtml(L.k, fav.n, no.n, pf, dep === 'fut' ? 55 : 65) + '<div style="margin-top:9px">' + tarjeta(A, fA, false, dep) + tarjeta(H, fH, true, dep) + '</div>' + pie(dep) + '</div>';
+    return '<div class="rv"><h4>Cómo vienen jugando</h4>' + lecturaHtml(L.k, fav.n, no.n, pf, dep === 'fut' ? 55 : 65) + frente(nomC(A, dep), nomC(H, dep), filasEquipo(fA, fH, dep)) +
+      '<div style="margin-top:9px">' + tarjeta(A, fA, false, dep) + tarjeta(H, fH, true, dep) + '</div>' + pie(dep) + '</div>';
   }
   /* tenis: solo hay la tira de los últimos 10 (V/D, el más viejo primero) de cada jugador */
   function tira(s) {
@@ -129,10 +166,13 @@
       if (!f) return '<div class="observ"><b>' + esc(n) + '</b>: sin partidos recientes en la base.</div>';
       return '<div class="observ">' + cabeza(n, f.etq) + cuadros(f.ult) + '<b>' + f.w + '-' + f.l + '</b> en sus últimos ' + f.n + (f.racha.n >= 2 ? ', <b>' + f.racha.n + ' ' + RES[f.racha.res][1] + '</b>' : '') + '. Últimos ' + f.n5 + ': ' + f.w5 + '-' + (f.n5 - f.w5) + '.</div>';
     };
-    return '<div class="rv"><h4>Cómo vienen jugando</h4>' + lecturaHtml(k, favA ? nA : nB, favA ? nB : nA, Math.round((favA ? pA : 1 - pA) * 100), 70) + '<div style="margin-top:9px">' + tj(nA, a) + tj(nB, b) + '</div>' +
+    var ft = (a && b) ? [['Últimos ' + Math.min(a.n, b.n), a.w + '-' + a.l, b.w + '-' + b.l, a.w / a.n, b.w / b.n, mejor(a.w / a.n, b.w / b.n, 0.1)],
+      ['Últimos ' + Math.min(a.n5, b.n5), a.w5 + '-' + (a.n5 - a.w5), b.w5 + '-' + (b.n5 - b.w5), a.w5 / a.n5, b.w5 / b.n5, mejor(a.w5 / a.n5, b.w5 / b.n5, 0.1)]] : [];
+    var ap = function (n) { var t = String(n || '').split(' '); return t.length > 1 ? t.slice(1).join(' ') : n; };
+    return '<div class="rv"><h4>Cómo vienen jugando</h4>' + lecturaHtml(k, favA ? nA : nB, favA ? nB : nA, Math.round((favA ? pA : 1 - pA) * 100), 70) + frente(ap(nA), ap(nB), ft) + '<div style="margin-top:9px">' + tj(nA, a) + tj(nB, b) + '</div>' +
       '<details class="nota" style="margin-top:6px"><summary style="cursor:pointer;font-weight:700">¿Cómo se lee y cuánto pesa?</summary>Cuadritos: últimos 10 partidos del jugador en cualquier torneo y superficie, el más reciente primero. No dice contra quién fueron ni en qué cancha. <b>Ojo:</b> no cambia el % de arriba; el Elo ya sube y baja con cada resultado. Es contexto, no una ventaja segura.</details></div>';
   }
-  var API = { calc: calc, lectura: lectura, html: html, tenis: tenis, tira: tira, inicioTemp: inicioTemp, CFG: CFG };
+  var API = { calc: calc, lectura: lectura, html: html, tenis: tenis, tira: tira, inicioTemp: inicioTemp, CFG: CFG, filasEquipo: filasEquipo, frente: frente };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   root.OVAForma = API;
 })(typeof window !== 'undefined' ? window : globalThis);

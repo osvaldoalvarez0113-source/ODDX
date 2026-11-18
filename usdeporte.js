@@ -606,10 +606,13 @@
        <button class="btnAncho" data-a="to">Calcular valor</button><div class="veredictoCuota" data-o="to"></div></div>`;
 
     // ---- números ----
+    /* hándicap en palabras («Bills gana por 4 o más») con la línea de la casa chiquita al lado */
+    const nomH = window.OVAAnalista && window.OVAAnalista.corto ? window.OVAAnalista.corto(H.n, DEP) : H.ab, nomA = window.OVAAnalista && window.OVAAnalista.corto ? window.OVAAnalista.corto(A.n, DEP) : A.ab;
+    const enPal = (L) => window.OVAPeriodos && window.OVAPeriodos.enPalabras ? esc(window.OVAPeriodos.enPalabras(nomH, L)) + ` <small style="color:var(--mut2);white-space:nowrap">(${esc(H.ab)} ${fmtL(L).replace('-', '−')})</small>` : `${esc(H.ab)} ${fmtL(L)}`;
     let esc1 = '', esc2 = '', num = '';
     if (DEP === 'nfl') {
       const base = Math.floor(-pr.pm) + 0.5;
-      for (let d = -4; d <= 4; d++) { const Lh = base + d; const c = pr.cover(Lh); esc1 += `<div class="linea"><span>${esc(H.ab)} ${fmtL(Lh)}</span><b>${pct1(c.w)} · ${amTxt(c.w)}</b></div>`; }
+      for (let d = -4; d <= 4; d++) { const Lh = base + d; const c = pr.cover(Lh); esc1 += `<div class="linea"><span>${enPal(Lh)}</span><b>${pct1(c.w)} · ${amTxt(c.w)}</b></div>`; }
       const bt = Math.floor(pr.pt) + 0.5;
       for (let d = -3; d <= 3; d++) { const Lt = bt + d * 2; const c = pr.over(Lt); esc2 += `<div class="linea"><span>Más de ${Lt}</span><b>${pct1(c.w)} · ${amTxt(c.w)}</b></div>`; }
       const rg = (mu, a, b) => pct1(M.pRango(mu, pr.sM, a, b));
@@ -623,13 +626,13 @@
        <h3>Números clave (margen exacto)</h3>
        <div class="marcadores"><div><b>${ex(3)}</b><small>por 3 pts</small></div><div><b>${ex(7)}</b><small>por 7 pts</small></div><div><b>${ex(6)}</b><small>por 6 pts</small></div><div><b>${ex(10)}</b><small>por 10 pts</small></div><div><b>${ex(14)}</b><small>por 14 pts</small></div><div><b>${ex(1)}</b><small>por 1 pt</small></div></div>
        <div class="nota">En la NFL los marcadores se amontonan en 3 y 7 (los márgenes de 3 y 7 pasan casi 3 y 2 veces más de lo que una curva normal diría; medido en 2,734 juegos). Por eso 3 y 7 son los números clave del hándicap: cruzar el 3 cambia más la probabilidad que cruzar el 4.${KW ? '' : ' (Todavía no hay datos suficientes para corregir; se usa la curva normal.)'}</div>
-       <h3>Escalera de hándicap (${esc(H.ab)} cubre)</h3><div class="lineas">${esc1}</div>
+       <h3>Escalera de hándicap (${esc(nomH)})</h3><div class="lineas">${esc1}</div>
        <h3>Escalera de totales</h3><div class="lineas">${esc2}</div>
        <div class="nota">Cada línea: probabilidad de que el local cubra / de que el total pase, y su cuota justa. Con línea entera hay "push" (devuelven la apuesta) y aquí no se cuenta como acierto.</div>`;
     } else {
       const D = pr.D, pk = k => { let s = 0; for (let m = -M.NMAX; m <= M.NMAX; m++) { if (k >= 3 ? m >= 3 : m === k) s += D.M[m + M.NMAX]; } return s; };
       const pkA = k => { let s = 0; for (let m = -M.NMAX; m <= M.NMAX; m++) { if (k >= 3 ? m <= -3 : m === -k) s += D.M[m + M.NMAX]; } return s; };
-      for (let Lh = -2.5; Lh <= 2.5; Lh += 1) { const c = pr.cover(Lh); esc1 += `<div class="linea"><span>${esc(H.ab)} ${fmtL(Lh)}</span><b>${pct1(c.w)} · ${amTxt(c.w)}</b></div>`; }
+      for (let Lh = -2.5; Lh <= 2.5; Lh += 1) { const c = pr.cover(Lh); esc1 += `<div class="linea"><span>${enPal(Lh)}</span><b>${pct1(c.w)} · ${amTxt(c.w)}</b></div>`; }
       for (let Lt = 4.5; Lt <= 7.5; Lt += 0.5) { const c = pr.over(Lt); esc2 += `<div class="linea"><span>Más de ${Lt}</span><b>${pct1(c.w)}${c.p > 0.001 ? ' <span style="color:var(--mut2);font-weight:500;font-size:11.5px">(devuelven ' + pct1(c.p) + ')</span>' : ''} · ${amTxt(c.p > 0.001 ? c.w / (1 - c.p) : c.w)}</b></div>`; }
       num = `
        <h3>Resultado a los 60 minutos</h3>
@@ -641,12 +644,12 @@
         <div><b>${pct1(pk(1))}</b><small>${esc(H.ab)} por 1</small></div><div><b>${pct1(pk(2))}</b><small>${esc(H.ab)} por 2</small></div><div><b>${pct1(pk(3))}</b><small>${esc(H.ab)} por 3+</small></div>
        </div>
        <div class="nota">Margen final como lo cuenta ESPN: un juego que se decide en tiempo extra o shootout termina por 1 gol.</div>
-       <h3>Escalera de la línea de gol (${esc(H.ab)} cubre)</h3><div class="lineas">${esc1}</div>
+       <h3>Escalera de la línea de gol (${esc(nomH)})</h3><div class="lineas">${esc1}</div>
        <h3>Escalera de totales</h3><div class="lineas">${esc2}</div>
        <div class="nota">Cada línea: probabilidad de que el local cubra / de que el total pase, y su cuota justa. El gol del shootout no cuenta para los totales. Con línea entera (5 ó 6) hay "push" y se muestra aparte.</div>`;
     }
     // por tramos (1er cuarto / 1a mitad / 1er periodo): periodos.js
-    if (window.OVAPeriodos) num = window.OVAPeriodos.html(DEP, { pm: pr.pm, pt: pr.pt, pH: pr.pH }, H.ab, A.ab) + num;
+    if (window.OVAPeriodos) num = window.OVAPeriodos.html(DEP, { pm: pr.pm, pt: pr.pt, pH: pr.pH }, nomH, nomA) + num;
     const forPane = `<h3>Forma reciente</h3>${formaHtml(g.a, A)}${formaHtml(g.h, H)}
     <h3>Cara a cara</h3>${caraHtml(g.a, g.h, A, H)}
      <h3>Lesionados (ESPN)</h3><div data-k="les" class="nota">Archivo grande (${DEP === 'nfl' ? 'unos 9 MB' : 'más de 1 MB'}): solo se baja cuando tú lo pides.</div><button class="btnAncho sec" data-a="les" style="margin-top:6px">Cargar lesionados</button>

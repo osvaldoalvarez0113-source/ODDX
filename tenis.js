@@ -283,7 +283,7 @@
         if (cF0) al.push([1.1, `<b class="anN">${esc(fav.nombre.split(' ').slice(1).join(' ') || fav.nombre)}</b> viene de un partido largo (${cF0.g} games)`, 'largo']);
         if (cR0) af.push([0.9, `<b class="anN">${esc(riv.nombre.split(' ').slice(1).join(' ') || riv.nombre)}</b> viene de un partido largo (${cR0.g} games)`, 'largo']);
         if (/qualif/i.test(m.ronda)) al.push([0.8, 'es clasificación, donde el modelo más se equivoca']);
-        anH = window.OVAAnalista.html({ dep: 'tenis', fav: fav.nombre, riv: riv.nombre, favLocal: null, p: pf, merc: !!k, pMod: k ? modF : null, vivo: false,
+        anH = window.OVAAnalista.html({ dep: 'tenis', fav: fav.nombre, riv: riv.nombre, favLocal: null, favIzq: !!an.favA, p: pf, merc: !!k, pMod: k ? modF : null, vivo: false,
           ac: h ? { pct: h.gano, n: h.n } : null, fF: an.favA ? tA : tB, fR: an.favA ? tB : tA, mov: null, alertas: al, aFavor: af, poco: !!an.poco,
           memFav: window.OVAMemEquipo ? window.OVAMemEquipo.deTenis((an.favA ? an.A : an.B).mem) : null, memRiv: window.OVAMemEquipo ? window.OVAMemEquipo.deTenis((an.favA ? an.B : an.A).mem) : null,
           nota: an.bestOf === 5 ? 'A 5 sets el favorito cumple más seguido (ya está contado en el %).' : '' });
@@ -328,7 +328,9 @@
     const filaP = (txt, p) => `<div class="linea"><span>${txt}</span><b>${pct(p)} · ${amer(p)}</b></div>`;
     let o = `<h4 class="h4">Resultado en sets</h4><div class="lineas">${filaP(F + (cinco ? ' 3-0' : ' 2-0'), t.sinSet)}${filaP(F + (cinco ? ' 3-1 o 3-2' : ' 2-1'), t.conSet)}${filaP(Rv + (cinco ? ' 3-1 o 3-2' : ' 2-1'), t.pierdeCon)}${filaP(Rv + (cinco ? ' 3-0' : ' 2-0'), t.pierdeSin)}</div>`;
     o += `<h4 class="h4">Primer set</h4><div class="lineas">${filaP(F, t.set1)}${filaP(Rv, 1 - t.set1)}</div>`;
-    o += `<h4 class="h4">Hándicap de games</h4><div class="lineas">${[-1.5, -2.5, -3.5, -4.5, -5.5, -6.5].map(L => filaP(F + ' ' + L, t.cubre(L))).join('')}${[2.5, 3.5, 4.5].map(L => filaP(Rv + ' +' + L, 1 - t.cubre(-L))).join('')}</div>`;
+    /* hándicap en palabras («Sinner gana por 4 games o más») con la línea de la casa chiquita al lado */
+    const hp = (n, L) => (L < 0 ? `${n} gana por ${Math.ceil(-L)} games o más` : `${n} pierde por ${Math.floor(L)} games o menos, o gana`) + ` <small style="color:var(--mut2);white-space:nowrap">(${L > 0 ? '+' : '−'}${Math.abs(L)})</small>`;
+    o += `<h4 class="h4">Hándicap de games</h4><div class="lineas">${[-1.5, -2.5, -3.5, -4.5, -5.5, -6.5].map(L => filaP(hp(F, L), t.cubre(L))).join('')}${[2.5, 3.5, 4.5].map(L => filaP(hp(Rv, L), 1 - t.cubre(-L))).join('')}</div>`;
     const base = t.mediana, lineas = [-2, -1, 0, 1, 2].map(d => base + d + 0.5);
     o += `<h4 class="h4">Total de games (lo normal: ${t.mediana})</h4><div class="lineas">${lineas.map(L => { const p = t.masDe(L); return `<div class="linea"><span>Más de ${L} / Menos</span><b>${pct(p)} · ${pct(1 - p)}</b></div>`; }).join('')}</div>`;
     const Md = R && R.medicion && R.medicion[m.tour] || {}, h = Md.handicap && Md.handicap[an.sup], ss = Md.sinSet && Md.sinSet[an.sup], to = Md.totales && Md.totales[an.sup];

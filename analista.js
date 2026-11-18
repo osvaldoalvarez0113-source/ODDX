@@ -88,7 +88,7 @@
       else if (gap > 7) { s2 = 'El modelo lo ve menos claro (' + p0(ctx.pMod) + '): el precio sabe algo que los números no ven, normalmente lesiones o alineaciones.'; nivel -= 1; porque.push('el modelo lo ve bastante menos claro'); }
       else if (gap > 0) s2 = 'El modelo lo ve un poco menos claro (' + p0(ctx.pMod) + '), pero va con el mismo.';
       else if (gap < -7) { s2 = 'El modelo le da ' + p0(ctx.pMod) + ' y el mercado ' + p0(p) + '. Una diferencia así casi siempre es por algo que el modelo no ve, normalmente bajas' +
-        ((ctx.bajasFav || []).length ? ': a ' + F + ' le faltan ' + ctx.bajasFav.length + (ctx.bajasFav.length === 1 ? ' jugador' : ' jugadores') + ' (los nombres están en «En contra»).' : '. Revisa los lesionados antes de jugarlo.'); nivel -= 1; porque.push('el mercado lo ve bastante menos claro que el modelo'); }
+        ((ctx.bajasFav || []).length ? ': a ' + F + ' le faltan ' + ctx.bajasFav.length + (ctx.bajasFav.length === 1 ? ' jugador' : ' jugadores') + ' (los nombres están del lado de ' + R + ').' : '. Revisa los lesionados antes de jugarlo.'); nivel -= 1; porque.push('el mercado lo ve bastante menos claro que el modelo'); }
       else if (gap < -3 && ((ctx.bajasFav || []).length || ctx.mov <= -2)) s2 = 'El modelo le da un poco más (' + p0(ctx.pMod) + '), pero el modelo no ve ' + ((ctx.bajasFav || []).length ? 'las bajas de ' + F : 'por qué se movió la línea') + ': créele al ' + p0(p) + ' del mercado.';
       else s2 = 'El modelo lo ve todavía más claro (' + p0(ctx.pMod) + ').';
     }
@@ -140,17 +140,33 @@
     return { k: k, etq: ETQ[k], intro: [s1, s2, s3, s4].filter(Boolean).join(' '), aFavor: A, enContra: C, porque: porque, cierre: s5, mem: memL };
   }
 
-  function lista3(l) { var n = l.slice(0, 5).map(esc), r = l.length > 5 ? ' (y ' + (l.length - 5) + ' más)' : ''; return (n.length > 1 ? n.slice(0, -1).join(', ') + ' y ' + n[n.length - 1] : n[0]) + r; }
-  function lista(t, l, cls) {
-    if (!l.length) return '';
-    return '<div class="anL"><div class="anT ' + cls + '">' + t + '</div>' + l.map(function (x) { return '<div class="anI">' + x.charAt(0).toUpperCase() + x.slice(1) + '.</div>'; }).join('') + '</div>';
+  /* las razones repartidas por lado: cada una va con el equipo al que ayuda (visitante a la izquierda y local a la derecha, como el aro de arriba).
+     «A favor» del favorito = lo que lo empuja a él; «en contra» = lo que empuja al rival. Los colores son los de cada lado (--acc visitante, --hot local). */
+  function lados(ctx, r) {
+    var izq = ctx.favIzq !== undefined ? !!ctx.favIzq : ctx.favLocal === false;
+    var nF = esc(corto(ctx.fav, ctx.dep)), nR = esc(corto(ctx.riv, ctx.dep));
+    var col = function (nom, l, lado, flecha) {
+      return '<div class="anCol ' + lado + '"><div class="anT">' + (lado === 'iz' ? flecha + ' A favor de ' + nom : 'A favor de ' + nom + ' ' + flecha) + '</div>' +
+        (l.length ? l.map(function (x) { return '<div class="anI">' + x.charAt(0).toUpperCase() + x.slice(1) + '.</div>'; }).join('') : '<div class="anV">Nada especial.</div>') + '</div>';
+    };
+    var cF = col(nF, r.aFavor, izq ? 'iz' : 'de', izq ? '←' : '→'), cR = col(nR, r.enContra, izq ? 'de' : 'iz', izq ? '→' : '←');
+    if (!r.aFavor.length && !r.enContra.length) return '';
+    return '<div class="anLados">' + (izq ? cF + cR : cR + cF) + '</div>';
   }
+  function lista3(l) { var n = l.slice(0, 5).map(esc), r = l.length > 5 ? ' (y ' + (l.length - 5) + ' más)' : ''; return (n.length > 1 ? n.slice(0, -1).join(', ') + ' y ' + n[n.length - 1] : n[0]) + r; }
   var CSS = '<style id="anCss">.anBox{border:1px solid var(--line2);border-radius:var(--r2,14px);padding:13px 14px;background:var(--bg2);margin-bottom:12px}' +
     '.anHd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.anHd b{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut2)}' +
     '.anChip{font-size:12px;font-weight:800;padding:4px 9px;border-radius:20px;background:var(--bg1,rgba(255,255,255,.06));white-space:nowrap}' +
     '.anN{white-space:nowrap}.anP{font-size:13.5px;line-height:1.55;color:var(--txt)}.anL{margin-top:9px}.anT{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}' +
     '.anT.ok{color:var(--good,#3ecf8e)}.anT.bad{color:var(--bad,#ff6b6b)}.anI{font-size:13px;line-height:1.5;color:var(--mut);padding-left:12px;position:relative}.anI:before{content:"·";position:absolute;left:2px;font-weight:900}' +
-    '.anC{margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--txt);border-top:1px solid var(--line2);padding-top:9px}</style>';
+    '.anC{margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--txt);border-top:1px solid var(--line2);padding-top:9px}' +
+    '.anLados{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:11px;position:relative}.anLados:before{content:"";position:absolute;left:50%;top:2px;bottom:2px;width:1px;background:var(--line2)}' +
+    '.anCol .anT{font-size:10.5px;margin-bottom:6px}.anCol.iz .anT{color:var(--acc)}.anCol.de .anT{color:var(--hot);text-align:right}' +
+    '.anCol .anI{font-size:12.5px;line-height:1.35;color:var(--txt);padding:8px 9px;margin-bottom:6px;border-radius:11px;background:rgba(127,127,127,.09);animation:anEn .55s cubic-bezier(.2,1.2,.4,1) both}.anCol .anI:before{content:none}' +
+    '.anCol.iz .anI{border-left:3px solid var(--acc);background:linear-gradient(90deg,color-mix(in srgb,var(--acc) 18%,transparent),transparent)}' +
+    '.anCol.de .anI{border-right:3px solid var(--hot);text-align:right;background:linear-gradient(270deg,color-mix(in srgb,var(--hot) 18%,transparent),transparent)}' +
+    '.anCol .anI:nth-child(3){animation-delay:.08s}.anCol .anI:nth-child(4){animation-delay:.16s}.anV{font-size:12px;color:var(--mut2);padding:4px 2px}.anCol.de .anV{text-align:right}' +
+    '.anCol.iz .anI{--d:-18px}.anCol.de .anI{--d:18px}@keyframes anEn{from{opacity:0;transform:translateX(var(--d,0))}}</style>';
   function html(ctx) {
     var r; try { r = analizar(ctx); } catch (e) { return ''; }
     if (!r) return '';
@@ -158,12 +174,12 @@
     var css = CSS;
     try { if (typeof document !== 'undefined' && document.head) { if (!document.getElementById('anCss')) { var st = document.createElement('style'); st.id = 'anCss'; st.textContent = CSS.replace(/^<style[^>]*>|<\/style>$/g, ''); document.head.appendChild(st); } css = ''; } } catch (e) { }
     return css + '<div class="anBox"><div class="anHd"><b>🧠 El análisis</b><span class="anChip">' + r.etq + '</span></div>' +
-      '<div class="anP">' + r.intro + '</div>' + lista('A favor de ' + esc(corto(ctx.fav, ctx.dep)), r.aFavor, 'ok') + lista('En contra', r.enContra, 'bad') +
+      '<div class="anP">' + r.intro + '</div>' + lados(ctx, r) +
       (r.mem ? '<div class="anL"><div class="anT" style="color:var(--mut2)">🗂️ Memoria ' + (ctx.dep === 'tenis' ? 'de los últimos 12 meses' : 'de la temporada') + '</div>' + r.mem.map(function (x) { return '<div class="anI">' + x + '</div>'; }).join('') + '</div>' : '') +
       '<div class="anC"><b>Qué haría:</b> ' + r.cierre + (r.porque.length ? ' <span style="color:var(--mut)">(Baja la confianza: ' + r.porque.join('; ') + '.)</span>' : '') + '</div>' +
       '<details class="nota" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">¿Cómo se arma este análisis?</summary>Lo escribe la app con reglas fijas: con los mismos datos dice siempre lo mismo. ' +
       'La confianza sale de lo medido: cuántas veces ganó el favorito con ese % en temporadas pasadas y si el modelo y el mercado coinciden. ' +
-      'Lo de «a favor» y «en contra» (rachas, descanso, local o visita, la línea) es contexto: medido solo, no sube los aciertos, porque el precio ya lo trae casi todo. No ve noticias de última hora. ' +
+      'Cada razón va del lado del equipo al que ayuda. Eso (rachas, descanso, local o visita, la línea) es contexto: medido solo, no sube los aciertos, porque el precio ya lo trae casi todo. No ve noticias de última hora. ' +
       'La memoria cuenta cómo le fue a cada uno esta temporada entrando de favorito y de no favorito (según un rating de resultados, juego por juego y sin mirar el futuro). Medida en NHL y NFL: no cambia lo que acierta el modelo, así que tampoco mueve la confianza.</details></div>';
   }
   function impP(a) { a = +a; return a < 0 ? -a / (-a + 100) : 100 / (a + 100); }
@@ -183,7 +199,7 @@
   }
   /* si la página que cargó este archivo es de una versión vieja (sin <script src="memoria.js">), la trae sola */
   try { if (!root.OVAMemEquipo && typeof document !== 'undefined' && document.head && !document.querySelector('script[src*="memoria.js"]')) { var sm = document.createElement('script'); sm.src = 'memoria.js?v=' + Date.now(); document.head.appendChild(sm); } } catch (e) { }
-  var API = { analizar: analizar, html: html, razonesForma: razonesForma, ctxUS: ctxUS, CORTE: CORTE };
+  var API = { analizar: analizar, html: html, razonesForma: razonesForma, ctxUS: ctxUS, CORTE: CORTE, corto: corto };
   root.OVAAnalista = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);
