@@ -1953,6 +1953,8 @@ async function t_publico(){
   ok('las 5 apps cargan memoria.js antes de analista.js',['nba.html','nhl.html','nfl.html','futbol.html','tenis.html'].every(f=>{const h=rd2(f);return h.indexOf('<script src="memoria.js">')>0&&h.indexOf('<script src="memoria.js">')<h.indexOf('<script src="analista.js">');}));
   delete globalThis.OVAMemoria;
  }
+ ok('el estilo de El análisis va en <head> (no se pierde al repintar con lesionados)',/document\.head\.appendChild\(st\)/.test(rd2('analista.js')));
+ ok('línea movida contra el favorito y bajas: dice que el % del mercado ya lo cuenta y que le creas al mercado',(()=>{const r=AN.analizar(Object.assign({},base,{p:0.737,pMod:0.79,mov:-5.1,bajasFav:['Austin Reaves']}));return /créele al 74%/.test(r.intro)&&r.enContra.some(x=>/ya lo cuenta/.test(x));})());
  ok('no baja nada, no guarda nada y el service worker lo guarda',!/fetch\(|localStorage/.test(rd2('analista.js'))&&rd2('sw.js').indexOf("'analista.js'")>0);
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{

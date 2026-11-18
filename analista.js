@@ -78,6 +78,7 @@
       else if (Math.abs(gap) <= 3) s2 = 'El modelo y el mercado lo ven igual (' + p0(ctx.pMod) + ' y ' + p0(p) + ').';
       else if (gap > 7) { s2 = 'El modelo lo ve menos claro (' + p0(ctx.pMod) + '): el precio sabe algo que los números no ven, normalmente lesiones o alineaciones.'; nivel -= 1; porque.push('el modelo lo ve bastante menos claro'); }
       else if (gap > 0) s2 = 'El modelo lo ve un poco menos claro (' + p0(ctx.pMod) + '), pero va con el mismo.';
+      else if (gap < -3 && ((ctx.bajasFav || []).length || ctx.mov <= -2)) s2 = 'El modelo le da un poco más (' + p0(ctx.pMod) + '), pero el modelo no ve ' + ((ctx.bajasFav || []).length ? 'las bajas de ' + F : 'por qué se movió la línea') + ': créele al ' + p0(p) + ' del mercado.';
       else if (gap < -7) { s2 = 'El modelo le da más (' + p0(ctx.pMod) + ') que el mercado (' + p0(p) + '). Cuando el precio está tan por debajo del modelo, casi siempre es por algo que el modelo no ve, normalmente bajas' +
         ((ctx.bajasFav || []).length ? ', y a ' + F + ' le faltan ' + ctx.bajasFav.length + (ctx.bajasFav.length === 1 ? ' jugador' : ' jugadores') + ' (abajo los nombres).' : '. Revisa los lesionados antes de jugarlo.'); nivel -= 1; porque.push('el mercado lo ve bastante menos claro que el modelo'); }
       else s2 = 'El modelo lo ve todavía más claro (' + p0(ctx.pMod) + ').';
@@ -105,7 +106,7 @@
     if ((ctx.bajasFav || []).length) cFav.push([1.0 + 0.15 * Math.min(ctx.bajasFav.length, 4), F + ' tiene fuera a ' + lista3(ctx.bajasFav)]);
     if ((ctx.bajasRiv || []).length) aFav.push([0.9 + 0.15 * Math.min(ctx.bajasRiv.length, 4), R + ' tiene fuera a ' + lista3(ctx.bajasRiv)]);
     if (ctx.mov >= 2) aFav.push([1.0, 'la línea se movió ' + ctx.mov.toFixed(0) + ' pts hacia ' + F + ' desde que abrió']);
-    if (ctx.mov <= -2) cFav.push([1.2, 'la línea se movió ' + Math.abs(ctx.mov).toFixed(0) + ' pts hacia ' + R + ' desde que abrió (alguien sabe algo)']);
+    if (ctx.mov <= -2) cFav.push([1.2, 'la línea se movió ' + Math.abs(ctx.mov).toFixed(0) + ' pts hacia ' + R + ' desde que abrió: algo pasó (casi siempre una baja), y el ' + p0(p) + ' de ahora ya lo cuenta']);
     var orden = function (l) { return l.sort(function (x, y) { return y[0] - x[0]; }).slice(0, 3).map(function (x) { return x[1]; }); };
     var A = orden(aFav), C = orden(cFav);
     var pes = function (l) { return l.reduce(function (s, x) { return s + (x[2] === 'mem' ? 0 : x[0]); }, 0); }, pesoC = pes(cFav), pesoA = pes(aFav);
@@ -144,7 +145,9 @@
   function html(ctx) {
     var r; try { r = analizar(ctx); } catch (e) { return ''; }
     if (!r) return '';
-    var css = (typeof document !== 'undefined' && document.getElementById && document.getElementById('anCss')) ? '' : CSS;
+    /* el estilo va una sola vez en <head>: si fuera dentro del bloque, al repintarlo (lesionados) se perdía */
+    var css = CSS;
+    try { if (typeof document !== 'undefined' && document.head) { if (!document.getElementById('anCss')) { var st = document.createElement('style'); st.id = 'anCss'; st.textContent = CSS.replace(/^<style[^>]*>|<\/style>$/g, ''); document.head.appendChild(st); } css = ''; } } catch (e) { }
     return css + '<div class="anBox"><div class="anHd"><b>🧠 El análisis</b><span class="anChip">' + r.etq + '</span></div>' +
       '<div class="anP">' + r.intro + '</div>' + lista('A favor de ' + esc(ctx.fav), r.aFavor, 'ok') + lista('En contra', r.enContra, 'bad') +
       (r.mem ? '<div class="anL"><div class="anT" style="color:var(--mut2)">🗂️ Memoria ' + (ctx.dep === 'tenis' ? 'de los últimos 12 meses' : 'de la temporada') + '</div>' + r.mem.map(function (x) { return '<div class="anI">' + x + '</div>'; }).join('') + '</div>' : '') +
