@@ -534,7 +534,7 @@
     let acH = ''; try { if (window.OVAAciertos && !(mk && mk.live)) acH = window.OVAAciertos.html(DEP, pf, favM, hit !== null); } catch (e) { }   /* cuántas veces acierta este % (aciertos.js) */
     const fuente = mk ? (mk.src === 'pin' ? 'Pinnacle, sin margen' : (mk.src === 'pred' ? 'mercado de predicción (Polymarket)' + (mk.live ? ', en vivo' : '') : 'ESPN (DraftKings), sin margen')) : '';
     const main = `<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf >= umbral ? esc(nf) + ' gana · ' + Math.round(pf * 100) + '%' : 'Juego parejo'}</div>
-     <div class="rvP">${pf >= umbral ? 'Es el favorito' + (hit !== null ? ' según el mercado (' + fuente + ').' : ' según el modelo.') : 'Ninguno pasa del ' + Math.round(umbral * 100) + '%. Lo más probable: ' + esc(nf) + ' ' + Math.round(pf * 100) + '%.'}${DEP === 'nhl' ? ' Incluye tiempo extra y shootout.' : ''}</div>${sig}${acH}
+     <div class="rvP">${pf >= umbral ? 'Es el favorito' + (hit !== null ? ' según el mercado (' + fuente + ').' : ' según el modelo.') : 'Ninguno pasa del ' + Math.round(umbral * 100) + '%. Lo más probable: ' + esc(nf) + ' ' + Math.round(pf * 100) + '%.'}${DEP === 'nhl' ? ' Incluye tiempo extra y shootout.' : ''}</div>
      <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amTxt(pf)}</b> por ${esc(nf)}${hit !== null ? '' : ' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(nf)}</label><input type="number" inputmode="decimal" data-vl="o" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${hit !== null ? 1 : 0}"><div class="rvVal" data-vl="r"></div></div></div>`;
     const row = (n, m, k) => `<div class="nm">${esc(n)} gana</div><div class="n md">${pct1(m)}</div><div class="n mk">${k === null ? '—' : pct1(k)}</div><div class="n">${amTxt(k === null ? m : k)}</div>`;
     const tab = `<div class="rvTab"><div class="th">Resultado</div><div class="th n">${pr.conEspn ? 'Modelo + ESPN' : 'Modelo'}</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n, 1 - pr.pHMod, hit === null ? null : 1 - hit)}${row(H.n, pr.pHMod, hit)}</div>
@@ -554,7 +554,7 @@
     if (g.pre) li.push(L('w', 'Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
     li.push(`<div data-inj><i class="w">!</i><span>Lesionados: toca «Cargar lesionados» abajo (archivo grande).</span></div>`);
     let anH = ''; try { if (window.OVAAnalista) { g._an = { dep: DEP, g, games: GAMES, H, A, pHMod: pr.pHMod, pMk: hit, vivo: !!(mk && mk.live), alertas: alertasAn(g, H, A, favM), nota: DEP === 'nhl' ? 'El % incluye tiempo extra y shootout.' : '' }; anH = '<div data-an>' + window.OVAAnalista.html(window.OVAAnalista.ctxUS(g._an)) + '</div>'; } } catch (e) { }   /* 🧠 El análisis (analista.js); se repinta con los lesionados */
-    return `<div class="rv">${anH}<h4>Pronóstico y pick</h4>${main}${guiaNhl(g, pr, pf)}${kalshiN(g, mk, H, A)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
+    return `<div class="rv">${anH}<h4>Pronóstico y pick</h4>${main}${guiaNhl(g, pr, pf)}<details class="comoLee"><summary>📋 Modelo contra mercado y qué tan confiable es</summary><div style="margin-top:8px">${sig}${acH}</div>${kalshiN(g, mk, H, A)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></details></div>`;
   }
 
   function pintarCuerpo(body, g) {
@@ -570,8 +570,8 @@
      <div class="bar"><span class="a" style="flex-grow:${Math.max(1 - pS, 0.08)}">${pct1(1 - pS)}</span><span class="h" style="flex-grow:${Math.max(pS, 0.08)}">${pct1(pS)}</span></div>
      <div class="nota" style="margin:6px 0 0;text-align:center">${pr.mk ? 'Probabilidades del mercado' + (pr.mk.src === 'pin' ? ' (Pinnacle)' : (pr.mk.src === 'pred' ? (pr.mk.live ? ' (Polymarket, en vivo)' : ' (Polymarket)') : ' (ESPN)')) : 'Probabilidades del modelo (sin precio de mercado)'}${DEP === 'nhl' ? ' · incluye tiempo extra' : ''}</div>
      ${resumenN(g, pr, H, A)}
-     ${window.OVAForma ? window.OVAForma.html(GAMES, g, H, A, pS, DEP) : ''}
-     ${(g.odds || pinDe(g)) ? mercadoHtml(g, pr, H, A) : ''}
+     ${window.OVAForma ? '<details class="comoLee"><summary>📈 Cómo vienen jugando (detalle)</summary>' + window.OVAForma.html(GAMES, g, H, A, pS, DEP) + '</details>' : ''}
+     ${(g.odds || pinDe(g)) ? '<details class="comoLee"><summary>📉 Línea del mercado (detalle)</summary>' + mercadoHtml(g, pr, H, A) + '</details>' : ''}
      ${pinNba(g, pr)}
      ${g.pre ? '<div class="aviso">🧪 Pretemporada: los equipos rotan jugadores y no cuentan para los ratings; toma estos números con mucha cautela.</div>' : ''}
      <details class="comoLee"><summary>Ajuste manual por lesiones (opcional)</summary>

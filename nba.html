@@ -716,7 +716,7 @@ function resumenN(g,pr,H,A){
     `<span class="rvSig bad">✗ Discrepan ${gap.toFixed(0)} pts de probabilidad${pctNf} · créele al mercado</span>`))+
     (favH!==favM?`<div class="rvP" style="margin-top:7px">Modelo solo: <b>${esc(favH?H.n:A.n)}</b> (${Math.round((favH?pr.pHMod:1-pr.pHMod)*100)}%). Mercado: <b>${esc(nf)}</b> (${Math.round(pf*100)}%).</div>`:'');
   const main=`<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf>=0.6?esc(nf)+' gana · '+Math.round(pf*100)+'%':'Juego parejo'}</div>
-   <div class="rvP">${pf>=0.6?'Es el favorito'+(hit!==null?' según el mercado ('+fuente+').':' según el modelo.'):'Ninguno pasa del 60%. Lo más probable: '+esc(nf)+' '+Math.round(pf*100)+'%.'}</div>${sig}${acN(pf,favM,hit!==null&&!(mk&&mk.live),mk&&mk.live)}
+   <div class="rvP">${pf>=0.6?'Es el favorito'+(hit!==null?' según el mercado ('+fuente+').':' según el modelo.'):'Ninguno pasa del 60%. Lo más probable: '+esc(nf)+' '+Math.round(pf*100)+'%.'}</div>
    <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amTxt(pf)}</b> por ${esc(nf)}${hit!==null?'':' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(nf)}</label><input type="number" inputmode="decimal" data-vl="o" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${hit!==null?1:0}"><div class="rvVal" data-vl="r"></div></div></div>`;
   const row=(n,m,k)=>`<div class="nm">${esc(n)} gana</div><div class="n md">${pct1(m)}</div><div class="n mk">${k===null?'—':pct1(k)}</div><div class="n">${amTxt(k===null?m:k)}</div>`;
   const tab=`<div class="rvTab"><div class="th">Resultado</div><div class="th n">${pr.conEspn?'Modelo + ESPN':'Modelo solo'}</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n,1-pr.pHMod,hit===null?null:1-hit)}${row(H.n,pr.pHMod,hit)}</div>
@@ -737,7 +737,7 @@ function resumenN(g,pr,H,A){
   if(g.pre) li.push(L('w','Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
   li.push(`<div data-inj><i class="w">!</i><span>Buscando lesionados…</span></div>`);
   let anH=''; try{ if(window.OVAAnalista){ g._an={dep:'nba',g,games:GAMES,H,A,pHMod:pr.pHMod,pMk:hit,vivo:!!(mk&&mk.live)}; anH='<div data-an>'+window.OVAAnalista.html(window.OVAAnalista.ctxUS(g._an))+'</div>'; } }catch(e){}   /* 🧠 El análisis (analista.js); se repinta cuando llegan los lesionados */
-  return `<div class="rv">${anH}<h4>Pronóstico y pick</h4>${main}${kalshiN(g,mk,H,A)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
+  return `<div class="rv">${anH}<h4>Pronóstico y pick</h4>${main}<details class="comoLee"><summary>📋 Modelo contra mercado y qué tan confiable es</summary><div style="margin-top:8px">${sig}${acN(pf,favM,hit!==null&&!(mk&&mk.live),mk&&mk.live)}</div>${kalshiN(g,mk,H,A)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></details></div>`;
 }
 function pintarCuerpo(body,g){
   const pr=prediccion(g), H=T(g.h), A=T(g.a);
@@ -752,8 +752,8 @@ function pintarCuerpo(body,g){
    <div class="bar"><span class="a" style="flex-grow:${Math.max(1-pS,0.08)}">${pct1(1-pS)}</span><span class="h" style="flex-grow:${Math.max(pS,0.08)}">${pct1(pS)}</span></div>
    <div class="nota" style="margin:6px 0 0;text-align:center">${pmk!==null?'Probabilidades del mercado ('+(mkH.src==='pin'?'Pinnacle':(mkH.src==='pred'?(mkH.live?'Polymarket, en vivo':'Polymarket'):'ESPN'))+')':'Probabilidades del modelo (sin precio de mercado)'}</div>
    ${resumenN(g,pr,H,A)}
-   ${window.OVAForma?window.OVAForma.html(GAMES,g,H,A,pS):''}
-   ${g.odds?mercadoHtml(g,pr,H,A):''}
+   ${window.OVAForma?'<details class="comoLee"><summary>📈 Cómo vienen jugando (detalle)</summary>'+window.OVAForma.html(GAMES,g,H,A,pS)+'</details>':''}
+   ${g.odds?'<details class="comoLee"><summary>📉 Línea del mercado (detalle)</summary>'+mercadoHtml(g,pr,H,A)+'</details>':''}
    ${g.pre?'<div class="aviso">🧪 Pretemporada: los equipos rotan jugadores y no cuentan para los ratings; toma estos números con mucha cautela.</div>':''}
    <details class="comoLee"><summary>Ajuste manual por lesiones (opcional)</summary>
    <div class="nota" style="margin-top:8px">Si hay línea del mercado, <b>ya trae las lesiones incluidas</b> (95% del número final): normalmente no hace falta tocar nada. Úsalo solo si falta una estrella y no hay línea, o si la noticia es de última hora.</div>
