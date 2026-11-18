@@ -47,7 +47,7 @@
   var CORTES = { nba: [0.5, 0.8, 0.45], nhl: [0.45, 0.72, 0.5], nfl: [0.5, 0.8, 0.45], fut: [0.42, 0.72, 0.35], tenis: [0.55, 0.85, 0.45] };
   /* razones para El análisis: [peso, texto] a favor del favorito y en contra */
   function razones(mF, mR, fav, riv, dep, esc) {
-    var k = CORTES[dep] || CORTES.nba, a = [], c = [], F = '<b>' + esc(fav) + '</b>', R = '<b>' + esc(riv) + '</b>', d = DIF[dep] || 2.5, emp = dep === 'fut' ? ' (el empate cuenta como no ganó)' : '';
+    var k = CORTES[dep] || CORTES.nba, a = [], c = [], F = '<b class="anN">' + esc(fav) + '</b>', R = '<b class="anN">' + esc(riv) + '</b>', d = DIF[dep] || 2.5, emp = dep === 'fut' ? ' (el empate cuenta como no ganó)' : '';
     var rec = function (x) { return x.w + '-' + (x.n - x.w); };
     if (mF && mF.fav.n >= 5) {
       var pf = mF.fav.w / mF.fav.n;
@@ -66,9 +66,9 @@
   }
   /* una línea por equipo para el bloque «Memoria de la temporada» */
   function linea(m, n, dep, esc) {
-    if (!m || m.n < 3) return '<b>' + esc(n) + '</b>: todavía pocos ' + (dep === 'fut' || dep === 'tenis' ? 'partidos' : 'juegos') + '.';
+    if (!m || m.n < 3) return '<b class="anN">' + esc(n) + '</b>: todavía pocos ' + (dep === 'fut' || dep === 'tenis' ? 'partidos' : 'juegos') + '.';
     var r = function (x) { return x.n ? x.w + '-' + (x.n - x.w) : '—'; }, df = m.w - m.esp;
-    return '<b>' + esc(n) + '</b>: de favorito ' + r(m.fav) + ' · de no favorito ' + r(m.dog) + ' · ' + (Math.abs(df) < 1 ? 'gana lo esperado' : (df > 0 ? 'gana ' + df.toFixed(1) + ' más de lo esperado' : 'gana ' + Math.abs(df).toFixed(1) + ' menos de lo esperado')) + '.';
+    return '<b class="anN">' + esc(n) + '</b>: de favorito ' + r(m.fav) + ' · de no favorito ' + r(m.dog) + ' · ' + (Math.abs(df) < 1 ? 'gana lo esperado' : (df > 0 ? 'gana ' + df.toFixed(1) + ' más de lo esperado' : 'gana ' + Math.abs(df).toFixed(1) + ' menos de lo esperado')) + '.';
   }
   var API = { calc: calc, deTenis: deTenis, razones: razones, linea: linea, CFG: CFG, pElo: pElo };
   root.OVAMemEquipo = API;

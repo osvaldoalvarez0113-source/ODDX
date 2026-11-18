@@ -13,6 +13,14 @@
   'use strict';
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]; }); }
   function p0(x) { return Math.round(x * 100) + '%'; }
+  /* nombre en negrita que no se parte entre dos renglones; en NBA, NHL y NFL, después de la primera vez, solo el apodo («Lakers») */
+  var DOS = ['Trail Blazers', 'Red Wings', 'Maple Leafs', 'Golden Knights', 'Blue Jackets', 'Red Sox', 'White Sox', 'Blue Jays'];
+  function corto(n, dep) {
+    n = String(n || ''); if (dep !== 'nba' && dep !== 'nhl' && dep !== 'nfl') return n;
+    for (var i = 0; i < DOS.length; i++) if (n.slice(-DOS[i].length) === DOS[i]) return DOS[i];
+    var w = n.split(' '); return w.length > 1 ? w[w.length - 1] : n;
+  }
+  function nb(n) { return '<b class="anN">' + esc(n) + '</b>'; }
   var NIV = ['dejar', 'baja', 'media', 'alta'];
   var ETQ = { alta: '🟢 Confianza alta', media: '🟡 Confianza media', baja: '🟠 Confianza baja', dejar: '🔴 Para dejar pasar' };
   /* cortes de confianza por deporte, sobre lo que de verdad ganó el favorito en ese tramo (fútbol es a 3 resultados) */
@@ -23,7 +31,7 @@
   function razonesForma(f, n, dep, local, esFav) {
     var a = [], c = [];   // a = suma para este lado, c = resta
     if (!f || f.n < 3) return { a: a, c: c };
-    var N = '<b>' + esc(n) + '</b>', u = f.u10 || null, tenis = dep === 'tenis';
+    var N = nb(corto(n, dep)), u = f.u10 || null, tenis = dep === 'tenis';
     var w10 = tenis ? f.w : u.w, n10 = tenis ? f.n : u.n, pct = n10 ? w10 / n10 : 0.5;
     if (f.racha && f.racha.n >= 3 && (f.racha.res === 'V' || f.racha.w)) a.push([1.2 + 0.1 * Math.min(f.racha.n, 8), N + ' viene de ' + f.racha.n + ' victorias seguidas']);
     else if (f.racha && f.racha.n >= 3 && f.racha.res === 'D') c.push([1.2 + 0.1 * Math.min(f.racha.n, 8), N + ' arrastra ' + f.racha.n + ' derrotas seguidas']);
@@ -62,13 +70,13 @@
   function analizar(ctx) {
     var dep = ctx.dep, fav = ctx.fav, riv = ctx.riv, p = ctx.p;
     if (!(p > 0 && p < 1) || !fav) return null;
-    var F = '<b>' + esc(fav) + '</b>', R = '<b>' + esc(riv) + '</b>';
+    var F0 = nb(fav), R0 = nb(riv), F = nb(corto(fav, dep)), R = nb(corto(riv, dep));
     var cor = CORTE[dep] || CORTE.nba, ref = (ctx.ac && ctx.ac.pct > 0) ? ctx.ac.pct : p;
     var nivel = ref >= cor[0] ? 3 : (ref >= cor[1] ? 2 : 1), porque = [];
     /* 1. el pronóstico */
     var lado = ctx.favLocal === true ? ' en casa' : (ctx.favLocal === false ? ' de visita' : '');
     var parejo = dep === 'fut' ? p < 0.45 : p < 0.55;
-    var s1 = parejo ? 'Juego muy parejo: el más probable es ' + F + lado + ' con apenas ' + p0(p) + '.' : F + ' es el favorito' + lado + ' con ' + p0(p) + (ctx.merc ? '' : ' (solo el modelo, no hay precio del mercado)') + '.';
+    var s1 = parejo ? 'Juego muy parejo: el más probable es ' + F0 + lado + ' con apenas ' + p0(p) + ' (enfrente: ' + R0 + ').' : F0 + ' es el favorito' + lado + ' con ' + p0(p) + ' ante ' + R0 + (ctx.merc ? '' : ' (solo el modelo, no hay precio del mercado)') + '.';
     if (dep === 'fut' && ctx.pE > 0) s1 += ' El empate tiene ' + p0(ctx.pE) + '.';
     /* 2. modelo contra mercado */
     var s2 = '';
@@ -78,13 +86,13 @@
       else if (Math.abs(gap) <= 3) s2 = 'El modelo y el mercado lo ven igual (' + p0(ctx.pMod) + ' y ' + p0(p) + ').';
       else if (gap > 7) { s2 = 'El modelo lo ve menos claro (' + p0(ctx.pMod) + '): el precio sabe algo que los números no ven, normalmente lesiones o alineaciones.'; nivel -= 1; porque.push('el modelo lo ve bastante menos claro'); }
       else if (gap > 0) s2 = 'El modelo lo ve un poco menos claro (' + p0(ctx.pMod) + '), pero va con el mismo.';
-      else if (gap < -7) { s2 = 'El modelo le da más (' + p0(ctx.pMod) + ') que el mercado (' + p0(p) + '). Cuando el precio está tan por debajo del modelo, casi siempre es por algo que el modelo no ve, normalmente bajas' +
-        ((ctx.bajasFav || []).length ? ', y a ' + F + ' le faltan ' + ctx.bajasFav.length + (ctx.bajasFav.length === 1 ? ' jugador' : ' jugadores') + ' (abajo los nombres).' : '. Revisa los lesionados antes de jugarlo.'); nivel -= 1; porque.push('el mercado lo ve bastante menos claro que el modelo'); }
+      else if (gap < -7) { s2 = 'El modelo le da ' + p0(ctx.pMod) + ' y el mercado ' + p0(p) + '. Una diferencia así casi siempre es por algo que el modelo no ve, normalmente bajas' +
+        ((ctx.bajasFav || []).length ? ': a ' + F + ' le faltan ' + ctx.bajasFav.length + (ctx.bajasFav.length === 1 ? ' jugador' : ' jugadores') + ' (los nombres están en «En contra»).' : '. Revisa los lesionados antes de jugarlo.'); nivel -= 1; porque.push('el mercado lo ve bastante menos claro que el modelo'); }
       else if (gap < -3 && ((ctx.bajasFav || []).length || ctx.mov <= -2)) s2 = 'El modelo le da un poco más (' + p0(ctx.pMod) + '), pero el modelo no ve ' + ((ctx.bajasFav || []).length ? 'las bajas de ' + F : 'por qué se movió la línea') + ': créele al ' + p0(p) + ' del mercado.';
       else s2 = 'El modelo lo ve todavía más claro (' + p0(ctx.pMod) + ').';
     }
     /* 3. cuántas veces se cumple */
-    var s3 = (ctx.ac && ctx.ac.n >= 50 && !ctx.vivo) ? 'Con un % así, el favorito ganó <b>' + Math.round(ctx.ac.pct * 100) + ' de cada 100</b> ' + QUE[dep] + ' en temporadas pasadas.' : '';
+    var s3 = (ctx.ac && ctx.ac.n >= 50 && !ctx.vivo) ? 'Cuando el favorito tenía un % así, ganó <b>' + Math.round(ctx.ac.pct * 100) + ' de cada 100</b> ' + QUE[dep] + ' en temporadas pasadas.' : '';
     /* 4. a favor y en contra */
     var rf = razonesForma(ctx.fF, fav, dep, ctx.favLocal === true, true), rr = razonesForma(ctx.fR, riv, dep, ctx.favLocal === false, false);
     var aFav = rf.a.concat(rr.c), cFav = rf.c.concat(rr.a);
@@ -100,8 +108,8 @@
     /* memoria de la temporada (memoria.js): contexto, no mueve la confianza */
     var MEM = root.OVAMemEquipo, memL = null;
     if (MEM && (ctx.memFav || ctx.memRiv)) {
-      var rm = MEM.razones(ctx.memFav, ctx.memRiv, fav, riv, dep, esc); rm.a.forEach(function (x) { aFav.push(x); }); rm.c.forEach(function (x) { cFav.push(x); });
-      memL = [MEM.linea(ctx.memFav, fav, dep, esc), MEM.linea(ctx.memRiv, riv, dep, esc)];
+      var rm = MEM.razones(ctx.memFav, ctx.memRiv, corto(fav, dep), corto(riv, dep), dep, esc); rm.a.forEach(function (x) { aFav.push(x); }); rm.c.forEach(function (x) { cFav.push(x); });
+      memL = [MEM.linea(ctx.memFav, corto(fav, dep), dep, esc), MEM.linea(ctx.memRiv, corto(riv, dep), dep, esc)];
     }
     if ((ctx.bajasFav || []).length) cFav.push([1.0 + 0.15 * Math.min(ctx.bajasFav.length, 4), F + ' tiene fuera a ' + lista3(ctx.bajasFav)]);
     if ((ctx.bajasRiv || []).length) aFav.push([0.9 + 0.15 * Math.min(ctx.bajasRiv.length, 4), R + ' tiene fuera a ' + lista3(ctx.bajasRiv)]);
@@ -139,7 +147,7 @@
   var CSS = '<style id="anCss">.anBox{border:1px solid var(--line2);border-radius:var(--r2,14px);padding:13px 14px;background:var(--bg2);margin-bottom:12px}' +
     '.anHd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}.anHd b{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut2)}' +
     '.anChip{font-size:12px;font-weight:800;padding:4px 9px;border-radius:20px;background:var(--bg1,rgba(255,255,255,.06));white-space:nowrap}' +
-    '.anP{font-size:13.5px;line-height:1.55;color:var(--txt)}.anL{margin-top:9px}.anT{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}' +
+    '.anN{white-space:nowrap}.anP{font-size:13.5px;line-height:1.55;color:var(--txt)}.anL{margin-top:9px}.anT{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}' +
     '.anT.ok{color:var(--good,#3ecf8e)}.anT.bad{color:var(--bad,#ff6b6b)}.anI{font-size:13px;line-height:1.5;color:var(--mut);padding-left:12px;position:relative}.anI:before{content:"·";position:absolute;left:2px;font-weight:900}' +
     '.anC{margin-top:10px;font-size:13.5px;line-height:1.5;color:var(--txt);border-top:1px solid var(--line2);padding-top:9px}</style>';
   function html(ctx) {
@@ -149,7 +157,7 @@
     var css = CSS;
     try { if (typeof document !== 'undefined' && document.head) { if (!document.getElementById('anCss')) { var st = document.createElement('style'); st.id = 'anCss'; st.textContent = CSS.replace(/^<style[^>]*>|<\/style>$/g, ''); document.head.appendChild(st); } css = ''; } } catch (e) { }
     return css + '<div class="anBox"><div class="anHd"><b>🧠 El análisis</b><span class="anChip">' + r.etq + '</span></div>' +
-      '<div class="anP">' + r.intro + '</div>' + lista('A favor de ' + esc(ctx.fav), r.aFavor, 'ok') + lista('En contra', r.enContra, 'bad') +
+      '<div class="anP">' + r.intro + '</div>' + lista('A favor de ' + esc(corto(ctx.fav, ctx.dep)), r.aFavor, 'ok') + lista('En contra', r.enContra, 'bad') +
       (r.mem ? '<div class="anL"><div class="anT" style="color:var(--mut2)">🗂️ Memoria ' + (ctx.dep === 'tenis' ? 'de los últimos 12 meses' : 'de la temporada') + '</div>' + r.mem.map(function (x) { return '<div class="anI">' + x + '</div>'; }).join('') + '</div>' : '') +
       '<div class="anC"><b>Qué haría:</b> ' + r.cierre + (r.porque.length ? ' <span style="color:var(--mut)">(Baja la confianza: ' + r.porque.join('; ') + '.)</span>' : '') + '</div>' +
       '<details class="nota" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">¿Cómo se arma este análisis?</summary>Lo escribe la app con reglas fijas: con los mismos datos dice siempre lo mismo. ' +

@@ -1932,7 +1932,7 @@ async function t_publico(){
  ok('si los dos jugaron ayer, se empareja y no sale ni a favor ni en contra',(()=>{const f={n:12,u10:{w:5,e:0,l:5,n:10},racha:{res:'V',w:true,n:1},etq:'parejo',sede:{w:2,l:2,e:0,n:4},rivales:0.5,desc:1,en7:3};
    const r=AN.analizar(Object.assign({},base,{fF:f,fR:f}));return !r.aFavor.concat(r.enContra).some(x=>/jugó ayer/.test(x))&&/Los dos jugaron ayer/.test(r.intro);})());
  ok('mercado muy por debajo del modelo: avisa de bajas, baja la confianza y nombra a los que faltan',(()=>{const r=AN.analizar(Object.assign({},base,{p:0.66,pMod:0.76,ac:{pct:0.66,n:900},bajasFav:['Anthony Edwards'],bajasRiv:['Ja Morant']}));
-   return /por debajo del modelo/.test(r.intro)&&r.k==='baja'&&r.enContra.some(x=>/Anthony Edwards/.test(x))&&r.aFavor.some(x=>/Ja Morant/.test(x));})());
+   return /diferencia así/.test(r.intro)&&r.k==='baja'&&r.enContra.some(x=>/Anthony Edwards/.test(x))&&r.aFavor.some(x=>/Ja Morant/.test(x));})());
  ok('NBA repinta El análisis cuando llegan los lesionados (solo los Out)',/an\.innerHTML=window\.OVAAnalista\.html/.test(rd2('nba.html'))&&/filter\(x=>\/\^out\/i\.test\(x\.s\)\)/.test(rd2('nba.html')));
  ok('tenis: si los dos vienen de partido largo se empareja',(()=>{const r=AN.analizar({dep:'tenis',fav:'A',riv:'B',p:0.7,merc:true,pMod:0.69,ac:{pct:0.7,n:900},alertas:[[1.1,'A viene de un partido largo','largo']],aFavor:[[0.9,'B viene de un partido largo','largo']]});
    return !r.aFavor.concat(r.enContra).some(x=>/largo/.test(x))&&/partido largo: el cansancio se empareja/.test(r.intro);})());
