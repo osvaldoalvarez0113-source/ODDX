@@ -40,13 +40,13 @@
       if (f.rivales !== null && f.rivales !== undefined && pct >= 0.6 && f.rivales <= 0.44) c.push([0.5, 'la buena racha de ' + N + ' fue contra rivales flojos']);
       /* descanso */
       if (dep === 'nba' || dep === 'nhl') {
-        if (f.desc <= 1) c.push([1.3, N + ' jugó ayer (back-to-back)']);
-        else if (f.en7 >= 4) c.push([0.6, N + ' lleva ' + f.en7 + ' juegos en 7 días']);
+        if (f.desc <= 1) c.push([1.3, N + ' jugó ayer (back-to-back)', 'b2b']);
+        else if (f.en7 >= 4) c.push([0.6, N + ' lleva ' + f.en7 + ' juegos en 7 días', 'carga']);
       } else if (dep === 'nfl') {
-        if (f.desc <= 5) c.push([1.0, N + ' viene de semana corta (' + f.desc + ' días)']);
-        else if (f.desc >= 13) a.push([0.9, N + ' viene de semana libre']);
+        if (f.desc <= 5) c.push([1.0, N + ' viene de semana corta (' + f.desc + ' días)', 'corta']);
+        else if (f.desc >= 13) a.push([0.9, N + ' viene de semana libre', 'libre']);
       } else if (dep === 'fut') {
-        if (f.desc <= 3) c.push([0.8, N + ' jugó hace ' + f.desc + ' días']);
+        if (f.desc <= 3) c.push([0.8, N + ' jugó hace ' + f.desc + ' días', 'corta']);
       }
     } else if (f.n5 >= 5) {
       if (f.w5 >= 4 && !(f.racha && f.racha.n >= 3 && f.racha.res === 'V')) a.push([0.8, N + ' ganó ' + f.w5 + ' de sus últimos 5']);
@@ -78,13 +78,24 @@
       else if (Math.abs(gap) <= 3) s2 = 'El modelo y el mercado lo ven igual (' + p0(ctx.pMod) + ' y ' + p0(p) + ').';
       else if (gap > 7) { s2 = 'El modelo lo ve menos claro (' + p0(ctx.pMod) + '): el precio sabe algo que los números no ven, normalmente lesiones o alineaciones.'; nivel -= 1; porque.push('el modelo lo ve bastante menos claro'); }
       else if (gap > 0) s2 = 'El modelo lo ve un poco menos claro (' + p0(ctx.pMod) + '), pero va con el mismo.';
+      else if (gap < -7) { s2 = 'El modelo le da más (' + p0(ctx.pMod) + ') que el mercado (' + p0(p) + '). Cuando el precio está tan por debajo del modelo, casi siempre es por algo que el modelo no ve, normalmente bajas' +
+        ((ctx.bajasFav || []).length ? ', y a ' + F + ' le faltan ' + ctx.bajasFav.length + (ctx.bajasFav.length === 1 ? ' jugador' : ' jugadores') + ' (abajo los nombres).' : '. Revisa los lesionados antes de jugarlo.'); nivel -= 1; porque.push('el mercado lo ve bastante menos claro que el modelo'); }
       else s2 = 'El modelo lo ve todavía más claro (' + p0(ctx.pMod) + ').';
     }
     /* 3. cuántas veces se cumple */
     var s3 = (ctx.ac && ctx.ac.n >= 50 && !ctx.vivo) ? 'Con un % así, el favorito ganó <b>' + Math.round(ctx.ac.pct * 100) + ' de cada 100</b> ' + QUE[dep] + ' en temporadas pasadas.' : '';
     /* 4. a favor y en contra */
     var rf = razonesForma(ctx.fF, fav, dep, ctx.favLocal === true, true), rr = razonesForma(ctx.fR, riv, dep, ctx.favLocal === false, false);
+    /* lo que les pasa a los DOS se empareja: no cuenta ni a favor ni en contra */
+    var neutro = '';
+    ['b2b', 'corta', 'libre', 'carga'].forEach(function (k2) {
+      var en = function (l) { return l.some(function (x) { return x[2] === k2; }); }, fuera = function (l) { return l.filter(function (x) { return x[2] !== k2; }); };
+      var los2 = (en(rf.c) && en(rr.c)) || (en(rf.a) && en(rr.a));
+      if (los2) { rf.c = fuera(rf.c); rr.c = fuera(rr.c); rf.a = fuera(rf.a); rr.a = fuera(rr.a); neutro += ({ b2b: 'Los dos jugaron ayer: el cansancio se empareja.', corta: 'Los dos vienen con poco descanso: se empareja.', libre: 'Los dos vienen de semana libre.', carga: 'Los dos vienen con mucha carga de juegos.' })[k2] + ' '; }
+    });
     var aFav = rf.a.concat(rr.c), cFav = rf.c.concat(rr.a);
+    if ((ctx.bajasFav || []).length) cFav.push([1.0 + 0.15 * Math.min(ctx.bajasFav.length, 4), F + ' tiene fuera a ' + lista3(ctx.bajasFav)]);
+    if ((ctx.bajasRiv || []).length) aFav.push([0.9 + 0.15 * Math.min(ctx.bajasRiv.length, 4), R + ' tiene fuera a ' + lista3(ctx.bajasRiv)]);
     if (ctx.mov >= 2) aFav.push([1.0, 'la línea se movió ' + ctx.mov.toFixed(0) + ' pts hacia ' + F + ' desde que abrió']);
     if (ctx.mov <= -2) cFav.push([1.2, 'la línea se movió ' + Math.abs(ctx.mov).toFixed(0) + ' pts hacia ' + R + ' desde que abrió (alguien sabe algo)']);
     (ctx.aFavor || []).forEach(function (x) { aFav.push(x); });
@@ -109,10 +120,11 @@
     var ex = (ctx.extras || []).filter(function (x) { return x && x.p >= 0.74; }).sort(function (x, y) { return y.p - x.p; })[0];
     if (!ctx.vivo && ex) s5 += ' Algo más probable en este juego: <b>' + esc(ex.t) + '</b> (' + p0(ex.p) + ').';
     if (ctx.nota) s5 += ' ' + ctx.nota;
-    var s4 = (!A.length && !C.length && !ctx.vivo) ? 'Ninguno de los dos llega con algo especial (rachas, descanso, bajas): manda el %.' : '';
+    var s4 = neutro.trim() + ((!A.length && !C.length && !ctx.vivo) ? ' Ninguno de los dos llega con algo especial (rachas, descanso, bajas): manda el %.' : '');
     return { k: k, etq: ETQ[k], intro: [s1, s2, s3, s4].filter(Boolean).join(' '), aFavor: A, enContra: C, porque: porque, cierre: s5 };
   }
 
+  function lista3(l) { var n = l.slice(0, 5).map(esc), r = l.length > 5 ? ' (y ' + (l.length - 5) + ' más)' : ''; return (n.length > 1 ? n.slice(0, -1).join(', ') + ' y ' + n[n.length - 1] : n[0]) + r; }
   function lista(t, l, cls) {
     if (!l.length) return '';
     return '<div class="anL"><div class="anT ' + cls + '">' + t + '</div>' + l.map(function (x) { return '<div class="anI">' + x.charAt(0).toUpperCase() + x.slice(1) + '.</div>'; }).join('') + '</div>';
@@ -146,7 +158,7 @@
     }
     return { dep: o.dep, fav: favH ? o.H.n : o.A.n, riv: favH ? o.A.n : o.H.n, favLocal: g.neutral ? null : favH, p: Math.max(pH, 1 - pH), merc: merc,
       pMod: merc && isFinite(o.pHMod) ? (favH ? o.pHMod : 1 - o.pHMod) : null, vivo: !!o.vivo, ac: ac, fF: favH ? fH : fA, fR: favH ? fA : fH, mov: mov,
-      alertas: o.alertas || [], aFavor: o.aFavor || [], pre: !!g.pre, nota: o.nota || '' };
+      alertas: o.alertas || [], aFavor: o.aFavor || [], pre: !!g.pre, nota: o.nota || '', bajasFav: (favH ? o.bajasH : o.bajasA) || [], bajasRiv: (favH ? o.bajasA : o.bajasH) || [] };
   }
   var API = { analizar: analizar, html: html, razonesForma: razonesForma, ctxUS: ctxUS, CORTE: CORTE };
   root.OVAAnalista = API;

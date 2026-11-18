@@ -1929,6 +1929,11 @@ async function t_publico(){
  ok('el bloque escapa nombres',AN.html(Object.assign({},base,{fav:'<b>x'})).indexOf('<b>x')<0);
  ok('NBA, NHL, NFL, fútbol y tenis lo cargan y lo ponen arriba del Veredicto',['nba.html','nhl.html','nfl.html','futbol.html','tenis.html'].every(f=>rd2(f).indexOf('<script src="analista.js"></script>')>0)&&
    /\$\{anH\}<h4>Pronóstico y pick<\/h4>/.test(rd2('usdeporte.js'))&&/\$\{anH\}<h4>Pronóstico y pick<\/h4>/.test(rd2('nba.html'))&&/'<div class="rv">'\+anH\+'<h4>Pronóstico y pick/.test(rd2('futbol.html'))&&/<div class="rv">\$\{anH\}<h4>Pronóstico y pick/.test(rd2('tenis.js')));
+ ok('si los dos jugaron ayer, se empareja y no sale ni a favor ni en contra',(()=>{const f={n:12,u10:{w:5,e:0,l:5,n:10},racha:{res:'V',w:true,n:1},etq:'parejo',sede:{w:2,l:2,e:0,n:4},rivales:0.5,desc:1,en7:3};
+   const r=AN.analizar(Object.assign({},base,{fF:f,fR:f}));return !r.aFavor.concat(r.enContra).some(x=>/jugó ayer/.test(x))&&/Los dos jugaron ayer/.test(r.intro);})());
+ ok('mercado muy por debajo del modelo: avisa de bajas, baja la confianza y nombra a los que faltan',(()=>{const r=AN.analizar(Object.assign({},base,{p:0.66,pMod:0.76,ac:{pct:0.66,n:900},bajasFav:['Anthony Edwards'],bajasRiv:['Ja Morant']}));
+   return /por debajo del modelo/.test(r.intro)&&r.k==='baja'&&r.enContra.some(x=>/Anthony Edwards/.test(x))&&r.aFavor.some(x=>/Ja Morant/.test(x));})());
+ ok('NBA repinta El análisis cuando llegan los lesionados (solo los Out)',/an\.innerHTML=window\.OVAAnalista\.html/.test(rd2('nba.html'))&&/filter\(x=>\/\^out\/i\.test\(x\.s\)\)/.test(rd2('nba.html')));
  ok('no baja nada, no guarda nada y el service worker lo guarda',!/fetch\(|localStorage/.test(rd2('analista.js'))&&rd2('sw.js').indexOf("'analista.js'")>0);
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{

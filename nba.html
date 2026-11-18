@@ -735,7 +735,7 @@ function resumenN(g,pr,H,A){
   li.push(pr.bH||pr.bA?L('ok','Back-to-back: '+[pr.bA?A.n:'',pr.bH?H.n:''].filter(Boolean).map(esc).join(' y ')+' jugó ayer (ya descontado).'):L('ok','Sin back-to-back.'));
   if(g.pre) li.push(L('w','Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
   li.push(`<div data-inj><i class="w">!</i><span>Buscando lesionados…</span></div>`);
-  let anH=''; try{ if(window.OVAAnalista) anH=window.OVAAnalista.html(window.OVAAnalista.ctxUS({dep:'nba',g,games:GAMES,H,A,pHMod:pr.pHMod,pMk:hit,vivo:!!(mk&&mk.live)})); }catch(e){}   /* 🧠 El análisis (analista.js) */
+  let anH=''; try{ if(window.OVAAnalista){ g._an={dep:'nba',g,games:GAMES,H,A,pHMod:pr.pHMod,pMk:hit,vivo:!!(mk&&mk.live)}; anH='<div data-an>'+window.OVAAnalista.html(window.OVAAnalista.ctxUS(g._an))+'</div>'; } }catch(e){}   /* 🧠 El análisis (analista.js); se repinta cuando llegan los lesionados */
   return `<div class="rv">${anH}<h4>Pronóstico y pick</h4>${main}${kalshiN(g,mk,H,A)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
 }
 function pintarCuerpo(body,g){
@@ -846,6 +846,8 @@ function pintarCuerpo(body,g){
       const hay=kA.length||kH.length;
       w.innerHTML='<i class="'+(hay?'w':'ok')+'">'+(hay?'!':'✓')+'</i><span>Baja/duda (ESPN) · '+f(A,kA)+' · '+f(H,kH)+'.'+(hay?' El mercado ya lo descuenta; el modelo solo no.':'')+'</span>';
     }
+    try{ const an=body.querySelector('[data-an]'); if(an&&g._an&&window.OVAAnalista){ const out=id=>{ const t=T(id); return (m[id]||m[(t.n||'').toLowerCase()]||[]).filter(x=>/^out/i.test(x.s)).map(x=>x.n); };
+      g._an.bajasH=out(g.h); g._an.bajasA=out(g.a); an.innerHTML=window.OVAAnalista.html(window.OVAAnalista.ctxUS(g._an)); } }catch(e){}   /* El análisis con los que están fuera */
     const el=q('les'); if(!el) return;
     const f=id=>{ const t=T(id); return m[id]||m[(t.n||'').toLowerCase()]||[]; };
     const fila=(id)=>{ const l=f(id).filter(x=>/out|doubt|quest|day/i.test(x.s)||!x.s).slice(0,6); return `<div class="observ"><b>${esc(T(id).n)}</b>: ${l.length?l.map(x=>esc(x.n)+(x.s?' ('+esc(x.s)+')':'')).join(', '):'sin lesionados listados'}</div>`; };
