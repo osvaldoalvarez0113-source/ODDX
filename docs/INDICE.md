@@ -49,3 +49,4 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 - [MEDICION-TORNEOS-2026-11.md](MEDICION-TORNEOS-2026-11.md): selecciones (4 años, 19 torneos) y copas nacionales con el motor de las ligas; Elo 59% y copas 58.5% de acierto en 1X2.
 - [MEDICION-MEMORIA-EQUIPO-2026-11.md](MEDICION-MEMORIA-EQUIPO-2026-11.md): memoria por equipo (de favorito / de no favorito) en NHL, NFL y MLB; no cambia lo que acierta el modelo, entra como contexto.
 - [MEDICION-VALOR-JUGADOR-NBA-2026-11.md](MEDICION-VALOR-JUGADOR-NBA-2026-11.md): valor de cada jugador y bajas en NBA; el modelo solo pasa de 66.0% a 66.7% de aciertos; aplicado en la app.
+- [MEDICION-VALOR-JUGADOR-NHL-NFL-2026-11.md](MEDICION-VALOR-JUGADOR-NHL-NFL-2026-11.md): mariscal titular y ataque en NFL, portero que abre en NHL; ninguno pasa, no se aplican al %.
