@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js','memoria.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js','memoria.js','observaciones.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -1956,6 +1956,13 @@ async function t_publico(){
  ok('memoria por equipo usa su propio nombre (window.OVAMemoria es la memoria del teléfono de ovaextra.js)',/root\.OVAMemEquipo = API/.test(rd2('memoria.js'))&&/root\.OVAMemoria=MEM/.test(rd2('ovaextra.js'))&&!/OVAMemoria/.test(rd2('analista.js')+rd2('memoria.js')));
  ok('el estilo de El análisis va en <head> (no se pierde al repintar con lesionados)',/document\.head\.appendChild\(st\)/.test(rd2('analista.js')));
  ok('línea movida contra el favorito y bajas: dice que el % del mercado ya lo cuenta y que le creas al mercado',(()=>{const r=AN.analizar(Object.assign({},base,{p:0.737,pMod:0.79,mov:-5.1,bajasFav:['Austin Reaves']}));return /créele al 74%/.test(r.intro)&&r.enContra.some(x=>/ya lo cuenta/.test(x));})());
+ {
+  globalThis.OVAForma=globalThis.OVAForma||require(D+'forma.js'); const OB=require(D+'observaciones.js');
+  const t0=Date.UTC(2026,9,25), G=[]; for(let i=0;i<8;i++) G.push({h:'X',a:'Y'+i,hs:125,as:100,ts:t0+i*864e5});
+  const r=OB.rachas(OB.de(G,'X',t0+20*864e5,'nba'),'nba',true,null);
+  ok('observaciones NBA: racha de victorias, en casa, anota mucho y gana por mucho',r.length===3&&r.some(x=>/ganado sus últimos 8/.test(x.t))&&r.every(x=>x.c==='b'));
+  ok('observaciones: NBA, NHL y NFL las ponen en el Veredicto y el service worker las guarda',['nba.html','nhl.html','nfl.html'].every(f=>rd2(f).indexOf('<script src="observaciones.js"></script>')>0)&&/window\.OVAObs\.html\(GAMES, g, H, A, DEP\)/.test(rd2('usdeporte.js'))&&/window\.OVAObs\.html\(GAMES,g,H,A,'nba'\)/.test(rd2('nba.html'))&&rd2('sw.js').indexOf("'observaciones.js'")>0);
+ }
  ok('no baja nada, no guarda nada y el service worker lo guarda',!/fetch\(|localStorage/.test(rd2('analista.js'))&&rd2('sw.js').indexOf("'analista.js'")>0);
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{

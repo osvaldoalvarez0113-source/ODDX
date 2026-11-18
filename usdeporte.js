@@ -571,6 +571,7 @@
      <div class="nota" style="margin:6px 0 0;text-align:center">${pr.mk ? 'Probabilidades del mercado' + (pr.mk.src === 'pin' ? ' (Pinnacle)' : (pr.mk.src === 'pred' ? (pr.mk.live ? ' (Polymarket, en vivo)' : ' (Polymarket)') : ' (ESPN)')) : 'Probabilidades del modelo (sin precio de mercado)'}${DEP === 'nhl' ? ' · incluye tiempo extra' : ''}</div>
      ${resumenN(g, pr, H, A)}
      ${window.OVAForma ? window.OVAForma.html(GAMES, g, H, A, pS, DEP) : ''}
+     ${window.OVAObs ? window.OVAObs.html(GAMES, g, H, A, DEP) : ''}
      ${(g.odds || pinDe(g)) ? mercadoHtml(g, pr, H, A) : ''}
      ${pinNba(g, pr)}
      ${g.pre ? '<div class="aviso">🧪 Pretemporada: los equipos rotan jugadores y no cuentan para los ratings; toma estos números con mucha cautela.</div>' : ''}
