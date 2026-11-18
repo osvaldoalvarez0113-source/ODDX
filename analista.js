@@ -172,6 +172,8 @@
       pMod: merc && isFinite(o.pHMod) ? (favH ? o.pHMod : 1 - o.pHMod) : null, vivo: !!o.vivo, ac: ac, fF: favH ? fH : fA, fR: favH ? fA : fH, mov: mov,
       alertas: o.alertas || [], aFavor: o.aFavor || [], pre: !!g.pre, nota: o.nota || '', bajasFav: (favH ? o.bajasH : o.bajasA) || [], bajasRiv: (favH ? o.bajasA : o.bajasH) || [], memFav: mem ? mem[favH ? g.h : g.a] : null, memRiv: mem ? mem[favH ? g.a : g.h] : null };
   }
+  /* si la página que cargó este archivo es de una versión vieja (sin <script src="memoria.js">), la trae sola */
+  try { if (!root.OVAMemoria && typeof document !== 'undefined' && document.head && !document.querySelector('script[src*="memoria.js"]')) { var sm = document.createElement('script'); sm.src = 'memoria.js?v=' + Date.now(); document.head.appendChild(sm); } } catch (e) { }
   var API = { analizar: analizar, html: html, razonesForma: razonesForma, ctxUS: ctxUS, CORTE: CORTE };
   root.OVAAnalista = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
