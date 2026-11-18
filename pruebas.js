@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js','memoria.js','observaciones.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js','memoria.js','observaciones.js','mlbextra.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -1835,7 +1835,7 @@ sec('Tenis en Herramientas, sello de actualización y horario de avisos');
  ok('sello: lo que escribe el generador lo lee igual la app',JSON.stringify(S.leer(G.texto(c1)))===JSON.stringify(c1)&&JSON.stringify(G.leer(G.texto(c1)))===JSON.stringify(c1)&&S.leer('basura')===null);
  ok('sello.js del repo se puede leer y trae las tres apps',(()=>{const o=S.leer(rd('sello.js'));return !!o&&['nhl','nfl','tenis'].every(a=>o[a]&&o[a].f&&o[a].h);})());
  ok('la cabecera dice la fecha en español',S.texto('2026-11-11')==='act. 11 nov'&&S.texto('2027-01-03')==='act. 3 ene'&&S.texto('x')===''&&S.texto('2026-13-01')==='');
- ok('solo NHL, NFL y tenis llevan sello',S.app('/ODDX/nhl.html')==='nhl'&&S.app('/ODDX/tenis.html')==='tenis'&&S.app('/ODDX/nba.html')===null&&S.app('/ODDX/index.html')===null);
+ ok('todas las apps llevan sello (avisa cuando hay versión nueva); el hub y Herramientas no',S.app('/ODDX/nhl.html')==='nhl'&&S.app('/ODDX/tenis.html')==='tenis'&&S.app('/ODDX/nba.html')==='nba'&&S.app('/ODDX/futbol.html')==='futbol'&&S.app('/ODDX/index.html')==='mlb'&&S.app('/ODDX/')==='mlb'&&S.app('/ODDX/hub.html')===null&&S.app('/ODDX/herramientas.html')===null);
  ok('avisa de versión nueva solo si la huella del servidor es otra',S.hayNueva(c1,viejo,'nhl')===true&&S.hayNueva(c1,c1,'nhl')===false&&S.hayNueva(c1,viejo,'nfl')===false&&S.hayNueva(c1,null,'nhl')===false);
  ok('nhl, nfl y tenis cargan sello.js antes de ovaextra.js y el service worker lo guarda',['nhl.html','nfl.html','tenis.html'].every(f=>rd(f).indexOf('<script src="sello.js"></script>')>0&&rd(f).indexOf('sello.js')<rd(f).indexOf('ovaextra.js'))&&rd('sw.js').indexOf("'sello.js'")>0);
  const wf=rd('.github/workflows/sello.yml');
@@ -1962,6 +1962,26 @@ async function t_publico(){
   const r=OB.rachas(OB.de(G,'X',t0+20*864e5,'nba'),'nba',true,null);
   ok('observaciones NBA: racha de victorias, en casa, anota mucho y gana por mucho',r.length===3&&r.some(x=>/ganado sus últimos 8/.test(x.t))&&r.every(x=>x.c==='b'));
   ok('observaciones: NBA, NHL y NFL las ponen en el Veredicto y el service worker las guarda',['nba.html','nhl.html','nfl.html'].every(f=>rd2(f).indexOf('<script src="observaciones.js"></script>')>0)&&/window\.OVAObs\.html\(GAMES, g, H, A, DEP\)/.test(rd2('usdeporte.js'))&&/window\.OVAObs\.html\(GAMES,g,H,A,'nba'\)/.test(rd2('nba.html'))&&rd2('sw.js').indexOf("'observaciones.js'")>0);
+ }
+ {
+  sec('MLB: El análisis, memoria, cómo vienen jugando y observaciones (mlbextra.js)');
+  globalThis.OVAForma=globalThis.OVAForma||require(D+'forma.js'); globalThis.OVAMemEquipo=require(D+'memoria.js'); globalThis.OVAObs=require(D+'observaciones.js'); globalThis.OVAAnalista=AN;
+  const X=require(D+'mlbextra.js'), t0=Date.UTC(2026,5,1), G=[], teams={};
+  for(let i=0;i<40;i++){ const h=String(100+i%6), a=String(110+(i*7)%6); teams[h]=['Equipo '+h,'']; teams[a]=['Equipo '+a,'']; G.push([i,t0+i*864e5,h,a,i%3?6:2,i%3?3:5]); }
+  X._set({teams,g:G});
+  const el={_d:{a:{team:{id:110,name:'Texas Rangers'}},h:{team:{id:101,name:'Minnesota Twins'}},pa:{fullName:'Visita P'},ph:{fullName:'Local P'},sea:{era:4.9,ip:120},seh:{era:3.0,ip:130},l5a:{n:5},l5h:{n:5},qa:{seguidos:[1,2]},qh:{},fecha:new Date(t0+45*864e5)},_calc:{pA:41,pH:59}};
+  const c=X.ctx(el,{pA:0.4,pH:0.6},false), r=AN.analizar(c);
+  ok('MLB: el favorito sale del mercado y el apodo va después de la primera vez',c.fav==='Minnesota Twins'&&/ante/.test(r.intro)&&r.aFavor.some(x=>/Abre|abre/.test(x)));
+  ok('MLB: abridor mucho mejor y bullpen rival quemado salen a favor',r.aFavor.some(x=>/ERA 3\.00/.test(x))&&r.aFavor.some(x=>/bullpen/.test(x)));
+  ok('MLB: trae la memoria de la temporada y no habla de descanso',r.mem&&r.mem.length===2&&!/descans|ayer/.test(JSON.stringify(r)));
+  const q=AN.analizar(X.ctx(Object.assign({},el,{_d:Object.assign({},el._d,{qh:{seguidos:[1,2]}})}),{pA:0.4,pH:0.6},false));
+  ok('MLB: si los dos bullpens vienen quemados, se empareja',!q.aFavor.concat(q.enContra).some(x=>/bullpen/.test(x))&&/Los dos bullpens/.test(q.cierre));
+  ok('MLB: juego de bullpen sale en contra',AN.analizar(X.ctx(el,{pA:0.4,pH:0.6},true)).enContra.some(x=>/juego de bullpen/.test(x)));
+  ok('MLB: forma y observaciones en el Veredicto',/Cómo vienen jugando/.test(X.bloques(el,{pA:0.4,pH:0.6}))&&/Observaciones/.test(X.bloques(el,{pA:0.4,pH:0.6})));
+  ok('MLB: pinnacle.js pinta El análisis arriba y los bloques al final, y Polymarket de respaldo',/box\.innerHTML=anH\+'<h4>Pronóstico y pick<\/h4>'/.test(rd2('pinnacle.js'))&&/return predDe\(d\)/.test(rd2('pinnacle.js'))&&/window\.OVAPred\.cargar\('mlb'\)/.test(rd2('pinnacle.js')));
+  ok('MLB: index.html carga los módulos y el robot de partidos existe',['forma.js','memoria.js','observaciones.js','analista.js','prediccion.js','mlbextra.js','sello.js'].every(f=>rd2('index.html').indexOf('<script src="'+f+'"></script>')>0)&&fs.existsSync(D+'scripts/archivo_mlb.js')&&fs.existsSync(D+'.github/workflows/archivo-mlb.yml'));
+  ok('Cristal: el aro de MLB y fútbol sigue al equipo',/ovaHero\.mlb path\.sg:nth-of-type\(1\)\{stroke:var\(--acc\)/.test(rd2('interior.js'))&&/ovaHero\.fut \.row3>\.side:first-child \.pc\{color:var\(--hot\)/.test(rd2('interior.js')));
+  delete globalThis.OVAMemEquipo; delete globalThis.OVAObs;
  }
  ok('no baja nada, no guarda nada y el service worker lo guarda',!/fetch\(|localStorage/.test(rd2('analista.js'))&&rd2('sw.js').indexOf("'analista.js'")>0);
 }

@@ -148,6 +148,17 @@ html[data-ui="cristal"] .hero .side:first-child .pc{color:var(--acc)!important}
 html[data-ui="cristal"] .hero .side:last-child .pc{color:var(--hot)!important}
 html[data-ui="cristal"] .hero .side.fav .pc{text-shadow:0 0 20px currentColor}
 html[data-ui="cristal"] .hero .side:not(.fav){opacity:.74}
+/* lo mismo en MLB y fútbol (17-nov-2026): su aro es .ovaHero. MLB: visita menta, local ámbar (antes el aro coloreaba al favorito). Fútbol: local ámbar, visita menta, como su aro */
+html[data-ui="cristal"] .ovaHero.mlb .row3>.side:first-child .pc{color:var(--acc)!important}
+html[data-ui="cristal"] .ovaHero.mlb .row3>.side:last-child .pc{color:var(--hot)!important}
+html[data-ui="cristal"] .ovaHero.mlb path.sg:nth-of-type(1){stroke:var(--acc)!important}
+html[data-ui="cristal"] .ovaHero.mlb path.sg:nth-of-type(2){stroke:var(--hot)!important}
+html[data-ui="cristal"] .ovaHero.fut .row3>.side:first-child .pc{color:var(--hot)!important}
+html[data-ui="cristal"] .ovaHero.fut .row3>.side:last-child .pc{color:var(--acc)!important}
+html[data-ui="cristal"] .ovaHero .side.fav .pc{text-shadow:0 0 20px currentColor}
+html[data-ui="cristal"] .ovaHero .side:not(.fav){opacity:.74}
+html[data-ui="cristal"] .ovaHero .side{animation:uiRise .6s cubic-bezier(.2,.8,.2,1) backwards}
+html[data-ui="cristal"] .ovaHero .side:last-child{animation-delay:.12s}
 html[data-ui="cristal"] .hero .gz svg{animation:uiRing 1.1s cubic-bezier(.2,.8,.2,1) backwards}
 @keyframes uiRing{from{opacity:0;transform:rotate(-220deg) scale(.55)}}
 html[data-ui="cristal"] .hero .side{animation:uiRise .6s cubic-bezier(.2,.8,.2,1) backwards}

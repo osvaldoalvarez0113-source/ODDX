@@ -445,12 +445,12 @@ try{ if(root.localStorage && root.Storage) MEM.proteger(root.localStorage,root.S
 
 root.OVAMemoria=MEM;
 
-/* ===================== 5. SELLO DE ACTUALIZACION (NHL, NFL y tenis) =====================
+/* ===================== 5. SELLO DE ACTUALIZACION (todas las apps) =====================
    sello.js (lo genera scripts/sello.js en cada subida) trae la fecha del último cambio y una huella de la app.
    Aquí: la cabecera muestra «act. 11 nov» en vez de un número a mano, y si el sello del servidor ya es otro, avisa. */
 var MESES_S=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 var SELLO={
-  app:function(ruta){ var m=/(?:^|\/)(nhl|nfl|tenis)\.html/.exec(String(ruta||'')); return m?m[1]:null; },
+  app:function(ruta){ ruta=String(ruta||''); var m=/(?:^|\/)(nhl|nfl|tenis|nba|futbol)\.html/.exec(ruta); if(m) return m[1]; return /(?:^|\/)(index\.html)?$/.test(ruta)?'mlb':null; },
   texto:function(f){ var m=/^(\d{4})-(\d\d)-(\d\d)$/.exec(String(f||'')); return (m&&MESES_S[+m[2]-1])?'act. '+(+m[3])+' '+MESES_S[+m[2]-1]:''; },
   leer:function(txt){ try{ var m=/OVA_SELLO=\n(.+)\n/.exec(String(txt||'')); return m?JSON.parse(m[1]):null; }catch(e){ return null; } },
   hayNueva:function(mio,srv,ap){ return !!(mio&&srv&&mio[ap]&&srv[ap]&&mio[ap].h&&srv[ap].h&&mio[ap].h!==srv[ap].h); },

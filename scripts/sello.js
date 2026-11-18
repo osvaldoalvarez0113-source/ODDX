@@ -6,7 +6,7 @@
 'use strict';
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const DIR = path.join(__dirname, '..'), OUT = path.join(DIR, 'sello.js');
-const APPS = { nhl: 'nhl.html', nfl: 'nfl.html', tenis: 'tenis.html' };
+const APPS = { nhl: 'nhl.html', nfl: 'nfl.html', tenis: 'tenis.html', mlb: 'index.html', nba: 'nba.html', futbol: 'futbol.html' };
 function archivos(pag) {
   const h = fs.readFileSync(path.join(DIR, pag), 'utf8'), l = [pag];
   for (const m of h.matchAll(/<script[^>]+src="([^"]+)"/g)) { const s = m[1].split('?')[0]; if (!/^https?:/.test(s) && s !== 'sello.js' && fs.existsSync(path.join(DIR, s)) && l.indexOf(s) < 0) l.push(s); }

@@ -9,6 +9,7 @@
   'use strict';
   /* alto = anota «mucho» · bajo = anota «poco» · ancho = gana o pierde «por mucho» · u = ventana de juegos · q = palabra */
   var CFG = {
+    mlb: { alto: 6, bajo: 2, ancho: 4, u: 10, q: 'carreras', j: 'juegos' },
     nba: { alto: 120, bajo: 105, ancho: 10, u: 10, q: 'puntos', j: 'juegos' },
     nhl: { alto: 4, bajo: 2, ancho: 3, u: 10, q: 'goles', j: 'juegos' },
     nfl: { alto: 27, bajo: 17, ancho: 14, u: 6, q: 'puntos', j: 'juegos' }
@@ -48,8 +49,8 @@
       else if (pm / n >= 0.5) out.push({ t: 'perdió por ' + c.ancho + ' o más en ' + pm + ' de sus últimos ' + n + '.', p: pm - n / 3, c: 'm' });
       if (media) {
         var ov = u.filter(function (m) { return m.f + m.c > media; }).length;
-        if (ov / n >= 0.7) out.push({ t: 'sus juegos se fueron por encima del promedio de la liga (' + media.toFixed(dep === 'nhl' ? 1 : 0) + ') en ' + ov + ' de ' + n + '.', p: ov - n / 2 });
-        else if (ov / n <= 0.3) out.push({ t: 'sus juegos se quedaron por debajo del promedio de la liga (' + media.toFixed(dep === 'nhl' ? 1 : 0) + ') en ' + (n - ov) + ' de ' + n + '.', p: (n - ov) - n / 2 });
+        if (ov / n >= 0.7) out.push({ t: 'sus juegos se fueron por encima del promedio de la liga (' + media.toFixed(dep === 'nhl' || dep === 'mlb' ? 1 : 0) + ') en ' + ov + ' de ' + n + '.', p: ov - n / 2 });
+        else if (ov / n <= 0.3) out.push({ t: 'sus juegos se quedaron por debajo del promedio de la liga (' + media.toFixed(dep === 'nhl' || dep === 'mlb' ? 1 : 0) + ') en ' + (n - ov) + ' de ' + n + '.', p: (n - ov) - n / 2 });
       }
     }
     return out.sort(function (a, b) { return b.p - a.p; }).slice(0, 3);

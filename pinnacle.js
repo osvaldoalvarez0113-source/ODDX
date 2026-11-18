@@ -167,9 +167,21 @@
   /* ---------- Veredicto: pronóstico, OVA contra mercado, dónde escribir la cuota y qué tan confiable es ---------- */
   function am(p){ try{ return (typeof american==='function')?american(p*100):String(Math.round(p*100)); }catch(e){ return '—'; } }
   /* probabilidades del mercado para este juego, en el orden visitante/local de la app (o null si no hay) */
+  /* respaldo: precio del mercado de predicción (Polymarket, robot pred.yml) cuando Pinnacle no trae el juego, y EN VIVO */
+  var PRED=null;
+  function cargarPred(){ try{ if(window.OVAPred) window.OVAPred.cargar('mlb').then(function(j){ if(j&&j!==PRED){ PRED=j; VER++; pasar(); } }); }catch(e){} }
+  function predDe(d){
+    try{
+      if(!PRED||!window.OVAPred) return null;
+      var ts=(d.fecha&&d.fecha.getTime)?d.fecha.getTime():Date.now(), p=window.OVAPred.buscar(PRED,d.h.team.name,d.a.team.name,ts);
+      if(!p||p.fin||window.OVAPred.fino(p)||!(p.pH>0&&p.pA>0)) return null;
+      var s=p.pH+p.pA; return {g:null,iA:-1,pA:p.pA/s,pH:p.pH/s,src:'pred',vivo:!!p.vivo};
+    }catch(e){ return null; }
+  }
   function mercadoDe(el){
-    var d=el&&el._d; if(!DATA||!d||!d.a||!d.h) return null;
-    var g=buscar(d.a.team.name+' '+d.h.team.name); if(!g||!g.fair||!g.tope) return null;
+    var d=el&&el._d; if(!d||!d.a||!d.h) return null;
+    if(!DATA) return predDe(d);
+    var g=buscar(d.a.team.name+' '+d.h.team.name); if(!g||!g.fair||!g.tope) return predDe(d);
     var iA=lado(g,d.a.team.name); if(iA<0) return null;
     return {g:g,iA:iA,pA:g.fair[iA],pH:g.fair[1-iA]};
   }
@@ -185,7 +197,7 @@
       var c=el._calc, d=el._d; if(!c||!d||!d.a||!d.h) return;
       var tab=el.querySelector('.body .tab[data-t="v"]'); if(!tab) return;
       var mk=mercadoDe(el), ab=ajusteBullpen(el);
-      var sig=String(Math.round(c.pH*100))+'|'+VER+'|'+(mk?'m':'o')+'|'+(ab?'b':'');
+      var XT=window.OVAMlbExtra, sig=String(Math.round(c.pH*100))+'|'+VER+'|'+(mk?'m'+Math.round(mk.pH*1000):'o')+'|'+(ab?'b':'')+'|'+(XT&&XT.listo()?'x':'');
       var ya=tab.querySelector('.rvM');
       if(ya&&ya.getAttribute('data-sig')===sig) return;
       if(ya) ya.parentNode.removeChild(ya);
@@ -193,7 +205,8 @@
       var fA=mk?mk.pA:ovaA, fH=mk?mk.pH:ovaH;
       var favA=fA>=fH, pf=favA?fA:fH, nf=favA?nomA:nomH;
       var head=pf>=0.55?esc(nf)+' gana · '+Math.round(pf*100)+'%':'Juego parejo';
-      var sub=pf>=0.55?'Es el favorito'+(mk?' según el mercado (Pinnacle, sin margen).':' según OVA.'):'Ninguno pasa del 55%. Lo más probable: '+esc(nf)+' '+Math.round(pf*100)+'%.';
+      var fuenteM=mk&&mk.src==='pred'?'mercado de predicción (Polymarket'+(mk.vivo?', en vivo':'')+')':'Pinnacle, sin margen';
+      var sub=pf>=0.55?'Es el favorito'+(mk?' según el mercado ('+fuenteM+').':' según OVA.'):'Ninguno pasa del 55%. Lo más probable: '+esc(nf)+' '+Math.round(pf*100)+'%.';
       var pill='';
       if(mk){
         var dif=Math.abs((favA?ovaA:ovaH)-pf)*100, ovaFavA=ovaA>=ovaH;
@@ -202,7 +215,7 @@
         else pill='<span class="rvSig bad">✗ Discrepan '+dif.toFixed(0)+' pts · créele al mercado</span>';
         pill+='<div class="rvP" style="margin-top:7px">OVA: <b>'+esc(ovaFavA?nomA:nomH)+'</b> ('+Math.round((ovaFavA?ovaA:ovaH)*100)+'%). Mercado: <b>'+esc(nf)+'</b> ('+Math.round(pf*100)+'%).</div>';
       } else pill='<span class="rvSig mid">! Sin precio del mercado para este juego: pronóstico solo de OVA</span>';
-      var kal=mk?' <span style="opacity:.8">Kalshi: compra hasta '+mk.g.tope[favA?mk.iA:1-mk.iA]+'¢ por '+esc(nf)+'.</span>':'';
+      var kal=(mk&&mk.g&&mk.g.tope)?' <span style="opacity:.8">Kalshi: compra hasta '+mk.g.tope[favA?mk.iA:1-mk.iA]+'¢ por '+esc(nf)+'.</span>':'';
       var inp=function(k,nm,p){ return '<div class="rvIn"><label>Cuota que te pagan por '+esc(nm)+'</label><input type="text" inputmode="decimal" data-k="'+k+'" data-p="'+p+'" placeholder="-150 ó 55¢"><div class="rvVal" data-r="'+k+'"></div></div>'; };
       var acH=''; try{ if(window.OVAAciertos) acH=window.OVAAciertos.html('mlb',pf,!favA,!!mk); }catch(e){}   /* cuántas veces acierta este % (aciertos.js) */
       var main='<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">'+head+'</div><div class="rvP">'+sub+'</div>'+pill+acH+
@@ -211,17 +224,19 @@
       var cell=function(v){ return v==null?'—':(v*100).toFixed(1)+'%'; };
       var fila=function(nm,o,m){ return '<div class="nm">'+esc(nm)+' gana</div><div class="n md">'+cell(o)+'</div><div class="n mk">'+cell(m)+'</div><div class="n">'+am(m==null?o:m)+'</div>'; };
       var tabla='<div class="rvTab"><div class="th">Resultado</div><div class="th n">OVA</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>'+
-        fila(nomA,ovaA,mk?mk.pA:null)+fila(nomH,ovaH,mk?mk.pH:null)+'</div><div class="nota" style="margin-top:6px">Mercado = Pinnacle sin su margen.</div>';
+        fila(nomA,ovaA,mk?mk.pA:null)+fila(nomH,ovaH,mk?mk.pH:null)+'</div><div class="nota" style="margin-top:6px">Mercado = '+(mk&&mk.src==='pred'?'Polymarket (precios en centavos, normalizados a 100%)':'Pinnacle sin su margen')+'.</div>';
       var li=[], L=function(k,t){ return '<div><i class="'+k+'">'+(k==='ok'?'✓':(k==='w'?'!':'✗'))+'</i><span>'+t+'</span></div>'; };
       var m=edadMin();
-      if(mk&&m!=null) li.push(L(m>=480?'w':'ok','Precios de Pinnacle '+edadTxt()+(m>=480?': ya son viejos, verifica':'')+'.'));
+      if(mk&&mk.src==='pred') li.push(L('w','Sin precio de Pinnacle para este juego: el % es de Polymarket'+(mk.vivo?', EN VIVO (ya cuenta el marcador)':'')+'.'));
+      else if(mk&&m!=null) li.push(L(m>=480?'w':'ok','Precios de Pinnacle '+edadTxt()+(m>=480?': ya son viejos, verifica':'')+'.'));
       else li.push(L('w','Sin precio de Pinnacle para este juego (el escáner solo trae las próximas 20 h).'));
       if(ab) li.push(L('w','Juego de bullpen: el número de OVA depende de un abridor que casi no lanzará.'));
       li.push(L('x','No sabe de lesiones ni cambios de última hora: revisa la alineación.'));
       var conf='<div class="rvLs">'+li.join('')+'</div>'+
         '<details class="comoLee"><summary>¿Cómo se lee y qué tan confiable es?</summary><div class="nota"><b>Los dos porcentajes</b> son la probabilidad de que gane cada equipo. <b>Cuota justa</b> es lo que tendría que pagar la casa para que apostar ahí no gane ni pierda a la larga: si paga más, hay valor. <b>Qué tan confiable es:</b> probado en unos 6,200 juegos (2024 a 2026) contra el cierre de DraftKings, OVA no le gana al mercado (error 0.6821 contra 0.6744) y apostar donde OVA ve ventaja dio retorno negativo en todos los umbrales. Sirve para leer el juego (abridor, ofensiva, bullpen, total); para decidir, guía por el mercado y por el CLV de tus picks.</div></details>';
       var box=document.createElement('div'); box.className='rvM rv'; box.setAttribute('data-sig',sig);
-      box.innerHTML='<h4>Pronóstico y pick</h4>'+main+'<h4>OVA contra mercado</h4>'+tabla+'<h4>Qué tan confiable es</h4>'+conf;
+      var anH='', bloq=''; try{ if(XT){ anH=XT.analisis(el,mk,!!ab); bloq=XT.bloques(el,mk); } }catch(e){}   /* 🧠 El análisis, Cómo vienen jugando y Observaciones (mlbextra.js) */
+      box.innerHTML=anH+'<h4>Pronóstico y pick</h4>'+main+'<h4>OVA contra mercado</h4>'+tabla+'<h4>Qué tan confiable es</h4>'+conf+bloq;
       var pb=tab.querySelector('.pickbox');
       if(pb&&pb.parentNode) pb.parentNode.insertBefore(box,pb.nextSibling); else tab.insertBefore(box,tab.firstChild);
       [].slice.call(box.querySelectorAll('input[data-k]')).forEach(function(inp){
@@ -314,12 +329,13 @@
   }
 
   function iniciar(){
-    cargar(); pasar();
+    cargar(); cargarPred(); pasar();
+    setInterval(cargarPred, 120000);   /* Polymarket se mueve en vivo: cada 2 min */
     try{ new MutationObserver(agendar).observe(document.body,{childList:true,subtree:true}); }catch(e){}
     document.addEventListener('visibilitychange',function(){
       if(!document.hidden&&(!DATA||Date.now()-ULT>10*60000)) cargar();
     });
-    window.OVAMercado={datos:function(){ return DATA; },recargar:cargar,de:mercadoDe};
+    window.OVAMercado={datos:function(){ return DATA; },recargar:cargar,de:mercadoDe,repintar:function(){ VER++; pasar(); }};
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',iniciar); else iniciar();
 })();

@@ -11,7 +11,7 @@
 (function (root) {
   'use strict';
   /* K = cuánto aprende de cada juego · H = ventaja de local (puntos Elo) · reg = cuánto vuelve al promedio al cambiar de temporada */
-  var CFG = { nba: { K: 20, H: 70, reg: 0.25 }, nhl: { K: 10, H: 35, reg: 0.35 }, nfl: { K: 25, H: 50, reg: 0.33 }, fut: { K: 20, H: 65, reg: 0.3 } };
+  var CFG = { mlb: { K: 4, H: 24, reg: 0.33 }, nba: { K: 20, H: 70, reg: 0.25 }, nhl: { K: 10, H: 35, reg: 0.35 }, nfl: { K: 25, H: 50, reg: 0.33 }, fut: { K: 20, H: 65, reg: 0.3 } };
   function pElo(d) { return 1 / (1 + Math.pow(10, -d / 400)); }
   /* games = [{h, a, hs, as, ts, neutral}] terminados (cualquier orden). Devuelve {id: {fav:{n,w}, dog:{n,w}, n, w, esp}} de la temporada de ts, antes de ts. */
   function calc(games, ts, dep) {
@@ -41,10 +41,10 @@
     return { fav: { n: a[0], w: a[1] }, dog: { n: a[2], w: a[3] }, n: a[0] + a[2], w: a[5], esp: a[4] / 10 };
   }
   /* cuánto tiene que pasarse de lo esperado para mencionarlo */
-  var DIF = { nba: 2.5, nhl: 2.5, nfl: 1.5, fut: 2, tenis: 3 };
+  var DIF = { mlb: 4, nba: 2.5, nhl: 2.5, nfl: 1.5, fut: 2, tenis: 3 };
   /* cortes por deporte (el favorito normal gana ~66% en NBA y NFL, ~58% en NHL, ~50% en fútbol a 3 resultados, ~70% en tenis):
      [le cuesta de favorito si gana ≤, cumple si gana ≥, el no favorito sorprende si gana ≥] */
-  var CORTES = { nba: [0.5, 0.8, 0.45], nhl: [0.45, 0.72, 0.5], nfl: [0.5, 0.8, 0.45], fut: [0.42, 0.72, 0.35], tenis: [0.55, 0.85, 0.45] };
+  var CORTES = { mlb: [0.45, 0.70, 0.50], nba: [0.5, 0.8, 0.45], nhl: [0.45, 0.72, 0.5], nfl: [0.5, 0.8, 0.45], fut: [0.42, 0.72, 0.35], tenis: [0.55, 0.85, 0.45] };
   /* razones para El análisis: [peso, texto] a favor del favorito y en contra */
   function razones(mF, mR, fav, riv, dep, esc) {
     var k = CORTES[dep] || CORTES.nba, a = [], c = [], F = '<b class="anN">' + esc(fav) + '</b>', R = '<b class="anN">' + esc(riv) + '</b>', d = DIF[dep] || 2.5, emp = dep === 'fut' ? ' (el empate cuenta como no ganó)' : '';

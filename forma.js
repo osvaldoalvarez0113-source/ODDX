@@ -18,7 +18,8 @@
     nba: { mes: 8, n: 10, m: 5, esc: 15, tr: 4, dec: 0, min: 5, b2b: true, que: 'juegos' },
     nhl: { mes: 8, n: 10, m: 5, esc: 1.5, tr: 0.6, dec: 1, min: 5, b2b: true, que: 'juegos' },
     nfl: { mes: 7, n: 5, m: 3, esc: 14, tr: 5, dec: 0, min: 3, sem: true, que: 'juegos' },
-    fut: { mes: 6, n: 10, m: 5, esc: 1.2, tr: 0.5, dec: 1, min: 5, emp: true, que: 'partidos' }
+    fut: { mes: 6, n: 10, m: 5, esc: 1.2, tr: 0.5, dec: 1, min: 5, emp: true, que: 'partidos' },
+    mlb: { mes: 2, n: 10, m: 5, esc: 3, tr: 1, dec: 1, min: 5, sinDesc: true, que: 'juegos' }   /* béisbol: juegan casi a diario, el descanso no se comenta */
   };
   function cfg(dep) { return CFG[dep] || CFG.nba; }
   function inicioTemp(ts, dep) { var c = cfg(dep), d = new Date(ts), y = d.getMonth() >= c.mes ? d.getFullYear() : d.getFullYear() - 1; return new Date(y, c.mes, 1).getTime(); }
@@ -79,7 +80,8 @@
       (Math.abs(da) >= c.tr ? ' El ataque viene ' + (da > 0 ? 'mejor' : 'peor') + ' que su promedio (' + sg(da) + ').' : '') +
       (Math.abs(dd) >= c.tr ? ' La defensa viene ' + (dd < 0 ? 'mejor' : 'peor') + ' (' + (dd < 0 ? 'recibe ' + Math.abs(dd).toFixed(1) + ' menos' : 'recibe ' + dd.toFixed(1) + ' más') + ').' : ''));
     if (f.rivales !== null) o.push('Rivales recientes: ' + (f.rivales >= 0.56 ? '<b>duros</b>' : (f.rivales <= 0.44 ? '<b>flojos</b>' : 'de nivel medio')) + '.');
-    if (c.b2b) o.push(f.desc <= 1 ? '<b>Jugó ayer</b> (back-to-back).' : (f.desc >= 4 ? 'Llega descansado: ' + f.desc + ' días sin jugar.' : 'Descanso normal (' + f.desc + ' días).') + (f.en7 >= 4 ? ' Carga pesada: ' + f.en7 + ' juegos en 7 días.' : ''));
+    if (c.sinDesc) { /* MLB: sin frase de descanso */ }
+    else if (c.b2b) o.push(f.desc <= 1 ? '<b>Jugó ayer</b> (back-to-back).' : (f.desc >= 4 ? 'Llega descansado: ' + f.desc + ' días sin jugar.' : 'Descanso normal (' + f.desc + ' días).') + (f.en7 >= 4 ? ' Carga pesada: ' + f.en7 + ' juegos en 7 días.' : ''));
     else if (c.sem) { if (f.desc <= 5) o.push('<b>Semana corta</b>: ' + f.desc + ' días de descanso.'); else if (f.desc >= 13) o.push('Viene de semana libre (' + f.desc + ' días sin jugar).'); }
     else { if (f.desc <= 3) o.push('<b>Poco descanso</b>: jugó hace ' + f.desc + ' días.'); else if (f.desc >= 10) o.push('Llega descansado: ' + f.desc + ' días sin jugar.'); }
     return o.join(' ');

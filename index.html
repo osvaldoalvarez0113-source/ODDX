@@ -4895,7 +4895,7 @@ document.addEventListener('visibilitychange',function(){
   try{ var OM=window.OVAMercado, mk=(OM&&OM.de)?OM.de(el):null; if(mk){ pA=mk.pA*100; pH=mk.pH*100; deMercado=true; } }catch(e){}
   var fav=pH>=pA?'h':'a';
   var vc=+c.vc, gris=(typeof CORTE_GRIS==='number')?CORTE_GRIS:0.5;
-  var cap = deMercado ? 'Probabilidades del mercado (Pinnacle)' : 'Probabilidades de OVA (sin precio de mercado)';
+  var cap = deMercado ? ((mk&&mk.src==='pred')?'Probabilidades del mercado (Polymarket'+(mk.vivo?', en vivo':'')+')':'Probabilidades del mercado (Pinnacle)') : 'Probabilidades de OVA (sin precio de mercado)';
   var side=function(id,ab,p,f){
    return '<div class="side'+(f?' fav':'')+'">'+(typeof escudo==='function'?escudo(id,46):'')+
      '<span class="ab">'+ab+'</span><span class="pc">'+p.toFixed(1)+'%</span></div>';
@@ -5150,6 +5150,13 @@ document.addEventListener('visibilitychange',function(){
 </script>
 <!--OVA45:BODY:END-->
  <script src="obsidiana.js"></script>
+ <script src="forma.js"></script>
+<script src="memoria.js"></script>
+<script src="observaciones.js"></script>
+<script src="analista.js"></script>
+<script src="prediccion.js"></script>
+<script src="mlbextra.js"></script>
+<script src="sello.js"></script>
  <script src="pinnacle.js"></script>
 <script src="railway.js"></script>
   
