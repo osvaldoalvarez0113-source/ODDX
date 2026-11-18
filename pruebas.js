@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js','memoria.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -1938,6 +1938,21 @@ async function t_publico(){
    return !r.aFavor.concat(r.enContra).some(x=>/largo/.test(x))&&/partido largo: el cansancio se empareja/.test(r.intro);})());
  ok('NHL y NFL: El análisis se repinta al bajar los lesionados (y solo con los Out)',/repintarAn\(body, g, m\);/.test(rd2('usdeporte.js'))&&/if \(INJ\) INJ\.then\(m => repintarAn\(body, g, m\)\)/.test(rd2('usdeporte.js'))&&/filter\(x => \/\^out\/i\.test\(x\.s\)\)/.test(rd2('usdeporte.js')));
  ok('fútbol: mejoras.js le pasa las bajas al análisis del Veredicto',/window\.OVAAnFutLes\(bodyEl, p, res\[0\]\.lista, res\[1\]\.lista\)/.test(rd2('mejoras.js'))&&/window\.OVAAnFutLes = function/.test(rd2('futbol.html')));
+ {
+  globalThis.OVAForma=globalThis.OVAForma||require(D+'forma.js'); const ME=require(D+'memoria.js');
+  const ts0=Date.UTC(2026,9,20), G=[]; for(let i=0;i<12;i++){ G.push({h:'X',a:'Y'+i,hs:i<9?3:1,as:i<9?1:3,ts:ts0+i*864e5}); }
+  const m=ME.calc(G,ts0+20*864e5,'nhl');
+  ok('memoria: cuenta juegos, victorias y lo esperado solo con lo de antes',m.X&&m.X.n===12&&m.X.w===9&&m.X.esp>0&&ME.calc(G,ts0+5*864e5,'nhl').X.n===5);
+  ok('memoria: separa de favorito y de no favorito',m.X.fav.n+m.X.dog.n===12);
+  const r=ME.razones({fav:{n:8,w:3},dog:{n:2,w:1},n:10,w:4,esp:6},{fav:{n:2,w:1},dog:{n:8,w:5},n:10,w:6,esp:4},'A','B','nba',s=>s);
+  ok('memoria: «de favorito le cuesta» y «da sorpresas» salen en contra, y no mueven la confianza',r.c.some(x=>/le cuesta/.test(x[1]))&&r.c.some(x=>/sorpresas/.test(x[1]))&&r.c.concat(r.a).every(x=>x[2]==='mem'));
+  ok('tenis: lee la memoria del robot (12 meses)',(()=>{const t=ME.deTenis([10,8,4,1,95,9]);return t.fav.n===10&&t.dog.w===1&&t.esp===9.5;})()&&JSON.parse(rd2('ratings-tenis.json')).campos.indexOf('memoria')===15);
+  globalThis.OVAMemoria=ME;
+  const z=AN.analizar(Object.assign({},base,{memFav:{fav:{n:8,w:3},dog:{n:2,w:1},n:10,w:4,esp:6},memRiv:{fav:{n:2,w:1},dog:{n:8,w:5},n:10,w:6,esp:4}}));
+  ok('El análisis trae la memoria de los dos y la confianza no baja por ella',z.mem&&z.mem.length===2&&z.k==='alta');
+  ok('las 5 apps cargan memoria.js antes de analista.js',['nba.html','nhl.html','nfl.html','futbol.html','tenis.html'].every(f=>{const h=rd2(f);return h.indexOf('<script src="memoria.js">')>0&&h.indexOf('<script src="memoria.js">')<h.indexOf('<script src="analista.js">');}));
+  delete globalThis.OVAMemoria;
+ }
  ok('no baja nada, no guarda nada y el service worker lo guarda',!/fetch\(|localStorage/.test(rd2('analista.js'))&&rd2('sw.js').indexOf("'analista.js'")>0);
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{

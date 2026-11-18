@@ -96,13 +96,19 @@
       var en = function (l) { return l.some(function (x) { return x[2] === k2; }); }, fuera = function (l) { return l.filter(function (x) { return x[2] !== k2; }); };
       if (en(aFav) && en(cFav)) { aFav = fuera(aFav); cFav = fuera(cFav); neutro += TXT2[k2] + ' '; }
     });
+    /* memoria de la temporada (memoria.js): contexto, no mueve la confianza */
+    var MEM = root.OVAMemoria, memL = null;
+    if (MEM && (ctx.memFav || ctx.memRiv)) {
+      var rm = MEM.razones(ctx.memFav, ctx.memRiv, fav, riv, dep, esc); rm.a.forEach(function (x) { aFav.push(x); }); rm.c.forEach(function (x) { cFav.push(x); });
+      memL = [MEM.linea(ctx.memFav, fav, dep, esc), MEM.linea(ctx.memRiv, riv, dep, esc)];
+    }
     if ((ctx.bajasFav || []).length) cFav.push([1.0 + 0.15 * Math.min(ctx.bajasFav.length, 4), F + ' tiene fuera a ' + lista3(ctx.bajasFav)]);
     if ((ctx.bajasRiv || []).length) aFav.push([0.9 + 0.15 * Math.min(ctx.bajasRiv.length, 4), R + ' tiene fuera a ' + lista3(ctx.bajasRiv)]);
     if (ctx.mov >= 2) aFav.push([1.0, 'la línea se movió ' + ctx.mov.toFixed(0) + ' pts hacia ' + F + ' desde que abrió']);
     if (ctx.mov <= -2) cFav.push([1.2, 'la línea se movió ' + Math.abs(ctx.mov).toFixed(0) + ' pts hacia ' + R + ' desde que abrió (alguien sabe algo)']);
     var orden = function (l) { return l.sort(function (x, y) { return y[0] - x[0]; }).slice(0, 3).map(function (x) { return x[1]; }); };
     var A = orden(aFav), C = orden(cFav);
-    var pesoC = cFav.reduce(function (s, x) { return s + x[0]; }, 0), pesoA = aFav.reduce(function (s, x) { return s + x[0]; }, 0);
+    var pes = function (l) { return l.reduce(function (s, x) { return s + (x[2] === 'mem' ? 0 : x[0]); }, 0); }, pesoC = pes(cFav), pesoA = pes(aFav);
     if (pesoC - pesoA >= 2.5 && nivel >= 2) { nivel -= 1; porque.push('llega con más cosas en contra que a favor'); }
     if (ctx.poco) { nivel -= 1; porque.push('hay pocos datos de uno de los dos'); }
     if (ctx.pre) { nivel = Math.min(nivel, 1); porque.push('es pretemporada'); }
@@ -121,7 +127,7 @@
     if (!ctx.vivo && ex) s5 += ' Algo más probable en este juego: <b>' + esc(ex.t) + '</b> (' + p0(ex.p) + ').';
     if (ctx.nota) s5 += ' ' + ctx.nota;
     var s4 = neutro.trim() + ((!A.length && !C.length && !ctx.vivo) ? ' Ninguno de los dos llega con algo especial (rachas, descanso, bajas): manda el %.' : '');
-    return { k: k, etq: ETQ[k], intro: [s1, s2, s3, s4].filter(Boolean).join(' '), aFavor: A, enContra: C, porque: porque, cierre: s5 };
+    return { k: k, etq: ETQ[k], intro: [s1, s2, s3, s4].filter(Boolean).join(' '), aFavor: A, enContra: C, porque: porque, cierre: s5, mem: memL };
   }
 
   function lista3(l) { var n = l.slice(0, 5).map(esc), r = l.length > 5 ? ' (y ' + (l.length - 5) + ' más)' : ''; return (n.length > 1 ? n.slice(0, -1).join(', ') + ' y ' + n[n.length - 1] : n[0]) + r; }
@@ -141,10 +147,12 @@
     var css = (typeof document !== 'undefined' && document.getElementById && document.getElementById('anCss')) ? '' : CSS;
     return css + '<div class="anBox"><div class="anHd"><b>🧠 El análisis</b><span class="anChip">' + r.etq + '</span></div>' +
       '<div class="anP">' + r.intro + '</div>' + lista('A favor de ' + esc(ctx.fav), r.aFavor, 'ok') + lista('En contra', r.enContra, 'bad') +
+      (r.mem ? '<div class="anL"><div class="anT" style="color:var(--mut2)">🗂️ Memoria ' + (ctx.dep === 'tenis' ? 'de los últimos 12 meses' : 'de la temporada') + '</div>' + r.mem.map(function (x) { return '<div class="anI">' + x + '</div>'; }).join('') + '</div>' : '') +
       '<div class="anC"><b>Qué haría:</b> ' + r.cierre + (r.porque.length ? ' <span style="color:var(--mut)">(Baja la confianza: ' + r.porque.join('; ') + '.)</span>' : '') + '</div>' +
       '<details class="nota" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">¿Cómo se arma este análisis?</summary>Lo escribe la app con reglas fijas: con los mismos datos dice siempre lo mismo. ' +
       'La confianza sale de lo medido: cuántas veces ganó el favorito con ese % en temporadas pasadas y si el modelo y el mercado coinciden. ' +
-      'Lo de «a favor» y «en contra» (rachas, descanso, local o visita, la línea) es contexto: medido solo, no sube los aciertos, porque el precio ya lo trae casi todo. No ve noticias de última hora.</details></div>';
+      'Lo de «a favor» y «en contra» (rachas, descanso, local o visita, la línea) es contexto: medido solo, no sube los aciertos, porque el precio ya lo trae casi todo. No ve noticias de última hora. ' +
+      'La memoria cuenta cómo le fue a cada uno esta temporada entrando de favorito y de no favorito (según un rating de resultados, juego por juego y sin mirar el futuro). Medida en NHL y NFL: no cambia lo que acierta el modelo, así que tampoco mueve la confianza.</details></div>';
   }
   function impP(a) { a = +a; return a < 0 ? -a / (-a + 100) : 100 / (a + 100); }
   /* NBA, NHL y NFL: arma el ctx con lo que tiene cada juego.
@@ -152,13 +160,14 @@
   function ctxUS(o) {
     var g = o.g, merc = o.pMk !== null && o.pMk !== undefined, pH = merc ? o.pMk : o.pHMod, favH = pH >= 0.5, F = root.OVAForma, ac = null, fH = null, fA = null, mov = null;
     try { if (F) { fH = F.calc(o.games || [], g.h, g.ts, true, o.dep); fA = F.calc(o.games || [], g.a, g.ts, false, o.dep); } } catch (e) { }
+    var mem = null; try { if (root.OVAMemoria) mem = root.OVAMemoria.calc(o.games || [], g.ts, o.dep); } catch (e) { }
     try { if (root.OVAAciertos) ac = root.OVAAciertos.fila(o.dep, Math.max(pH, 1 - pH), favH, merc); } catch (e) { }
     var od = g.odds; if (od && od.mlH && od.mlA && od.mlHo && od.mlAo && !o.vivo) {
       var nv = function (x, y) { var a = impP(x), b = impP(y); return a / (a + b); }, d = (nv(od.mlH, od.mlA) - nv(od.mlHo, od.mlAo)) * 100; mov = favH ? d : -d;
     }
     return { dep: o.dep, fav: favH ? o.H.n : o.A.n, riv: favH ? o.A.n : o.H.n, favLocal: g.neutral ? null : favH, p: Math.max(pH, 1 - pH), merc: merc,
       pMod: merc && isFinite(o.pHMod) ? (favH ? o.pHMod : 1 - o.pHMod) : null, vivo: !!o.vivo, ac: ac, fF: favH ? fH : fA, fR: favH ? fA : fH, mov: mov,
-      alertas: o.alertas || [], aFavor: o.aFavor || [], pre: !!g.pre, nota: o.nota || '', bajasFav: (favH ? o.bajasH : o.bajasA) || [], bajasRiv: (favH ? o.bajasA : o.bajasH) || [] };
+      alertas: o.alertas || [], aFavor: o.aFavor || [], pre: !!g.pre, nota: o.nota || '', bajasFav: (favH ? o.bajasH : o.bajasA) || [], bajasRiv: (favH ? o.bajasA : o.bajasH) || [], memFav: mem ? mem[favH ? g.h : g.a] : null, memRiv: mem ? mem[favH ? g.a : g.h] : null };
   }
   var API = { analizar: analizar, html: html, razonesForma: razonesForma, ctxUS: ctxUS, CORTE: CORTE };
   root.OVAAnalista = API;

@@ -123,6 +123,9 @@ function recorrer(lista, db, op) {
     if (m[8] === 'W') return;
     const rW = T.mezcla(W.all, W.sup[sup], w), rL = T.mezcla(L.all, L.sup[sup], w);
     const pW = T.probElo(rW, rL);
+    /* memoria del jugador (últimos 12 meses): con qué % entraba y si ganó; se resume en el campo «memoria» */
+    W.mem = (W.mem || []).filter(x => m[1] - x[0] < 365 * 86400); L.mem = (L.mem || []).filter(x => m[1] - x[0] < 365 * 86400);
+    W.mem.push([m[1], pW, 1]); L.mem.push([m[1], 1 - pW, 0]);
     if (m[1] >= desdeTs && op.guardar) {
       const pr0 = { ts: m[1], tour: m[2], sup, q: esQ(m[4]), fin: m[8], pW, nW: W.n, nL: L.n, rkW: m[9], rkL: m[10], bo5: bo5De(m, ev), mj: !!ev.mj, g: games(m), sets: m[7], wId: m[5], lId: m[6] };
       if (op.factores) {   // lo que sabe cada uno ANTES del partido (para medir huecos del modelo)
@@ -147,6 +150,11 @@ function recorrer(lista, db, op) {
     W.forma.push('V'); L.forma.push('D'); if (W.forma.length > 10) W.forma.shift(); if (L.forma.length > 10) L.forma.shift();
   });
   return { R, preds };
+}
+/* [como favorito: jugados, ganados, como no favorito: jugados, ganados, victorias esperadas ×10, victorias] en los 12 meses antes de su último partido */
+function memJug(mem, last) {
+  const l = (mem || []).filter(x => last - x[0] < 365 * 86400), f = l.filter(x => x[1] >= 0.5), d = l.filter(x => x[1] < 0.5), w = a => a.filter(x => x[2]).length;
+  return [f.length, w(f), d.length, w(d), Math.round(l.reduce((s, x) => s + x[1], 0) * 10), w(l)];
 }
 const ll = (p, y) => -(y ? Math.log(Math.max(p, 1e-6)) : Math.log(Math.max(1 - p, 1e-6)));
 function resumen(preds, filtro) {
@@ -335,10 +343,10 @@ function main() {
         if (j.last < corte || j.n < 1) return;
         const info = db.jug[id] || ['', ''];
         const r = x => Math.round(x);
-        out.jug[id] = [info[0], info[1], tour, r(j.all), r(j.sup.H), r(j.sup.C), r(j.sup.G), j.n, j.nS.H, j.nS.C, j.nS.G, j.rk || 0, Math.round(j.last / 86400), j.forma.join(''), r(j.pico || j.all)];
+        out.jug[id] = [info[0], info[1], tour, r(j.all), r(j.sup.H), r(j.sup.C), r(j.sup.G), j.n, j.nS.H, j.nS.C, j.nS.G, j.rk || 0, Math.round(j.last / 86400), j.forma.join(''), r(j.pico || j.all), memJug(j.mem, j.last)];
       });
     });
-    out.campos = ['nombre', 'pais', 'circuito', 'eloGeneral', 'eloDura', 'eloArcilla', 'eloHierba', 'partidos', 'pDura', 'pArcilla', 'pHierba', 'ranking', 'ultimoDia', 'forma', 'mejorElo'];
+    out.campos = ['nombre', 'pais', 'circuito', 'eloGeneral', 'eloDura', 'eloArcilla', 'eloHierba', 'partidos', 'pDura', 'pArcilla', 'pHierba', 'ranking', 'ultimoDia', 'forma', 'mejorElo', 'memoria'];
     fs.writeFileSync(SALIDA, JSON.stringify(out));
     // predicciones partido a partido (solo con lo de antes) para las mediciones contra el mercado: van a la rama datos-tenis
     fs.writeFileSync(path.join(RAIZ, 'preds-tenis.json'), JSON.stringify(PREDS));

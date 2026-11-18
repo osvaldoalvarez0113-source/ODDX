@@ -2189,18 +2189,20 @@ function formaF(p, base){
 }
 /* ctx de «El análisis» (analista.js) para un partido: favorito = el más probable entre local y visita; el empate va aparte */
 function ctxAnF(p, r, mod, f, m){
-  var fu = f || mod, fi = fu[0] >= fu[2] ? 0 : 2, favL = fi===0, F = window.OVAForma, fL = null, fV = null, ac = null, vivo = !!(f && m && m.vivo);
+  var fu = f || mod, fi = fu[0] >= fu[2] ? 0 : 2, favL = fi===0, F = window.OVAForma, fL = null, fV = null, ac = null, mem = null, vivo = !!(f && m && m.vivo);
   try{
     if(F && TERMINADOS && TERMINADOS.length){
       var nm = function(x){ return mismoEquipo(x, p.local) ? '#L' : (mismoEquipo(x, p.visita) ? '#V' : x); };
       var G = TERMINADOS.map(function(x){ return {h:nm(x.local), a:nm(x.visita), hs:(x.golesLocal==null?NaN:+x.golesLocal), as:(x.golesVisita==null?NaN:+x.golesVisita), ts:tsPartido(x)}; }).filter(function(x){ return x.ts>0 && isFinite(x.hs) && isFinite(x.as); });
       var ts = tsPartido(p); if(!(ts > 0)) ts = Date.now();
       fL = F.calc(G, '#L', ts, true, 'fut'); fV = F.calc(G, '#V', ts, false, 'fut');
+      if(window.OVAMemoria) mem = window.OVAMemoria.calc(G, ts, 'fut');
     }
   }catch(e){}
   try{ if(window.OVAAciertos) ac = window.OVAAciertos.fila('fut', fu[fi], favL, !!f); }catch(e){}
   return { dep:'fut', fav: favL ? p.local : p.visita, riv: favL ? p.visita : p.local, favLocal: p.neutral ? null : favL, p: fu[fi], merc: !!f,
     pMod: f ? mod[fi] : null, modMismo: (mod[0] >= mod[2]) === favL, vivo: vivo, ac: ac, fF: favL ? fL : fV, fR: favL ? fV : fL, mov: null,
+    memFav: mem ? mem[favL ? '#L' : '#V'] : null, memRiv: mem ? mem[favL ? '#V' : '#L'] : null,
     pE: fu[1], pDoble: fu[fi] + fu[1], extras: [{ t:'Gol en el 1er tiempo', p: gol1T(r.overLin[2.5]) }], alertas: [], aFavor: [] };
 }
 /* mejoras.js avisa cuando llegan los lesionados de ESPN: solo los que están fuera entran a El análisis */
@@ -3725,6 +3727,7 @@ h3{display:flex;align-items:center;gap:6px}
 <!--OVAPATCH:ICONOS:END-->
  <script src="obsidiana.js"></script>
 <script src="forma.js"></script>
+<script src="memoria.js"></script>
 <script src="analista.js"></script>
 <script src="mejoras.js"></script>
 <script src="selecciones.js"></script>

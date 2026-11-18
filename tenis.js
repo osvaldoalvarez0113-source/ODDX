@@ -50,7 +50,7 @@
   function jugador(id, nombre, rk, tour) {
     const r = R && R.jug && R.jug[id];
     const P = R && R.params && R.params[tour];
-    if (r) return { id, nombre: r[0] || nombre, pais: r[1], all: r[3], sup: { H: r[4], C: r[5], G: r[6] }, n: r[7], nS: { H: r[8], C: r[9], G: r[10] }, rk: rk || r[11], forma: r[13] || '', pico: r[14] || r[3], conocido: true };
+    if (r) return { id, nombre: r[0] || nombre, pais: r[1], all: r[3], sup: { H: r[4], C: r[5], G: r[6] }, n: r[7], nS: { H: r[8], C: r[9], G: r[10] }, rk: rk || r[11], forma: r[13] || '', mem: r[15] || null, pico: r[14] || r[3], conocido: true };
     const e = (P && P.prior && P.prior.usar !== false) ? T.prior(rk, P.prior) : (rk ? T.prior(rk) : 1500);
     return { id, nombre, pais: '', all: e, sup: { H: e, C: e, G: e }, n: 0, nS: { H: 0, C: 0, G: 0 }, rk: rk || 0, forma: '', conocido: false };
   }
@@ -285,6 +285,7 @@
         if (/qualif/i.test(m.ronda)) al.push([0.8, 'es clasificación, donde el modelo más se equivoca']);
         anH = window.OVAAnalista.html({ dep: 'tenis', fav: fav.nombre, riv: riv.nombre, favLocal: null, p: pf, merc: !!k, pMod: k ? modF : null, vivo: false,
           ac: h ? { pct: h.gano, n: h.n } : null, fF: an.favA ? tA : tB, fR: an.favA ? tB : tA, mov: null, alertas: al, aFavor: af, poco: !!an.poco,
+          memFav: window.OVAMemoria ? window.OVAMemoria.deTenis((an.favA ? an.A : an.B).mem) : null, memRiv: window.OVAMemoria ? window.OVAMemoria.deTenis((an.favA ? an.B : an.A).mem) : null,
           nota: an.bestOf === 5 ? 'A 5 sets el favorito cumple más seguido (ya está contado en el %).' : '' });
       }
     } catch (e) { }
