@@ -1,0 +1,43 @@
+name: Datos NFL por jugador (boxscores)
+
+# Baja de ESPN quién jugó y cuánto en cada juego de la NFL (2019 en adelante) y lo guarda en la rama datos-nfl-box.
+# Lo usan la medición del valor de cada jugador y el robot de valores de la app NFL.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "33 11 * 9-12,1-2 *"
+    - cron: "33 20 * 9-12,1-2 *"      # otra vez en la tarde, antes de los juegos
+  push:
+    branches: [main]
+    paths:
+      - scripts/bajar_nfl_box.js
+      - .github/workflows/datos-nfl-box.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: datos-nfl-box
+  cancel-in-progress: false
+
+jobs:
+  bajar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Recuperar lo ya bajado
+        continue-on-error: true
+        run: git fetch -q origin datos-nfl-box && git show FETCH_HEAD:nfl-box.json.gz > nfl-box.json.gz || echo "sin cache"
+      - name: Bajar lo nuevo
+        run: node scripts/bajar_nfl_box.js
+      - name: Guardar en la rama datos-nfl-box
+        if: always()
+        run: |
+          [ -f nfl-box.json.gz ] || exit 0
+          mkdir -p /tmp/box && cp -f nfl-box.json.gz /tmp/box/ && cd /tmp/box
+          git init -q -b datos-nfl-box && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "datos nba por jugador" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" datos-nfl-box
