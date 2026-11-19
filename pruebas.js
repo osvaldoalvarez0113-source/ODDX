@@ -364,8 +364,8 @@ sec('Presentaciones del hub (6 diseños)');
  globalThis.addEventListener=()=>{};globalThis.removeEventListener=()=>{};
  globalThis.document=D;globalThis.localStorage=mk();globalThis.sessionStorage=mk();globalThis.location={search:'',pathname:'/hub.html',reload(){recargas++;}};
  const HB=require(path.join(__dirname,'hubestilos.js'));
- const IDS=['oro','carrusel','orbita','paneles','mazo','tablero','cartas'];
- ok('hay 7 diseños: '+IDS.join(', '),JSON.stringify(HB.ESTILOS.map(e=>e.id))===JSON.stringify(IDS));
+ const IDS=['oro','carrusel','orbita','paneles','mazo','tablero','cartas','deportiva','lujo','retro'];
+ ok('hay 10 diseños: '+IDS.join(', '),JSON.stringify(HB.ESTILOS.map(e=>e.id))===JSON.stringify(IDS));
  ok('los 6 deportes llevan a MLB, fútbol, NBA, NHL, NFL y tenis, y «Lo mejor» a todas.html',HB.TOP.href==='todas.html'&&fs.existsSync(D0('todas.html'))&&/pnTop/.test(HB._html.paneles())&&JSON.stringify(HB.DEP.map(d=>d.href))===JSON.stringify(['index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html'])&&HB.DEP.every(d=>fs.existsSync(D0(d.href))));
  function D0(f){return path.join(__dirname,f);}
  IDS.slice(1).forEach(id=>{const h=HB._html[id]();ok('diseño '+id+': arma sus 6 enlaces y el logo para cambiar de diseño',['index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html'].every(x=>h.indexOf('href="'+x+'"')>=0)&&h.indexOf('hl-brand')>=0);});
@@ -389,6 +389,12 @@ sec('Presentaciones del hub (6 diseños)');
  globalThis.localStorage.setItem('ova_hub','<script>');ok('guardado corrupto se lee como clásico',HB.leer()==='oro');
  {const hc=HB._html.cartas();ok('Cartas: «Lo mejor de hoy» arriba, las 7 cartas son enlaces reales y el logo OVA va dibujado (no dice ODDX)',hc.indexOf('href="todas.html"')>=0&&(hc.match(/class="tci" href=/g)||[]).length===7&&/aria-label="OVA"/.test(hc)&&!/ODDX/.test(hc));
   const hs2=rd('hubestilos.js');ok('Cartas: se estrena una sola vez y la entrada con el logo sale una vez al día',/ova_hub_cartas_v1/.test(hs2)&&/ova_hub_cartas_dia/.test(hs2));
+  {const R={};['deportiva','lujo','retro'].forEach(k=>R[k]=HB._html[k]());
+   ok('Revistas: «Lo mejor de hoy» va a todas.html y sin datos del día la portada dice cómo llenarla (no inventa un pick)',['deportiva','lujo','retro'].every(k=>R[k].indexOf('href="todas.html"')>=0)&&/Abre una app/.test(R.deportiva)&&/Abre una app/.test(R.lujo)&&!/\d+<small>%<\/small>/.test(R.deportiva));
+   ok('Revistas: cada deporte lleva su aviso en vivo (livHtml) y la entrada sale una vez al día',['deportiva','lujo','retro'].every(k=>(R[k].match(/class="liv off" data-k=/g)||[]).length===6)&&/ova_hub_'\+id\+'_dia'/.test(hs2)&&/ova_hub_revista_v1/.test(hs2));
+   globalThis.OVAHoy={resumen:()=>({tops:[{app:'nba',n:'Los Angeles Lakers vs Charlotte Hornets',p:74.2,sub:'Hoy · 9:30 PM'},{app:'mlb',n:'Minnesota Twins (Minnesota Twins @ New York Yankees)',p:0.66,sub:''},{app:'fut',n:'Real Madrid vs Getafe',p:71,sub:''}]})};
+   const d2=HB._html.deportiva(),l2=HB._html.lujo(),r2=HB._html.retro();delete globalThis.OVAHoy;
+   ok('Revistas: con datos del día la portada pone el pick más claro (74%, «Lakers»), MLB sin el paréntesis y fútbol con el nombre completo',/>74<small>%<\/small>/.test(d2)&&/Lakers, el más probable de hoy/.test(d2)&&/ante Charlotte Hornets/.test(d2)&&/Twins 66%/.test(d2)&&/Real Madrid 71%/.test(d2)&&/Lakers, 74%/.test(l2)&&/Lakers 74% \(NBA\)/.test(r2));}
   ok('Cartas: al volver con «atrás» las cartas regresan (pageshow) y con «reducir movimiento» el toque abre directo',/addEventListener\('pageshow',ps\)/.test(hs2)&&/if\(!a\|\|reduce\) return;/.test(hs2));}
  delete globalThis.addEventListener;delete globalThis.removeEventListener;delete globalThis.document;delete globalThis.localStorage;delete globalThis.sessionStorage;delete globalThis.location;
 }
@@ -581,7 +587,7 @@ sec('Ajustes organizado (ajustes.js + pestañas de Apariencia)');
  ok('los botones del menú no son <button> (los diseños con !important no los pueden pintar de amarillo)',/mk\('div','ajRow'\)/.test(rd('ajustes.js')));
  ok('Apariencia: solo los 4 diseños que eligió Osvaldo (Oro negro, Cristal, Paneles, Bento); el tema de color va con el diseño',JSON.stringify(require(path.join(__dirname,'interior.js')).VIS)===JSON.stringify(['clasico','cristal','paneles','bento'])&&/\.uiSec \.uiSeg\{display:none\}/.test(ic)&&/var TEMA=\{clasico:'oro',cristal:'cristal'\}/.test(ic));
  ok('Clásico se llama Oro negro y un diseño viejo guardado pasa a Paneles',/\{id:'clasico',n:'Oro negro'/.test(ic)&&/root\.localStorage\.setItem\(KEY,'paneles'\); return 'paneles';/.test(ic));
- ok('Presentación del inicio: solo Oro negro, Paneles y Cartas (lo demás vuelve a Oro negro)',JSON.stringify(require(path.join(__dirname,'hubestilos.js')).VIS)===JSON.stringify(['oro','paneles','cartas'])&&/VIS\.indexOf\(v\)>=0\?v:'oro'/.test(rd('hubestilos.js')));
+ ok('Presentación del inicio: Oro negro, Paneles, Cartas y las revistas Deportiva, Lujo y Retro 70 (lo demás vuelve a Oro negro)',JSON.stringify(require(path.join(__dirname,'hubestilos.js')).VIS)===JSON.stringify(['oro','paneles','cartas','deportiva','lujo','retro'])&&/VIS\.indexOf\(v\)>=0\?v:'oro'/.test(rd('hubestilos.js')));
  ok('fútbol y NBA: Ajustes tiene la entrada Apariencia que abre la hoja 🎨',/dsApar/.test(dj)&&/#ovaSheet/.test(dj));
 }
 

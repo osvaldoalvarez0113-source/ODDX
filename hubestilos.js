@@ -1,8 +1,9 @@
 /* OVA · presentaciones del inicio (hub)  v2
-   7 diseños con ESTRUCTURA distinta:
+   10 diseños con ESTRUCTURA distinta:
      Oro negro (el clásico, intacto) · Carrusel 3D · Órbita · Paneles · Mazo · Tablero · Cartas (12-nov-2026)
+     · Deportiva · Lujo · Retro 70 (19-nov-2026, estilo Revista: la portada pone el pick más claro del día)
    Cómo cambiar: mantén presionado el logo "O V A" unos 0.7 segundos.
-   También por enlace:  hub.html?estilo=carrusel   (oro · carrusel · orbita · paneles · mazo · tablero · cartas)
+   También por enlace:  hub.html?estilo=carrusel   (oro · carrusel · orbita · paneles · mazo · tablero · cartas · deportiva · lujo · retro)
    No toca las apps, ni sus enlaces, ni ningún cálculo. Si un diseño fallara, vuelve solo al clásico. */
 (function(root){
 "use strict";
@@ -25,14 +26,18 @@ var ESTILOS=[
  {id:'paneles',n:'Paneles',d:'Pantalla partida',sw:'linear-gradient(172deg,#F0CE6B 0 33%,#0a0a0a 33% 34%,#3DDC84 34% 66%,#0a0a0a 66% 67%,#FF8A3D 67%)'},
  {id:'mazo',n:'Mazo',d:'Cartas que se lanzan',sw:'linear-gradient(#FF8A3D,#FF8A3D) 50% 78%/58% 62% no-repeat,linear-gradient(#3DDC84,#3DDC84) 50% 62%/68% 62% no-repeat,linear-gradient(#F0CE6B,#F0CE6B) 50% 44%/78% 62% no-repeat,#0b0c12'},
  {id:'tablero',n:'Tablero',d:'Marcador de aeropuerto',sw:'repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 22%/86% 14% no-repeat,repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 50%/86% 14% no-repeat,repeating-linear-gradient(90deg,#FFC83D 0 9px,#0c0c0f 9px 11px) 50% 78%/86% 14% no-repeat,#16161a'},
- {id:'cartas',n:'Cartas',d:'Se reparten y brillan',sw:'linear-gradient(115deg,transparent 30%,rgba(255,255,255,.35) 46%,rgba(127,227,255,.3) 52%,rgba(255,143,208,.3) 58%,transparent 72%),linear-gradient(#b9831f,#ffe08a) 18% 50%/26% 64% no-repeat,linear-gradient(#b9831f,#ffe08a) 50% 50%/26% 64% no-repeat,linear-gradient(#b9831f,#ffe08a) 82% 50%/26% 64% no-repeat,radial-gradient(ellipse at 50% 0%,#3b1d52,#0d0714)'}
+ {id:'cartas',n:'Cartas',d:'Se reparten y brillan',sw:'linear-gradient(115deg,transparent 30%,rgba(255,255,255,.35) 46%,rgba(127,227,255,.3) 52%,rgba(255,143,208,.3) 58%,transparent 72%),linear-gradient(#b9831f,#ffe08a) 18% 50%/26% 64% no-repeat,linear-gradient(#b9831f,#ffe08a) 50% 50%/26% 64% no-repeat,linear-gradient(#b9831f,#ffe08a) 82% 50%/26% 64% no-repeat,radial-gradient(ellipse at 50% 0%,#3b1d52,#0d0714)'},
+ {id:'deportiva',n:'Deportiva',d:'Portada de revista de deportes',sw:'radial-gradient(circle at 80% 72%,#e8762c 0 30%,transparent 31%),linear-gradient(#E21B23,#E21B23) 12% 16%/48% 20% no-repeat,linear-gradient(#FFD400,#FFD400) 12% 62%/30% 16% no-repeat,radial-gradient(ellipse at 70% 40%,#2257a8,#0b1e3f 70%)'},
+ {id:'lujo',n:'Lujo',d:'Portada en blanco y negro',sw:'radial-gradient(circle at 56% 52%,#d7f04a 0 17%,transparent 18%),linear-gradient(#0B0B0B,#0B0B0B) 50% 42%/72% 36% no-repeat,linear-gradient(#0B0B0B,#0B0B0B) 50% 88%/60% 3% no-repeat,#F6F4F0'},
+ {id:'retro',n:'Retro 70',d:'Revista de los 70, con boletos',sw:'radial-gradient(circle at 82% 30%,#f5f1e6 0 15%,transparent 16%),linear-gradient(#E8662A,#E8662A) 14% 28%/56% 24% no-repeat,linear-gradient(#2F7F79,#2F7F79) 14% 74%/50% 14% no-repeat,repeating-conic-gradient(from 0deg at 50% 60%,#E9A93A 0deg 8deg,#F2E1BF 8deg 16deg)'}
 ];
 /* 9-nov-2026: tarjeta «Lo mejor de hoy» (todas.html) arriba de los deportes; solo en Oro negro (hub.html) y Paneles */
 var TOP={k:'top',href:'todas.html',n:'Lo mejor',d:'Las 6 apps juntas: más probables y combinada',e:'🎯'};
 var BY={};ESTILOS.forEach(function(e){BY[e.id]=e;});
 /* 8-nov-2026: Osvaldo eligió quedarse solo con Oro negro y Paneles. Los demás ya no se ofrecen; quien tenía uno guardado vuelve a Oro negro. */
 /* 12-nov-2026: se suma Cartas (holográficas, con el logo OVA dibujado), elegida por Osvaldo para el inicio. */
-var VIS=['oro','paneles','cartas'];
+/* 19-nov-2026: se suman Deportiva, Lujo y Retro 70 (estilo Revista), elegidas por Osvaldo. */
+var VIS=['oro','paneles','cartas','deportiva','lujo','retro'];
 
 /* ===================================================================== CSS */
 var CSS=`
@@ -248,6 +253,118 @@ html[data-hub="cartas"] body{background:#0d0714}
 @keyframes hlCFup{from{transform:rotateY(180deg)}to{transform:rotateY(0deg)}}
 @keyframes hlCBob{50%{transform:translateY(-7px) rotate(8deg)}}
 @keyframes hlCSheen{0%,50%{background-position:130% 0}100%{background-position:-40% 0}}
+
+/* ---------- REVISTAS (19-nov-2026): Deportiva · Lujo · Retro 70. Portadas de revista con el pick más claro del día ---------- */
+html[data-hub="deportiva"] body{background:#000}
+html[data-hub="lujo"] body{background:#F6F4F0}
+html[data-hub="retro"] body{background:#F2E1BF}
+#hubLay.L-deportiva,#hubLay.L-lujo,#hubLay.L-retro{touch-action:pan-y}
+.L-deportiva .rv-sc,.L-lujo .rv-sc,.L-retro .rv-sc{position:absolute;inset:0;z-index:5;overflow-y:auto;-webkit-overflow-scrolling:touch;box-sizing:border-box;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 50px) 18px calc(env(safe-area-inset-bottom,0px) + 22px)}
+.L-deportiva .rv-e,.L-lujo .rv-e,.L-retro .rv-e{opacity:0}
+.L-deportiva.in .rv-e,.L-lujo.in .rv-e,.L-retro.in .rv-e{animation:hlRvUp .7s cubic-bezier(.2,1,.3,1) both;animation-delay:calc(var(--i) * .07s)}
+#hubLay.L-deportiva .hl-brand,#hubLay.L-lujo .hl-brand,#hubLay.L-retro .hl-brand{position:relative;top:auto;left:auto;z-index:6;text-shadow:none;letter-spacing:0;white-space:nowrap}
+.L-lujo .spl,.L-retro .spl{position:absolute;inset:0;z-index:80;display:none;pointer-events:none}
+.L-lujo.play .spl,.L-retro.play .spl{display:block}
+.L-lujo.sal .spl,.L-retro.sal .spl{opacity:0;transition:opacity .6s}
+@keyframes hlRvUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+/* Deportiva: portada azul, la pelota gigante de fondo y el % en amarillo */
+#hubLay.L-deportiva{background:#000;color:#fff}
+.L-deportiva .dp-cv{position:absolute;inset:0;background:radial-gradient(ellipse at 72% 38%,#2257a8,#0b1e3f 60%,#050d1d)}
+.L-deportiva .dp-mo{position:absolute;right:40%;top:34%;width:44vw;height:30vh;background:repeating-linear-gradient(-28deg,transparent 0 14px,rgba(255,255,255,.1) 14px 16px);-webkit-mask-image:linear-gradient(90deg,transparent,#000);mask-image:linear-gradient(90deg,transparent,#000)}
+.L-deportiva .dp-ball{position:absolute;width:min(118vw,520px);aspect-ratio:1/1;right:calc(min(118vw,520px) * -.33);top:24%;filter:drop-shadow(0 40px 60px rgba(0,0,0,.6));pointer-events:none}
+.L-deportiva .dp-ball svg{display:block;width:100%;height:100%;animation:hlDpRueda 50s linear infinite}
+#hubLay.L-deportiva .hl-brand{transform:skewX(-8deg);align-self:flex-start;display:inline-flex;align-items:baseline;gap:6px;padding:4px 12px 2px;background:#E21B23;color:#fff}
+.L-deportiva .hl-brand b{font:italic 900 64px/.9 "Avenir Next Condensed","DIN Condensed",Futura,Impact,sans-serif;letter-spacing:-.02em}
+.L-deportiva .hl-brand span{font:800 12px/1 "Avenir Next",Inter,sans-serif;letter-spacing:.3em;color:#fff}
+.L-deportiva .dp-fe{margin-top:10px;font:700 10px/1.4 "Avenir Next",Inter,sans-serif;letter-spacing:.16em;color:#c9d6f0;text-transform:uppercase}
+.L-deportiva .dp-n{margin-top:auto;padding-top:18px;font:900 clamp(92px,30vw,130px)/.85 "DIN Condensed","Avenir Next Condensed",Impact,sans-serif;color:#FFD400;letter-spacing:-.02em;text-shadow:0 8px 0 rgba(0,0,0,.25)}
+.L-deportiva .dp-n small{font-size:.46em}
+.L-deportiva .dp-n small.w{font-size:.3em;letter-spacing:0}
+.L-deportiva .dp-h{max-width:68%;margin-top:4px;font:800 29px/.95 "Avenir Next Condensed","DIN Condensed",Impact,sans-serif;text-transform:uppercase;text-shadow:0 3px 12px rgba(0,0,0,.6)}
+.L-deportiva .dp-s{max-width:70%;margin-top:6px;font:600 12.5px/1.35 "Avenir Next",Inter,sans-serif;color:#dbe6ff;text-shadow:0 2px 8px rgba(0,0,0,.7)}
+.L-deportiva .dp-cl{max-width:62%;margin-top:14px}
+.L-deportiva .dp-cl div{padding:7px 0;border-top:1px solid rgba(255,255,255,.25);font:700 13.5px/1.25 "Avenir Next",Inter,sans-serif;text-shadow:0 2px 8px rgba(0,0,0,.7)}
+.L-deportiva .dp-cl div b{display:block;font-size:9.5px;letter-spacing:.16em;color:#FFD400}
+#hubLay.L-deportiva .dp-btn{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding:14px 16px;background:#FFD400;color:#0b1e3f;font:800 20px/1 "Avenir Next Condensed","DIN Condensed",Impact,sans-serif;text-transform:uppercase;transform:skewX(-6deg);box-shadow:0 10px 24px rgba(0,0,0,.45)}
+.L-deportiva .dp-ch{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:12px}
+.L-deportiva .dp-ch a{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 4px 8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font:800 13px/1 "Avenir Next",Inter,sans-serif;letter-spacing:.04em}
+#hubLay.L-deportiva .dp-ch .liv{--c:#FFD400;font-size:8.5px;padding:3px 6px;gap:4px;letter-spacing:.02em;white-space:nowrap}
+.L-deportiva .dp-fl{position:absolute;inset:0;z-index:70;background:#fff;opacity:0;pointer-events:none}
+.L-deportiva.play .dp-cv{animation:hlDpIris .9s cubic-bezier(.6,0,.2,1) .1s both}
+.L-deportiva.play .dp-ball{animation:hlDpVuela .8s cubic-bezier(.2,.9,.3,1) .3s both}
+.L-deportiva.play .dp-fl{animation:hlDpFlash .45s 1s both}
+.L-deportiva.play .hl-brand{animation:hlDpSlam .4s cubic-bezier(.3,1.7,.5,1) 1.05s both}
+@keyframes hlDpRueda{to{transform:rotate(1turn)}}
+@keyframes hlDpIris{0%{clip-path:circle(0% at 50% 42%)}60%{clip-path:circle(17% at 50% 42%)}100%{clip-path:circle(150% at 50% 42%)}}
+@keyframes hlDpVuela{from{transform:translate(-40vw,-10vh) rotate(-160deg) scale(.4);opacity:0}}
+@keyframes hlDpFlash{0%{opacity:0}12%{opacity:.85}100%{opacity:0}}
+@keyframes hlDpSlam{from{opacity:0;transform:skewX(-8deg) scale(2.4)}to{opacity:1;transform:skewX(-8deg)}}
+/* Lujo: blanco y negro, letra Didot y la pelota delante del logo, como la modelo de la portada */
+#hubLay.L-lujo{background:#F6F4F0;color:#0B0B0B}
+.L-lujo .lj-top{display:flex;justify-content:space-between;font:500 9.5px/1 "Avenir Next",Inter,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:#555}
+.L-lujo .lj-mw{position:relative;margin-top:8px;text-align:center}
+#hubLay.L-lujo .hl-brand{transform:none;display:block;padding:0;font:700 clamp(130px,44vw,190px)/.8 Didot,"Bodoni 72",Georgia,serif;letter-spacing:-.04em;color:#0B0B0B}
+.L-lujo .lj-ball{position:absolute;left:50%;top:22%;width:38vw;max-width:160px;aspect-ratio:1/1;margin-left:-14vw;z-index:7;filter:drop-shadow(0 22px 26px rgba(0,0,0,.35));pointer-events:none;animation:hlLjFlota 4s ease-in-out infinite}
+.L-lujo .lj-ball svg{display:block;width:100%}
+.L-lujo.in .lj-ball{animation:hlLjCae .8s cubic-bezier(.3,1.5,.5,1) .25s both,hlLjFlota 4s ease-in-out 1.1s infinite}
+.L-lujo .lj-cl{display:flex;justify-content:space-between;gap:12px;margin-top:20px}
+.L-lujo .lj-cl div{max-width:48%}
+.L-lujo .lj-cl div+div{text-align:right}
+.L-lujo .lj-cl b{display:block;font:italic 400 23px/1.05 Didot,"Bodoni 72",Georgia,serif}
+.L-lujo .lj-cl span{display:block;margin-top:5px;font:500 9.5px/1.5 "Avenir Next",Inter,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#666}
+.L-lujo .lj-h{display:block;margin-top:auto;padding-top:22px;text-align:center;font:italic 400 40px/1 Didot,"Bodoni 72",Georgia,serif}
+.L-lujo .lj-hs{margin:8px 0 18px;text-align:center;font:500 9.5px/1 "Avenir Next",Inter,sans-serif;letter-spacing:.3em;text-transform:uppercase;color:#444}
+.L-lujo .lj-i{margin-top:auto;padding-top:0;border-top:1px solid #0B0B0B}
+.L-lujo .lj-i h5{margin:0;padding:9px 0 4px;text-align:center;font:600 9px/1 "Avenir Next",Inter,sans-serif;letter-spacing:.34em}
+.L-lujo .lj-i a{display:flex;align-items:baseline;gap:8px;padding:7px 0;font:400 19px/1.1 Didot,"Bodoni 72",Georgia,serif}
+.L-lujo .lj-i a i{flex:1;border-bottom:1px dotted #999;transform:translateY(-4px)}
+#hubLay.L-lujo .lj-i .liv{--c:#777;border:0;background:none;padding:0;gap:5px;font:600 9.5px/1 "Avenir Next",Inter,sans-serif;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap}
+#hubLay.L-lujo .lj-i .liv:not(.off){--c:#0B0B0B}
+.L-lujo .spl{background:#F6F4F0}
+.L-lujo .spl .sw{position:absolute;left:0;right:0;top:30%;text-align:center;color:#0B0B0B}
+.L-lujo .spl b{display:block;font:700 clamp(110px,38vw,160px)/1 Didot,"Bodoni 72",Georgia,serif;animation:hlLjAprieta 1.4s cubic-bezier(.2,.8,.2,1) .15s both}
+.L-lujo .spl span{display:block;margin-top:14px;font:500 10px/1 "Avenir Next",Inter,sans-serif;letter-spacing:.5em;text-transform:uppercase;color:#444;animation:hlLjFin .6s 1.2s both}
+.L-lujo .spl i{position:absolute;inset:0;background:#fff;opacity:0;animation:hlLjFlash .5s 1.75s both}
+@keyframes hlLjAprieta{from{letter-spacing:1.4em;padding-left:1.4em;opacity:0;filter:blur(10px)}to{letter-spacing:-.04em;padding-left:0;opacity:1;filter:none}}
+@keyframes hlLjFin{from{opacity:0}to{opacity:1}}
+@keyframes hlLjFlash{0%{opacity:0}15%{opacity:.9}100%{opacity:0}}
+@keyframes hlLjCae{from{transform:translateY(-60vh) rotate(-120deg);opacity:0}}
+@keyframes hlLjFlota{50%{transform:translateY(-8px) rotate(6deg)}}
+/* Retro 70: colores de los 70, rayos de sol, puntitos de imprenta y los deportes como boletos */
+#hubLay.L-retro{background:#F2E1BF;color:#4A2E1A}
+.L-retro .rt-sun{position:absolute;left:50%;top:38%;width:240vmax;height:240vmax;margin:-120vmax 0 0 -120vmax;background:repeating-conic-gradient(#E9A93A 0deg 8deg,#F2E1BF 8deg 16deg);-webkit-mask-image:radial-gradient(circle,#000 4%,transparent 22%);mask-image:radial-gradient(circle,#000 4%,transparent 22%);opacity:.55;animation:hlRtSol 90s linear infinite}
+.L-retro .rt-dots{position:absolute;inset:0;background:radial-gradient(rgba(232,102,42,.22) 1.6px,transparent 2px) 0 0/9px 9px;-webkit-mask-image:linear-gradient(transparent 55%,#000);mask-image:linear-gradient(transparent 55%,#000);pointer-events:none}
+.L-retro .rt-top{display:flex;justify-content:space-between;align-items:center;gap:6px;font:700 10px/1 "American Typewriter","Courier New",serif;letter-spacing:.08em}
+.L-retro .rt-top b{background:#4A2E1A;color:#F2E1BF;padding:4px 9px;border-radius:12px}
+#hubLay.L-retro .hl-brand{transform:rotate(-3deg);align-self:flex-start;display:block;padding:0;margin-top:10px;font:900 clamp(96px,31vw,128px)/.85 Rockwell,"Rockwell Extra Bold","American Typewriter",Georgia,serif;color:#E8662A;letter-spacing:-.02em;text-shadow:5px 5px 0 #4A2E1A,10px 10px 0 #E9A93A}
+.L-retro .hl-brand small{display:block;margin-top:12px;font:700 14px/1 "American Typewriter","Courier New",serif;letter-spacing:.24em;color:#2F7F79;text-shadow:none}
+.L-retro .rt-ball{position:absolute;right:18px;top:calc(env(safe-area-inset-top,0px) + 104px);z-index:6;width:30vw;max-width:130px;aspect-ratio:1/1;filter:drop-shadow(6px 8px 0 rgba(74,46,26,.35));pointer-events:none;animation:hlRtBote 2.4s ease-in-out infinite}
+.L-retro .rt-ball svg{display:block;width:100%}
+#hubLay.L-retro .rt-h{align-self:flex-start;margin-top:auto;padding:11px 15px;border-radius:14px;background:#2F7F79;color:#F2E1BF;transform:rotate(-1.5deg);box-shadow:5px 5px 0 #4A2E1A;font:900 26px/1 Rockwell,"American Typewriter",Georgia,serif}
+.L-retro .rt-h span{display:block;margin-top:5px;font:400 13px/1.2 "American Typewriter","Courier New",serif}
+.L-retro .rt-g{display:grid;grid-template-columns:1fr 1fr;gap:11px 12px;margin-top:20px}
+.L-retro .rt-t{position:relative;display:flex;align-items:center;gap:8px;padding:9px 10px;background:#FFF3DA;border:2px solid #4A2E1A;border-radius:10px;box-shadow:3px 3px 0 #4A2E1A}
+.L-retro .rt-t::before,.L-retro .rt-t::after{content:"";position:absolute;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:#F2E1BF;border:2px solid #4A2E1A}
+.L-retro .rt-t::before{left:-9px;clip-path:inset(0 0 0 50%)}
+.L-retro .rt-t::after{right:-9px;clip-path:inset(0 50% 0 0)}
+.L-retro .rt-t svg{width:36px;height:36px;flex:none}
+.L-retro .rt-t span{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0}
+.L-retro .rt-t b{font:900 16px/1.1 Rockwell,"American Typewriter",Georgia,serif;color:#E8662A}
+#hubLay.L-retro .rt-t .liv{--c:#4A2E1A;font:700 8.5px/1 "American Typewriter","Courier New",serif;letter-spacing:.02em;padding:3px 6px;gap:4px;background:none;white-space:nowrap}
+.L-retro .spl{background:#F2E1BF}
+.L-retro .spl .ht{position:absolute;inset:0;background:radial-gradient(rgba(232,102,42,.25) 1.6px,transparent 2px) 0 0/9px 9px;opacity:0;animation:hlRtFin .6s 1s both}
+.L-retro .spl .cm{position:absolute;left:0;right:0;top:32%;height:150px}
+.L-retro .spl .cm b{position:absolute;left:0;right:0;text-align:center;font:900 clamp(100px,34vw,140px)/1 Rockwell,"American Typewriter",Georgia,serif;mix-blend-mode:multiply}
+.L-retro .spl .c1{color:#00A6C8;animation:hlRtCy 1.2s cubic-bezier(.3,1.3,.5,1) .2s both}
+.L-retro .spl .c2{color:#E8337A;animation:hlRtMg 1.2s cubic-bezier(.3,1.3,.5,1) .3s both}
+.L-retro .spl .c3{color:#F5C400;animation:hlRtAm 1.2s cubic-bezier(.3,1.3,.5,1) .4s both}
+.L-retro .spl .tx{position:absolute;left:0;right:0;top:calc(32% + 160px);text-align:center;font:700 13px/1 "American Typewriter",serif;letter-spacing:.3em;color:#4A2E1A;animation:hlRtFin .5s 1.3s both}
+@keyframes hlRtSol{to{transform:rotate(360deg)}}
+@keyframes hlRtBote{50%{transform:translateY(-10px) rotate(8deg)}}
+@keyframes hlRtFin{from{opacity:0}to{opacity:1}}
+@keyframes hlRtCy{from{transform:translate(-40px,-24px);opacity:0}}
+@keyframes hlRtMg{from{transform:translate(36px,18px);opacity:0}}
+@keyframes hlRtAm{from{transform:translate(-10px,34px);opacity:0}}
 
 @media (prefers-reduced-motion:reduce){#hubLay *,#hubLay *::before,#hubLay *::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important}}
 `;
@@ -568,13 +685,79 @@ function initCartas(lay){
   return function(){ vivo=false; try{ root.cancelAnimationFrame(raf); root.removeEventListener('pageshow',ps); root.removeEventListener('resize',rz); }catch(e){} };
 }
 
+/* ===================================================================== REVISTAS (19-nov-2026): Deportiva · Lujo · Retro 70
+   Osvaldo eligió estas tres del estilo Revista. La portada pone el pick más claro del día (lo que las apps dejaron en OVAHoy al abrirlas);
+   si hoy no has abierto ninguna, dice cómo llenarla. La entrada animada sale solo la primera vez de cada día (tocar la salta). */
+var APPN={mlb:'MLB',fut:'Fútbol',nba:'NBA',nhl:'NHL',nfl:'NFL',ten:'Tenis'};
+function rvEsc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function rvTops(){
+  try{
+    var H=root.OVAHoy; if(!H||!root.localStorage) return [];
+    return (H.resumen(root.localStorage).tops||[]).map(function(t){
+      var p=+t.p; if(p>0&&p<=1) p*=100; var n=String(t.n||''), f=n, r='', m;
+      if(t.app==='mlb'){ m=n.match(/^(.*?)\s*\((.*)\)\s*$/); if(m){ f=m[1]; var g=m[2].split(/ vs | @ /); r=g[0]===f?(g[1]||''):g[0]; } }   /* MLB publica «Twins (Twins @ Yankees)» */
+      else{ m=n.split(/ vs | @ /); f=m[0]; r=m[1]||''; }
+      return {app:t.app,f:f,r:r,p:Math.round(p),sub:t.sub||''};
+    }).filter(function(t){ return t.f&&APPN[t.app]&&isFinite(t.p)&&t.p>0&&t.p<100; });
+  }catch(e){ return []; }
+}
+function rvCorto(n,app){ var t=String(n||'').trim().split(/\s+/); if(app==='fut'||t.length<3) return t.join(' '); return ['Red','White','Blue','Trail','Golden','Maple'].indexOf(t[t.length-2])>=0?t.slice(-2).join(' '):t[t.length-1]; }
+function rvFecha(){ var d=new Date(),D=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'],M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return {dia:D[d.getDay()],n:d.getDate(),mes:M[d.getMonth()],a:d.getFullYear(),num:Math.floor((d-new Date(d.getFullYear(),0,0))/864e5)}; }
+function htmlDeportiva(){
+  var T=rvTops(), F=rvFecha(), t=T[0], k=t?t.app:'nba', o='';
+  o+='<div class="dp-cv"><div class="dp-mo"></div><div class="dp-ball">'+ctBall(k)+'</div><div class="rv-sc"><div class="hl-brand"><b>OVA</b><span>SPORTS</span></div>';
+  o+='<div class="dp-fe rv-e" style="--i:1">Edición Nº '+F.num+' · '+F.dia+' '+F.n+' de '+F.mes+'</div>';
+  if(t) o+='<div class="dp-n rv-e" style="--i:2">'+t.p+'<small>%</small></div><div class="dp-h rv-e" style="--i:3">'+rvEsc(rvCorto(t.f,t.app))+', el más probable de hoy</div><div class="dp-s rv-e" style="--i:4">'+rvEsc(APPN[t.app]+(t.r?' · ante '+t.r:'')+(t.sub?' · '+t.sub:''))+'</div>';
+  else o+='<div class="dp-n rv-e" style="--i:2">6<small class="w"> deportes</small></div><div class="dp-h rv-e" style="--i:3">Un modelo para los seis</div><div class="dp-s rv-e" style="--i:4">Abre una app y aquí sale el pick más claro del día.</div>';
+  var cl=T.slice(1,4);
+  o+='<div class="dp-cl rv-e" style="--i:5">'+(cl.length?cl.map(function(x){ return '<div><b>'+APPN[x.app].toUpperCase()+'</b>'+rvEsc(rvCorto(x.f,x.app)+' '+x.p+'%')+'</div>'; }).join(''):DEP.slice(0,3).map(function(d){ return '<div><b>'+d.n.toUpperCase()+'</b>'+rvEsc(d.d)+'</div>'; }).join(''))+'</div>';
+  o+='<a class="dp-btn rv-e" style="--i:6" href="'+TOP.href+'">Lo mejor de hoy <span>→</span></a>';
+  o+='<div class="dp-ch rv-e" style="--i:7">'+DEP.map(function(d){ return '<a href="'+d.href+'">'+d.n+livHtml(d.k)+'</a>'; }).join('')+'</div></div></div><div class="dp-fl"></div>';
+  return o;
+}
+function htmlLujo(){
+  var T=rvTops(), F=rvFecha(), t=T[0], k=t?t.app:'ten', o='<div class="rv-sc">';
+  o+='<div class="lj-top rv-e" style="--i:0"><span>'+F.dia+' '+F.n+' de '+F.mes+'</span><span>Edición '+F.num+'</span></div>';
+  o+='<div class="lj-mw"><div class="hl-brand">OVA</div><div class="lj-ball">'+ctBall(k)+'</div></div>';
+  o+='<div class="lj-cl rv-e" style="--i:2"><div><b>El arte de acertar</b><span>Seis deportes,<br>un modelo</span></div><div>'+(t?'<b>'+rvEsc(rvCorto(t.f,t.app))+', '+t.p+'%</b><span>'+APPN[t.app]+' · lo más claro<br>de hoy</span>':'<b>Hoy, en portada</b><span>Abre una app<br>y sale aquí</span>')+'</div></div>';
+  o+='<a class="lj-h rv-e" style="--i:3" href="'+TOP.href+'">Lo mejor de hoy</a><div class="lj-hs rv-e" style="--i:4">Los más probables · la combinada →</div>';
+  o+='<div class="lj-i rv-e" style="--i:5"><h5>EN ESTE NÚMERO</h5>'+DEP.map(function(d){ return '<a href="'+d.href+'"><span>'+d.n+'</span><i></i>'+livHtml(d.k)+'</a>'; }).join('')+'</div></div>';
+  o+='<div class="spl"><div class="sw"><b>OVA</b><span>Edición de '+F.mes+'</span></div><i></i></div>';
+  return o;
+}
+function htmlRetro(){
+  var T=rvTops(), F=rvFecha(), t=T[0], k=t?t.app:'mlb', o='<div class="rt-sun"></div><div class="rt-dots"></div><div class="rt-ball">'+ctBall(k)+'</div><div class="rv-sc">';
+  o+='<div class="rt-top rv-e" style="--i:0"><b>Nº '+F.num+'</b><span>'+(F.dia+' '+F.n+' · '+F.mes.slice(0,3)+' · '+F.a).toUpperCase()+'</span><b>35¢</b></div>';
+  o+='<div class="hl-brand">OVA<small>REVISTA DEPORTIVA</small></div>';
+  o+='<a class="rt-h rv-e" style="--i:2" href="'+TOP.href+'">¡Lo mejor de hoy!<span>'+(t?rvEsc(rvCorto(t.f,t.app)+' '+t.p+'% ('+APPN[t.app]+')')+' y más →':'Los más probables y la combinada →')+'</span></a>';
+  o+='<div class="rt-g">'+DEP.map(function(d,i){ return '<a class="rt-t rv-e" style="--i:'+(3+i)+'" href="'+d.href+'">'+ctBall(d.k)+'<span><b>'+d.n+'</b>'+livHtml(d.k)+'</span></a>'; }).join('')+'</div></div>';
+  o+='<div class="spl"><div class="ht"></div><div class="cm"><b class="c1">OVA</b><b class="c2">OVA</b><b class="c3">OVA</b></div><div class="tx">REVISTA DEPORTIVA</div></div>';
+  return o;
+}
+function rvInit(id,ms){
+  return function(lay){
+    var hoy='',visto=false;
+    try{ hoy=new Date().toDateString(); visto=root.localStorage.getItem('ova_hub_'+id+'_dia')===hoy; root.localStorage.setItem('ova_hub_'+id+'_dia',hoy); }catch(e){}
+    var listo=false;
+    function fin(){ if(listo) return; listo=true; lay.classList.add('in'); if(lay.classList.contains('play')){ lay.classList.add('sal'); tm(function(){ lay.classList.remove('play','sal'); },650); } }
+    function salta(e){ if(!listo&&lay.classList.contains('play')){ if(e&&e.preventDefault) e.preventDefault(); fin(); } }
+    if(visto||reduce) tm(fin,30);
+    else{ lay.classList.add('play'); tm(fin,ms); lay.addEventListener('click',salta,true); }
+    return function(){ try{ lay.removeEventListener('click',salta,true); }catch(e){} };
+  };
+}
+
 var BUILD={
  carrusel:{html:htmlCarrusel,init:initCarrusel},
  orbita:{html:htmlOrbita,init:initOrbita},
  paneles:{html:htmlPaneles,init:null},
  mazo:{html:htmlMazo,init:initMazo},
  tablero:{html:htmlTablero,init:initTablero},
- cartas:{html:htmlCartas,init:initCartas}
+ cartas:{html:htmlCartas,init:initCartas},
+ deportiva:{html:htmlDeportiva,init:rvInit('deportiva',1600)},
+ lujo:{html:htmlLujo,init:rvInit('lujo',2200)},
+ retro:{html:htmlRetro,init:rvInit('retro',1900)}
 };
 function construir(id){
   var b=BUILD[id]; if(!b) return;
@@ -653,6 +836,8 @@ function params(){
 function arrancar(){
   var url=params(), id=url||leer(), estreno=false;
   /* 12-nov-2026: Cartas se estrena sola UNA vez (Osvaldo la eligió para el inicio); después manda lo que él escoja con la pulsación larga */
+  /* 19-nov-2026: Deportiva se estrena sola UNA vez (Osvaldo pidió las revistas); después manda lo que él escoja */
+  try{ if(!url&&root.localStorage.getItem('ova_hub_revista_v1')!=='1'){ root.localStorage.setItem('ova_hub_revista_v1','1'); root.localStorage.setItem('ova_hub_cartas_v1','1'); id='deportiva'; estreno=true; } }catch(e){}
   try{ if(!url&&root.localStorage.getItem('ova_hub_cartas_v1')!=='1'){ root.localStorage.setItem('ova_hub_cartas_v1','1'); id='cartas'; estreno=true; } }catch(e){}
   aplicar(id,{inicial:true,guardar:!!url||estreno});   /* en <head>: solo marca el diseño (así no se ve el clásico un instante antes) */
   function listo(){
@@ -667,7 +852,7 @@ function arrancar(){
   if(doc.readyState==='loading') doc.addEventListener('DOMContentLoaded',listo); else listo();
 }
 
-var API={TOP:TOP,VIS:VIS,ESTILOS:ESTILOS,DEP:DEP,css:CSS,_html:{carrusel:htmlCarrusel,orbita:htmlOrbita,paneles:htmlPaneles,mazo:htmlMazo,tablero:htmlTablero,cartas:htmlCartas},aplicar:aplicar,abrirHoja:abrirHoja,cerrarHoja:cerrarHoja,actual:function(){ return ST.id; },leer:leer,_arrancar:arrancar};
+var API={TOP:TOP,VIS:VIS,ESTILOS:ESTILOS,DEP:DEP,css:CSS,_html:{carrusel:htmlCarrusel,orbita:htmlOrbita,paneles:htmlPaneles,mazo:htmlMazo,tablero:htmlTablero,cartas:htmlCartas,deportiva:htmlDeportiva,lujo:htmlLujo,retro:htmlRetro},aplicar:aplicar,abrirHoja:abrirHoja,cerrarHoja:cerrarHoja,actual:function(){ return ST.id; },leer:leer,_arrancar:arrancar};
 root.OVAHub=API;
 if(typeof module!=='undefined'&&module.exports){ module.exports=API; }
 else if(doc&&html){ try{ arrancar(); }catch(e){} }
