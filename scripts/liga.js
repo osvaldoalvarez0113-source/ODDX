@@ -28,6 +28,12 @@
      modelo-epa   NFL: el modelo OVA (con FPI) más el EPA por jugada de ataque y defensa de cada equipo (jugada a jugada de nflverse,
                   gratis). Peso ajustado en una temporada y medido en la otra (mediciones.nfl_epa).
      modelo-afinado el modelo OVA con las constantes que pasaron la fábrica de los domingos (scripts/fabrica.js), si alguna pasó.
+
+   TOTALES Y HÁNDICAP (desde el 21-nov-2026): con la línea de ESPN (DraftKings) de cada juego se guarda también, antes del juego,
+   la probabilidad del Más (total) y de que el local cubra (hándicap) según el mercado (sin margen) y según el Modelo OVA:
+   NBA y NFL con su margen/total normal (NBA con bajas y BPI, NFL con FPI: el margen sale de la misma probabilidad mezclada),
+   NHL con su distribución de goles (puck line ±1.5) y fútbol con el Dixon-Coles (solo total 1.5 / 2.5 / 3.5).
+   Se califica con el marcador final (línea exacta = no cuenta) y se lleva la tabla y los duelos Modelo contra Mercado.
      mercado      moneyline de ESPN (DraftKings) sin margen; en fútbol el 1X2.
      espn         el pronóstico público de ESPN (BPI en NBA, FPI en NFL).
      polymarket   precio de Polymarket (rama «pred»), sin el margen.
@@ -44,7 +50,9 @@
    =================================================================== */
 const fs = require('fs'), path = require('path');
 const RAIZ = path.join(__dirname, '..');
-const AR = require('../autoregistro.js');           // lineaEspn, trio, norm: las mismas funciones que usa el teléfono
+const AR = require('../autoregistro.js');
+const US = require('../usdeporte.js');            // parseOdds: total y hándicap de ESPN, igual que las apps
+const PUB = require('../publico.js');            // margenDe: el margen que da una probabilidad (mezcla con ESPN)           // lineaEspn, trio, norm: las mismas funciones que usa el teléfono
 
 const ESPN = 'https://site.api.espn.com/apis/site/v2/sports/';
 const CORE = 'https://sports.core.api.espn.com/v2/sports/';
@@ -145,6 +153,7 @@ function partidosDe(j, dep, ruta) {
         hs: sc(h), as: sc(a), hGano: h.winner === true, aGano: a.winner === true, tour: tour,
         neutral: c.neutralSite === true, evNombre: e.name || '', mj: !!e.major, ronda: (c.round && c.round.displayName) || '',
         mercado: dep === 'tenis' ? null : (function () { const k = AR.lineaEspn(c); return k ? arr(k.L, k.A, k.D) : null; })(),
+        lineas: dep === 'tenis' ? null : (function () { try { return US.parseOdds(c); } catch (e) { return null; } })(),
       });
     });
   });
@@ -179,12 +188,16 @@ function modelosUS(dep) {
       if (!p.hId || !p.aId || !(S.m && (p.hId in S.m) && (p.aId in S.m))) return null;
       const g = { h: p.hId, a: p.aId, ts: p.ts, neutral: p.neutral, adjH: 0, adjA: 0 }, dk = M.dayKey(p.ts), o = {};
       if (dep === 'nhl') {
-        o.modelo = M.predecir(S, P, g, { dH: ult[p.hId], dA: ult[p.aId] }).pH;
+        const prN = M.predecir(S, P, g, { dH: ult[p.hId], dA: ult[p.aId] });
+        o.modelo = prN.pH;
+        o._lin = { tipo: 'nhl', over: L => { const r = M.pOver(prN.D, L); return r.p < 1 ? r.w / (1 - r.p) : null; }, cubre: Sp => { const r = M.pCoverM(prN.D, Sp); return r.p < 1 ? r.w / (1 - r.p) : null; } };
         o['modelo-goles'] = M.predecir(S0, P0, g, { dH: ult[p.hId], dA: ult[p.aId] }).pH;
         if (SF) o['modelo-afinado'] = M.predecir(SF, PF, g, { dH: ult[p.hId], dA: ult[p.aId] }).pH;
       } else {
         const gH = ult[p.hId] === undefined ? undefined : dk - ult[p.hId], gA = ult[p.aId] === undefined ? undefined : dk - ult[p.aId];
-        o['modelo-solo'] = M.predecir(S, P, g, { gH: gH, gA: gA }).pH;
+        const prF = M.predecir(S, P, g, { gH: gH, gA: gA });
+        o['modelo-solo'] = prF.pH;
+        o._lin = { tipo: 'normal', pm: prF.pm, sM: prF.sM, pt: prF.pt, sT: prF.sT, pML: M.pML, pCover: M.pCover };
         if (SF) o['modelo-afinado-solo'] = M.predecir(SF, PF, g, { gH: gH, gA: gA }).pH;
       }
       return o;
@@ -297,7 +310,7 @@ function ajusteBajas(hId, aId) {
 function modeloNBA(filas) {
   try {
     const nb = fs.readFileSync(path.join(RAIZ, 'nba.html'), 'utf8'), i0 = nb.indexOf('<script id="modelo">') + 20, mod = nb.slice(i0, nb.indexOf('</script>', i0)), N = {};
-    new Function('N', 'module', mod + ';Object.assign(N,{PDEF,seasonOf,dayKey,correr,predecir,pML,sigmas});')(N, undefined);
+    new Function('N', 'module', mod + ';Object.assign(N,{PDEF,seasonOf,dayKey,correr,predecir,pML,sigmas,pCover});')(N, undefined);
     const games = (filas || []).filter(r => NBA_SEDE[r[2]] && NBA_SEDE[r[3]])     // fuera el All-Star y equipos de exhibición
       .map(r => ({ id: r[0], ts: r[1], h: r[2], a: r[3], hs: r[6], as: r[7] })).sort((x, y) => x.ts - y.ts);
     if (games.length < 300) { console.log('nba: archivo con pocos juegos todavía (' + games.length + '), el modelo espera'); return null; }
@@ -331,7 +344,8 @@ function modeloNBA(filas) {
       if (!(p.hId in S.m) || !(p.aId in S.m)) return null;
       const dk = N.dayKey(p.ts), lastDk = t => { const l = ult[t]; return l && l.length ? l[l.length - 1][0] : undefined; };
       const g = { h: p.hId, a: p.aId, ts: p.ts, neutral: p.neutral, adjH: ajusteBajas(p.hId, p.aId), adjA: 0 };
-      const o = { 'modelo-solo': N.predecir(S, P, g, { dH: lastDk(p.hId), dA: lastDk(p.aId) }).pH, bajas: g.adjH };
+      const prB = N.predecir(S, P, g, { dH: lastDk(p.hId), dA: lastDk(p.aId) });
+      const o = { 'modelo-solo': prB.pH, bajas: g.adjH, _lin: { tipo: 'normal', pm: prB.pm, sM: prB.sM, pt: prB.pt, sT: prB.sT, pML: N.pML, pCover: N.pCover } };
       if (SF) o['modelo-afinado-solo'] = N.predecir(SF, PF, g, { dH: lastDk(p.hId), dA: lastDk(p.aId) }).pH;
       const f = wTodo && !p.neutral && pasa({ pruebas: med }) ? rasgosViaje(g, dk, ult) : null;
       if (f) { const adj = VIAJE_K.reduce((t, k, i) => t + f[k] * wTodo[i], 0); o['modelo-viajes-solo'] = N.predecir(S, P, Object.assign({}, g, { adjH: g.adjH + adj }), { dH: lastDk(p.hId), dA: lastDk(p.aId) }).pH; }
@@ -522,6 +536,7 @@ function modeloFutbol(arch, ahora) {
       if (f.tipo === 'copa' && (!xl0 || !xv0)) return null;              // como la app: sin los dos equipos no hay modelo de copa
       const pr = F.DC_CFG.promo ? { att: 0.85, def: 1.15 } : { att: 1, def: 1 }, xl = xl0 || pr, xv = xv0 || pr;
       const lamL = f.c * xl.att * xv.def * f.gam, lamV = f.c * xv.att * xl.def, d = F.distribucion(lamL, lamV, F.DC_CFG.rho, false), o = { modelo: [d.pL, d.pV, d.pD] };
+      o._lin = { tipo: 'fut', over: L => (L === 1.5 ? d.o15 : L === 2.5 ? d.o25 : L === 3.5 ? d.o35 : null), cubre: () => null };
       if (f.afinado) {
         const A2 = f.afinado, pr2 = A2.cfg.promo ? { att: 0.85, def: 1.15 } : { att: 1, def: 1 }, al = F.buscarEnMapa(A2.eq, p.local) || pr2, av = F.buscarEnMapa(A2.eq, p.visita) || pr2;
         const d3 = F.distribucion(A2.c * al.att * av.def * A2.gam, A2.c * av.att * al.def, A2.cfg.rho, false); o['modelo-afinado'] = [d3.pL, d3.pV, d3.pD];
@@ -699,6 +714,64 @@ function competidores(dep, p, extra) {
   return o;
 }
 
+/* ---------- totales y hándicap: mercado contra Modelo OVA ---------- */
+function imp(a) { return a > 0 ? 100 / (a + 100) : -a / (-a + 100); }
+function sinMargen(a, b) { if (!a || !b) return 0.5; const x = imp(a), y = imp(b); return x / (x + y); }   // sin precio: la línea es la mediana del mercado
+function mercadosExtra(dep, p, m, espn) {
+  const ln = p.lineas, lin = m && m._lin, out = {};
+  if (!ln) return out;
+  const W = dep === 'nba' ? W_BPI : (dep === 'nfl' ? W_FPI : null);
+  const nPush = r => (r && r.p < 1 ? r.w / (1 - r.p) : null);
+  if (isFinite(ln.total) && ln.total > 0) {
+    const t = { l: ln.total, p: { mercado: r3(sinMargen(ln.toO, ln.toU)) } };
+    let pm = null;
+    if (lin && lin.tipo === 'normal') pm = nPush(lin.pCover(lin.pt, lin.sT, ln.total));
+    else if (lin && lin.over) pm = lin.over(ln.total);
+    if (valido(pm)) t.p.modelo = r3(pm);
+    out.tot = t;
+  }
+  if (isFinite(ln.spread) && dep !== 'futbol') {
+    const h = { l: ln.spread, p: { mercado: r3(sinMargen(ln.spH, ln.spA)) } };
+    let pc = null;
+    if (lin && lin.tipo === 'normal') {
+      let pmU = lin.pm;
+      if (W !== null && espn != null) { const mx = sig((1 - W) * logit(lin.pML(lin.pm, lin.sM)) + W * logit(espn)); pmU = PUB.margenDe(mx, x => lin.pML(x, lin.sM)); }
+      pc = nPush(lin.pCover(pmU, lin.sM, -ln.spread));          // el local cubre si su margen + línea > 0
+    } else if (lin && lin.cubre) pc = lin.cubre(ln.spread);
+    if (valido(pc)) h.p.modelo = r3(pc);
+    out.han = h;
+  }
+  return out;
+}
+function resultadoMercado(tipo, l, hs, as) {
+  if (hs == null || as == null) return null;
+  if (tipo === 'tot') { const t = hs + as; return t > l ? 'O' : (t < l ? 'U' : 'X'); }
+  const x = hs - as + l; return x > 0 ? 'H' : (x < 0 ? 'A' : 'X');
+}
+function resumenMercados(reg) {
+  const out = {};
+  Object.values(reg.items).forEach(it => {
+    if (!it.mk) return;
+    ['tot', 'han'].forEach(tipo => {
+      const x = it.mk[tipo]; if (!x || !x.res || x.res === 'X') return;
+      const D2 = out[it.dep] || (out[it.dep] = {}), T = D2[tipo] || (D2[tipo] = { comp: {}, duelo: { gana: 0, pierde: 0 } });
+      const si = tipo === 'tot' ? 'O' : 'H', pick = {};
+      Object.keys(x.p).forEach(k => {
+        const c = T.comp[k] || (T.comp[k] = { jugados: 0, aciertos: 0, brier: 0 }), q = x.p[k], ok = (q >= 0.5 ? si : (si === 'O' ? 'U' : 'A')) === x.res;
+        pick[k] = q >= 0.5; c.jugados++; if (ok) c.aciertos++; c.brier += (q - (x.res === si ? 1 : 0)) ** 2;
+      });
+      if ('modelo' in pick && 'mercado' in pick && pick.modelo !== pick.mercado && Math.abs(x.p.mercado - 0.5) > 1e-6) {
+        if ((pick.modelo ? si : (si === 'O' ? 'U' : 'A')) === x.res) T.duelo.gana++; else T.duelo.pierde++;
+      }
+    });
+  });
+  Object.values(out).forEach(D2 => Object.values(D2).forEach(T => {
+    Object.values(T.comp).forEach(c => { c.pct = +(100 * c.aciertos / c.jugados).toFixed(1); c.brier = +(c.brier / c.jugados).toFixed(4); });
+    const n = T.duelo.gana + T.duelo.pierde; T.duelo.n = n; T.duelo.z = n ? +((T.duelo.gana - n / 2) / Math.sqrt(n / 4)).toFixed(2) : 0;
+  }));
+  return out;
+}
+
 /* ---------- registrar y calificar (puras: se prueban sin internet) ---------- */
 function registrar(reg, dep, partidos, extraDe, ahora) {
   let n = 0;
@@ -707,11 +780,13 @@ function registrar(reg, dep, partidos, extraDe, ahora) {
     const id = dep + '|' + p.ext;
     let it = reg.items[id];
     if (it && it.res) return;
-    const comp = competidores(dep, p, extraDe(p));
+    const ex = extraDe(p), comp = competidores(dep, p, ex);
     if (!Object.keys(comp).length) return;
+    let mx = null; try { mx = mercadosExtra(dep, p, ex.modelo ? ex.modelo(p) : null, ex.espn); } catch (e) { }
     if (!it) it = reg.items[id] = { id: id, dep: dep, ruta: p.ruta, ext: p.ext, ts: p.ts, local: p.local, visita: p.visita, p: {}, t: {} };
     it.ts = p.ts; it.local = p.local; it.visita = p.visita;
     Object.keys(comp).forEach(k => { it.p[k] = comp[k]; it.t[k] = ahora; });
+    if (mx && Object.keys(mx).length) { it.mk = mx; it.mk.t = ahora; }
     n++;
   });
   return n;
@@ -728,6 +803,7 @@ function calificar(reg, porRuta, ahora) {
     if (r === null && ahora - it.ts > REGLAS.DIAS_MAX * D) r = 'X';
     if (r === null) return;
     it.res = r; it.tr = ahora; if (p && p.hs != null) { it.gl = p.hs; it.gv = p.as; }
+    if (it.mk && p && r !== 'X') ['tot', 'han'].forEach(tp => { if (it.mk[tp]) it.mk[tp].res = resultadoMercado(tp, it.mk[tp].l, p.hs, p.as); });
     n++;
   });
   return n;
@@ -813,7 +889,7 @@ function proximos(reg, tabla, ahora) {
 
 module.exports = { DEPS, REGLAS, NOMBRES, arr, pickDe, zonaDe, mismo, consenso, partidosDe, resultadoDe, competidores, registrar, calificar,
   pendientes, resumen, duelos, ascensos, mapa, proximos, prediccionPolymarket, modelosUS, modeloTenis, ymdUTC,
-  ARCHIVO, mesesDesde, finalesDe, ajustarMezcla, mezclar, MEZCLA_MIN, rasgosViaje, mco, calendarioFut, descansoDe, medirDescanso, epaDeCSV, modeloEPA, pasa, ponerFabrica: f => { FAB = f; }, ponerLesiones: l => { LES_NBA = l; }, ajusteBajas, modeloNBA, motorFutbol, modeloFutbol, nfeloMapa, clubeloLista, clubeloPara, taElo, taBuscar, probTA, mismoClub };
+  ARCHIVO, mesesDesde, finalesDe, ajustarMezcla, mezclar, MEZCLA_MIN, rasgosViaje, mco, calendarioFut, descansoDe, medirDescanso, epaDeCSV, modeloEPA, pasa, ponerFabrica: f => { FAB = f; }, ponerLesiones: l => { LES_NBA = l; }, ajusteBajas, mercadosExtra, resultadoMercado, resumenMercados, modeloNBA, motorFutbol, modeloFutbol, nfeloMapa, clubeloLista, clubeloPara, taElo, taBuscar, probTA, mismoClub };
 if (require.main !== module) return;
 
 /* ---------- corrida ---------- */
@@ -979,7 +1055,7 @@ async function predictorESPN(core, ext) {
   mapa(reg, tabla);
   const salida = { v: 1, generado: new Date(ahora).toISOString(), reglas: REGLAS, nombres: NOMBRES, titular: estado.titular, cambios: estado.cambios, pesos: pesos, mediciones: mediciones,
     fabrica: FAB ? { generado: FAB.generado, regla: FAB.regla, deportes: Object.fromEntries(Object.keys(FAB.deportes || {}).map(k => { const x = FAB.deportes[k]; return [k, { probadas: x.probadas, pasaron: x.pasaron, zExigido: x.zExigido, mejor: x.mejor ? { cambios: x.mejor.cambios, z: x.mejor.z } : null, casi: x.top5 && x.top5[0] ? { cambios: x.top5[0].cambios, z: x.top5[0].z } : null }]; })) } : null,
-    deportes: tabla, proximos: proximos(reg, tabla, ahora),
+    deportes: tabla, proximos: proximos(reg, tabla, ahora), mercados: resumenMercados(reg),
     totales: { guardados: Object.keys(reg.items).length, calificados: Object.values(reg.items).filter(i => i.res && i.res !== 'X').length, anulados: Object.values(reg.items).filter(i => i.res === 'X').length } };
   // vigilante, detective y avisos al teléfono (scripts/liga-extras.js)
   const X = require('./liga-extras.js'), mes = new Date(ahora).getUTCMonth() + 1, extraP = [];

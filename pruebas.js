@@ -2124,6 +2124,16 @@ sec('Liga de modelos');
   ok('el robot resta las bajas «Out» de la NBA igual que nba.html (valores-nba.json)',(()=>{ const v=JSON.parse(rd('valores-nba.json')), q=(v.eq['1']||[])[0]; if(!q) return true; LG.ponerLesiones({'1':[q[1]]}); return Math.abs(LG.ajusteBajas('1','2')-(-v.c*q[2]))<1e-9&&Math.abs(LG.ajusteBajas('2','1')-v.c*q[2])<1e-9; })());
   LG.ponerLesiones(null);
  }
+ {
+  const lin={tipo:'normal',pm:5,sM:12,pt:220,sT:18,pML:(pm,s)=>0.5+pm/50,pCover:(mu,s,t)=>({w:mu>t?0.7:0.3,p:0})};
+  const mx=LG.mercadosExtra('nfl',{lineas:{total:228.5,toO:-110,toU:-110,spread:-4.5}},{_lin:lin},null);
+  ok('totales y hándicap: guarda la línea de ESPN, el mercado sin margen y el Modelo OVA',mx.tot.l===228.5&&mx.tot.p.mercado===0.5&&mx.tot.p.modelo===0.3&&mx.han.l===-4.5&&mx.han.p.modelo===0.7);
+  ok('totales y hándicap: califica Más/Menos y cubrir, y la línea exacta no cuenta',LG.resultadoMercado('tot',228.5,115,110)==='U'&&LG.resultadoMercado('tot',6,3,3)==='X'&&LG.resultadoMercado('han',-4.5,110,104)==='H'&&LG.resultadoMercado('han',-4.5,110,108)==='A'&&LG.resultadoMercado('han',1.5,2,3)==='H');
+  const rg={items:{}}; for(let i=0;i<30;i++) rg.items['x'+i]={dep:'nba',mk:{tot:{l:220,p:{mercado:0.48,modelo:0.6},res:i<20?'O':'U'}}};
+  const rm=LG.resumenMercados(rg);
+  ok('totales y hándicap: tabla y duelos Modelo contra Mercado',rm.nba.tot.comp.modelo.aciertos===20&&rm.nba.tot.comp.mercado.aciertos===10&&rm.nba.tot.duelo.n===30&&rm.nba.tot.duelo.gana===20);
+  ok('fútbol: el total sale del Dixon-Coles (1.5/2.5/3.5) y no hay hándicap',(()=>{ const m=LG.mercadosExtra('futbol',{lineas:{total:2.5,spread:-0.5}},{_lin:{tipo:'fut',over:L=>L===2.5?0.6:null,cubre:()=>null}},null); return m.tot.p.modelo===0.6&&!m.han; })());
+ }
  ok('el robot corre en el workflow liga.yml y guarda en la rama liga',/node scripts\/liga\.js/.test(rd('.github/workflows/liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/liga.yml')));
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{

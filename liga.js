@@ -185,6 +185,18 @@
         h += '</table>';
       }
     });
+    var mm = d.mercados || {}, mmk = ORDEN.filter(function (k) { return mm[k]; });
+    h += '<h3 style="margin:18px 2px 8px;font-size:16px">🎯 Totales y hándicap</h3><div style="font-size:12px;color:var(--mut2);margin:0 2px 6px">Con la línea de ESPN de cada juego, antes de empezar: ¿acierta más el Modelo OVA o el mercado en el Más/Menos y en el hándicap? «Duelos»: solo los juegos donde escogieron distinto.</div>';
+    if (!mmk.length) h += '<div class="vacio" style="padding:12px;font-size:13px">Todavía no hay juegos calificados con línea (empezó el 21-nov-2026).</div>';
+    mmk.forEach(function (k) {
+      [['tot', 'Total (Más/Menos)'], ['han', 'Hándicap']].forEach(function (tp) {
+        var T = mm[k][tp[0]]; if (!T) return;
+        var fila = function (c) { var x = T.comp[c]; return x ? x.aciertos + '/' + x.jugados + ' (' + x.pct.toFixed(1) + '%)' : '—'; };
+        var du = T.duelo || {};
+        h += '<div class="caja" style="padding:10px 12px;margin-bottom:6px;font-size:13px"><b>' + esc((d.deportes[k] && d.deportes[k].nombre) || k) + ' · ' + tp[1] + '</b><br>Modelo OVA: ' + fila('modelo') + ' · Mercado: ' + fila('mercado') +
+          (du.n ? '<br><span style="color:var(--mut2)">Duelos: el modelo ganó ' + du.gana + ' de ' + du.n + (du.n >= 20 ? ' (z ' + du.z + (du.z >= 1.645 ? ', le gana claro' : (du.z <= -1.645 ? ', pierde claro' : ', todavía parejo')) + ')' : ' (faltan ' + (20 - du.n) + ' para que diga algo)') + '</span>' : '') + '</div>';
+      });
+    });
     var NOMBRE_IDEA = { nba_viajes: 'NBA · viajes y altura', futbol_descanso: 'Fútbol · cansancio (Europa y copas)', nfl_epa: 'NFL · EPA por jugada' };
     var med = d.mediciones || {}, mk = Object.keys(med);
     if (mk.length) {
