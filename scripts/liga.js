@@ -624,10 +624,11 @@ async function predictorESPN(core, ext) {
   }
   const [txNf, txCe, txTa, txTw] = await Promise.all([
     getTexto('https://raw.githubusercontent.com/greerreNFL/nfelo/main/output_data/prediction_tracker.csv'),
-    getTexto('http://api.clubelo.com/Fixtures'),
+    getTexto('http://api.clubelo.com/Fixtures').then(t => t && /GD/.test(t) ? t : getTexto('https://api.clubelo.com/Fixtures').then(u => u || t)),
     getTexto('https://tennisabstract.com/reports/atp_elo_ratings.html'),
     getTexto('https://tennisabstract.com/reports/wta_elo_ratings.html')]);
   const ext = { nfelo: txNf ? nfeloMapa(txNf) : null, clubelo: txCe ? clubeloLista(txCe) : null, ta: { a: txTa ? taElo(txTa) : null, w: txTw ? taElo(txTw) : null } };
+  if (!ext.clubelo || !ext.clubelo.length) log.push('ClubElo respondió: ' + (txCe == null ? 'nada' : JSON.stringify(String(txCe).slice(0, 300))));
   let supT = null; try { const T = require('../modelo-tenis.js'); supT = p => T.superficie(p.evNombre, p.ts); } catch (e) { }
   log.push('afuera: nfelo ' + (ext.nfelo ? Object.keys(ext.nfelo).length + ' juegos' : 'NO') + ' · ClubElo ' + (ext.clubelo ? ext.clubelo.length + ' partidos' : 'NO') +
     ' · Tennis Abstract ' + (ext.ta.a ? Object.keys(ext.ta.a).length : 'NO') + '/' + (ext.ta.w ? Object.keys(ext.ta.w).length : 'NO') + ' jugadores');
