@@ -2096,6 +2096,24 @@ sec('Liga de modelos');
   const ep=LG.epaDeCSV('game_id,home_team,away_team,season_type,week,posteam,defteam,game_date,play_type,epa,season,desc\n1,LA,WAS,REG,1,LA,WAS,2026-09-10,pass,0.5,2026,"Stafford, pase"\n1,LA,WAS,REG,1,WAS,LA,2026-09-10,run,-0.2,2026,x\n1,LA,WAS,REG,1,WAS,LA,2026-09-10,no_play,3,2026,x\n');
   ok('EPA NFL: lee el CSV con comillas, solo pases y carreras, y traduce LA→LAR y WAS→WSH',JSON.stringify(ep)==='{"2026-09-10|LAR|WSH":[2026,"LAR","WSH",0.5,1,-0.2,1,"REG"]}');
  }
+ {
+  const X=require(D+'scripts/liga-extras.js'), FB=require(D+'scripts/fabrica.js'), ah=Date.parse('2026-11-21T18:00:00Z');
+  const lg={reglas:{CONF_MIN:30},nombres:{mercado:'Mercado'},deportes:{nba:{nombre:'NBA'}},proximos:[{dep:'nba',ext:'1',ts:ah+2*H,local:'Boston Celtics',visita:'Lakers',tit:'mercado',pick:'L',p:.64,zona:'60-65% · local',zn:50,zw:36},{dep:'nba',ext:'2',ts:ah+2*H,local:'A',visita:'B',tit:'mercado',pick:'L',p:.6,zona:'z',zn:10,zw:9},{dep:'nba',ext:'3',ts:ah+9*H,local:'C',visita:'E',tit:'mercado',pick:'L',p:.6,zona:'z',zn:50,zw:40}]};
+  const av=X.avisosPendientes(lg,null,{},ah);
+  ok('avisos: solo el pick en zona probada (30+ juegos y 65%+) que empieza en menos de 3 horas',av.length===1&&/Celtics 64%/.test(av[0].texto)&&/36 de 50/.test(av[0].texto));
+  ok('avisos: lo que ya se mandó no se repite',X.avisosPendientes(lg,null,{'pick|nba|1':ah},ah).length===0);
+  ok('avisos: una idea que entra a la liga avisa una vez',X.avisosPendientes({mediciones:{nba_viajes:{entra:true}}},{mediciones:{nba_viajes:{entra:false}}},{},ah).length===1);
+  const it=[]; for(let i=0;i<30;i++) it.push({dep:'nba',ts:ah-i*864e5,local:'Lakers',visita:'X'+i,p:{mercado:[.7,.3,0]},res:i<12?'L':'A'});
+  const dt=X.detective(it,{nba:{titular:'mercado'}});
+  ok('detective: encuentra «cuando Lakers es favorito» (acertó 40% y decía 70%)',dt.some(g=>/Lakers es favorito/.test(g.grupo)&&g.real===40&&g.decia===70));
+  ok('fábrica: arma todas las combinaciones',FB.producto({a:[1,2],b:[3,4,5]}).length===6);
+  const b0=[],c0=[]; for(let i=0;i<400;i++){ const y=i%3?1:0; b0.push({temp:2025+(i%2),p:.6,y}); c0.push({temp:2025+(i%2),p:y?.7:.5,y}); }
+  const cm=FB.comparar(b0,c0,f=>-Math.log(f.y?f.p:1-f.p),100,0);
+  ok('fábrica: compara juego por juego y por temporada',cm.enTodas===true&&cm.z>2&&cm.temporadas.length===2);
+  ok('récord: página pública que solo lee record.json (juegos ya calificados) y no carga acceso.js',/record\.json/.test(rd('record.html'))&&!/acceso\.js"/.test(rd('record.html')));
+  ok('la fábrica corre los domingos y guarda en la rama liga',/node scripts\/fabrica\.js/.test(rd('.github/workflows/fabrica.yml'))&&/HEAD:liga/.test(rd('.github/workflows/fabrica.yml')));
+  ok('los avisos usan el tema privado (secreto NTFY_TOPIC), nunca uno público',/secrets\.NTFY_TOPIC/.test(rd('.github/workflows/liga.yml'))&&!/ntfy\.sh\/my-bets/.test(rd('scripts/liga-extras.js')));
+ }
  ok('el robot corre en el workflow liga.yml y guarda en la rama liga',/node scripts\/liga\.js/.test(rd('.github/workflows/liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/liga.yml')));
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{

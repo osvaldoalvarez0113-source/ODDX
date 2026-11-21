@@ -162,6 +162,28 @@
           '<br><span style="color:var(--mut2)">Mejoró en ' + mej + ' de ' + pr.length + ' pruebas' + (n ? ' · aciertos ' + (aS / n).toFixed(1) + '% → ' + (aC / n).toFixed(1) + '%' : '') + '</span></div>';
       });
     }
+    var fb = d.fabrica;
+    if (fb && fb.deportes) {
+      h += '<h3 style="margin:18px 2px 8px;font-size:16px">🏭 Fábrica de los domingos</h3><div style="font-size:12px;color:var(--mut2);margin:0 2px 6px">Prueba cientos de versiones de las constantes de cada modelo contra todas las temporadas. Pasa solo la que mejora en cada temporada y con z alto. Última: ' + esc(String(fb.generado || '').slice(0, 10)) + '</div>';
+      ORDEN.filter(function (k) { return fb.deportes[k]; }).forEach(function (k) {
+        var x = fb.deportes[k], cam = function (c) { return Object.keys(c || {}).map(function (q) { return q + ' ' + c[q]; }).join(', '); };
+        h += '<div class="caja" style="padding:10px 12px;margin-bottom:6px;font-size:13px"><b>' + esc((d.deportes[k] && d.deportes[k].nombre) || k) + '</b>: probó ' + (x.probadas || 0) + ', pasaron ' + (x.pasaron || 0) +
+          (x.mejor ? ' → <span style="color:var(--good,#6FD39A)">entra «afinado» (' + esc(cam(x.mejor.cambios)) + ', z ' + x.mejor.z + ')</span>' :
+            (x.casi ? '<br><span style="color:var(--mut2)">La más cerca: ' + esc(cam(x.casi.cambios)) + ', z ' + x.casi.z + ' (pedía ' + x.zExigido + '). Las constantes de hoy siguen siendo las mejores.</span>' : '')) + '</div>';
+      });
+    }
+    var dt = d.detective || [];
+    h += '<h3 style="margin:18px 2px 8px;font-size:16px">🔎 Detective de fallos</h3><div style="font-size:12px;color:var(--mut2);margin:0 2px 6px">Grupos donde el titular acierta claramente menos de lo que decía (15+ juegos). Con tantos grupos, alguno sale por suerte: es una pista, no una verdad.</div>';
+    h += dt.length ? '<table class="tab"><tr><th>Grupo</th><th>Acertó</th><th>Real</th><th>Decía</th></tr>' + dt.map(function (g) { return '<tr><td>' + esc(g.grupo) + '</td><td class="n">' + g.aciertos + '/' + g.juegos + '</td><td class="n"><b>' + g.real.toFixed(1) + '%</b></td><td class="n">' + g.decia.toFixed(1) + '%</td></tr>'; }).join('') + '</table>'
+      : '<div class="vacio" style="padding:12px;font-size:13px">Nada raro todavía (o pocos juegos calificados).</div>';
+    var sa = d.salud;
+    if (sa && sa.filas) {
+      h += '<h3 style="margin:18px 2px 8px;font-size:16px">🛡️ Vigilante de los robots</h3><table class="tab"><tr><th>Robot</th><th>Estado</th></tr>' + sa.filas.map(function (f) {
+        var col = f.estado === 'al día' ? 'var(--good,#6FD39A)' : (f.estado === 'fuera de temporada' ? 'var(--mut2)' : 'var(--bad,#F08A78)');
+        return '<tr><td>' + esc(f.nombre) + '</td><td style="color:' + col + '">' + esc(f.estado) + (f.horas != null ? ' · ' + f.horas + ' h' : '') + '</td></tr>'; }).join('') + '</table>';
+      (sa.problemas || []).forEach(function (p) { h += '<div class="caja" style="padding:8px 12px;margin-top:6px;font-size:13px;color:var(--bad,#F08A78)">⚠️ ' + esc(p.txt) + '</div>'; });
+    }
+    h += '<div style="margin:16px 2px;font-size:13px"><a href="record.html" style="color:var(--acc,#C9A24A)">📜 Ver el récord sellado (página pública) ›</a></div>';
     var pz = d.pesos || {}, pk = ORDEN.filter(function (k) { return pz[k]; });
     if (pk.length) {
       h += '<h3 style="margin:18px 2px 8px;font-size:16px">Mezcla que aprende: cuánto pesa cada uno</h3>';

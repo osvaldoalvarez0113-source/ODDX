@@ -26,6 +26,7 @@
                   Europa y copas (archivo propio). Peso ajustado en una temporada y medido en la otra (mediciones.futbol_descanso).
      modelo-epa   NFL: el modelo OVA (con FPI) más el EPA por jugada de ataque y defensa de cada equipo (jugada a jugada de nflverse,
                   gratis). Peso ajustado en una temporada y medido en la otra (mediciones.nfl_epa).
+     modelo-afinado el modelo OVA con las constantes que pasaron la fábrica de los domingos (scripts/fabrica.js), si alguna pasó.
      mercado      moneyline de ESPN (DraftKings) sin margen; en fútbol el 1X2.
      espn         el pronóstico público de ESPN (BPI en NBA, FPI en NFL).
      polymarket   precio de Polymarket (rama «pred»), sin el margen.
@@ -66,8 +67,9 @@ const NOMBRES = {
   ova: 'OVA (lo que muestra la app)', modelo: 'Modelo OVA', 'modelo-goles': 'Modelo OVA sin tiros', 'modelo-solo': 'Modelo OVA sin ESPN',
   mercado: 'Mercado', espn: 'ESPN', polymarket: 'Polymarket', consenso: 'Consenso',
   nfelo: 'nfelo', clubelo: 'ClubElo', tennisabstract: 'Tennis Abstract',
-  mezcla: 'Mezcla que aprende', 'modelo-viajes': 'Modelo OVA + viajes y altura', 'modelo-descanso': 'Modelo OVA + cansancio', 'modelo-epa': 'Modelo OVA + EPA',
+  mezcla: 'Mezcla que aprende', 'modelo-viajes': 'Modelo OVA + viajes y altura', 'modelo-descanso': 'Modelo OVA + cansancio', 'modelo-epa': 'Modelo OVA + EPA', 'modelo-afinado': 'Modelo OVA afinado (fábrica)',
 };
+let FAB = null;   // fabrica.json (scripts/fabrica.js): constantes que pasaron la fábrica, por deporte
 
 /* ---------- utilidades puras ---------- */
 const clamp = p => Math.min(Math.max(p, 1e-4), 1 - 1e-4);
@@ -169,15 +171,19 @@ function modelosUS(dep) {
     const ult = {}; juegos.forEach(g => { const k = M.dayKey(g.ts); ult[g.h] = k; ult[g.a] = k; });
     let S0 = null, P0 = null;
     if (dep === 'nhl') { P0 = Object.assign({}, M.PDEF, { Ws: 0 }); S0 = M.correr(juegos, P0); }
+    const fc = FAB && FAB.deportes && FAB.deportes[dep] && FAB.deportes[dep].mejor ? FAB.deportes[dep].mejor.cambios : null;
+    const PF = fc ? Object.assign({}, M.PDEF, fc) : null, SF = PF ? M.correr(juegos, PF) : null;
     return function (p) {
       if (!p.hId || !p.aId || !(S.m && (p.hId in S.m) && (p.aId in S.m))) return null;
       const g = { h: p.hId, a: p.aId, ts: p.ts, neutral: p.neutral, adjH: 0, adjA: 0 }, dk = M.dayKey(p.ts), o = {};
       if (dep === 'nhl') {
         o.modelo = M.predecir(S, P, g, { dH: ult[p.hId], dA: ult[p.aId] }).pH;
         o['modelo-goles'] = M.predecir(S0, P0, g, { dH: ult[p.hId], dA: ult[p.aId] }).pH;
+        if (SF) o['modelo-afinado'] = M.predecir(SF, PF, g, { dH: ult[p.hId], dA: ult[p.aId] }).pH;
       } else {
         const gH = ult[p.hId] === undefined ? undefined : dk - ult[p.hId], gA = ult[p.aId] === undefined ? undefined : dk - ult[p.aId];
         o['modelo-solo'] = M.predecir(S, P, g, { gH: gH, gA: gA }).pH;
+        if (SF) o['modelo-afinado-solo'] = M.predecir(SF, PF, g, { gH: gH, gA: gA }).pH;
       }
       return o;
     };
@@ -285,6 +291,8 @@ function modeloNBA(filas) {
       .map(r => ({ id: r[0], ts: r[1], h: r[2], a: r[3], hs: r[6], as: r[7] })).sort((x, y) => x.ts - y.ts);
     if (games.length < 300) { console.log('nba: archivo con pocos juegos todavía (' + games.length + '), el modelo espera'); return null; }
     const P = Object.assign({}, N.PDEF), ult = {}, hist = [];
+    const fc = FAB && FAB.deportes && FAB.deportes.nba && FAB.deportes.nba.mejor ? FAB.deportes.nba.mejor.cambios : null;
+    const PF = fc ? Object.assign({}, N.PDEF, fc) : null, SF = PF ? N.correr(games, PF) : null;
     const S = N.correr(games, P, (g, x) => {
       const dk = N.dayKey(g.ts), f = rasgosViaje(g, dk, ult);
       if (x.S.n > 400 && f) hist.push({ temp: N.seasonOf(g.ts), pm: x.pm, mar: x.mar, s: N.sigmas(x.S).sM, f: VIAJE_K.map(k => f[k]) });
@@ -313,6 +321,7 @@ function modeloNBA(filas) {
       const dk = N.dayKey(p.ts), lastDk = t => { const l = ult[t]; return l && l.length ? l[l.length - 1][0] : undefined; };
       const g = { h: p.hId, a: p.aId, ts: p.ts, neutral: p.neutral };
       const o = { 'modelo-solo': N.predecir(S, P, g, { dH: lastDk(p.hId), dA: lastDk(p.aId) }).pH };
+      if (SF) o['modelo-afinado-solo'] = N.predecir(SF, PF, g, { dH: lastDk(p.hId), dA: lastDk(p.aId) }).pH;
       const f = wTodo && !p.neutral && pasa({ pruebas: med }) ? rasgosViaje(g, dk, ult) : null;
       if (f) { const adj = VIAJE_K.reduce((t, k, i) => t + f[k] * wTodo[i], 0); o['modelo-viajes-solo'] = N.predecir(S, P, Object.assign({ adjH: adj }, g), { dH: lastDk(p.hId), dA: lastDk(p.aId) }).pH; }
       return o;
@@ -486,6 +495,8 @@ function modeloFutbol(arch, ahora) {
       const lista = Object.values(A.g).map(r => ({ local: r[4], visita: r[5], golesLocal: r[6], golesVisita: r[7], ts: r[1] }));
       if (lista.length < 300) return;                                   // el teléfono usa 2 temporadas + la actual
       const fit = F.dcAjustar(lista, hoy, F.DC_CFG); if (fit) fits['soccer/' + l] = Object.assign(fit, { tipo: 'liga' });
+      const fc = FAB && FAB.deportes && FAB.deportes.futbol && FAB.deportes.futbol.mejor ? FAB.deportes.futbol.mejor.cambios : null;
+      if (fc && fit) { const cfgF = Object.assign({}, F.DC_CFG, fc), f2 = F.dcAjustar(lista, hoy, cfgF); if (f2) fit.afinado = Object.assign(f2, { cfg: cfgF }); }
     });
     const fc = leerJSON(path.join(RAIZ, 'fuerza-copas.json'));
     if (fc && fc.eq) fits['soccer/uefa.champions'] = Object.assign({}, fc, { tipo: 'copa' });
@@ -500,6 +511,10 @@ function modeloFutbol(arch, ahora) {
       if (f.tipo === 'copa' && (!xl0 || !xv0)) return null;              // como la app: sin los dos equipos no hay modelo de copa
       const pr = F.DC_CFG.promo ? { att: 0.85, def: 1.15 } : { att: 1, def: 1 }, xl = xl0 || pr, xv = xv0 || pr;
       const lamL = f.c * xl.att * xv.def * f.gam, lamV = f.c * xv.att * xl.def, d = F.distribucion(lamL, lamV, F.DC_CFG.rho, false), o = { modelo: [d.pL, d.pV, d.pD] };
+      if (f.afinado) {
+        const A2 = f.afinado, pr2 = A2.cfg.promo ? { att: 0.85, def: 1.15 } : { att: 1, def: 1 }, al = F.buscarEnMapa(A2.eq, p.local) || pr2, av = F.buscarEnMapa(A2.eq, p.visita) || pr2;
+        const d3 = F.distribucion(A2.c * al.att * av.def * A2.gam, A2.c * av.att * al.def, A2.cfg.rho, false); o['modelo-afinado'] = [d3.pL, d3.pV, d3.pD];
+      }
       if (medD && medD.peso !== null && pasa(medD) && p.hId && p.aId) {
         const dia = Math.floor(p.ts / D), [a, v] = lamDescanso(lamL, lamV, descansoDe(cal, p.hId, dia), descansoDe(cal, p.aId, dia), medD.peso);
         const d2 = F.distribucion(a, v, F.DC_CFG.rho, false); o['modelo-descanso'] = [d2.pL, d2.pV, d2.pD];
@@ -654,6 +669,10 @@ function competidores(dep, p, extra) {
     }
     if (dep === 'futbol' && m.modelo) o.modelo = arr(m.modelo[0], m.modelo[1], m.modelo[2]);
     if (dep === 'futbol' && m['modelo-descanso']) o['modelo-descanso'] = arr(m['modelo-descanso'][0], m['modelo-descanso'][1], m['modelo-descanso'][2]);
+    if (dep === 'futbol' && m['modelo-afinado']) o['modelo-afinado'] = arr(m['modelo-afinado'][0], m['modelo-afinado'][1], m['modelo-afinado'][2]);
+    if (dep === 'nhl' && valido(m['modelo-afinado'])) o['modelo-afinado'] = deLocal(m['modelo-afinado']);
+    const pa = m['modelo-afinado-solo'];
+    if ((dep === 'nba' || dep === 'nfl') && valido(pa)) o['modelo-afinado'] = extra.espn != null ? deLocal(sig((1 - (dep === 'nba' ? W_BPI : W_FPI)) * logit(pa) + (dep === 'nba' ? W_BPI : W_FPI) * logit(extra.espn))) : deLocal(pa);
     if (dep === 'tenis') o.modelo = deLocal(m.modelo);
   }
   if ((dep === 'nba' || dep === 'nhl' || dep === 'nfl') && o.modelo) {
@@ -783,7 +802,7 @@ function proximos(reg, tabla, ahora) {
 
 module.exports = { DEPS, REGLAS, NOMBRES, arr, pickDe, zonaDe, mismo, consenso, partidosDe, resultadoDe, competidores, registrar, calificar,
   pendientes, resumen, duelos, ascensos, mapa, proximos, prediccionPolymarket, modelosUS, modeloTenis, ymdUTC,
-  ARCHIVO, mesesDesde, finalesDe, ajustarMezcla, mezclar, MEZCLA_MIN, rasgosViaje, mco, calendarioFut, descansoDe, medirDescanso, epaDeCSV, modeloEPA, pasa, modeloNBA, motorFutbol, modeloFutbol, nfeloMapa, clubeloLista, clubeloPara, taElo, taBuscar, probTA, mismoClub };
+  ARCHIVO, mesesDesde, finalesDe, ajustarMezcla, mezclar, MEZCLA_MIN, rasgosViaje, mco, calendarioFut, descansoDe, medirDescanso, epaDeCSV, modeloEPA, pasa, ponerFabrica: f => { FAB = f; }, modeloNBA, motorFutbol, modeloFutbol, nfeloMapa, clubeloLista, clubeloPara, taElo, taBuscar, probTA, mismoClub };
 if (require.main !== module) return;
 
 /* ---------- corrida ---------- */
@@ -808,6 +827,7 @@ async function predictorESPN(core, ext) {
 (async () => {
   const ahora = Date.now();
   const reg = leer(path.join(dir, 'liga-registro.json'), { v: 1, items: {} });
+  FAB = leer(path.join(dir, 'fabrica.json'), null);
   const previo = leer(path.join(dir, 'liga.json'), {});
   const estado = { titular: previo.titular || {}, cambios: previo.cambios || [] };
   const log = [];
@@ -891,7 +911,7 @@ async function predictorESPN(core, ext) {
   Object.values(reg.items).forEach(it => {
     if (it.res || !(it.ts > ahora)) return;
     const sinMod = !mod[it.dep] || (it.dep === 'futbol' && !mod.futbol.tiene(it.ruta));
-    if (sinMod) ['modelo', 'modelo-solo', 'modelo-goles', 'modelo-viajes', 'modelo-descanso', 'modelo-epa', 'ova'].forEach(k => { delete it.p[k]; delete it.t[k]; });
+    if (sinMod) ['modelo', 'modelo-solo', 'modelo-goles', 'modelo-viajes', 'modelo-descanso', 'modelo-epa', 'modelo-afinado', 'ova'].forEach(k => { delete it.p[k]; delete it.t[k]; });
   });
   // modelos públicos de afuera
   async function getTexto(u) {
@@ -941,13 +961,40 @@ async function predictorESPN(core, ext) {
   const hechos = ascensos(reg, tabla, estado, ahora);
   mapa(reg, tabla);
   const salida = { v: 1, generado: new Date(ahora).toISOString(), reglas: REGLAS, nombres: NOMBRES, titular: estado.titular, cambios: estado.cambios, pesos: pesos, mediciones: mediciones,
+    fabrica: FAB ? { generado: FAB.generado, regla: FAB.regla, deportes: Object.fromEntries(Object.keys(FAB.deportes || {}).map(k => { const x = FAB.deportes[k]; return [k, { probadas: x.probadas, pasaron: x.pasaron, zExigido: x.zExigido, mejor: x.mejor ? { cambios: x.mejor.cambios, z: x.mejor.z } : null, casi: x.top5 && x.top5[0] ? { cambios: x.top5[0].cambios, z: x.top5[0].z } : null }]; })) } : null,
     deportes: tabla, proximos: proximos(reg, tabla, ahora),
     totales: { guardados: Object.keys(reg.items).length, calificados: Object.values(reg.items).filter(i => i.res && i.res !== 'X').length, anulados: Object.values(reg.items).filter(i => i.res === 'X').length } };
+  // vigilante, detective y avisos al teléfono (scripts/liga-extras.js)
+  const X = require('./liga-extras.js'), mes = new Date(ahora).getUTCMonth() + 1, extraP = [];
+  [['nba', [11, 12, 1, 2, 3]], ['nhl', [11, 12, 1, 2, 3]], ['nfl', [10, 11, 12]]].forEach(([dep, meses]) => {
+    const vistos = [].concat(...DEPS[dep].rutas.map(r => porRuta[r] || [])).length;
+    if (meses.indexOf(mes) >= 0 && vistos === 0) extraP.push({ id: 'espn-' + dep, txt: 'ESPN no devolvió ningún juego de ' + DEPS[dep].nombre + ' (¿cambió algo en ESPN?).' });
+  });
+  if ([9, 10, 11, 12, 1].indexOf(mes) >= 0 && !ext.nfelo) extraP.push({ id: 'nfelo', txt: 'nfelo no respondió (su archivo en GitHub).' });
+  if (!ext.ta.a || !Object.keys(ext.ta.a).length) extraP.push({ id: 'tennisabstract', txt: 'Tennis Abstract no respondió o cambió su tabla.' });
+  try { salida.salud = await X.vigilar(ahora, extraP); } catch (e) { salida.salud = { error: e.message, problemas: extraP }; }
+  salida.detective = X.detective(Object.values(reg.items), tabla);
+  const av = leer(path.join(dir, 'avisos.json'), { enviados: {} }), tema = process.env.NTFY_TOPIC || '';
+  Object.keys(av.enviados).forEach(k => { if (ahora - av.enviados[k] > 7 * D) delete av.enviados[k]; });
+  const pend = X.avisosPendientes(salida, previo, av.enviados, ahora);
+  if (tema && pend.length) (await X.enviar(pend, tema)).forEach(k => { av.enviados[k] = ahora; });
+  fs.writeFileSync(path.join(dir, 'avisos.json'), JSON.stringify(av));
+  log.push('avisos: tema privado ' + (tema ? 'sí' : 'NO') + ' · pendientes ' + pend.length + ' · problemas del vigilante ' + salida.salud.problemas.length + ' · detective ' + salida.detective.length + ' grupos');
   // el registro no crece sin fin: lo calificado de hace más de 400 días se va (el resumen ya lo contó en su momento)
   Object.keys(reg.items).forEach(k => { const it = reg.items[k]; if (it.res && ahora - it.ts > 400 * D) delete reg.items[k]; });
   fs.writeFileSync(path.join(dir, 'liga-registro.json'), JSON.stringify(reg));
   fs.writeFileSync(path.join(dir, 'liga-hist.json'), JSON.stringify(arch));
   fs.writeFileSync(path.join(dir, 'liga.json'), JSON.stringify(salida));
+  // récord sellado: solo juegos YA calificados (nada de lo que viene), con lo que dijo el titular de ese momento antes del juego
+  const cal = Object.values(reg.items).filter(it => it.res && it.res !== 'X' && tabla[it.dep]).sort((a, b) => b.ts - a.ts);
+  const rec = { v: 1, generado: salida.generado, nombres: NOMBRES, historial: 'https://github.com/osvaldoalvarez0113-source/ODDX/commits/liga', deportes: {}, juegos: [] };
+  cal.forEach(it => {
+    const tit = it.p[tabla[it.dep].titular] ? tabla[it.dep].titular : null; if (!tit) return;
+    const pk = pickDe(it.p[tit]), ok = pk.lado === it.res, D2 = rec.deportes[it.dep] || (rec.deportes[it.dep] = { nombre: DEPS[it.dep].nombre, juegos: 0, aciertos: 0 });
+    D2.juegos++; if (ok) D2.aciertos++;
+    if (rec.juegos.length < 600) rec.juegos.push({ dep: it.dep, ts: it.ts, local: it.local, visita: it.visita, tit: tit, pick: pk.lado, p: r3(pk.p), res: it.res, gl: it.gl, gv: it.gv, guardado: it.t && it.t[tit] });
+  });
+  fs.writeFileSync(path.join(dir, 'record.json'), JSON.stringify(rec));
   log.push('calificados ahora: ' + nCal + ' · ascensos: ' + hechos.length + ' · total guardados: ' + salida.totales.guardados);
   hechos.forEach(h => log.push('ASCENSO ' + h.dep + ': ' + h.detalle));
   fs.writeFileSync(path.join(dir, 'log.txt'), log.join('\n') + '\n');
