@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js','memoria.js','observaciones.js','mlbextra.js','liga.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js','memoria.js','observaciones.js','mlbextra.js','liga.js','posiciones.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -2133,6 +2133,19 @@ sec('Liga de modelos');
   const rm=LG.resumenMercados(rg);
   ok('totales y hándicap: tabla y duelos Modelo contra Mercado',rm.nba.tot.comp.modelo.aciertos===20&&rm.nba.tot.comp.mercado.aciertos===10&&rm.nba.tot.duelo.n===30&&rm.nba.tot.duelo.gana===20);
   ok('fútbol: el total sale del Dixon-Coles (1.5/2.5/3.5) y no hay hándicap',(()=>{ const m=LG.mercadosExtra('futbol',{lineas:{total:2.5,spread:-0.5}},{_lin:{tipo:'fut',over:L=>L===2.5?0.6:null,cubre:()=>null}},null); return m.tot.p.modelo===0.6&&!m.han; })());
+ }
+ {
+  const PO=require(D+'posiciones.js');
+  const ent=(id,n,g,p,seed,gb,st)=>({team:{id,displayName:n,abbreviation:n.slice(0,3).toUpperCase()},stats:[{name:'wins',value:g},{name:'losses',value:p},{name:'playoffSeed',value:seed},{name:'gamesBehind',value:gb,displayValue:gb?String(gb):'-'},{name:'streak',displayValue:st},{name:'avgPointsFor',value:115},{name:'avgPointsAgainst',value:110}]});
+  const js={children:[{name:'Eastern Conference',standings:{entries:[ent('2','Boston Celtics',10,4,2,1,'W2'),ent('18','New York Knicks',11,3,1,0,'W5')]}},{name:'Western Conference',standings:{entries:[ent('13','Los Angeles Lakers',8,6,1,0,'L1')]}}]};
+  const cf=PO.leerESPN(js);
+  ok('posiciones NBA: lee la clasificación de ESPN por conferencia y ordena por siembra',cf.length===2&&cf[0].equipos[0].n==='New York Knicks'&&cf[0].equipos[1].racha==='W2'&&Math.abs(cf[0].equipos[0].dif-5)<1e-9);
+  const hh=PO.html(cf,'2','13','nba','espn');
+  ok('posiciones NBA: muestra las dos conferencias si son de distinta y resalta a los dos',/Conferencia Este/.test(hh)&&/Conferencia Oeste/.test(hh)&&(hh.match(/class="destacada"/g)||[]).length===2&&/play-in/.test(hh));
+  ok('posiciones NBA: con los dos de la misma conferencia, una sola tabla',!/Conferencia Oeste/.test(PO.html(cf,'2','18','nba','espn')));
+  const dj=PO.desdeJuegos([{done:true,ts:1,h:'2',a:'18',hs:110,as:100},{done:true,ts:2,h:'18',a:'2',hs:105,as:101},{done:true,ts:3,h:'13',a:'2',hs:90,as:100}],{'2':{n:'Boston Celtics'},'18':{n:'New York Knicks'},'13':{n:'Los Angeles Lakers'}},2026,()=>2026);
+  ok('posiciones NBA: si ESPN falla, la arma con los juegos de la app (Este/Oeste, G-P y juegos detrás)',dj[0].nombre==='Conferencia Este'&&dj[0].equipos[0].id==='2'&&dj[0].equipos[0].g===2&&dj[0].equipos[1].jd==='0.5'&&dj[1].equipos[0].p===1);
+  ok('nba.html carga posiciones.js y la pinta en Números',/<script src="posiciones\.js">/.test(rd('nba.html'))&&/OVAPosiciones\.pintar/.test(rd('nba.html'))&&rd('sw.js').indexOf("'posiciones.js'")>0);
  }
  ok('el robot corre en el workflow liga.yml y guarda en la rama liga',/node scripts\/liga\.js/.test(rd('.github/workflows/liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/liga.yml')));
 }

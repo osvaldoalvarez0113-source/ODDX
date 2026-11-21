@@ -16,6 +16,7 @@
 <script src="interior2.js"></script>
 <script src="periodos.js"></script>
 <script src="jugadores.js"></script>
+<script src="posiciones.js"></script>
 <script src="forma.js"></script>
 <script src="memoria.js"></script>
 <script src="observaciones.js"></script>
@@ -78,6 +79,13 @@ h3{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--mut);mar
 .tabs{display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding-bottom:2px}
 .tb{flex:0 0 auto;background:var(--bg2);color:var(--mut);border:0;border-radius:9px;padding:8px 12px;font-size:12px;font-weight:700;white-space:nowrap;cursor:pointer;font-family:var(--body)}
 .tb.on{background:var(--acc);color:var(--accTx)}
+.tabpos{width:100%;border-collapse:collapse;font-size:11.5px}
+.tabpos td{padding:6px 4px;border-bottom:1px solid var(--line)}
+.tabpos tr.destacada td{color:var(--hot,var(--acc));font-weight:700}
+.tabpos .num{color:var(--mut);width:20px}
+.tabpos tr.cab td{font-size:10.5px;color:var(--mut2);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.tabpos td.c{text-align:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tabpos td.eqn{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pane{display:none}.pane.on{display:block}
 .hero{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:14px 8px;border-radius:var(--r2);
  background:linear-gradient(180deg,var(--bg2),var(--bg1));border:1px solid var(--line2);margin:8px 0 12px}
@@ -827,7 +835,7 @@ function pintarCuerpo(body,g){
    <div class="nota">Rating del modelo: ${esc(A.ab)} ${(pr.ma>=0?'+':'')+pr.ma.toFixed(1)} · ${esc(H.ab)} ${(pr.mh>=0?'+':'')+pr.mh.toFixed(1)} (con arrastre de temporada si aplica).</div>`;
 
   body.innerHTML=`<div class="tabs"><button class="tb on" data-t="ver">Veredicto</button><button class="tb" data-t="cuo">Cuotas</button><button class="tb" data-t="num">Números</button><button class="tb" data-t="for">Forma</button><button class="tb" data-t="jug">Jugadores</button></div>
-   <div class="pane on" data-p="ver">${ver}</div><div class="pane" data-p="cuo">${cuo}</div><div class="pane" data-p="num">${tramos}${num}</div><div class="pane" data-p="for">${forPane}</div><div class="pane" data-p="jug"><div class="nota">Toca la pestaña para cargar las líneas de jugadores.</div></div>`;
+   <div class="pane on" data-p="ver">${ver}</div><div class="pane" data-p="cuo">${cuo}</div><div class="pane" data-p="num">${tramos}${num}<h3>Tabla de posiciones</h3><div data-pos><div class="nota">Cargando la tabla…</div></div></div><div class="pane" data-p="for">${forPane}</div><div class="pane" data-p="jug"><div class="nota">Toca la pestaña para cargar las líneas de jugadores.</div></div>`;
 
   body.querySelectorAll('.tb').forEach(b=>b.onclick=e=>{
     e.stopPropagation();
@@ -836,6 +844,8 @@ function pintarCuerpo(body,g){
     const pn=body.querySelector('.pane[data-p="'+b.dataset.t+'"]'); pn.classList.add('on');
     if(b.dataset.t==='jug'&&window.OVAJugadores&&!pn.dataset.c){ pn.dataset.c='1'; window.OVAJugadores.pintar(pn,g,H,A); }   /* props de jugador: jugadores.js */
   });
+  /* tabla de posiciones (posiciones.js): la conferencia de cada equipo, con los dos resaltados; si ESPN falla, con los juegos de la app */
+  try{ if(window.OVAPosiciones){ const pe=body.querySelector('[data-pos]'); window.OVAPosiciones.pintar(pe,'nba',g.h,g.a,()=>window.OVAPosiciones.desdeJuegos(GAMES,TEAMS,seasonOf(g.ts),seasonOf)); } }catch(e){}
   (()=>{
     const vi=body.querySelector('input[data-vl="o"]'), vr=body.querySelector('[data-vl="r"]'); if(!vi||!vr) return;
     vi.addEventListener('input',()=>{
