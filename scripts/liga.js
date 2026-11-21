@@ -489,7 +489,7 @@ async function predictorESPN(core, ext) {
   }
   // 2) archivo propio de resultados (NBA y 5 ligas): por meses, con tope de pedidos por vuelta; lo que falte sigue en la próxima
   const arch = leer(path.join(dir, 'liga-hist.json'), { v: 1, rutas: {} });
-  let pedidos = 0; const TOPE_PED = 700;
+  let pedidos = 0; const TOPE_PED = 1600;
   for (const ruta of Object.keys(ARCHIVO)) {
     const A = arch.rutas[ruta] || (arch.rutas[ruta] = { meses: {}, g: {} });
     for (const m of mesesDesde(ARCHIVO[ruta](ahora), ahora)) {
@@ -503,8 +503,8 @@ async function predictorESPN(core, ext) {
         filas = []; let ok = true; const dias = [];
         for (let t = ini; t < m.fin && t <= ahora + D; t += D) dias.push(t);
         if (pedidos + dias.length > TOPE_PED) { ok = false; dias.length = Math.max(0, TOPE_PED - pedidos); }
-        for (let i = 0; i < dias.length; i += 8) {      // de 8 en 8 para no tardar
-          const js = await Promise.all(dias.slice(i, i + 8).map(t => getJSON(ESPN + ruta + '/scoreboard?dates=' + ymdUTC(t) + '&limit=300')));
+        for (let i = 0; i < dias.length; i += 12) {     // de 12 en 12 para no tardar
+          const js = await Promise.all(dias.slice(i, i + 12).map(t => getJSON(ESPN + ruta + '/scoreboard?dates=' + ymdUTC(t) + '&limit=300')));
           pedidos += js.length;
           js.forEach(jd => { if (!jd) ok = false; else filas = filas.concat(finalesDe(jd)); });
         }
