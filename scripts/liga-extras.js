@@ -71,8 +71,10 @@ const VIGILAR = [
   ['pin-nhl', 'Pinnacle NHL', 'main/pinnacle-nhl.json', 48, [10, 11, 12, 1, 2, 3, 4, 5, 6]],
   ['pin-nfl', 'Pinnacle NFL', 'main/pinnacle-nfl.json', 8 * 24, [9, 10, 11, 12, 1, 2]],
   ['pin-mlb', 'Pinnacle MLB', 'main/pinnacle-datos.json', 36, [4, 5, 6, 7, 8, 9]],
-  ['pred-nba', 'Polymarket', 'pred/pred-nba.json', 3, [10, 11, 12, 1, 2, 3, 4, 5, 6]],
-  ['kal-nba', 'Kalshi', 'kalshi/kalshi-nba.json', 3, [10, 11, 12, 1, 2, 3, 4, 5, 6]],
+  // GitHub atrasa mucho los relojes frecuentes (21-nov-2026: «cada 10 min» corría cada 6-8 h); aquí solo se avisa si de verdad se murió
+  ['pred-nba', 'Polymarket', 'pred/pred-nba.json', 12, [10, 11, 12, 1, 2, 3, 4, 5, 6]],
+  ['kal-nba', 'Kalshi', 'kalshi/kalshi-nba.json', 12, [10, 11, 12, 1, 2, 3, 4, 5, 6]],
+  ['liga', 'Liga de modelos', 'liga/liga.json', 12, null],
   ['les-nba', 'Lesionados', 'datos/lesiones-nba.json', 9, null],
   ['hist-nhl', 'Archivo NHL', 'main/hist-nhl.json', 40, [10, 11, 12, 1, 2, 3, 4, 5, 6]],
   ['hist-nfl', 'Archivo NFL', 'main/hist-nfl.json', 8 * 24, [9, 10, 11, 12, 1, 2]],
