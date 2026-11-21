@@ -262,7 +262,7 @@ function modeloFutbol(arch, ahora) {
   try {
     const F = motorFutbol(), fits = {}, hoy = Math.floor(ahora / D) + 1;
     ['eng.1', 'esp.1', 'ita.1', 'ger.1', 'fra.1'].forEach(l => {
-      const A = arch.rutas['soccer/' + l]; if (!A) return;
+      const A = arch.rutas['soccer/' + l]; if (!A || A.listo === false) return;
       const lista = Object.values(A.g).map(r => ({ local: r[4], visita: r[5], golesLocal: r[6], golesVisita: r[7], ts: r[1] }));
       if (lista.length < 300) return;                                   // el teléfono usa 2 temporadas + la actual
       const fit = F.dcAjustar(lista, hoy, F.DC_CFG); if (fit) fits['soccer/' + l] = Object.assign(fit, { tipo: 'liga' });
@@ -272,7 +272,7 @@ function modeloFutbol(arch, ahora) {
     const fn = leerJSON(path.join(RAIZ, 'fuerza-nacional.json'));
     if (fn && fn.paises) Object.keys(COPA_PAIS).forEach(r => { const f = fn.paises[COPA_PAIS[r]]; if (f && f.eq) fits[r] = { eq: f.eq, c: f.c, gam: f.gam, tipo: 'copa' }; });
     console.log('futbol: modelo listo en ' + Object.keys(fits).map(k => k.replace('soccer/', '')).join(', '));
-    return function (p) {
+    const fn1 = function (p) {
       const f = fits[p.ruta]; if (!f) return null;
       const xl0 = F.buscarEnMapa(f.eq, p.local), xv0 = F.buscarEnMapa(f.eq, p.visita);
       if (f.tipo === 'copa' && (!xl0 || !xv0)) return null;              // como la app: sin los dos equipos no hay modelo de copa
@@ -280,6 +280,8 @@ function modeloFutbol(arch, ahora) {
       const d = F.distribucion(f.c * xl.att * xv.def * f.gam, f.c * xv.att * xl.def, F.DC_CFG.rho, false);
       return { modelo: [d.pL, d.pV, d.pD] };
     };
+    fn1.tiene = r => !!fits[r];
+    return fn1;
   } catch (e) { console.log('futbol: modelo no disponible · ' + e.message); return null; }
 }
 function leerJSON(f) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return null; } }
@@ -487,7 +489,7 @@ async function predictorESPN(core, ext) {
   }
   // 2) archivo propio de resultados (NBA y 5 ligas): por meses, con tope de pedidos por vuelta; lo que falte sigue en la próxima
   const arch = leer(path.join(dir, 'liga-hist.json'), { v: 1, rutas: {} });
-  let pedidos = 0; const TOPE_PED = 220;
+  let pedidos = 0; const TOPE_PED = 700;
   for (const ruta of Object.keys(ARCHIVO)) {
     const A = arch.rutas[ruta] || (arch.rutas[ruta] = { meses: {}, g: {} });
     for (const m of mesesDesde(ARCHIVO[ruta](ahora), ahora)) {
@@ -498,23 +500,36 @@ async function predictorESPN(core, ext) {
       const ini = Date.parse(m.a.slice(0, 4) + '-' + m.a.slice(4, 6) + '-' + m.a.slice(6) + 'T00:00:00Z');
       const respeta = filas && (filas.length === 0 ? ((j.events || []).length === 0) : filas.every(r => r[1] >= ini - 2 * D && r[1] <= m.fin + 2 * D));
       if (!respeta) {                                    // ESPN no respetó el rango: día por día
-        filas = []; let ok = true;
-        for (let t = ini; t < m.fin && t <= ahora + D; t += D) {
-          if (pedidos >= TOPE_PED) { ok = false; break; }
-          pedidos++; const jd = await getJSON(ESPN + ruta + '/scoreboard?dates=' + ymdUTC(t) + '&limit=300');
-          if (!jd) { ok = false; continue; } filas = filas.concat(finalesDe(jd));
+        filas = []; let ok = true; const dias = [];
+        for (let t = ini; t < m.fin && t <= ahora + D; t += D) dias.push(t);
+        if (pedidos + dias.length > TOPE_PED) { ok = false; dias.length = Math.max(0, TOPE_PED - pedidos); }
+        for (let i = 0; i < dias.length; i += 8) {      // de 8 en 8 para no tardar
+          const js = await Promise.all(dias.slice(i, i + 8).map(t => getJSON(ESPN + ruta + '/scoreboard?dates=' + ymdUTC(t) + '&limit=300')));
+          pedidos += js.length;
+          js.forEach(jd => { if (!jd) ok = false; else filas = filas.concat(finalesDe(jd)); });
         }
         if (!ok) { filas.forEach(r => { A.g[r[0]] = r; }); continue; }
       }
       filas.forEach(r => { A.g[r[0]] = r; });
       if (m.fin < ahora - 3 * D) A.meses[m.k] = 1;      // mes cerrado: no se vuelve a pedir
+      else (A.vistoHoy || (A.vistoHoy = {}))[m.k] = Math.floor(ahora / D);
     }
     Object.keys(A.g).forEach(k => { if (ahora - A.g[k][1] > 1200 * D) delete A.g[k]; });
+    // listo = todos los meses cerrados están y el mes en curso se bajó en esta vuelta; si no, el modelo de ese archivo no se usa
+    const ms = mesesDesde(ARCHIVO[ruta](ahora), ahora);
+    A.listo = ms.every(m => A.meses[m.k] || m.fin >= ahora - 3 * D) && ms.filter(m => m.fin >= ahora - 3 * D).every(m => A.vistoHoy && A.vistoHoy[m.k] === Math.floor(ahora / D));
   }
   log.push('archivo: ' + Object.keys(arch.rutas).map(r => r.split('/')[1] + ' ' + Object.keys(arch.rutas[r].g).length).join(' · ') + ' · pedidos ' + pedidos);
   // 3) modelos propios y datos extra
   const mod = { nhl: modelosUS('nhl'), nfl: modelosUS('nfl'), tenis: modeloTenis(),
-    nba: modeloNBA(Object.values((arch.rutas['basketball/nba'] || { g: {} }).g)), futbol: modeloFutbol(arch, ahora) };
+    nba: (arch.rutas['basketball/nba'] || {}).listo ? modeloNBA(Object.values(arch.rutas['basketball/nba'].g)) : null, futbol: modeloFutbol(arch, ahora) };
+  if (!mod.nba) log.push('nba: el archivo todavía se está armando: el modelo propio entra cuando esté completo');
+  // un modelo que esta vuelta no está (archivo a medias, error) no deja números viejos en juegos que no han empezado
+  Object.values(reg.items).forEach(it => {
+    if (it.res || !(it.ts > ahora)) return;
+    const sinMod = !mod[it.dep] || (it.dep === 'futbol' && !mod.futbol.tiene(it.ruta));
+    if (sinMod) ['modelo', 'modelo-solo', 'modelo-goles', 'ova'].forEach(k => { delete it.p[k]; delete it.t[k]; });
+  });
   const pred = {};
   Object.keys(DEPS).forEach(dep => {
     const k = DEPS[dep].pred; if (!k) return;
