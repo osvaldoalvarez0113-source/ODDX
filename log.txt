@@ -1,4 +1,4 @@
-archivo: nba 2885 · eng.1 864 · esp.1 881 · ita.1 872 · ger.1 699 · fra.1 702 · uefa.champions 450 · uefa.europa 450 · uefa.europa.conf 360 · eng.fa 123 · eng.league_cup 0 · esp.copa_del_rey 0 · ita.coppa_italia 0 · ger.dfb_pokal 0 · fra.coupe_de_france 0 · pedidos 1600
+archivo: nba 2885 · eng.1 866 · esp.1 881 · ita.1 872 · ger.1 699 · fra.1 702 · uefa.champions 450 · uefa.europa 450 · uefa.europa.conf 360 · eng.fa 286 · eng.league_cup 270 · esp.copa_del_rey 123 · ita.coppa_italia 0 · ger.dfb_pokal 0 · fra.coupe_de_france 0 · pedidos 1600
 nba viajes: {"pesos":{"altura":-0.129,"kmVisita":-0.935,"kmLocal":-0.836,"husoVisita":1.544,"descanso":0.443,"tres4":0.506},"pruebas":[{"ajuste":2024,"medido":2025,"juegos":1322,"aciertosSin":67.78,"aciertosCon":68.68,"perdidaSin":0.6,"perdidaCon":0.5998},{"ajuste":2024,"medido":2026,"juegos":235,"aciertosSin":65.96,"aciertosCon":67.23,"perdidaSin":0.6061,"perdidaCon":0.6024},{"ajuste":2025,"medido":2024,"juegos":920,"aciertosSin":66.85,"aciertosCon":66.3,"perdidaSin":0.6069,"perdidaCon":0.6048},{"ajuste":2025,"medido":2026,"juegos":235,"aciertosSin":65.96,"aciertosCon":67.23,"perdidaSin":0.6061,"perdidaCon":0.5991}],"entra":true}
 futbol descanso: esperando el archivo de copas y Europa
 nfl epa: entra false · peso 0.83
@@ -15,8 +15,8 @@ nfl: con modelo de afuera 12
 nfl: 13 partidos vistos · 12 guardados/refrescados antes de empezar · ESPN 12
 mlb: 0 partidos vistos · 0 guardados/refrescados antes de empezar · ESPN 0
 futbol: con modelo de afuera 0
-futbol: 42 partidos vistos · 26 guardados/refrescados antes de empezar · ESPN 0
+futbol: 42 partidos vistos · 25 guardados/refrescados antes de empezar · ESPN 0
 tenis: con modelo de afuera 3
 tenis: 48 partidos vistos · 3 guardados/refrescados antes de empezar · ESPN 0
-avisos: tema privado sí · pendientes 2 · problemas del vigilante 2 · detective 0 grupos
-calificados ahora: 0 · ascensos: 0 · total guardados: 90
+avisos: tema privado sí · pendientes 0 · problemas del vigilante 0 · detective 0 grupos
+calificados ahora: 1 · ascensos: 0 · total guardados: 90
