@@ -12,7 +12,8 @@
 
    Competidores (cada uno solo donde hay dato):
      ova          lo que muestra la app en NBA, NHL y NFL: el mercado manda y el modelo pesa 5% (LAM_M); sin mercado, el modelo.
-     modelo       el modelo propio de OVA: NBA (el <script id="modelo"> de nba.html nutrido con el BPI de ESPN, 0.70, como la app),
+     modelo       el modelo propio de OVA: NBA (el <script id="modelo"> de nba.html, restando las bajas «Out» con valores-nba.json y
+                  nutrido con el BPI de ESPN, 0.70: igual que prediccion() de la app),
                   NHL (modelo-nhl.js, con tiros a puerta), NFL (modelo-nfl.js nutrido con el FPI de ESPN, 0.80, como la app),
                   fútbol (el Dixon-Coles v4 de futbol.html: en las 5 ligas ajustado igual que el teléfono con 2 temporadas + la actual;
                   Champions con fuerza-copas.json; copas de cada país con fuerza-nacional.json, como torneos.js),
@@ -69,6 +70,7 @@ const NOMBRES = {
   nfelo: 'nfelo', clubelo: 'ClubElo', tennisabstract: 'Tennis Abstract',
   mezcla: 'Mezcla que aprende', 'modelo-viajes': 'Modelo OVA + viajes y altura', 'modelo-descanso': 'Modelo OVA + cansancio', 'modelo-epa': 'Modelo OVA + EPA', 'modelo-afinado': 'Modelo OVA afinado (fábrica)',
 };
+let LES_NBA = null;   // {idEquipo: [nombres «Out»]} de la rama datos (lesiones-nba.json), para restar las bajas como nba.html
 let FAB = null;   // fabrica.json (scripts/fabrica.js): constantes que pasaron la fábrica, por deporte
 
 /* ---------- utilidades puras ---------- */
@@ -283,6 +285,15 @@ function mco(X, y, lam) {
   }
   return b;
 }
+/* bajas como nba.html (faltaValor): por cada jugador «Out» de los 8 regulares, VALN.c puntos de margen por punto de producción */
+const normN = x => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z ]/g, '').replace(/\b(jr|sr|ii|iii|iv)\b/g, '').replace(/\s+/g, ' ').trim();
+let VALN = null;
+function ajusteBajas(hId, aId) {
+  if (!LES_NBA) return 0;
+  try { VALN = VALN || JSON.parse(fs.readFileSync(path.join(RAIZ, 'valores-nba.json'), 'utf8')); } catch (e) { return 0; }
+  const falta = id => { const L = VALN.eq && VALN.eq[String(id)], fuera = new Set((LES_NBA[String(id)] || []).map(normN)); let v = 0; (L || []).forEach(q => { if (fuera.has(normN(q[1]))) v += q[2]; }); return v; };
+  return VALN.c * (falta(aId) - falta(hId));
+}
 function modeloNBA(filas) {
   try {
     const nb = fs.readFileSync(path.join(RAIZ, 'nba.html'), 'utf8'), i0 = nb.indexOf('<script id="modelo">') + 20, mod = nb.slice(i0, nb.indexOf('</script>', i0)), N = {};
@@ -319,11 +330,11 @@ function modeloNBA(filas) {
     const fn = function (p) {
       if (!(p.hId in S.m) || !(p.aId in S.m)) return null;
       const dk = N.dayKey(p.ts), lastDk = t => { const l = ult[t]; return l && l.length ? l[l.length - 1][0] : undefined; };
-      const g = { h: p.hId, a: p.aId, ts: p.ts, neutral: p.neutral };
-      const o = { 'modelo-solo': N.predecir(S, P, g, { dH: lastDk(p.hId), dA: lastDk(p.aId) }).pH };
+      const g = { h: p.hId, a: p.aId, ts: p.ts, neutral: p.neutral, adjH: ajusteBajas(p.hId, p.aId), adjA: 0 };
+      const o = { 'modelo-solo': N.predecir(S, P, g, { dH: lastDk(p.hId), dA: lastDk(p.aId) }).pH, bajas: g.adjH };
       if (SF) o['modelo-afinado-solo'] = N.predecir(SF, PF, g, { dH: lastDk(p.hId), dA: lastDk(p.aId) }).pH;
       const f = wTodo && !p.neutral && pasa({ pruebas: med }) ? rasgosViaje(g, dk, ult) : null;
-      if (f) { const adj = VIAJE_K.reduce((t, k, i) => t + f[k] * wTodo[i], 0); o['modelo-viajes-solo'] = N.predecir(S, P, Object.assign({ adjH: adj }, g), { dH: lastDk(p.hId), dA: lastDk(p.aId) }).pH; }
+      if (f) { const adj = VIAJE_K.reduce((t, k, i) => t + f[k] * wTodo[i], 0); o['modelo-viajes-solo'] = N.predecir(S, P, Object.assign({}, g, { adjH: g.adjH + adj }), { dH: lastDk(p.hId), dA: lastDk(p.aId) }).pH; }
       return o;
     };
     fn.medicion = { pesos: pesosV, pruebas: med, entra: pasa({ pruebas: med }) };
@@ -802,7 +813,7 @@ function proximos(reg, tabla, ahora) {
 
 module.exports = { DEPS, REGLAS, NOMBRES, arr, pickDe, zonaDe, mismo, consenso, partidosDe, resultadoDe, competidores, registrar, calificar,
   pendientes, resumen, duelos, ascensos, mapa, proximos, prediccionPolymarket, modelosUS, modeloTenis, ymdUTC,
-  ARCHIVO, mesesDesde, finalesDe, ajustarMezcla, mezclar, MEZCLA_MIN, rasgosViaje, mco, calendarioFut, descansoDe, medirDescanso, epaDeCSV, modeloEPA, pasa, ponerFabrica: f => { FAB = f; }, modeloNBA, motorFutbol, modeloFutbol, nfeloMapa, clubeloLista, clubeloPara, taElo, taBuscar, probTA, mismoClub };
+  ARCHIVO, mesesDesde, finalesDe, ajustarMezcla, mezclar, MEZCLA_MIN, rasgosViaje, mco, calendarioFut, descansoDe, medirDescanso, epaDeCSV, modeloEPA, pasa, ponerFabrica: f => { FAB = f; }, ponerLesiones: l => { LES_NBA = l; }, ajusteBajas, modeloNBA, motorFutbol, modeloFutbol, nfeloMapa, clubeloLista, clubeloPara, taElo, taBuscar, probTA, mismoClub };
 if (require.main !== module) return;
 
 /* ---------- corrida ---------- */
@@ -897,6 +908,12 @@ async function predictorESPN(core, ext) {
       log.push('nfl epa ' + y + ': ' + Object.keys(e).length + ' juegos');
     } catch (err) { log.push('nfl epa ' + y + ': ' + err.message); }
   }
+  // bajas de la NBA (las baja el robot de lesionados cada 3 h a la rama datos)
+  try {
+    const r = await fetch('https://raw.githubusercontent.com/osvaldoalvarez0113-source/ODDX/datos/lesiones-nba.json?t=' + ahora);
+    if (r.ok) { const j = await r.json(); LES_NBA = {}; Object.values(j.equipos || {}).forEach(e => { if (e && e.id) LES_NBA[String(e.id)] = (e.l || []).filter(x => /^out/i.test(x.s || '')).map(x => x.n); }); }
+    log.push('nba bajas: ' + (LES_NBA ? Object.values(LES_NBA).reduce((a, l) => a + l.length, 0) + ' jugadores «Out»' : 'sin archivo'));
+  } catch (e) { log.push('nba bajas: ' + e.message); }
   // 3) modelos propios y datos extra
   const mod = { nhl: modelosUS('nhl'), nfl: modelosUS('nfl'), tenis: modeloTenis(),
     nba: (arch.rutas['basketball/nba'] || {}).listo ? modeloNBA(Object.values(arch.rutas['basketball/nba'].g)) : null, futbol: modeloFutbol(arch, ahora),

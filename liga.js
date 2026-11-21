@@ -6,6 +6,8 @@
      1) debajo de «🧠 El análisis» de cada juego sale la línea de la liga: quién es el titular, qué escoge y cuánto viene
         acertando en juegos así (si todavía no hay 30 juegos en esa zona, lo dice: no inventa confianza);
      2) Herramientas → 🏆 Liga: la tabla de cada deporte, los duelos contra el titular, el mapa y los cambios de titular.
+     3) LA APP CONTRA EL ROBOT: cada vez que abres un juego que no ha empezado, anota en el teléfono (ova_liga_cmp) el % que da el
+        modelo de la app al favorito y el que guardó el robot como «Modelo OVA», para ver si la copia del robot es fiel.
    No cambia ningún número ni pick de la app, ni toca tus registros. Sin internet no sale nada. */
 (function (root) {
   'use strict';
@@ -66,6 +68,37 @@
       '</div>';
   }
 
+  /* ---------- la app contra el robot ---------- */
+  var KCMP = 'ova_liga_cmp';
+  /* % del robot («Modelo OVA») para el favorito de la app; null si no se puede emparejar */
+  function robotPara(x, fav) {
+    var pr = x && x.ps && x.ps.modelo; if (!pr) return null;
+    var esL = mismo(x.local, fav), esV = mismo(x.visita, fav);
+    if (esL === esV) return null;
+    return esL ? pr[0] : pr[1];
+  }
+  function anotar(x, q, ahora) {
+    if (!x || !(x.ts > ahora) || !(q.a > 0 && q.a < 1)) return null;
+    var rob = robotPara(x, q.f); if (rob === null) return null;
+    var e = { dep: x.dep, ts: x.ts, fav: q.f, app: Math.round(q.a * 1000) / 1000, rob: Math.round(rob * 1000) / 1000, t: ahora, tres: x.ps.modelo[2] > 0 };
+    try {
+      var o = JSON.parse(root.localStorage.getItem(KCMP) || '{}'); o[x.dep + '|' + x.ext] = e;
+      var ks = Object.keys(o); if (ks.length > 500) ks.sort(function (a, b) { return o[a].t - o[b].t; }).slice(0, ks.length - 500).forEach(function (k) { delete o[k]; });
+      root.localStorage.setItem(KCMP, JSON.stringify(o));
+    } catch (err) { }
+    return e;
+  }
+  function resumenCmp(o) {
+    var r = {};
+    Object.keys(o || {}).forEach(function (k) {
+      var e = o[k], R = r[e.dep] || (r[e.dep] = { n: 0, suma: 0, max: 0, peor: null, lados: 0, nl: 0 }), d = Math.abs(e.app - e.rob) * 100;
+      R.n++; R.suma += d; if (d > R.max) { R.max = d; R.peor = e; }
+      if (!e.tres) { R.nl++; if ((e.app >= 0.5) === (e.rob >= 0.5)) R.lados++; }
+    });
+    Object.keys(r).forEach(function (k) { var R = r[k]; R.prom = R.suma / R.n; R.mismoLado = R.nl ? 100 * R.lados / R.nl : null; });
+    return r;
+  }
+
   /* ---------- datos ---------- */
   function cargar(forzar) {
     if (PROMESA && !forzar) return PROMESA;
@@ -88,6 +121,7 @@
         var q; try { q = JSON.parse(h.getAttribute('data-q') || '{}'); } catch (e) { return; }
         var x = buscar(d, q.d, q.f, q.r); if (!x) return;
         h.innerHTML = htmlLinea(lectura(d, x, q.f));
+        anotar(x, q, Date.now());
       });
     });
   }
@@ -98,7 +132,8 @@
       var h = orig.apply(this, arguments);
       try {
         if (h && ctx && !ctx.vivo && DEP[ctx.dep] && ctx.fav && ctx.riv) {
-          h += '<div class="ovaLiga" data-q="' + esc(JSON.stringify({ d: ctx.dep, f: ctx.fav, r: ctx.riv })) + '"></div>';
+          var pa = ctx.merc ? ctx.pMod : ctx.p;   // lo que dice el MODELO de la app del favorito (sin el mercado)
+          h += '<div class="ovaLiga" data-q="' + esc(JSON.stringify({ d: ctx.dep, f: ctx.fav, r: ctx.riv, a: typeof pa === 'number' && isFinite(pa) ? pa : null })) + '"></div>';
           root.setTimeout(llenar, 60); root.setTimeout(llenar, 900);
         }
       } catch (e) { }
@@ -183,6 +218,17 @@
         return '<tr><td>' + esc(f.nombre) + '</td><td style="color:' + col + '">' + esc(f.estado) + (f.horas != null ? ' · ' + f.horas + ' h' : '') + '</td></tr>'; }).join('') + '</table>';
       (sa.problemas || []).forEach(function (p) { h += '<div class="caja" style="padding:8px 12px;margin-top:6px;font-size:13px;color:var(--bad,#F08A78)">⚠️ ' + esc(p.txt) + '</div>'; });
     }
+    var cmp = {}; try { cmp = resumenCmp(JSON.parse(root.localStorage.getItem(KCMP) || '{}')); } catch (e) { }
+    var NOMD = { nba: 'NBA', nhl: 'NHL', nfl: 'NFL', fut: 'Fútbol', futbol: 'Fútbol', tenis: 'Tenis', mlb: 'MLB' };
+    h += '<h3 style="margin:18px 2px 8px;font-size:16px">📏 La app contra el robot</h3><div style="font-size:12px;color:var(--mut2);margin:0 2px 6px">Cada vez que abres un juego que no ha empezado, se compara el % que da el modelo de tu app al favorito con el que guardó el robot («Modelo OVA»). Si se separan mucho, la liga no está midiendo exactamente tu fórmula.</div>';
+    var ck = Object.keys(cmp);
+    if (!ck.length) h += '<div class="vacio" style="padding:12px;font-size:13px">Todavía nada: se llena solo cuando abras juegos en las apps.</div>';
+    else {
+      h += '<table class="tab"><tr><th>Deporte</th><th>Juegos</th><th>Diferencia</th><th>Máx.</th><th>Mismo lado</th></tr>';
+      ck.forEach(function (k) { var R = cmp[k], col = R.prom <= 1.5 ? 'var(--good,#6FD39A)' : (R.prom <= 4 ? 'var(--warn,#F0CE6B)' : 'var(--bad,#F08A78)');
+        h += '<tr><td>' + esc(NOMD[k] || k) + '</td><td class="n">' + R.n + '</td><td class="n" style="color:' + col + '"><b>' + R.prom.toFixed(1) + ' pts</b></td><td class="n">' + R.max.toFixed(1) + '</td><td class="n">' + (R.mismoLado === null ? '—' : R.mismoLado.toFixed(0) + '%') + '</td></tr>'; });
+      h += '</table><div style="font-size:12px;color:var(--mut2);margin:6px 2px">Verde: hasta 1.5 puntos (copia fiel) · amarillo: hasta 4 · rojo: más. «Mismo lado»: los dos le dan más de 50% al mismo equipo.</div>';
+    }
     h += '<div style="margin:16px 2px;font-size:13px"><a href="record.html" style="color:var(--acc,#C9A24A)">📜 Ver el récord sellado (página pública) ›</a></div>';
     var pz = d.pesos || {}, pk = ORDEN.filter(function (k) { return pz[k]; });
     if (pk.length) {
@@ -205,7 +251,7 @@
     cargar(true).then(function (d) { cont.innerHTML = pantallaHtml(d); });
   }
 
-  var API = { buscar: buscar, lectura: lectura, htmlLinea: htmlLinea, pantallaHtml: pantallaHtml, pantalla: pantalla, cargar: cargar, envolver: envolver, mismo: mismo, URL: URL };
+  var API = { robotPara: robotPara, anotar: anotar, resumenCmp: resumenCmp, buscar: buscar, lectura: lectura, htmlLinea: htmlLinea, pantallaHtml: pantallaHtml, pantalla: pantalla, cargar: cargar, envolver: envolver, mismo: mismo, URL: URL };
   root.OVALiga = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   if (!root.document) return;

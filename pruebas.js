@@ -2114,6 +2114,16 @@ sec('Liga de modelos');
   ok('la fábrica corre los domingos y guarda en la rama liga',/node scripts\/fabrica\.js/.test(rd('.github/workflows/fabrica.yml'))&&/HEAD:liga/.test(rd('.github/workflows/fabrica.yml')));
   ok('los avisos usan el tema privado (secreto NTFY_TOPIC), nunca uno público',/secrets\.NTFY_TOPIC/.test(rd('.github/workflows/liga.yml'))&&!/ntfy\.sh\/my-bets/.test(rd('scripts/liga-extras.js')));
  }
+ {
+  const x={dep:'nba',ext:'9',ts:Date.now()+H,local:'Boston Celtics',visita:'Los Angeles Lakers',ps:{modelo:[0.62,0.38,0]}};
+  ok('app contra robot: toma el % del robot para el favorito de la app (sea local o visita)',LC.robotPara(x,'Celtics')===0.62&&LC.robotPara(x,'Lakers')===0.38&&LC.robotPara(x,'Knicks')===null);
+  ok('app contra robot: solo anota juegos que no han empezado',LC.anotar(Object.assign({},x,{ts:Date.now()-H}),{f:'Celtics',a:.6},Date.now())===null&&!!LC.anotar(x,{f:'Celtics',a:.6},Date.now()));
+  const rs=LC.resumenCmp({a:{dep:'nba',app:.60,rob:.62},b:{dep:'nba',app:.55,rob:.45},c:{dep:'fut',app:.5,rob:.45,tres:true}});
+  ok('app contra robot: diferencia promedio, la mayor y si escogen el mismo lado',Math.abs(rs.nba.prom-6)<1e-9&&Math.abs(rs.nba.max-10)<1e-9&&rs.nba.mismoLado===50&&rs.fut.mismoLado===null);
+  LG.ponerLesiones({'1':['Trae Young']});
+  ok('el robot resta las bajas «Out» de la NBA igual que nba.html (valores-nba.json)',(()=>{ const v=JSON.parse(rd('valores-nba.json')), q=(v.eq['1']||[])[0]; if(!q) return true; LG.ponerLesiones({'1':[q[1]]}); return Math.abs(LG.ajusteBajas('1','2')-(-v.c*q[2]))<1e-9&&Math.abs(LG.ajusteBajas('2','1')-v.c*q[2])<1e-9; })());
+  LG.ponerLesiones(null);
+ }
  ok('el robot corre en el workflow liga.yml y guarda en la rama liga',/node scripts\/liga\.js/.test(rd('.github/workflows/liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/liga.yml')));
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{
