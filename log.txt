@@ -16,8 +16,8 @@ nfl: con modelo de afuera 12
 nfl: 13 partidos vistos · 12 guardados/refrescados antes de empezar · ESPN 12
 mlb: 0 partidos vistos · 0 guardados/refrescados antes de empezar · ESPN 0
 futbol: con modelo de afuera 0
-futbol: 42 partidos vistos · 22 guardados/refrescados antes de empezar · ESPN 0
+futbol: 42 partidos vistos · 16 guardados/refrescados antes de empezar · ESPN 0
 tenis: con modelo de afuera 3
-tenis: 48 partidos vistos · 2 guardados/refrescados antes de empezar · ESPN 0
+tenis: 52 partidos vistos · 6 guardados/refrescados antes de empezar · ESPN 0
 avisos: tema privado sí · pendientes 0 · problemas del vigilante 0 · detective 0 grupos
-calificados ahora: 0 · ascensos: 0 · total guardados: 90
+calificados ahora: 1 · ascensos: 0 · total guardados: 94
