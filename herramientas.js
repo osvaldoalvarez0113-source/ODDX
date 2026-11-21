@@ -780,14 +780,14 @@ function pantallaSalud(cont,ls){
 }
 
 /* ----- arranque ----- */
-var TABS=[['marcador','📊 Marcador'],['banca','💰 Banca'],['casas','🏦 Casas'],['auto','🤖 Auto'],['avisos','🔔 Avisos'],['salud','🩺 Salud']];
+var TABS=[['marcador','📊 Marcador'],['banca','💰 Banca'],['casas','🏦 Casas'],['auto','🤖 Auto'],['liga','🏆 Liga'],['avisos','🔔 Avisos'],['salud','🩺 Salud']];
 function arrancar(){
   var d=root.document, cont=d.getElementById('vista'), nav=d.getElementById('tabs'); if(!cont||!nav) return;
   var ls; try{ ls=root.localStorage; }catch(e){ ls={getItem:function(){ return null; }}; }
   function ir(k){
     if(!TABS.some(function(t){ return t[0]===k; })) k='marcador';
     Array.prototype.forEach.call(nav.children,function(b){ b.classList.toggle('on',b.getAttribute('data-k')===k); b.setAttribute('aria-selected',b.getAttribute('data-k')===k?'true':'false'); });
-    if(k==='marcador') pantallaMarcador(cont,ls); else if(k==='banca') pantallaBanca(cont); else if(k==='casas') pantallaCasas(cont); else if(k==='auto') pantallaAuto(cont,ls); else if(k==='salud') pantallaSalud(cont,ls); else pantallaAvisos(cont);
+    if(k==='marcador') pantallaMarcador(cont,ls); else if(k==='banca') pantallaBanca(cont); else if(k==='casas') pantallaCasas(cont); else if(k==='auto') pantallaAuto(cont,ls); else if(k==='salud') pantallaSalud(cont,ls); else if(k==='liga'){ if(root.OVALiga) root.OVALiga.pantalla(cont); else cont.textContent='Falta liga.js: recarga la página.'; } else pantallaAvisos(cont);
     try{ if(root.history&&root.history.replaceState) root.history.replaceState(null,'','#'+k); }catch(e){}
   }
   TABS.forEach(function(t){ nav.appendChild(el('button',{type:'button',role:'tab','data-k':t[0],text:t[1],onclick:function(){ ir(t[0]); }})); });

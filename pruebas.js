@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js','memoria.js','observaciones.js','mlbextra.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js','memoria.js','observaciones.js','mlbextra.js','liga.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -2018,6 +2018,47 @@ async function t_publico(){
   ok('el robot de valores existe, corre en el workflow y valores-nba.json trae los 30 equipos',fs.existsSync(D+'scripts/valores_nba.js')&&/valores_nba\.js/.test(rd2('.github/workflows/datos-nba-box.yml'))&&Object.keys(JSON.parse(rd2('valores-nba.json')).eq).length===30);
  }
  ok('no baja nada, no guarda nada y el service worker lo guarda',!/fetch\(|localStorage/.test(rd2('analista.js'))&&rd2('sw.js').indexOf("'analista.js'")>0);
+}
+/* ---------------- Liga de modelos (scripts/liga.js + liga.js) ---------------- */
+sec('Liga de modelos');
+{
+ const LG=require(D+'scripts/liga.js'), LC=require(D+'liga.js'), H=3600e3, t0=Date.parse('2026-11-21T12:00:00Z');
+ const ev=(id,ts,hn,an,hid,aid,o)=>({id,date:new Date(ts).toISOString(),competitions:[{id,date:new Date(ts).toISOString(),status:{type:{state:o.state||'pre',completed:!!o.fin,name:o.name||'STATUS_SCHEDULED'}},
+  odds:o.ml?[{moneyline:{home:{close:{odds:o.ml[0]}},away:{close:{odds:o.ml[1]}},draw:o.ml[2]?{close:{odds:o.ml[2]}}:undefined}}]:undefined,
+  competitors:[{homeAway:'home',team:{id:hid,displayName:hn},score:o.hs},{homeAway:'away',team:{id:aid,displayName:an},score:o.as}]}]});
+ const reg={v:1,items:{}}, mNhl=LG.modelosUS('nhl');
+ const ps=LG.partidosDe({events:[ev('n1',t0+5*H,'Boston Bruins','Buffalo Sabres','1','2',{ml:['-150','+130']})]},'nhl','hockey/nhl');
+ LG.registrar(reg,'nhl',ps,()=>({modelo:mNhl,pred:[{h:'Bruins',a:'Sabres',ph:.57,pa:.43,ini:new Date(t0+5*H).toISOString()}]}),t0);
+ const it=reg.items['nhl|n1'];
+ ok('guarda antes del juego: mercado sin margen, Polymarket, modelo, modelo sin tiros, OVA y consenso',!!(it&&it.p.mercado&&it.p.polymarket&&it.p.modelo&&it.p['modelo-goles']&&it.p.ova&&it.p.consenso)&&Math.abs(it.p.mercado[0]+it.p.mercado[1]-1)<0.002);
+ ok('OVA en NHL = mercado con el modelo al 5% (queda pegado al mercado)',Math.abs(it.p.ova[0]-it.p.mercado[0])<0.02);
+ const antes=JSON.stringify(it.p); LG.registrar(reg,'nhl',ps.map(p=>Object.assign({},p,{mercado:[.9,.1,0]})),()=>({}),t0+6*H);
+ ok('con el juego empezado ya no se toca nada',JSON.stringify(reg.items['nhl|n1'].p)===antes);
+ const pf=LG.partidosDe({events:[ev('f1',t0+3*H,'Real Madrid','FC Barcelona','86','83',{ml:['+150','+170','+250']})]},'futbol','soccer/esp.1');
+ LG.registrar(reg,'futbol',pf,()=>({}),t0);
+ ok('fútbol guarda el 1X2 con empate',reg.items['futbol|f1']&&reg.items['futbol|f1'].p.mercado[2]>0.2);
+ const fin={'hockey/nhl':LG.partidosDe({events:[ev('n1',t0+5*H,'Boston Bruins','Buffalo Sabres','1','2',{state:'post',fin:true,name:'STATUS_FINAL',hs:'2',as:'3'})]},'nhl','hockey/nhl'),
+  'soccer/esp.1':LG.partidosDe({events:[ev('f1',t0+3*H,'Real Madrid','FC Barcelona','86','83',{state:'post',fin:true,name:'STATUS_FULL_TIME',hs:'1',as:'1'})]},'futbol','soccer/esp.1')};
+ ok('califica 3.5 h después: visita gana → A, empate en fútbol → D',LG.calificar(reg,fin,t0+10*H)===2&&reg.items['nhl|n1'].res==='A'&&reg.items['futbol|f1'].res==='D');
+ ok('pospuesto → no cuenta (X)',LG.resultadoDe({anulado:true},'nba')==='X'&&LG.resultadoDe({fin:true,hs:3,as:3},'nba')==='X');
+ for(let i=0;i<19;i++) reg.items['nhl|x'+i]={dep:'nhl',ts:t0-50*H,p:{ova:[.6,.4,0],modelo:[.45,.55,0]},res:'A'};
+ let e={titular:{},cambios:[]}, tb=LG.resumen(reg,e,t0); LG.ascensos(reg,tb,e,t0);
+ ok('con menos de 20 duelos no sube nadie aunque gane todos',tb.nhl.titular==='ova');
+ for(let i=19;i<40;i++) reg.items['nhl|x'+i]={dep:'nhl',ts:t0-50*H,p:{ova:[.6,.4,0],modelo:[.45,.55,0]},res:i<30?'A':'L'};
+ e={titular:{},cambios:[]}; tb=LG.resumen(reg,e,t0); const hechos=LG.ascensos(reg,tb,e,t0); LG.mapa(reg,tb);
+ ok('el suplente que gana claro los duelos (30-10) sube de titular y queda anotado',tb.nhl.titular==='modelo'&&hechos.length===1&&e.titular.nhl==='modelo');
+ ok('mapa: zona de 5 puntos y lado, suficiente desde 30 juegos',tb.nhl.confianza['55-60% · visita']&&tb.nhl.confianza['55-60% · visita'].suficiente===true);
+ ok('zona del 85%+ y del empate',LG.zonaDe({p:.91,lado:'L'})==='85%+ · local'&&LG.zonaDe({p:.31,lado:'D'})==='30-35% · empate');
+ const d={v:1,reglas:{CONF_MIN:30},nombres:LG.NOMBRES,deportes:{nba:{nombre:'NBA',titular:'mercado',modelos:{mercado:{nombre:'Mercado',jugados:50,aciertos:34,pct:68}},confianza:{}}},
+  proximos:[{dep:'nba',ts:t0+H,local:'Boston Celtics',visita:'Los Angeles Lakers',tit:'mercado',pick:'L',p:.64,zona:'60-65% · local',zn:40,zw:29}]};
+ const x=LC.buscar(d,'nba','Lakers','Celtics'), r=LC.lectura(d,x,'Celtics');
+ ok('la app encuentra el juego con los nombres cortos y en cualquier orden',!!x&&x.local==='Boston Celtics');
+ ok('la línea dice titular, pick y cuánto acierta la zona',r&&r.tit==='Mercado'&&r.pctZona===73&&!r.distinto&&/73%/.test(LC.htmlLinea(r)));
+ ok('con pocos juegos lo dice y no inventa confianza',/Juntando datos/.test(LC.lectura(d,Object.assign({},x,{zn:7,zw:5}),'Celtics').txt));
+ ok('avisa si el titular escoge distinto al favorito de la app',LC.lectura(d,x,'Lakers').distinto===true);
+ ok('liga.js solo lee: no guarda picks ni toca registros',!/ova_auto_v1|ova_picks|setItem\('ova_(?!liga)/.test(rd('liga.js')));
+ ok('lo cargan las seis apps después de analista.js, y Herramientas',['index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html'].every(f=>rd(f).indexOf('<script src="liga.js">')>rd(f).indexOf('<script src="analista.js">')&&rd(f).indexOf('<script src="analista.js">')>0)&&/<script src="liga\.js">/.test(rd('herramientas.html')));
+ ok('el robot corre en el workflow liga.yml y guarda en la rama liga',/node scripts\/liga\.js/.test(rd('.github/workflows/liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/liga.yml')));
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
