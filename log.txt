@@ -1,4 +1,4 @@
-archivo: nba 1278 · eng.1 0 · esp.1 0 · ita.1 0 · ger.1 0 · fra.1 0 · pedidos 220
+archivo: nba 2882 · eng.1 110 · esp.1 0 · ita.1 0 · ger.1 0 · fra.1 0 · pedidos 700
 nba: 22 partidos vistos · 6 guardados/refrescados antes de empezar · ESPN 6
 nhl: 19 partidos vistos · 14 guardados/refrescados antes de empezar · ESPN 0
 nfl: 13 partidos vistos · 12 guardados/refrescados antes de empezar · ESPN 12
