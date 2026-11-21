@@ -1,4 +1,4 @@
 /* generado por scripts/sello.js: no editar a mano */
 (function(r){r.OVA_SELLO=
-{"nhl":{"f":"2026-11-20","h":"4b0b419704"},"nfl":{"f":"2026-11-20","h":"66248bf09b"},"tenis":{"f":"2026-11-20","h":"956bf854ef"},"mlb":{"f":"2026-11-20","h":"9c108c42bc"},"nba":{"f":"2026-11-20","h":"9e8279a8a1"},"futbol":{"f":"2026-11-20","h":"7dd0d2dec7"}}
+{"nhl":{"f":"2026-11-21","h":"f22de2a2c8"},"nfl":{"f":"2026-11-21","h":"3a31fc3eb7"},"tenis":{"f":"2026-11-21","h":"11801d0954"},"mlb":{"f":"2026-11-21","h":"1eb0f11a36"},"nba":{"f":"2026-11-21","h":"ec73696700"},"futbol":{"f":"2026-11-21","h":"e767cdbd7e"}}
 ;})(typeof window!=='undefined'?window:globalThis);
