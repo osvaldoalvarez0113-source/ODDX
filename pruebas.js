@@ -2070,6 +2070,18 @@ sec('Liga de modelos');
   ok('fútbol: Champions con fuerza-copas.json y sin modelo si un equipo no está',!!fu({ruta:'soccer/uefa.champions',local:'Bayern Munich',visita:'Arsenal'})&&fu({ruta:'soccer/uefa.champions',local:'Equipo Inventado',visita:'Arsenal'})===null);
   ok('archivo por meses: el mes actual llega hasta mañana',JSON.stringify(LG.mesesDesde(Date.UTC(2026,9,1),Date.UTC(2026,10,21)).map(m=>m.a+'-'+m.b))===JSON.stringify(['20261001-20261031','20261101-20261122']));
  }
+ {
+  const nf=LG.nfeloMapa('home_team,away_team,nfelo_projected_home_spread,nfelo_projected_home_win_probability,projected_winner,projected_winner_probability\nWAS,CIN,1.5,0.322,CIN,0.678\nDEN,OAK,-7,0.833,DEN,0.833\n');
+  const on=LG.competidores('nfl',{hAb:'WSH',aAb:'CIN',ts:Date.now()+H},{nfelo:nf});
+  ok('nfelo: lee su CSV, traduce WAS→WSH y OAK→LV y entra como competidor',nf['DEN|LV']===0.833&&on.nfelo&&on.nfelo[0]===0.322);
+  const ce=LG.clubeloLista('Date,Country,Home,Away,GD<-5,GD=-5,GD=-4,GD=-3,GD=-2,GD=-1,GD=0,GD=1,GD=2,GD=3,GD=4,GD=5,GD>5\n2026-11-22,ENG,Man City,Forest,0.001,0.002,0.005,0.01,0.03,0.09,0.18,0.25,0.2,0.12,0.06,0.03,0.022\n');
+  const oc=LG.competidores('futbol',{ts:Date.parse('2026-11-22T15:00:00Z'),local:'Manchester City',visita:'Nottingham Forest'},{clubelo:ce});
+  ok('ClubElo: suma las diferencias de goles en 1X2 y empareja «Man City»/«Forest» con los nombres de ESPN',!!oc.clubelo&&Math.abs(oc.clubelo[0]-0.682)<0.002&&Math.abs(oc.clubelo[2]-0.18)<0.002);
+  ok('ClubElo: no empareja equipos distintos ni otra fecha',!LG.clubeloPara(ce,{ts:Date.parse('2026-11-22T15:00:00Z'),local:'Arsenal',visita:'Chelsea'})&&!LG.clubeloPara(ce,{ts:Date.parse('2026-11-29T15:00:00Z'),local:'Manchester City',visita:'Nottingham Forest'}));
+  const ta=LG.taElo('<table><tr><th>Elo Rank</th><th>Player</th><th>Age</th><th>Elo</th><th>hElo</th><th>Rank hElo</th><th>cElo</th><th>Rank cElo</th><th>gElo</th></tr><tr><td>1</td><td><a href="x">Elena Rybakina</a></td><td>27</td><td>2159.2</td><td>2143.1</td><td>1</td><td>2020</td><td>5</td><td>1902</td></tr><tr><td>2</td><td>Aryna Sabalenka</td><td>28</td><td>2139</td><td>2113.3</td><td>2</td><td>2062.7</td><td>1</td><td>1948</td></tr></table>');
+  const ot=LG.competidores('tenis',{tour:'w',local:'E. Rybakina',visita:'Aryna Sabalenka',ts:Date.now()+H},{ta:{w:ta},sup:()=>'C'});
+  ok('Tennis Abstract: lee la tabla por nombre de columna, usa el Elo de la superficie y encuentra «E. Rybakina»',!!ot.tennisabstract&&ot.tennisabstract[0]<0.5);
+ }
  ok('el robot corre en el workflow liga.yml y guarda en la rama liga',/node scripts\/liga\.js/.test(rd('.github/workflows/liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/liga.yml')));
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{

@@ -23,6 +23,9 @@
      espn         el pronóstico público de ESPN (BPI en NBA, FPI en NFL).
      polymarket   precio de Polymarket (rama «pred»), sin el margen.
      consenso     promedio (en logit) de los que haya: mercado, espn, polymarket y modelo. Necesita 2 o más.
+     nfelo        NFL: el modelo público nfelo (github.com/greerreNFL/nfelo, output_data/prediction_tracker.csv, se actualiza solo).
+     clubelo      fútbol: los pronósticos de ClubElo (api.clubelo.com/Fixtures: probabilidad de cada diferencia de goles → 1X2).
+     tennisabstract tenis: el Elo por superficie de Tennis Abstract (Jeff Sackmann, informes semanales de la ATP y la WTA).
 
    Archivos (rama «liga»): liga-registro.json (todo lo guardado), liga.json (resumen que leen las apps) y liga-hist.json
    (archivo propio de resultados de NBA y de las 5 ligas para correr los modelos; se arma solo, por meses, y se completa en varias vueltas).
@@ -53,6 +56,7 @@ const DEPS = {
 const NOMBRES = {
   ova: 'OVA (lo que muestra la app)', modelo: 'Modelo OVA', 'modelo-goles': 'Modelo OVA sin tiros', 'modelo-solo': 'Modelo OVA sin ESPN',
   mercado: 'Mercado', espn: 'ESPN', polymarket: 'Polymarket', consenso: 'Consenso',
+  nfelo: 'nfelo', clubelo: 'ClubElo', tennisabstract: 'Tennis Abstract',
 };
 
 /* ---------- utilidades puras ---------- */
@@ -122,7 +126,7 @@ function partidosDe(j, dep, ruta) {
       out.push({
         ext: String(dep === 'tenis' ? c.id : e.id), ruta: ruta, ts: ts, estado: st.state || '', fin: st.completed === true,
         anulado: /POSTPONED|CANCELED|CANCELLED|ABANDONED|SUSPENDED|FORFEIT|WALKOVER|RETIRED/i.test(st.name || ''),
-        local: nom(h), visita: nom(a), hId: String((h.team && h.team.id) || h.id || ''), aId: String((a.team && a.team.id) || a.id || ''),
+        local: nom(h), visita: nom(a), hAb: (h.team && h.team.abbreviation) || '', aAb: (a.team && a.team.abbreviation) || '', hId: String((h.team && h.team.id) || h.id || ''), aId: String((a.team && a.team.id) || a.id || ''),
         hRk: (h.curatedRank && h.curatedRank.current) || 0, aRk: (a.curatedRank && a.curatedRank.current) || 0,
         hs: sc(h), as: sc(a), hGano: h.winner === true, aGano: a.winner === true, tour: tour,
         neutral: c.neutralSite === true, evNombre: e.name || '', mj: !!e.major, ronda: (c.round && c.round.displayName) || '',
@@ -286,6 +290,83 @@ function modeloFutbol(arch, ahora) {
 }
 function leerJSON(f) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return null; } }
 
+/* ---------- modelos públicos de afuera (gratis, sin clave) ---------- */
+function csv(txt) {
+  const ls = String(txt || '').replace(/\r/g, '').split('\n').filter(l => l.trim());
+  if (ls.length < 2) return [];
+  const H = ls[0].split(',').map(x => x.trim());
+  return ls.slice(1).map(l => { const c = l.split(','), o = {}; H.forEach((h, i) => { o[h] = (c[i] || '').trim(); }); return o; });
+}
+/* nfelo usa abreviaturas viejas en algunos equipos */
+const NFELO_ESPN = { OAK: 'LV', LA: 'LAR', STL: 'LAR', SD: 'LAC', WAS: 'WSH' };
+function nfeloMapa(txt) {
+  const m = {};
+  csv(txt).forEach(r => {
+    const h = NFELO_ESPN[r.home_team] || r.home_team, a = NFELO_ESPN[r.away_team] || r.away_team, p = parseFloat(r.nfelo_projected_home_win_probability);
+    if (h && a && valido(p)) m[h + '|' + a] = p;
+  });
+  return m;
+}
+/* ClubElo: cada fila trae la probabilidad de cada diferencia de goles (GD<-5 … GD>5) */
+function clubeloLista(txt) {
+  const out = [];
+  csv(txt).forEach(r => {
+    let pH = 0, pD = 0, pA = 0, hay = false;
+    Object.keys(r).forEach(k => {
+      const m = /^GD\s*([<>=])\s*(-?\d+)$/.exec(k); if (!m) return;
+      const v = parseFloat(r[k]); if (!isFinite(v)) return;
+      const n = +m[2], gd = m[1] === '<' ? n - 1 : (m[1] === '>' ? n + 1 : n);
+      hay = true; if (gd > 0) pH += v; else if (gd < 0) pA += v; else pD += v;
+    });
+    if (hay && r.Home && r.Away) out.push({ fecha: r.Date, pais: r.Country, local: r.Home, visita: r.Away, p: arr(pH, pA, pD) });
+  });
+  return out.filter(x => x.p);
+}
+/* Tennis Abstract: la tabla del informe; las columnas se buscan por nombre (la ATP y la WTA las ordenan distinto) */
+function taElo(html) {
+  const filas = String(html || '').split(/<tr[\s>]/i).slice(1).map(tr => tr.split(/<t[dh][^>]*>/i).slice(1).map(c => c.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim()));
+  const i0 = filas.findIndex(f => f.indexOf('Player') >= 0 && f.indexOf('hElo') >= 0); if (i0 < 0) return {};
+  const H = filas[i0], ix = n => H.indexOf(n), iP = ix('Player'), iE = ix('Elo'), iH = ix('hElo'), iC = ix('cElo'), iG = ix('gElo'), m = {};
+  filas.slice(i0 + 1).forEach(f => {
+    const nom = f[iP]; if (!nom) return;
+    const e = { E: parseFloat(f[iE]), H: parseFloat(f[iH]), C: parseFloat(f[iC]), G: parseFloat(f[iG]) };
+    if (isFinite(e.E)) m[tokens(nom).join(' ')] = e;
+  });
+  return m;
+}
+function taBuscar(m, nombre) {
+  if (!m) return null;
+  const t = tokens(nombre), k = t.join(' ');
+  if (m[k]) return m[k];
+  const ap = t[t.length - 1], ini = t[0] ? t[0][0] : '';             // «J. Sinner» o nombres con dos apellidos
+  const cand = Object.keys(m).filter(x => { const y = x.split(' '); return y[y.length - 1] === ap && (!ini || y[0][0] === ini); });
+  return cand.length === 1 ? m[cand[0]] : null;
+}
+function probTA(m, p, sup) {
+  const A = taBuscar(m, p.local), B = taBuscar(m, p.visita); if (!A || !B) return null;
+  const ea = isFinite(A[sup]) ? A[sup] : A.E, eb = isFinite(B[sup]) ? B[sup] : B.E;
+  return 1 / (1 + Math.pow(10, (eb - ea) / 400));
+}
+/* emparejar nombres de ClubElo («Man City», «Forest», «Paris SG») con los de ESPN */
+const CE_ALIAS = { parissg: 'parissaintgermain', bilbao: 'athleticclub', koeln: 'koln', sporting: 'sportingcp', psv: 'psveindhoven' };
+let MOTOR_F = null;
+function mismoClub(a, b) {
+  try { MOTOR_F = MOTOR_F || motorFutbol(); } catch (e) { return mismo(a, b); }
+  let x = MOTOR_F.claveEq(a), y = MOTOR_F.claveEq(b); x = CE_ALIAS[x] || x; y = CE_ALIAS[y] || y;
+  if (!x || !y) return false; if (x === y) return true;
+  const c = x.length <= y.length ? x : y, l = x.length <= y.length ? y : x;
+  return c.length >= 5 && (l.indexOf(c) === 0 || l.slice(-c.length) === c);
+}
+function clubeloPara(lista, p) {
+  if (!lista) return null;
+  for (const g of lista) {
+    const t = Date.parse(g.fecha + 'T12:00:00Z'); if (!isFinite(t) || Math.abs(t - p.ts) > 1.5 * D) continue;
+    if (mismoClub(g.local, p.local) && mismoClub(g.visita, p.visita)) return g.p;
+    if (mismoClub(g.local, p.visita) && mismoClub(g.visita, p.local)) return [g.p[1], g.p[0], g.p[2]];
+  }
+  return null;
+}
+
 /* ---------- competidores de un juego ---------- */
 function prediccionPolymarket(lista, p) {
   if (!Array.isArray(lista)) return null;
@@ -321,6 +402,9 @@ function competidores(dep, p, extra) {
     const mk = o.mercado || o.polymarket;
     o.ova = mk ? deLocal(sig(logit(mk[0]) + LAM_M * (logit(o.modelo[0]) - logit(mk[0])))) : o.modelo;
   }
+  if (dep === 'nfl' && extra.nfelo) { const v = extra.nfelo[p.hAb + '|' + p.aAb]; if (valido(v)) o.nfelo = deLocal(v); }
+  if (dep === 'futbol' && extra.clubelo) { const v = clubeloPara(extra.clubelo, p); if (v) o.clubelo = v; }
+  if (dep === 'tenis' && extra.ta) { const v = probTA(extra.ta[p.tour === 'w' ? 'w' : 'a'], p, extra.sup ? extra.sup(p) : 'H'); if (valido(v)) o.tennisabstract = deLocal(v); }
   const c = consenso([o.mercado, o.espn, o.polymarket, o.modelo]); if (c) o.consenso = c;
   Object.keys(o).forEach(k => { if (!o[k]) delete o[k]; });
   return o;
@@ -440,7 +524,7 @@ function proximos(reg, tabla, ahora) {
 
 module.exports = { DEPS, REGLAS, NOMBRES, arr, pickDe, zonaDe, mismo, consenso, partidosDe, resultadoDe, competidores, registrar, calificar,
   pendientes, resumen, duelos, ascensos, mapa, proximos, prediccionPolymarket, modelosUS, modeloTenis, ymdUTC,
-  ARCHIVO, mesesDesde, finalesDe, modeloNBA, motorFutbol, modeloFutbol };
+  ARCHIVO, mesesDesde, finalesDe, modeloNBA, motorFutbol, modeloFutbol, nfeloMapa, clubeloLista, clubeloPara, taElo, taBuscar, probTA, mismoClub };
 if (require.main !== module) return;
 
 /* ---------- corrida ---------- */
@@ -530,6 +614,23 @@ async function predictorESPN(core, ext) {
     const sinMod = !mod[it.dep] || (it.dep === 'futbol' && !mod.futbol.tiene(it.ruta));
     if (sinMod) ['modelo', 'modelo-solo', 'modelo-goles', 'ova'].forEach(k => { delete it.p[k]; delete it.t[k]; });
   });
+  // modelos públicos de afuera
+  async function getTexto(u) {
+    for (let i = 0; i < 2; i++) {
+      try { const r = await fetch(u, { headers: { 'user-agent': 'ova-liga/1.0' } }); if (r.ok) return await r.text(); } catch (e) { }
+      await new Promise(res => setTimeout(res, 800));
+    }
+    return null;
+  }
+  const [txNf, txCe, txTa, txTw] = await Promise.all([
+    getTexto('https://raw.githubusercontent.com/greerreNFL/nfelo/main/output_data/prediction_tracker.csv'),
+    getTexto('http://api.clubelo.com/Fixtures'),
+    getTexto('https://tennisabstract.com/reports/atp_elo_ratings.html'),
+    getTexto('https://tennisabstract.com/reports/wta_elo_ratings.html')]);
+  const ext = { nfelo: txNf ? nfeloMapa(txNf) : null, clubelo: txCe ? clubeloLista(txCe) : null, ta: { a: txTa ? taElo(txTa) : null, w: txTw ? taElo(txTw) : null } };
+  let supT = null; try { const T = require('../modelo-tenis.js'); supT = p => T.superficie(p.evNombre, p.ts); } catch (e) { }
+  log.push('afuera: nfelo ' + (ext.nfelo ? Object.keys(ext.nfelo).length + ' juegos' : 'NO') + ' · ClubElo ' + (ext.clubelo ? ext.clubelo.length + ' partidos' : 'NO') +
+    ' · Tennis Abstract ' + (ext.ta.a ? Object.keys(ext.ta.a).length : 'NO') + '/' + (ext.ta.w ? Object.keys(ext.ta.w).length : 'NO') + ' jugadores');
   const pred = {};
   Object.keys(DEPS).forEach(dep => {
     const k = DEPS[dep].pred; if (!k) return;
@@ -543,7 +644,10 @@ async function predictorESPN(core, ext) {
       const cola = ps.filter(p => p.ts > ahora && p.ts < ahora + DEPS[dep].horiz && p.estado === 'pre').slice(0, 40);
       await Promise.all(cola.map(p => predictorESPN(DEPS[dep].core, p.ext).then(v => { if (v !== null) espn[p.ext] = v; })));
     }
-    const n = registrar(reg, dep, ps, p => ({ modelo: mod[dep] || null, espn: espn[p.ext] != null ? espn[p.ext] : null, pred: pred[dep] }), ahora);
+    const n = registrar(reg, dep, ps, p => ({ modelo: mod[dep] || null, espn: espn[p.ext] != null ? espn[p.ext] : null, pred: pred[dep],
+      nfelo: ext.nfelo, clubelo: ext.clubelo, ta: ext.ta, sup: supT }), ahora);
+    const nExt = ps.filter(p => { const it = reg.items[dep + '|' + p.ext]; return it && (it.p.nfelo || it.p.clubelo || it.p.tennisabstract); }).length;
+    if (dep === 'nfl' || dep === 'futbol' || dep === 'tenis') log.push(dep + ': con modelo de afuera ' + nExt);
     log.push(dep + ': ' + ps.length + ' partidos vistos · ' + n + ' guardados/refrescados antes de empezar · ESPN ' + Object.keys(espn).length);
   }
   // 4) calificar, tabla, ascensos, mapa
