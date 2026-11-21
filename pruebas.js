@@ -2058,6 +2058,18 @@ sec('Liga de modelos');
  ok('avisa si el titular escoge distinto al favorito de la app',LC.lectura(d,x,'Lakers').distinto===true);
  ok('liga.js solo lee: no guarda picks ni toca registros',!/ova_auto_v1|ova_picks|setItem\('ova_(?!liga)/.test(rd('liga.js')));
  ok('lo cargan las seis apps después de analista.js, y Herramientas',['index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html'].every(f=>rd(f).indexOf('<script src="liga.js">')>rd(f).indexOf('<script src="analista.js">')&&rd(f).indexOf('<script src="analista.js">')>0)&&/<script src="liga\.js">/.test(rd('herramientas.html')));
+ {
+  let sd=3; const rn=()=>(sd=(sd*16807)%2147483647)/2147483647, rows=[]; const t1=Date.UTC(2024,9,25,23);
+  for(let i=0;i<1300;i++){ const h=String(1+Math.floor(rn()*30)); let a; do{a=String(1+Math.floor(rn()*30));}while(a===h); const m=(+h)*0.3-(+a)*0.3+2+(rn()-0.5)*24; rows.push([String(i),t1+i*3*H,h,a,'H'+h,'A'+a,Math.round(110+m/2),Math.round(110-m/2)]); }
+  const nb=LG.modeloNBA(rows), o=LG.competidores('nba',{hId:'30',aId:'1',ts:Date.now()+H,mercado:[0.7,0.3,0]},{modelo:nb,espn:0.72});
+  ok('NBA: corre el modelo de nba.html con el archivo, lo nutre con el BPI (0.70) y OVA queda pegado al mercado',!!(o.modelo&&o['modelo-solo']&&o.ova)&&o['modelo-solo'][0]>0.6&&Math.abs(o.ova[0]-0.7)<0.03&&o.modelo[0]<o['modelo-solo'][0]);
+  ok('NBA: con pocos juegos en el archivo el modelo espera',LG.modeloNBA(rows.slice(0,100))===null);
+  const ar={v:1,rutas:{}}, jn=JSON.parse(rd('hist-nac-esp.json')), g={}; jn.p.filter(r=>r[1]==='esp.1').forEach(r=>{g[r[0]]=[r[0],r[6],'x','y',r[2],r[3],r[4],r[5]];}); ar.rutas['soccer/esp.1']={meses:{},g};
+  const fu=LG.modeloFutbol(ar,Date.now()), x1=fu({ruta:'soccer/esp.1',local:'Real Madrid',visita:'Barcelona'});
+  ok('fútbol: el Dixon-Coles de futbol.html corre fuera de la app y da un 1X2 que suma 1',!!x1&&Math.abs(x1.modelo[0]+x1.modelo[1]+x1.modelo[2]-1)<1e-6&&x1.modelo[1]>0.05);
+  ok('fútbol: Champions con fuerza-copas.json y sin modelo si un equipo no está',!!fu({ruta:'soccer/uefa.champions',local:'Bayern Munich',visita:'Arsenal'})&&fu({ruta:'soccer/uefa.champions',local:'Equipo Inventado',visita:'Arsenal'})===null);
+  ok('archivo por meses: el mes actual llega hasta mañana',JSON.stringify(LG.mesesDesde(Date.UTC(2026,9,1),Date.UTC(2026,10,21)).map(m=>m.a+'-'+m.b))===JSON.stringify(['20261001-20261031','20261101-20261122']));
+ }
  ok('el robot corre en el workflow liga.yml y guarda en la rama liga',/node scripts\/liga\.js/.test(rd('.github/workflows/liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/liga.yml')));
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{

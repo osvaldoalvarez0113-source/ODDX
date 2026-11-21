@@ -11,17 +11,21 @@
       local, visita o empate). Con menos de 30 juegos en la zona se dice que todavía no dice nada.
 
    Competidores (cada uno solo donde hay dato):
-     ova          lo que muestra la app en NHL y NFL: el mercado manda y el modelo pesa 5% (LAM_M de usdeporte.js); sin mercado, el modelo.
-     modelo       el modelo propio de OVA: NHL (modelo-nhl.js, con tiros a puerta), NFL (modelo-nfl.js nutrido con el FPI de ESPN, 0.80,
-                  como la app), tenis (Elo general + superficie de ratings-tenis.json, como tenis.js).
+     ova          lo que muestra la app en NBA, NHL y NFL: el mercado manda y el modelo pesa 5% (LAM_M); sin mercado, el modelo.
+     modelo       el modelo propio de OVA: NBA (el <script id="modelo"> de nba.html nutrido con el BPI de ESPN, 0.70, como la app),
+                  NHL (modelo-nhl.js, con tiros a puerta), NFL (modelo-nfl.js nutrido con el FPI de ESPN, 0.80, como la app),
+                  fútbol (el Dixon-Coles v4 de futbol.html: en las 5 ligas ajustado igual que el teléfono con 2 temporadas + la actual;
+                  Champions con fuerza-copas.json; copas de cada país con fuerza-nacional.json, como torneos.js),
+                  tenis (Elo general + superficie de ratings-tenis.json, como tenis.js).
      modelo-goles NHL sin tiros a puerta (Ws = 0): la variante de antes de agregar los tiros.
-     modelo-solo  NFL sin el FPI de ESPN.
+     modelo-solo  NBA y NFL sin el pronóstico de ESPN.
      mercado      moneyline de ESPN (DraftKings) sin margen; en fútbol el 1X2.
      espn         el pronóstico público de ESPN (BPI en NBA, FPI en NFL).
      polymarket   precio de Polymarket (rama «pred»), sin el margen.
      consenso     promedio (en logit) de los que haya: mercado, espn, polymarket y modelo. Necesita 2 o más.
 
-   Archivos (rama «liga»): liga-registro.json (todo lo guardado) y liga.json (resumen que leen las apps y liga.html).
+   Archivos (rama «liga»): liga-registro.json (todo lo guardado), liga.json (resumen que leen las apps) y liga-hist.json
+   (archivo propio de resultados de NBA y de las 5 ligas para correr los modelos; se arma solo, por meses, y se completa en varias vueltas).
    Uso: node scripts/liga.js <carpeta con la rama liga> [<carpeta con la rama pred>]
    =================================================================== */
 const fs = require('fs'), path = require('path');
@@ -34,11 +38,12 @@ const H = 3600e3, D = 864e5;
 const REGLAS = { ASCENSO_MIN: 20, ASCENSO_Z: 1.645, CONF_MIN: 30, HORAS_RES: 3.5, DIAS_MAX: 8, fijadas: '2026-11-20' };
 const LAM_M = 0.05;                                 // peso del modelo cuando hay mercado (NHL y NFL, usdeporte.js / nba.html)
 const W_FPI = 0.80;                                 // peso del FPI en la NFL (publico.js)
+const W_BPI = 0.70;                                 // peso del BPI en la NBA (publico.js)
 
 const FUT = ['eng.1', 'esp.1', 'ita.1', 'ger.1', 'fra.1', 'uefa.champions', 'uefa.europa', 'uefa.europa.conf',
   'eng.fa', 'ger.dfb_pokal', 'ita.coppa_italia', 'fra.coupe_de_france', 'esp.copa_del_rey'];
 const DEPS = {
-  nba: { nombre: 'NBA', rutas: ['basketball/nba'], core: 'basketball/leagues/nba', horiz: 36 * H, titular0: 'mercado', pred: 'nba' },
+  nba: { nombre: 'NBA', rutas: ['basketball/nba'], core: 'basketball/leagues/nba', horiz: 36 * H, titular0: 'ova', pred: 'nba' },
   nhl: { nombre: 'NHL', rutas: ['hockey/nhl'], horiz: 36 * H, titular0: 'ova', pred: 'nhl' },
   nfl: { nombre: 'NFL', rutas: ['football/nfl'], core: 'football/leagues/nfl', horiz: 7 * D, titular0: 'ova', pred: 'nfl', sinFecha: true },
   mlb: { nombre: 'MLB', rutas: ['baseball/mlb'], horiz: 36 * H, titular0: 'mercado', pred: 'mlb' },
@@ -183,6 +188,102 @@ function modeloTenis() {
   } catch (e) { console.log('tenis: modelo no disponible · ' + e.message); return null; }
 }
 
+/* ---------- archivo propio de resultados (NBA y las 5 ligas) ---------- */
+const ARCHIVO = {
+  'basketball/nba': ahora => { const d = new Date(ahora - 10 * H), y = d.getUTCFullYear(), s = d.getUTCMonth() >= 7 ? y : y - 1; return Date.UTC(s - 2, 9, 1); },
+};
+['eng.1', 'esp.1', 'ita.1', 'ger.1', 'fra.1'].forEach(l => {
+  ARCHIVO['soccer/' + l] = ahora => { const d = new Date(ahora); return Date.UTC(d.getUTCFullYear() - (d.getUTCMonth() < 6 ? 1 : 0) - 2, 7, 1); };   // 1 de agosto, 2 temporadas atrás (futbol.html)
+});
+function mesesDesde(ini, ahora) {
+  const out = []; let d = new Date(ini);
+  while (d.getTime() <= ahora) {
+    const y = d.getUTCFullYear(), m = d.getUTCMonth(), a = Date.UTC(y, m, 1), b = Date.UTC(y, m + 1, 0);
+    out.push({ k: y + pad2(m + 1), a: ymdUTC(Math.max(a, ini)), b: ymdUTC(Math.min(b, ahora + D)), fin: b + D });
+    d = new Date(Date.UTC(y, m + 1, 1));
+  }
+  return out;
+}
+/* juegos TERMINADOS de un scoreboard: [id, ts, idLocal, idVisita, nombreLocal, nombreVisita, gl, gv]; sin pretemporada ni All-Star */
+function finalesDe(j) {
+  const out = [];
+  ((j && j.events) || []).forEach(e => {
+    const c = e.competitions && e.competitions[0]; if (!c || !c.competitors) return;
+    const h = c.competitors.find(x => x.homeAway === 'home'), a = c.competitors.find(x => x.homeAway === 'away');
+    if (!h || !a || !h.team || !a.team) return;
+    const st = (e.status && e.status.type) || (c.status && c.status.type) || {};
+    const ty = parseInt(e.season && e.season.type, 10) || 2;
+    if (ty === 1 || /all.?star|rising stars|celebrity/i.test((e.name || '') + (e.shortName || ''))) return;
+    const sc = x => { const v = x.score && typeof x.score === 'object' ? x.score.value : x.score; const n = parseFloat(v); return isFinite(n) ? n : null; };
+    const hs = sc(h), as = sc(a), ts = Date.parse(e.date);
+    if (st.completed !== true || hs === null || as === null || !isFinite(ts)) return;
+    out.push([String(e.id), ts, String(h.team.id), String(a.team.id), h.team.displayName || '', a.team.displayName || '', hs, as]);
+  });
+  return out;
+}
+
+/* NBA: el mismo <script id="modelo"> de nba.html (así lo prueba pruebas.js) */
+function modeloNBA(filas) {
+  try {
+    const nb = fs.readFileSync(path.join(RAIZ, 'nba.html'), 'utf8'), i0 = nb.indexOf('<script id="modelo">') + 20, mod = nb.slice(i0, nb.indexOf('</script>', i0)), N = {};
+    new Function('N', 'module', mod + ';Object.assign(N,{PDEF,seasonOf,dayKey,correr,predecir});')(N, undefined);
+    const games = (filas || []).map(r => ({ id: r[0], ts: r[1], h: r[2], a: r[3], hs: r[6], as: r[7] })).sort((x, y) => x.ts - y.ts);
+    if (games.length < 300) { console.log('nba: archivo con pocos juegos todavía (' + games.length + '), el modelo espera'); return null; }
+    const P = Object.assign({}, N.PDEF), S = N.correr(games, P), ult = {};
+    games.forEach(g => { const k = N.dayKey(g.ts); ult[g.h] = k; ult[g.a] = k; });
+    return function (p) {
+      if (!(p.hId in S.m) || !(p.aId in S.m)) return null;
+      return { 'modelo-solo': N.predecir(S, P, { h: p.hId, a: p.aId, ts: p.ts, neutral: p.neutral }, { dH: ult[p.hId], dA: ult[p.aId] }).pH };
+    };
+  } catch (e) { console.log('nba: modelo no disponible · ' + e.message); return null; }
+}
+
+/* Fútbol: las funciones de futbol.html tal cual (claveEq, distribucion, dcAjustar…), sacadas del archivo y corridas aparte */
+function sacar(src, nombre) {
+  let i = src.search(new RegExp('\\n(function ' + nombre + '\\(|var ' + nombre + '\\s*=)'));
+  if (i < 0) throw new Error('no encuentro ' + nombre + ' en futbol.html');
+  i++;
+  const llave = src.indexOf('{', i), pc = src.indexOf(';', i);
+  if (pc >= 0 && (llave < 0 || pc < llave)) return src.slice(i, pc + 1);
+  let n = 0, j = llave;
+  for (; j < src.length; j++) { const ch = src[j]; if (ch === '{') n++; else if (ch === '}') { n--; if (n === 0) break; } }
+  return src.slice(i, j + 1) + ';';
+}
+function motorFutbol() {
+  const html = fs.readFileSync(path.join(RAIZ, 'futbol.html'), 'utf8');
+  const nombres = ['TOKENS_FUERA', 'ALIAS_EQ', 'sinAcentos', 'claveEq', 'mismaClave', 'buscarEnMapa', 'tsPartido', 'MAXG', 'pmf', 'tauDC', 'distribucion', 'DC_CFG', 'ELO_TH', 'dcAjustar', 'eloAjustar'];
+  const src = 'function parseFecha(){ return null; }\n' + nombres.map(n => sacar(html, n)).join('\n');
+  const ctx = { Math: Math, Object: Object, Array: Array, String: String, Number: Number, isFinite: isFinite, parseFloat: parseFloat, parseInt: parseInt, JSON: JSON };
+  require('vm').createContext(ctx); require('vm').runInContext(src + '\n;this.API={claveEq:claveEq,buscarEnMapa:buscarEnMapa,distribucion:distribucion,dcAjustar:dcAjustar,DC_CFG:DC_CFG};', ctx);
+  return ctx.API;
+}
+const COPA_PAIS = { 'soccer/eng.fa': 'eng', 'soccer/ger.dfb_pokal': 'ger', 'soccer/ita.coppa_italia': 'ita', 'soccer/fra.coupe_de_france': 'fra', 'soccer/esp.copa_del_rey': 'esp' };
+function modeloFutbol(arch, ahora) {
+  try {
+    const F = motorFutbol(), fits = {}, hoy = Math.floor(ahora / D) + 1;
+    ['eng.1', 'esp.1', 'ita.1', 'ger.1', 'fra.1'].forEach(l => {
+      const A = arch.rutas['soccer/' + l]; if (!A) return;
+      const lista = Object.values(A.g).map(r => ({ local: r[4], visita: r[5], golesLocal: r[6], golesVisita: r[7], ts: r[1] }));
+      if (lista.length < 300) return;                                   // el teléfono usa 2 temporadas + la actual
+      const fit = F.dcAjustar(lista, hoy, F.DC_CFG); if (fit) fits['soccer/' + l] = Object.assign(fit, { tipo: 'liga' });
+    });
+    const fc = leerJSON(path.join(RAIZ, 'fuerza-copas.json'));
+    if (fc && fc.eq) fits['soccer/uefa.champions'] = Object.assign({}, fc, { tipo: 'copa' });
+    const fn = leerJSON(path.join(RAIZ, 'fuerza-nacional.json'));
+    if (fn && fn.paises) Object.keys(COPA_PAIS).forEach(r => { const f = fn.paises[COPA_PAIS[r]]; if (f && f.eq) fits[r] = { eq: f.eq, c: f.c, gam: f.gam, tipo: 'copa' }; });
+    console.log('futbol: modelo listo en ' + Object.keys(fits).map(k => k.replace('soccer/', '')).join(', '));
+    return function (p) {
+      const f = fits[p.ruta]; if (!f) return null;
+      const xl0 = F.buscarEnMapa(f.eq, p.local), xv0 = F.buscarEnMapa(f.eq, p.visita);
+      if (f.tipo === 'copa' && (!xl0 || !xv0)) return null;              // como la app: sin los dos equipos no hay modelo de copa
+      const pr = F.DC_CFG.promo ? { att: 0.85, def: 1.15 } : { att: 1, def: 1 }, xl = xl0 || pr, xv = xv0 || pr;
+      const d = F.distribucion(f.c * xl.att * xv.def * f.gam, f.c * xv.att * xl.def, F.DC_CFG.rho, false);
+      return { modelo: [d.pL, d.pV, d.pD] };
+    };
+  } catch (e) { console.log('futbol: modelo no disponible · ' + e.message); return null; }
+}
+function leerJSON(f) { try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return null; } }
+
 /* ---------- competidores de un juego ---------- */
 function prediccionPolymarket(lista, p) {
   if (!Array.isArray(lista)) return null;
@@ -207,9 +308,14 @@ function competidores(dep, p, extra) {
       o['modelo-solo'] = deLocal(m['modelo-solo']);
       o.modelo = extra.espn != null ? deLocal(sig((1 - W_FPI) * logit(m['modelo-solo']) + W_FPI * logit(extra.espn))) : o['modelo-solo'];
     }
+    if (dep === 'nba') {
+      o['modelo-solo'] = deLocal(m['modelo-solo']);
+      o.modelo = extra.espn != null ? deLocal(sig((1 - W_BPI) * logit(m['modelo-solo']) + W_BPI * logit(extra.espn))) : o['modelo-solo'];
+    }
+    if (dep === 'futbol' && m.modelo) o.modelo = arr(m.modelo[0], m.modelo[1], m.modelo[2]);
     if (dep === 'tenis') o.modelo = deLocal(m.modelo);
   }
-  if ((dep === 'nhl' || dep === 'nfl') && o.modelo) {
+  if ((dep === 'nba' || dep === 'nhl' || dep === 'nfl') && o.modelo) {
     const mk = o.mercado || o.polymarket;
     o.ova = mk ? deLocal(sig(logit(mk[0]) + LAM_M * (logit(o.modelo[0]) - logit(mk[0])))) : o.modelo;
   }
@@ -258,7 +364,8 @@ function resumen(reg, estado, ahora) {
   Object.keys(DEPS).forEach(dep => {
     const its = items.filter(i => i.dep === dep);
     if (!its.length) return;
-    const tit = (estado.titular && estado.titular[dep]) || DEPS[dep].titular0;
+    const yaCambio = (estado.cambios || []).some(c => c.dep === dep);
+    const tit = (yaCambio && estado.titular && estado.titular[dep]) || DEPS[dep].titular0;   // hasta el primer ascenso manda el de arranque
     const mods = {};
     its.forEach(it => Object.keys(it.p).forEach(k => {
       const M = mods[k] || (mods[k] = { nombre: NOMBRES[k] || k, jugados: 0, aciertos: 0, brier: 0, pend: 0 });
@@ -330,7 +437,8 @@ function proximos(reg, tabla, ahora) {
 }
 
 module.exports = { DEPS, REGLAS, NOMBRES, arr, pickDe, zonaDe, mismo, consenso, partidosDe, resultadoDe, competidores, registrar, calificar,
-  pendientes, resumen, duelos, ascensos, mapa, proximos, prediccionPolymarket, modelosUS, modeloTenis, ymdUTC };
+  pendientes, resumen, duelos, ascensos, mapa, proximos, prediccionPolymarket, modelosUS, modeloTenis, ymdUTC,
+  ARCHIVO, mesesDesde, finalesDe, modeloNBA, motorFutbol, modeloFutbol };
 if (require.main !== module) return;
 
 /* ---------- corrida ---------- */
@@ -377,8 +485,36 @@ async function predictorESPN(core, ext) {
       await Promise.all([...ds].slice(0, 12).map(d => traer(ruta, d)));
     }
   }
-  // 2) modelos propios y datos extra
-  const mod = { nhl: modelosUS('nhl'), nfl: modelosUS('nfl'), tenis: modeloTenis() };
+  // 2) archivo propio de resultados (NBA y 5 ligas): por meses, con tope de pedidos por vuelta; lo que falte sigue en la próxima
+  const arch = leer(path.join(dir, 'liga-hist.json'), { v: 1, rutas: {} });
+  let pedidos = 0; const TOPE_PED = 220;
+  for (const ruta of Object.keys(ARCHIVO)) {
+    const A = arch.rutas[ruta] || (arch.rutas[ruta] = { meses: {}, g: {} });
+    for (const m of mesesDesde(ARCHIVO[ruta](ahora), ahora)) {
+      if (A.meses[m.k] || pedidos >= TOPE_PED) continue;
+      pedidos++;
+      const j = await getJSON(ESPN + ruta + '/scoreboard?dates=' + m.a + '-' + m.b + '&limit=1000');
+      let filas = j ? finalesDe(j) : null;
+      const ini = Date.parse(m.a.slice(0, 4) + '-' + m.a.slice(4, 6) + '-' + m.a.slice(6) + 'T00:00:00Z');
+      const respeta = filas && (filas.length === 0 ? ((j.events || []).length === 0) : filas.every(r => r[1] >= ini - 2 * D && r[1] <= m.fin + 2 * D));
+      if (!respeta) {                                    // ESPN no respetó el rango: día por día
+        filas = []; let ok = true;
+        for (let t = ini; t < m.fin && t <= ahora + D; t += D) {
+          if (pedidos >= TOPE_PED) { ok = false; break; }
+          pedidos++; const jd = await getJSON(ESPN + ruta + '/scoreboard?dates=' + ymdUTC(t) + '&limit=300');
+          if (!jd) { ok = false; continue; } filas = filas.concat(finalesDe(jd));
+        }
+        if (!ok) { filas.forEach(r => { A.g[r[0]] = r; }); continue; }
+      }
+      filas.forEach(r => { A.g[r[0]] = r; });
+      if (m.fin < ahora - 3 * D) A.meses[m.k] = 1;      // mes cerrado: no se vuelve a pedir
+    }
+    Object.keys(A.g).forEach(k => { if (ahora - A.g[k][1] > 1200 * D) delete A.g[k]; });
+  }
+  log.push('archivo: ' + Object.keys(arch.rutas).map(r => r.split('/')[1] + ' ' + Object.keys(arch.rutas[r].g).length).join(' · ') + ' · pedidos ' + pedidos);
+  // 3) modelos propios y datos extra
+  const mod = { nhl: modelosUS('nhl'), nfl: modelosUS('nfl'), tenis: modeloTenis(),
+    nba: modeloNBA(Object.values((arch.rutas['basketball/nba'] || { g: {} }).g)), futbol: modeloFutbol(arch, ahora) };
   const pred = {};
   Object.keys(DEPS).forEach(dep => {
     const k = DEPS[dep].pred; if (!k) return;
@@ -395,7 +531,7 @@ async function predictorESPN(core, ext) {
     const n = registrar(reg, dep, ps, p => ({ modelo: mod[dep] || null, espn: espn[p.ext] != null ? espn[p.ext] : null, pred: pred[dep] }), ahora);
     log.push(dep + ': ' + ps.length + ' partidos vistos · ' + n + ' guardados/refrescados antes de empezar · ESPN ' + Object.keys(espn).length);
   }
-  // 3) calificar, tabla, ascensos, mapa
+  // 4) calificar, tabla, ascensos, mapa
   const nCal = calificar(reg, porRuta, ahora);
   const tabla = resumen(reg, estado, ahora);
   const hechos = ascensos(reg, tabla, estado, ahora);
@@ -406,6 +542,7 @@ async function predictorESPN(core, ext) {
   // el registro no crece sin fin: lo calificado de hace más de 400 días se va (el resumen ya lo contó en su momento)
   Object.keys(reg.items).forEach(k => { const it = reg.items[k]; if (it.res && ahora - it.ts > 400 * D) delete reg.items[k]; });
   fs.writeFileSync(path.join(dir, 'liga-registro.json'), JSON.stringify(reg));
+  fs.writeFileSync(path.join(dir, 'liga-hist.json'), JSON.stringify(arch));
   fs.writeFileSync(path.join(dir, 'liga.json'), JSON.stringify(salida));
   log.push('calificados ahora: ' + nCal + ' · ascensos: ' + hechos.length + ' · total guardados: ' + salida.totales.guardados);
   hechos.forEach(h => log.push('ASCENSO ' + h.dep + ': ' + h.detalle));
