@@ -1,0 +1,9 @@
+Futbol: OddsPapi devolvio 92 partidos
+Futbol usable: 45 · descartados {"lejos":47,"empezado":0,"sinPin":0,"sinPrecio":0}
+Muestra nombres: Premier League: Manchester City vs Fulham FC 0.7028/0.1675/0.1297 | La Liga: Deportivo Alaves vs RC Deportivo de A Coruna 0.4164/0.2792/0.3044 | Serie A: Como 1907 vs Cagliari Calcio 0.7544/0.1548/0.0908 | Serie A: Lazio Rome vs US Lecce 0.6731/0.1986/0.1282 | Bundesliga: Bayer Leverkusen vs SC Paderborn 07 0.7749/0.1271/0.098 | Bundesliga: Eintracht Frankfurt vs TSG Hoffenheim 0.3896/0.2376/0.3728 | Bundesliga: Union Berlin vs RB Leipzig 0.1508/0.1959/0.6533 | Bundesliga: Borussia Monchengladbach vs Borussia Dortmund 0.1851/0.2103/0.6046 | Bundesliga: SV 07 Elversberg vs SC Freiburg 0.2624/0.2545/0.4832 | Premier League: Aston Villa vs Sunderland AFC 0.5468/0.2454/0.2078 | Premier League: AFC Bournemouth vs Nottingham Forest 0.5074/0.2638/0.2288 | Premier League: Chelsea FC vs Leeds United 0.4883/0.2663/0.2453
+Campos de un partido: fixtureId,participant1Id,participant2Id,sportId,tournamentId,seasonId,statusId,hasOdds,startTime,trueStartTime,trueEndTime,updatedAt,bookmakerOdds
+Mercado NBA: {"id":"111","a":"111","b":"112","nombre":"Winner (incl. overtime)","orden":["112=2","111=1"]}
+NBA: OddsPapi devolvio 6 partidos
+NBA usable: 4 · descartados {"lejos":0,"empezado":2,"sinPin":0,"sinPrecio":0}
+Muestra NBA: Philadelphia 76ers vs Milwaukee Bucks 0.8326/0.1674 | New York Knicks vs Portland Trail Blazers 0.6556/0.3444 | Dallas Mavericks vs LA Clippers 0.6625/0.3375 | Minnesota Timberwolves vs Memphis Grizzlies 0.6685/0.3315
+Llamadas este mes (este escaner): 52 de 80
