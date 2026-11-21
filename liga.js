@@ -1,5 +1,5 @@
 /* OVA · LIGA DE MODELOS en las apps (window.OVALiga)
-   El robot scripts/liga.js (GitHub Actions, cada 2 h) guarda antes de cada juego lo que dicen varios competidores
+   El robot scripts/liga.js (GitHub Actions, cada 30 minutos) guarda antes de cada juego lo que dicen varios competidores
    (OVA, el modelo propio y sus variantes, el mercado, ESPN, Polymarket, el consenso), los califica con ESPN, sube de titular
    al que más acierte cuando escogen distinto y arma el mapa de confianza. Deja todo en la rama «liga» (liga.json).
    Aquí solo se LEE:
@@ -121,7 +121,7 @@
       '<div style="color:var(--mut2);font-size:12px;margin-top:6px">Guardados: ' + ((d.totales && d.totales.guardados) || 0) + ' · calificados: ' + ((d.totales && d.totales.calificados) || 0) +
       ' · actualizado ' + esc(String(d.generado || '').slice(0, 16).replace('T', ' ')) + ' UTC</div></div>';
     var deps = ORDEN.filter(function (k) { return d.deportes && d.deportes[k]; });
-    if (!deps.length) h += '<div class="vacio" style="padding:16px">Todavía no hay juegos guardados. El robot corre cada 2 horas.</div>';
+    if (!deps.length) h += '<div class="vacio" style="padding:16px">Todavía no hay juegos guardados. El robot corre cada 30 minutos.</div>';
     deps.forEach(function (k) {
       var T = d.deportes[k], mods = Object.keys(T.modelos || {}).sort(function (a, b) { var x = T.modelos[a], y = T.modelos[b]; return (y.pct == null ? -1 : y.pct) - (x.pct == null ? -1 : x.pct) || y.jugados - x.jugados; });
       h += '<h3 style="margin:18px 2px 8px;font-size:16px">' + esc(T.nombre) + '</h3><table class="tab"><tr><th>Competidor</th><th>Acertó</th><th>%</th><th>Brier</th><th>Por jugar</th></tr>';
@@ -150,6 +150,26 @@
         h += '</table>';
       }
     });
+    var NOMBRE_IDEA = { nba_viajes: 'NBA · viajes y altura', futbol_descanso: 'Fútbol · cansancio (Europa y copas)', nfl_epa: 'NFL · EPA por jugada' };
+    var med = d.mediciones || {}, mk = Object.keys(med);
+    if (mk.length) {
+      h += '<h3 style="margin:18px 2px 8px;font-size:16px">Ideas medidas</h3><div style="font-size:12px;color:var(--mut2);margin:0 2px 6px">Cada idea se ajusta en una temporada y se mide en otra. Solo entra a la liga si mejora en la mayoría de las pruebas; se vuelve a medir sola en cada vuelta.</div>';
+      mk.forEach(function (k) {
+        var m = med[k] || {}, pr = m.pruebas || [], mej = pr.filter(function (x) { return x.perdidaCon < x.perdidaSin; }).length;
+        var aS = 0, aC = 0, n = 0; pr.forEach(function (x) { aS += x.aciertosSin * x.juegos; aC += x.aciertosCon * x.juegos; n += x.juegos; });
+        h += '<div class="caja" style="padding:10px 12px;margin-bottom:6px;font-size:13px"><b>' + esc(NOMBRE_IDEA[k] || k) + '</b> · ' +
+          (m.entra ? '<span style="color:var(--good,#6FD39A);font-weight:700">entra a la liga</span>' : '<span style="color:var(--bad,#F08A78);font-weight:700">no pasa</span>') +
+          '<br><span style="color:var(--mut2)">Mejoró en ' + mej + ' de ' + pr.length + ' pruebas' + (n ? ' · aciertos ' + (aS / n).toFixed(1) + '% → ' + (aC / n).toFixed(1) + '%' : '') + '</span></div>';
+      });
+    }
+    var pz = d.pesos || {}, pk = ORDEN.filter(function (k) { return pz[k]; });
+    if (pk.length) {
+      h += '<h3 style="margin:18px 2px 8px;font-size:16px">Mezcla que aprende: cuánto pesa cada uno</h3>';
+      pk.forEach(function (k) {
+        var w = pz[k]; h += '<div class="caja" style="padding:10px 12px;margin-bottom:6px;font-size:13px"><b>' + esc((d.deportes[k] && d.deportes[k].nombre) || k) + '</b>: ' +
+          Object.keys(w).sort(function (a, b) { return w[b] - w[a]; }).map(function (m) { return esc(nombreDe(d, m)) + ' ' + Math.round(w[m] * 100) + '%'; }).join(' · ') + '</div>';
+      });
+    }
     if (d.cambios && d.cambios.length) {
       h += '<h3 style="margin:18px 2px 8px;font-size:16px">Cambios de titular</h3>';
       d.cambios.slice(0, 15).forEach(function (c) { h += '<div class="caja" style="padding:10px 12px;margin-bottom:6px;font-size:13px">' + esc(String(c.fecha).slice(0, 10)) + ' · ' + esc((d.deportes[c.dep] && d.deportes[c.dep].nombre) || c.dep) + ': sale <b>' + esc(nombreDe(d, c.sale)) + '</b>, entra <b>' + esc(nombreDe(d, c.entra)) + '</b><br><span style="color:var(--mut2)">' + esc(c.detalle) + '</span></div>'; });

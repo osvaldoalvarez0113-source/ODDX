@@ -1,11 +1,11 @@
 name: Liga de modelos
 
-# Guarda lo que dice cada competidor ANTES de cada juego, califica con ESPN, asciende al titular y arma el mapa de confianza
+# Cada 30 minutos: guarda lo que dice cada competidor ANTES de cada juego, califica con ESPN, asciende al titular y arma el mapa de confianza
 # (scripts/liga.js). No gasta llamadas de OddsPapi. Todo queda en la rama "liga": liga-registro.json y liga.json (lo leen las apps).
 on:
   workflow_dispatch:
   schedule:
-    - cron: "35 */2 * * *"
+    - cron: "5,35 * * * *"
   push:
     branches: [main]
     paths:

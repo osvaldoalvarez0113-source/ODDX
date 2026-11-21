@@ -2082,6 +2082,20 @@ sec('Liga de modelos');
   const ot=LG.competidores('tenis',{tour:'w',local:'E. Rybakina',visita:'Aryna Sabalenka',ts:Date.now()+H},{ta:{w:ta},sup:()=>'C'});
   ok('Tennis Abstract: lee la tabla por nombre de columna, usa el Elo de la superficie y encuentra «E. Rybakina»',!!ot.tennisabstract&&ot.tennisabstract[0]<0.5);
  }
+ {
+  let sd=7; const rn=()=>(sd=(sd*16807)%2147483647)/2147483647, its=[];
+  for(let i=0;i<300;i++){ const y=rn()<0.6?'L':'A', pb=y==='L'?0.68:0.38, pm=0.3+0.4*rn(); its.push({res:y,p:{bueno:[pb,1-pb,0],malo:[pm,1-pm,0],consenso:[.5,.5,0]}}); }
+  const w=LG.ajustarMezcla(its);
+  ok('mezcla que aprende: le da casi todo el peso al que acierta y nada al ruido (y no usa el consenso)',!!w&&w.bueno>0.9&&w.malo<0.1&&w.consenso===undefined);
+  ok('mezcla: con menos de 150 calificados no arranca',LG.ajustarMezcla(its.slice(0,100))===null);
+  ok('mezcla: si faltan los que más pesan no inventa',LG.mezclar({malo:[.4,.6,0]},{bueno:.9,malo:.1})===null&&!!LG.mezclar({bueno:[.7,.3,0]},{bueno:.9,malo:.1}));
+  ok('regla de ideas nuevas: entra solo si mejora en la mayoría de las pruebas',LG.pasa({pruebas:[{perdidaCon:.5,perdidaSin:.6},{perdidaCon:.5,perdidaSin:.6},{perdidaCon:.7,perdidaSin:.6}]})===true&&LG.pasa({pruebas:[{perdidaCon:.5,perdidaSin:.6},{perdidaCon:.7,perdidaSin:.6}]})===false);
+  const ult={'2':[[100,'2']],'7':[[99,'7']]}, fv=LG.rasgosViaje({h:'7',a:'2'},101,ult);
+  ok('viajes NBA: Denver de local es altura, Boston viene de 2,800 km y 2 husos',fv.altura===1&&fv.kmVisita>2.7&&fv.kmVisita<2.9&&fv.husoVisita===2&&fv.descanso===1);
+  ok('descanso en fútbol: días desde el último partido, entre 2 y 7',LG.descansoDe({'9':[10,13]},'9',16)===3&&LG.descansoDe({'9':[10]},'9',40)===7&&LG.descansoDe({},'9',40)===7);
+  const ep=LG.epaDeCSV('game_id,home_team,away_team,season_type,week,posteam,defteam,game_date,play_type,epa,season,desc\n1,LA,WAS,REG,1,LA,WAS,2026-09-10,pass,0.5,2026,"Stafford, pase"\n1,LA,WAS,REG,1,WAS,LA,2026-09-10,run,-0.2,2026,x\n1,LA,WAS,REG,1,WAS,LA,2026-09-10,no_play,3,2026,x\n');
+  ok('EPA NFL: lee el CSV con comillas, solo pases y carreras, y traduce LA→LAR y WAS→WSH',JSON.stringify(ep)==='{"2026-09-10|LAR|WSH":[2026,"LAR","WSH",0.5,1,-0.2,1,"REG"]}');
+ }
  ok('el robot corre en el workflow liga.yml y guarda en la rama liga',/node scripts\/liga\.js/.test(rd('.github/workflows/liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/liga.yml')));
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{
