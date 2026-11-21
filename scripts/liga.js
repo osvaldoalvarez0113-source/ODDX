@@ -24,7 +24,7 @@
      polymarket   precio de Polymarket (rama «pred»), sin el margen.
      consenso     promedio (en logit) de los que haya: mercado, espn, polymarket y modelo. Necesita 2 o más.
      nfelo        NFL: el modelo público nfelo (github.com/greerreNFL/nfelo, output_data/prediction_tracker.csv, se actualiza solo).
-     clubelo      fútbol: los pronósticos de ClubElo (api.clubelo.com/Fixtures: probabilidad de cada diferencia de goles → 1X2).
+     clubelo      fútbol: los pronósticos de ClubElo (api.clubelo.com/Fixtures). APAGADO: ClubElo desactivó esa API el 21-nov-2026.
      tennisabstract tenis: el Elo por superficie de Tennis Abstract (Jeff Sackmann, informes semanales de la ATP y la WTA).
 
    Archivos (rama «liga»): liga-registro.json (todo lo guardado), liga.json (resumen que leen las apps) y liga-hist.json
@@ -624,11 +624,10 @@ async function predictorESPN(core, ext) {
   }
   const [txNf, txCe, txTa, txTw] = await Promise.all([
     getTexto('https://raw.githubusercontent.com/greerreNFL/nfelo/main/output_data/prediction_tracker.csv'),
-    getTexto('http://api.clubelo.com/Fixtures').then(t => t && /GD/.test(t) ? t : getTexto('https://api.clubelo.com/Fixtures').then(u => u || t)),
+    Promise.resolve(null),   // ClubElo apagó su API de pronósticos («Fixtures API deactivated», 21-nov-2026); si vuelve, se pide aquí
     getTexto('https://tennisabstract.com/reports/atp_elo_ratings.html'),
     getTexto('https://tennisabstract.com/reports/wta_elo_ratings.html')]);
   const ext = { nfelo: txNf ? nfeloMapa(txNf) : null, clubelo: txCe ? clubeloLista(txCe) : null, ta: { a: txTa ? taElo(txTa) : null, w: txTw ? taElo(txTw) : null } };
-  if (!ext.clubelo || !ext.clubelo.length) log.push('ClubElo respondió: ' + (txCe == null ? 'nada' : JSON.stringify(String(txCe).slice(0, 300))));
   let supT = null; try { const T = require('../modelo-tenis.js'); supT = p => T.superficie(p.evNombre, p.ts); } catch (e) { }
   log.push('afuera: nfelo ' + (ext.nfelo ? Object.keys(ext.nfelo).length + ' juegos' : 'NO') + ' · ClubElo ' + (ext.clubelo ? ext.clubelo.length + ' partidos' : 'NO') +
     ' · Tennis Abstract ' + (ext.ta.a ? Object.keys(ext.ta.a).length : 'NO') + '/' + (ext.ta.w ? Object.keys(ext.ta.w).length : 'NO') + ' jugadores');
