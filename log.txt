@@ -1,13 +1,12 @@
 archivo: nba 2885 · eng.1 861 · esp.1 881 · ita.1 872 · ger.1 694 · fra.1 702 · pedidos 138
-ClubElo respondió: "Fixtures API deactivated\n\n"
-afuera: nfelo 13 juegos · ClubElo 0 partidos · Tennis Abstract 555/504 jugadores
+afuera: nfelo 13 juegos · ClubElo NO · Tennis Abstract 555/504 jugadores
 nba: 13 partidos vistos · 13 guardados/refrescados antes de empezar · ESPN 13
 nhl: 19 partidos vistos · 19 guardados/refrescados antes de empezar · ESPN 0
 nfl: con modelo de afuera 12
 nfl: 13 partidos vistos · 12 guardados/refrescados antes de empezar · ESPN 12
 mlb: 0 partidos vistos · 0 guardados/refrescados antes de empezar · ESPN 0
 futbol: con modelo de afuera 0
-futbol: 42 partidos vistos · 27 guardados/refrescados antes de empezar · ESPN 0
+futbol: 42 partidos vistos · 26 guardados/refrescados antes de empezar · ESPN 0
 tenis: con modelo de afuera 3
 tenis: 48 partidos vistos · 3 guardados/refrescados antes de empezar · ESPN 0
 calificados ahora: 0 · ascensos: 0 · total guardados: 90
