@@ -1,6 +1,8 @@
-/* OVA · animaciones del Veredicto (MUESTRA, solo en NBA).
+/* OVA · animaciones del Veredicto (las 6 apps: MLB, fútbol, NBA, NHL, NFL y tenis).
    Al abrir un juego: los dos lados entran de los costados, los % suben contando, el anillo se dibuja, la barra se llena
    y las secciones del análisis entran una tras otra. Al cambiar de pestaña, la pestaña nueva entra suave.
+   Sirve para los dos tipos de cabecera: «.hero» (NBA, NHL, NFL, tenis) y «.ovaHero» (MLB y fútbol, que ya dibujan su anillo
+   solos: ahí no se toca el anillo).
    Es el mismo tipo de animación que hace Motion.dev, hecho con la Web Animations API del navegador (cero peso extra).
    No cambia ningún número ni el diseño: solo cómo aparece. Se apaga solo con «Reducir movimiento» del iPhone
    y con localStorage.ova_anim = '0'. Si algo falla, no pasa nada: la pantalla queda igual que siempre. */
@@ -28,33 +30,41 @@
     root.requestAnimationFrame(paso);
   }
 
+  function panelDe(el) { while (el && el !== doc.body) { if (el.classList && (el.classList.contains('pane') || (el.classList.contains('tab') && el.tagName !== 'BUTTON'))) return el; el = el.parentNode; } return null; }
   function veredicto(hero) {
-    var cont = hero.parentNode; if (!cont) return;
+    var cont = panelDe(hero) || hero.parentNode; if (!cont) return;
+    var propio = hero.classList.contains('ovaHero');            /* MLB y fútbol: su anillo ya se anima solo */
     var lados = hero.querySelectorAll('.side');
     if (lados[0]) anim(lados[0], [{ opacity: 0, transform: 'translateX(-46px) scale(.9)' }, { opacity: 1, transform: 'none' }], { duration: 650, easing: RESORTE });
     if (lados[1]) anim(lados[1], [{ opacity: 0, transform: 'translateX(46px) scale(.9)' }, { opacity: 1, transform: 'none' }], { duration: 650, easing: RESORTE, delay: 60 });
     Array.prototype.forEach.call(hero.querySelectorAll('.pc'), function (pc) { contar(pc, 900, 150); });
     var gz = hero.querySelector('.gz');
-    if (gz) anim(gz, [{ opacity: 0, transform: 'scale(.82) rotate(-25deg)' }, { opacity: 1, transform: 'none' }], { duration: 800, easing: RESORTE, delay: 80 });
-    Array.prototype.forEach.call(hero.querySelectorAll('path.sg'), function (p, i) {
-      var da = p.style.strokeDasharray; if (!da) return;
+    if (gz) anim(gz, [{ opacity: 0, transform: propio ? 'scale(.85)' : 'scale(.82) rotate(-25deg)' }, { opacity: 1, transform: 'none' }], { duration: 800, easing: RESORTE, delay: 80 });
+    if (!propio) Array.prototype.forEach.call(hero.querySelectorAll('path.sg'), function (p, i) {
+      var da = p.style.strokeDasharray; if (!da || /^0(px)?[ ,]/.test(da)) return;
       anim(p, [{ strokeDasharray: '0 100' }, { strokeDasharray: da }], { duration: 1000, easing: SUAVE, delay: 150 + i * 120 });
     });
     var fav = hero.querySelector('.side.fav .pc');
     if (fav) anim(fav, [{ transform: 'scale(1)' }, { transform: 'scale(1.14)' }, { transform: 'scale(1)' }], { duration: 520, easing: 'ease-in-out', delay: 1080, fill: 'none' });
+    /* la barra se llena: la primera parte desde la izquierda, la última desde la derecha y la del medio (empate) desde el centro */
     var bar = cont.querySelector('.bar');
     if (bar) {
-      var a = bar.querySelector('.a'), h = bar.querySelector('.h');
-      if (a) anim(a, [{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 900, easing: SUAVE, delay: 250 });
-      if (h) anim(h, [{ clipPath: 'inset(0 0 0 100%)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 900, easing: SUAVE, delay: 250 });
+      var ps = Array.prototype.filter.call(bar.children, function (x) { return x.tagName === 'SPAN'; });
+      ps.forEach(function (sp, i) {
+        var ini = i === 0 ? 'inset(0 100% 0 0)' : (i === ps.length - 1 ? 'inset(0 0 0 100%)' : 'inset(0 50% 0 50%)');
+        anim(sp, [{ clipPath: ini }, { clipPath: 'inset(0 0 0 0)' }], { duration: 900, easing: SUAVE, delay: 250 });
+      });
     }
-    escalera(cont.querySelector('.rv'), 420);
+    var rv = cont.querySelector('.rv');
+    if (rv) escalera(rv, 420);
+    else escalera(cont, 420, function (c) { return c !== hero && !c.contains(hero) && c !== bar; });
   }
   /* las secciones del análisis entran una tras otra (máximo 14 piezas, para que no se haga largo) */
-  function escalera(caja, espera) {
+  function escalera(caja, espera, sirve) {
     if (!caja) return;
     var piezas = [];
     Array.prototype.forEach.call(caja.children, function (c) {
+      if (sirve && !sirve(c)) return;
       if (c.classList && c.classList.contains('rvLs')) Array.prototype.forEach.call(c.children, function (x) { piezas.push(x); });
       else if (c.hasAttribute && c.hasAttribute('data-an')) Array.prototype.forEach.call(c.firstElementChild ? c.firstElementChild.children : c.children, function (x) { piezas.push(x); });
       else piezas.push(c);
@@ -71,17 +81,18 @@
   var vistos = typeof WeakSet === 'function' ? new WeakSet() : null;
   function revisar(nodo) {
     if (!nodo || nodo.nodeType !== 1 || !vistos) return;
-    var heroes = nodo.classList && nodo.classList.contains('hero') ? [nodo] : nodo.querySelectorAll ? nodo.querySelectorAll('.hero') : [];
-    Array.prototype.forEach.call(heroes, function (h) { if (vistos.has(h)) return; vistos.add(h); if (h.offsetParent !== null) try { veredicto(h); } catch (e) { } });
+    var heroes = nodo.matches && nodo.matches('.hero, .ovaHero') ? [nodo] : nodo.querySelectorAll ? nodo.querySelectorAll('.hero, .ovaHero') : [];
+    /* solo si se ve: si la pestaña está escondida, se anima cuando se abra (lo ve el observador de clases) */
+    Array.prototype.forEach.call(heroes, function (h) { if (vistos.has(h) || h.offsetParent === null) return; vistos.add(h); try { veredicto(h); } catch (e) { } });
   }
   function arrancar() {
     if (apagado() || !root.MutationObserver || !doc.body) return;
     new root.MutationObserver(function (lista) {
       lista.forEach(function (m) {
         if (m.type === 'childList') Array.prototype.forEach.call(m.addedNodes, revisar);
-        else if (m.type === 'attributes' && m.target.classList && m.target.classList.contains('pane') && m.target.classList.contains('on') && !/\bon\b/.test(m.oldValue || '')) {
-          var hero = m.target.querySelector('.hero');
-          if (hero && vistos) { vistos.add(hero); try { veredicto(hero); } catch (e) { } } else try { pestana(m.target); } catch (e) { }
+        else if (m.type === 'attributes' && m.target.classList && m.target.classList.contains('on') && !/\bon\b/.test(m.oldValue || '') && panelDe(m.target) === m.target) {
+          var hero = m.target.querySelector('.hero, .ovaHero');
+          if (hero && vistos && !vistos.has(hero)) { vistos.add(hero); try { veredicto(hero); } catch (e) { } } else try { pestana(m.target); } catch (e) { }
         }
       });
     }).observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'], attributeOldValue: true });
