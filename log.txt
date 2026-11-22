@@ -3,7 +3,7 @@ nba bajas: 95 jugadores «Out»
 nba viajes: {"pesos":{"altura":-0.124,"kmVisita":-0.923,"kmLocal":-0.846,"husoVisita":1.526,"descanso":0.446,"tres4":0.5},"pruebas":[{"ajuste":2024,"medido":2025,"juegos":1322,"aciertosSin":67.78,"aciertosCon":68.68,"perdidaSin":0.6,"perdidaCon":0.5998},{"ajuste":2024,"medido":2026,"juegos":240,"aciertosSin":66.67,"aciertosCon":67.92,"perdidaSin":0.6003,"perdidaCon":0.5968},{"ajuste":2025,"medido":2024,"juegos":920,"aciertosSin":66.85,"aciertosCon":66.3,"perdidaSin":0.6069,"perdidaCon":0.6048},{"ajuste":2025,"medido":2026,"juegos":240,"aciertosSin":66.67,"aciertosCon":67.92,"perdidaSin":0.6003,"perdidaCon":0.5937}],"entra":true}
 futbol descanso: {"peso":-0.01,"partidos":3318,"pruebas":[{"ajuste":2024,"medido":2025,"peso":0,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.51,"perdidaSin":1.0018,"perdidaCon":1.0018},{"ajuste":2024,"medido":2026,"peso":0,"juegos":529,"aciertosSin":55.01,"aciertosCon":55.01,"perdidaSin":0.9693,"perdidaCon":0.9693},{"ajuste":2025,"medido":2024,"peso":0,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":0.9991},{"ajuste":2025,"medido":2026,"peso":0,"juegos":529,"aciertosSin":55.01,"aciertosCon":55.01,"perdidaSin":0.9693,"perdidaCon":0.9693},{"ajuste":2026,"medido":2024,"peso":-0.05,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":1.0083},{"ajuste":2026,"medido":2025,"peso":-0.05,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.34,"perdidaSin":1.0018,"perdidaCon":1.0103}],"entra":false}
 nfl epa: entra false · peso 0.83
-afuera: nfelo 13 juegos · ClubElo 0 partidos (ClubElo trajo 866029 letras, 52 juegos, 100 nombres, 646 %; inicio: <!DOCTYPE html><html lang="en"><head><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossori) · Tennis Abstract 555/504 jugadores
+afuera: nfelo 13 juegos · ClubElo 50 partidos · Tennis Abstract 555/504 jugadores
 nba: mezcla esperando (5 de 150 calificados)
 nhl: mezcla esperando (11 de 150 calificados)
 nfl: mezcla esperando (0 de 150 calificados)
@@ -15,7 +15,7 @@ nhl: 26 partidos vistos · 5 guardados/refrescados antes de empezar · ESPN 0
 nfl: con modelo de afuera 12
 nfl: 13 partidos vistos · 12 guardados/refrescados antes de empezar · ESPN 12
 mlb: 0 partidos vistos · 0 guardados/refrescados antes de empezar · ESPN 0
-futbol: con modelo de afuera 0
+futbol: con modelo de afuera 11
 futbol: 45 partidos vistos · 16 guardados/refrescados antes de empezar · ESPN 0
 tenis: con modelo de afuera 5
 tenis: 54 partidos vistos · 6 guardados/refrescados antes de empezar · ESPN 0
