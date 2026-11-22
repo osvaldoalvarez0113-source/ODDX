@@ -11,7 +11,7 @@ mlb: mezcla esperando (0 de 150 calificados)
 futbol: mezcla esperando (26 de 150 calificados)
 tenis: mezcla esperando (3 de 150 calificados)
 nba: 23 partidos vistos · 8 guardados/refrescados antes de empezar · ESPN 8
-nhl: 26 partidos vistos · 8 guardados/refrescados antes de empezar · ESPN 0
+nhl: 26 partidos vistos · 7 guardados/refrescados antes de empezar · ESPN 0
 nfl: con modelo de afuera 12
 nfl: 13 partidos vistos · 12 guardados/refrescados antes de empezar · ESPN 12
 mlb: 0 partidos vistos · 0 guardados/refrescados antes de empezar · ESPN 0
