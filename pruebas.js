@@ -2019,6 +2019,12 @@ async function t_publico(){
  }
  ok('no baja nada, no guarda nada y el service worker lo guarda',!/fetch\(|localStorage/.test(rd2('analista.js'))&&rd2('sw.js').indexOf("'analista.js'")>0);
 }
+sec('Movimiento de la línea (medido)');
+{
+ const us=rd('usdeporte.js'), nb=rd('nba.html');
+ ok('el aviso de movimiento dice lo medido: con el mismo % no cambia lo que acierta; si cambió el favorito, el de ahora gana 54 de cada 100 (NHL/NFL y NBA)',[us,nb].every(t=>/cambió el favorito, y cuando pasa, el de ahora gana 54 de cada 100/.test(t)&&/con el mismo % que se mueva a favor o en contra no cambia cuánto gana el favorito/.test(t)));
+ ok('la medición queda en docs y su script en scripts/medicion',/12,850 juegos/.test(rd('docs/MEDICION-MOVIMIENTO-2026-11.md'))&&fs.existsSync(D+'scripts/medicion/movimiento.js'));
+}
 sec('Veredicto compacto (sin repetir)');
 {
  const sacarF=(txt,n)=>{const i=txt.indexOf('function '+n+'(');let d=0;for(let k=txt.indexOf('{',i);k<txt.length;k++){if(txt[k]==='{')d++;else if(txt[k]==='}'){d--;if(!d)return txt.slice(i,k+1);}}};

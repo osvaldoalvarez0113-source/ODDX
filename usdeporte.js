@@ -503,7 +503,10 @@
     const o = g.odds; if (!o || !o.mlH || !o.mlA || !o.mlHo || !o.mlAo) return null;
     const nv = (x, y) => { const a = impProb(x), b = impProb(y); return a / (a + b); }, p0 = nv(o.mlHo, o.mlAo), p1 = nv(o.mlH, o.mlA), d = (p1 - p0) * 100;
     if (Math.abs(d) < 2) return ['ok', 'La línea casi no se ha movido desde que abrió (' + esc(H.ab) + ' ' + pct1(p0) + ' → ' + pct1(p1) + ').'];
-    return ['w', '<b>La línea se movió ' + Math.abs(d).toFixed(1) + ' pts hacia ' + esc(d > 0 ? H.ab : A.ab) + '</b> desde que abrió (' + esc(H.ab) + ' ' + pct1(p0) + ' → ' + pct1(p1) + '). El precio de ahora ya incluye esa noticia.'];
+    /* medido en 12,850 juegos (docs/MEDICION-MOVIMIENTO-2026-11.md): el cierre escoge mejor que la apertura, pero con el mismo % el movimiento no cambia lo que acierta */
+    const volteo = (p0 >= 0.5) !== (p1 >= 0.5);
+    return ['w', '<b>La línea se movió ' + Math.abs(d).toFixed(1) + ' pts hacia ' + esc(d > 0 ? H.ab : A.ab) + '</b> desde que abrió (' + esc(H.ab) + ' ' + pct1(p0) + ' → ' + pct1(p1) + '). El precio de ahora ya incluye esa noticia' +
+      (volteo ? ': cambió el favorito, y cuando pasa, el de ahora gana 54 de cada 100.' : '; medido, con el mismo % que se mueva a favor o en contra no cambia cuánto gana el favorito.')];
   }
   /* NHL · qué apostar y qué no, según lo medido (docs/MEDICION-NHL-NFL-2026-10.md y docs/NHL-REVISION-2026-10.md) */
   function guiaNhl(g, pr, pf) {

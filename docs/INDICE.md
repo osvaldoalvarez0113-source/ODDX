@@ -4,6 +4,7 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 
 | Archivo | Tema |
 |---|---|
+| [`MEDICION-MOVIMIENTO-2026-11.md`](MEDICION-MOVIMIENTO-2026-11.md) | **Movimiento de la línea** (apertura → cierre) en 12,850 juegos de NHL, NFL, MLB y NBA: el cierre acierta ~1 punto más; con el mismo %, el movimiento no agrega aciertos |
 | [`HISTORIA-LIGA-2026-11.md`](HISTORIA-LIGA-2026-11.md) | **📚 Historia de la liga**: cuánto acierta el favorito por zona con ~58,000 juegos ya jugados (NBA, NHL, NFL, fútbol, tenis); alimenta la línea 🏆 desde hoy |
 | [`NUTRIR-MODELO-2026-11.md`](NUTRIR-MODELO-2026-11.md) | **Nutrir el modelo**: patrones y props medidos contra el modelo y en aciertos; ESPN entra a NBA y NFL, el viento al total de NFL |
 | [`AUDITORIA-2-2026-10.md`](AUDITORIA-2-2026-10.md) | Segunda auditoría (octubre 2026) |
