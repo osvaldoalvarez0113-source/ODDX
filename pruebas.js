@@ -2122,6 +2122,14 @@ sec('Liga de modelos');
     ok('autopsia: si el modelo acertó o el juego se anuló no hay autopsia; usa «ova» antes que «modelo»',X.porQue(J({res:'L',p:{ova:[.6,.4,0]}}))===null&&X.porQue(J({res:'X',p:{ova:[.6,.4,0]}}))===null&&X.porQue(J({p:{ova:[.4,.6,0],modelo:[.7,.3,0]}}))===null);
     const ap=X.autopsia([J({p:{ova:[.62,.38,0],mercado:[.45,.55,0]}}),J({ts:ah+1,p:{ova:[.55,.45,0],mercado:[.56,.44,0]}})]);
     ok('autopsia: cuenta por deporte y tipo, con conclusión y los últimos fallos primero',ap.deportes.nba.fallos===2&&ap.deportes.nba.tipos.modelo===1&&/20/.test(ap.deportes.nba.conclusion)&&ap.ultimos[0].ts===ah+1&&ap.ultimos[0].marcador==='89-86'); }
+  { const V=require(D+'scripts/video.js'), wf=fs.readFileSync(D+'.github/workflows/video.yml','utf8');
+    ok('video de picks: el workflow está APAGADO (solo a mano: sin horario ni push)',/workflow_dispatch/.test(wf)&&!/schedule|cron|push:/.test(wf));
+    const lg={proximos:[1,2,3].map(k=>({dep:'nfl',ts:ah+k*H,local:'Buffalo Bills',visita:'Miami Dolphins',pick:'L',p:.9-k/100})).concat([{dep:'nba',ts:ah+2*H,local:'Golden State Warriors',visita:'Boston Celtics',pick:'A',p:.7},{dep:'futbol',ts:ah+H,local:'A',visita:'B',pick:'D',p:.9},{dep:'nhl',ts:ah+30*H,local:'C',visita:'E',pick:'L',p:.95},{dep:'nhl',ts:ah+H,local:'C',visita:'E',pick:'L',p:.55}]),
+      deportes:{nhl:{titular:'ova',modelos:{ova:{jugados:14,aciertos:9,pct:64.3}}},nba:{titular:'ova',modelos:{ova:{jugados:6,aciertos:4,pct:66.7}}}}};
+    const vd=V.armar(lg,ah);
+    ok('video de picks: 60%+ en 24 h, sin empates, máximo 2 por deporte, ordenados por %',vd.picks.length===3&&vd.picks[0].p===89&&vd.picks.filter(x=>/^NFL/.test(x.liga)).length===2&&vd.picks[2].lado==='a'&&vd.picks[2].a[1]==='Celtics');
+    ok('video de picks: el récord solo muestra deportes con 10+ juegos calificados',vd.rec.length===1&&vd.rec[0][0]==='NHL'&&vd.rec[0][1]==='9 de 14');
+    ok('video de picks: escenas = entrada + picks + récord + cierre',V.escenas(vd).length===6&&V.escenas({picks:[],rec:[]}).length===2); }
   ok('fábrica: arma todas las combinaciones',FB.producto({a:[1,2],b:[3,4,5]}).length===6);
   const b0=[],c0=[]; for(let i=0;i<400;i++){ const y=i%3?1:0; b0.push({temp:2025+(i%2),p:.6,y}); c0.push({temp:2025+(i%2),p:y?.7:.5,y}); }
   const cm=FB.comparar(b0,c0,f=>-Math.log(f.y?f.p:1-f.p),100,0);
