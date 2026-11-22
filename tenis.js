@@ -270,7 +270,7 @@
     const modF = an.modFav, gap = k ? Math.abs((an.favA ? an.pMod : 1 - an.pMod) - (an.favA ? k.pA : 1 - k.pA)) * 100 : null, favModIgual = modF >= 0.5;
     const pctNf = ` en ${esc(fav.nombre)} (modelo solo ${Math.round(modF * 100)}%, mercado ${Math.round(pf * 100)}%)`;
     const sig = !k ? '<span class="rvSig mid">! Sin precio del mercado para este partido: pronóstico solo del modelo</span>' :
-      (gap <= 3 && favModIgual ? '<span class="rvSig ok">✓ Modelo y mercado coinciden</span>' :
+      (gap <= 3 && favModIgual ? '<span class="rvSig ok">✓ Modelo y mercado coinciden (' + Math.round(modF * 100) + '% y ' + Math.round(pf * 100) + '%)</span><div class="rvP" style="margin-top:6px">Cuota justa de ' + esc(riv.nombre) + ': <b>' + amer(1 - pf) + '</b>.</div>' :
         (gap <= 7 && favModIgual ? `<span class="rvSig mid">≈ Diferencia de ${gap.toFixed(0)} pts de probabilidad${pctNf} · confía más en el mercado</span>` :
           `<span class="rvSig bad">✗ Discrepan ${gap.toFixed(0)} pts de probabilidad${pctNf} · créele al mercado</span>`)) +
       (k && !favModIgual ? `<div class="rvP" style="margin-top:7px">Modelo solo: <b>${esc(riv.nombre)}</b> (${Math.round((1 - modF) * 100)}%). Mercado: <b>${esc(fav.nombre)}</b> (${Math.round(pf * 100)}%).</div>` : '');
@@ -294,8 +294,10 @@
      <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amer(pf)}</b> por ${esc(fav.nombre)}${k ? '' : ' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(fav.nombre)}</label><input type="number" inputmode="decimal" class="cuotaIn" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${k ? 1 : 0}"><div class="rvVal"></div></div></div>`;
     // modelo contra mercado
     const row = (n, mo, mk) => `<div class="nm">${esc(n)} gana</div><div class="n md">${pct(mo, 1)}</div><div class="n mk">${mk === null ? '—' : pct(mk, 1)}</div><div class="n">${amer(mk === null ? mo : mk)}</div>`;
-    o += `<h4>Modelo contra mercado</h4><div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(m.a.nombre, an.pMod, k ? k.pA : null)}${row(m.b.nombre, 1 - an.pMod, k ? 1 - k.pA : null)}</div>
-     <div class="nota" style="margin-top:6px">Mercado = ${k ? `Kalshi (${esc(corto(m.a))} ${k.cA}¢ · ${esc(corto(m.b))} ${k.cB}¢)` : 'sin precio todavía'}.</div>`;
+    if (!(k && gap <= 3 && favModIgual)) {   /* si coinciden, la tabla repite los % de arriba */
+      o += `<h4>Modelo contra mercado</h4><div class="rvTab"><div class="th">Resultado</div><div class="th n">Modelo</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(m.a.nombre, an.pMod, k ? k.pA : null)}${row(m.b.nombre, 1 - an.pMod, k ? 1 - k.pA : null)}</div>`;
+    }
+    o += `<div class="nota" style="margin-top:6px">Mercado = ${k ? `Kalshi (${esc(corto(m.a))} ${k.cA}¢ · ${esc(corto(m.b))} ${k.cB}¢)` : 'sin precio todavía'}.</div>`;
     // qué tan confiable es
     const L = (c, t) => `<div><i class="${c}">${c === 'ok' ? '✓' : (c === 'w' ? '!' : '✗')}</i><span>${t}</span></div>`;
     const li = [];

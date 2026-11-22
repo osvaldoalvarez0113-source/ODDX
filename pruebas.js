@@ -2019,6 +2019,26 @@ async function t_publico(){
  }
  ok('no baja nada, no guarda nada y el service worker lo guarda',!/fetch\(|localStorage/.test(rd2('analista.js'))&&rd2('sw.js').indexOf("'analista.js'")>0);
 }
+sec('Veredicto compacto (sin repetir)');
+{
+ const sacarF=(txt,n)=>{const i=txt.indexOf('function '+n+'(');let d=0;for(let k=txt.indexOf('{',i);k<txt.length;k++){if(txt[k]==='{')d++;else if(txt[k]==='}'){d--;if(!d)return txt.slice(i,k+1);}}};
+ const nb=rd('nba.html'), us=rd('usdeporte.js');
+ const stubN="const esc=s=>String(s);const amTxt=p=>p>=.5?'-'+Math.round(100*p/(1-p)):'+'+Math.round(100*(1-p)/p);const pct1=p=>(p*100).toFixed(1)+'%';const window={};const GAMES=[];const LAM_M=0.05;let MK=null;const mkPN=g=>MK;const acN=()=>'';const kalshiN=()=>'';const impProb=a=>a>0?100/(a+100):-a/(-a+100);const PIN_N={generado:new Date().toISOString()};";
+ const N=new Function(stubN+sacarF(nb,'resumenN')+sacarF(nb,'mercadoHtml')+';return {resumenN,mercadoHtml,set:m=>{MK=m}}')();
+ const H={n:'Cleveland Cavaliers',ab:'CLE'},A={n:'Washington Wizards',ab:'WSH'},g={odds:{spread:-14.5,total:228.5}};
+ N.set({p:0.88,src:'espn'}); const r1=N.resumenN(g,{pHMod:0.87,pm:14,pH:0.88,bH:true},H,A);
+ ok('NBA: si modelo y mercado coinciden, no sale la tabla «Modelo contra mercado» (repetía los % de arriba) y la cuota justa del otro lado va en el ✓',!/Modelo contra mercado/.test(r1)&&/Cuota justa de Washington Wizards: <b>\+/.test(r1)&&/coinciden \(87% y 88%\)/.test(r1));
+ N.set({p:0.70,src:'espn'}); ok('NBA: si discrepan, la tabla sí sale',/Modelo contra mercado/.test(N.resumenN(g,{pHMod:0.55,pm:3,pH:0.70},H,A)));
+ ok('NBA: el back-to-back ya no se repite en «Qué tan confiable es» (sale en El análisis y en Forma)',!/Back-to-back/.test(r1));
+ const lim=x=>x.replace(/<[^>]+>/g,' ');
+ ok('NBA: todo coincide en la línea → una sola línea con hándicap y total, sin tabla',/También coinciden en la línea hándicap CLE por 14\.5 · total 228\.5/.test(lim(N.mercadoHtml(g,{pmMod:14.2,pm:14.5,ptMod:229,pt:228.6},H,A)))&&!/tabla-bt/.test(N.mercadoHtml(g,{pmMod:14.2,pm:14.5,ptMod:229,pt:228.6},H,A)));
+ ok('NBA: mismo favorito con otro margen → «coinciden en quién gana, no en por cuánto» (antes decía «no coinciden»)',/Coinciden en quién gana, no en por cuánto/.test(N.mercadoHtml(g,{pmMod:9,pm:14.3,ptMod:229,pt:228.6},H,A)));
+ const U=new Function("const DEP='nhl';const esc=s=>String(s);const pinDe=()=>null;const SP={dec:2,uc:'goles',u:'goles'};const LAM_M=0.05,LAM_T=0.5;const PARAMS={};const M={pmDeProb:p=>(p-0.5)*6};"+sacarF(us,'mercadoHtml')+';return mercadoHtml')();
+ const Hn={n:'Tampa Bay Lightning',ab:'TB'},An={n:'Buffalo Sabres',ab:'BUF'};
+ ok('NHL/NFL: todo coincide → una línea («margen TB por 0.99 · total 6.5»), y si el modelo dice parejo no se dice que coinciden',/También coinciden en la línea margen TB por 0\.99 · total 6\.5/.test(lim(U({odds:{total:6.5}},{mk:{p:0.665},pmMod:0.99,pm:0.99,ptMod:6.51,pt:6.5},Hn,An)))&&/no coinciden/.test(U({odds:{total:6.5}},{mk:{p:0.665},pmMod:0.02,pm:0.95,ptMod:6.51,pt:6.5},Hn,An)));
+ ok('NHL/NFL y tenis: la tabla «Modelo contra mercado» solo cuando no coinciden; sin back-to-back ni «descanso normal» repetidos',/coincide \? '' : '<h4>Modelo contra mercado<\/h4>'/.test(us)&&!/'Sin back-to-back\.'/.test(us)&&!/Descanso normal para los dos/.test(us)&&/if \(!\(k && gap <= 3 && favModIgual\)\)/.test(rd('tenis.js')));
+ ok('Cristal: las pestañas pegadas arriba tienen fondo casi opaco (no se lee el texto de abajo)',/\.game\.open \.tabs\{position:sticky;[^}]*background:rgba\(30,19,74,\.94\)!important/.test(rd('interior.js')));
+}
 /* ---------------- Liga de modelos (scripts/liga.js + liga.js) ---------------- */
 sec('Liga de modelos');
 {

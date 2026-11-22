@@ -449,7 +449,7 @@
   function descansoTxt(g, pr, H, A) {
     if (DEP === 'nhl') {
       const li = [];
-      li.push(pr.bH || pr.bA ? ['ok', 'Back-to-back: ' + [pr.bA ? A.n : '', pr.bH ? H.n : ''].filter(Boolean).map(esc).join(' y ') + ' jugó ayer (ya descontado).'] : ['ok', 'Sin back-to-back.']);
+      /* el back-to-back ya sale en El análisis, en Forma y en la barra de descanso: aquí no se repite */
       if (g.gkA || g.gkH) li.push(['ok', 'Porteros probables · ' + esc(A.ab) + ': ' + esc(g.gkA || 'sin confirmar') + ' · ' + esc(H.ab) + ': ' + esc(g.gkH || 'sin confirmar') + '. El mercado ya lo sabe; el modelo no.']);
       else li.push(['w', 'Porteros sin confirmar todavía (el portero abridor mueve mucho la línea en hockey).']);
       return li;
@@ -457,7 +457,7 @@
     const li = [];
     const d = (Tm, gap, r) => gap === null ? '' : (r < 0 ? esc(Tm.ab) + ' juega con ' + gap + ' días de descanso (semana corta, descontado).' : (r > 0 ? esc(Tm.ab) + ' viene de semana libre (' + gap + ' días, ventaja incluida).' : ''));
     const a = d(A, pr.gA, pr.rA), h = d(H, pr.gH, pr.rH);
-    if (a || h) li.push(['ok', [a, h].filter(Boolean).join(' ')]); else li.push(['ok', 'Descanso normal para los dos.']);
+    if (a || h) li.push(['ok', [a, h].filter(Boolean).join(' ')]);   /* «descanso normal» ya lo dice la barra de Forma */
     if (g.neutral) li.push(['w', 'Cancha neutral: el modelo no le da ventaja de local a nadie.']);
     if (g.indoor) li.push(['ok', 'Techo cerrado: el viento y el frío no pesan.']);
     else if (!g.neutral && CLIMA_NFL[H.ab] && !g.done && g.ts - Date.now() < 15 * 864e5 && g.ts > Date.now() - 6 * 36e5) { li.push(['ok', '<span data-clima-nfl="' + g.id + '">Buscando el clima del juego…</span>']); setTimeout(() => pintarClimaNfl(g, H.ab), 60); }
@@ -526,7 +526,7 @@
     const gap = (hit !== null) ? Math.abs(pr.pHMod - hit) * 100 : null, pmNf = favM ? pr.pHMod : 1 - pr.pHMod, pctNf = ' en ' + esc(nf) + ' (modelo solo ' + Math.round(pmNf * 100) + '%, mercado ' + Math.round(pf * 100) + '%)';
     const favMod = pr.pHMod >= 0.5;
     const sig = mk && mk.live ? '<span class="rvSig mid">● En vivo: el precio ya incluye el marcador, por eso no se compara con el modelo de antes del juego</span>' : hit === null ? '<span class="rvSig mid">! Sin precio del mercado para este juego: pronóstico solo del modelo</span>' :
-      (gap <= 3 && favMod === favM ? '<span class="rvSig ok">✓ Modelo y mercado coinciden</span>' :
+      (gap <= 3 && favMod === favM ? '<span class="rvSig ok">✓ Modelo y mercado coinciden (' + Math.round(pmNf * 100) + '% y ' + Math.round(pf * 100) + '%)</span><div class="rvP" style="margin-top:6px">Cuota justa de ' + esc(favM ? A.n : H.n) + ': <b>' + amTxt(1 - pf) + '</b>.</div>' :
         (gap <= 7 && favMod === favM ? `<span class="rvSig mid">≈ Diferencia de ${gap.toFixed(0)} pts de probabilidad${pctNf} · confía más en el mercado</span>` :
           `<span class="rvSig bad">✗ Discrepan ${gap.toFixed(0)} pts de probabilidad${pctNf} · créele al mercado</span>`)) +
       (favMod !== favM ? `<div class="rvP" style="margin-top:7px">Modelo solo: <b>${esc(favMod ? H.n : A.n)}</b> (${Math.round((favMod ? pr.pHMod : 1 - pr.pHMod) * 100)}%). Mercado: <b>${esc(nf)}</b> (${Math.round(pf * 100)}%).</div>` : '');
@@ -554,7 +554,9 @@
     if (g.pre) li.push(L('w', 'Pretemporada: los equipos rotan jugadores; toma estos números con mucha cautela.'));
     li.push(`<div data-inj><i class="w">!</i><span>Lesionados: toca «Cargar lesionados» abajo (archivo grande).</span></div>`);
     let anH = ''; try { if (window.OVAAnalista) { g._an = { dep: DEP, g, games: GAMES, H, A, pHMod: pr.pHMod, pMk: hit, vivo: !!(mk && mk.live), alertas: alertasAn(g, H, A, favM), nota: DEP === 'nhl' ? 'El % incluye tiempo extra y shootout.' : '' }; anH = '<div data-an>' + window.OVAAnalista.html(window.OVAAnalista.ctxUS(g._an)) + '</div>'; } } catch (e) { }   /* 🧠 El análisis (analista.js); se repinta con los lesionados */
-    return `<div class="rv">${anH}<h4>Pronóstico y pick</h4>${main}${guiaNhl(g, pr, pf)}${kalshiN(g, mk, H, A)}<h4>Modelo contra mercado</h4>${tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
+    /* si modelo y mercado coinciden, la tabla repite los % de arriba: se quita (la cuota justa del otro lado va en el aviso ✓) */
+    const coincide = hit !== null && !(mk && mk.live) && gap <= 3 && favMod === favM;
+    return `<div class="rv">${anH}<h4>Pronóstico y pick</h4>${main}${guiaNhl(g, pr, pf)}${kalshiN(g, mk, H, A)}${coincide ? '' : '<h4>Modelo contra mercado</h4>' + tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
   }
 
   function pintarCuerpo(body, g) {
@@ -727,7 +729,10 @@
     const okM = (!hayS && !hayP) || Math.abs(dm) < tolM, okT = !hayT || Math.abs(dt) < tolT;
     if (hayS || hayP) av.push(okM ? 'En quién gana coinciden (dif. ' + sig(dm) + ' ' + SP.uc + ').' : 'En quién gana, el mercado dice <strong>' + quien(hayS ? mer : pmM) + '</strong> y el modelo solo dice <strong>' + quien(pr.pmMod) + '</strong>: <strong>' + Math.abs(dm).toFixed(SP.dec) + ' ' + SP.uc + '</strong> de diferencia en el margen del partido (no es porcentaje). Tómalo como aviso de que el modelo anda dudoso, no como ventaja.');
     if (hayT) av.push(okT ? 'En el total también (dif. ' + sig(dt) + ' ' + SP.uc + ').' : 'En el total el mercado dice <strong>' + lineaT.toFixed(1) + '</strong> y el modelo solo <strong>' + pr.ptMod.toFixed(1) + '</strong> (<strong>' + Math.abs(dt).toFixed(SP.dec) + ' ' + SP.uc + '</strong>): ' + (DEP === 'nhl' ? 'en hockey el modelo sí aportó algo en totales (por eso pesa más ahí), pero una diferencia grande suele ser portero o ritmo que él no ve.' : 'al inicio de temporada el modelo usa ratings viejos, así que <strong>no apuestes Over/Under por eso</strong>.'));
-    const tit = okM && okT ? '🟢 El modelo y el mercado coinciden' : (okM ? '🟡 Coinciden en quién gana, no en el total' : '🟡 El modelo y el mercado no coinciden');
+    const lado = (hayS || hayP) && Math.abs(pr.pmMod) >= 0.05 && Math.sign(hayS ? mer : pmM) === Math.sign(pr.pmMod);   /* mismo favorito aunque el margen no cuadre */
+    const tit = okM && okT ? '🟢 El modelo y el mercado coinciden' : (okM ? '🟡 Coinciden en quién gana, no en el total' : (lado ? '🟡 Coinciden en quién gana, no en por cuánto' + (okT ? '' : ' ni en el total') : '🟡 El modelo y el mercado no coinciden'));
+    /* si todo coincide, la tabla repite lo de arriba: una sola línea con los números */
+    if (okM && okT) return `<div class="rv"><h4>Línea del mercado</h4><div class="pick"><b>🟢 También coinciden en la línea</b>${[hayS ? 'hándicap ' + quien(mer) : (hayP ? 'margen ' + quien(pmM) : ''), hayT ? 'total ' + lineaT.toFixed(1) : ''].filter(Boolean).join(' · ')}: mercado, modelo y la app dicen lo mismo.</div></div>`;
     return `<div class="rv"><h4>Línea del mercado</h4>
     <div class="pick${okM && okT ? '' : ' no'}"><b>${tit}</b>${av.join(' ')}</div>
     <table class="tabla-bt"><tr><th></th><th>Mercado</th><th>Modelo solo</th><th>La app usa</th></tr>${filas}</table>
