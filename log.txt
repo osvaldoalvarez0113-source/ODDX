@@ -1,7 +1,7 @@
-archivo: nba 2891 · eng.1 867 · esp.1 884 · ita.1 874 · ger.1 700 · fra.1 707 · uefa.champions 450 · uefa.europa 450 · uefa.europa.conf 360 · eng.fa 286 · eng.league_cup 270 · esp.copa_del_rey 339 · ita.coppa_italia 116 · ger.dfb_pokal 174 · fra.coupe_de_france 217 · pedidos 75
+archivo: nba 2891 · eng.1 867 · esp.1 884 · ita.1 875 · ger.1 700 · fra.1 707 · uefa.champions 450 · uefa.europa 450 · uefa.europa.conf 360 · eng.fa 286 · eng.league_cup 270 · esp.copa_del_rey 339 · ita.coppa_italia 116 · ger.dfb_pokal 174 · fra.coupe_de_france 217 · pedidos 75
 nba bajas: 92 jugadores «Out»
 nba viajes: {"pesos":{"altura":-0.13,"kmVisita":-0.92,"kmLocal":-0.844,"husoVisita":1.53,"descanso":0.428,"tres4":0.489},"pruebas":[{"ajuste":2024,"medido":2025,"juegos":1322,"aciertosSin":67.78,"aciertosCon":68.68,"perdidaSin":0.6,"perdidaCon":0.5998},{"ajuste":2024,"medido":2026,"juegos":241,"aciertosSin":66.39,"aciertosCon":67.63,"perdidaSin":0.6062,"perdidaCon":0.6039},{"ajuste":2025,"medido":2024,"juegos":920,"aciertosSin":66.85,"aciertosCon":66.3,"perdidaSin":0.6069,"perdidaCon":0.6048},{"ajuste":2025,"medido":2026,"juegos":241,"aciertosSin":66.39,"aciertosCon":67.63,"perdidaSin":0.6062,"perdidaCon":0.6001}],"entra":true}
-futbol descanso: {"peso":-0.01,"partidos":3318,"pruebas":[{"ajuste":2024,"medido":2025,"peso":0,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.51,"perdidaSin":1.0018,"perdidaCon":1.0018},{"ajuste":2024,"medido":2026,"peso":0,"juegos":529,"aciertosSin":55.01,"aciertosCon":55.01,"perdidaSin":0.9693,"perdidaCon":0.9693},{"ajuste":2025,"medido":2024,"peso":0,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":0.9991},{"ajuste":2025,"medido":2026,"peso":0,"juegos":529,"aciertosSin":55.01,"aciertosCon":55.01,"perdidaSin":0.9693,"perdidaCon":0.9693},{"ajuste":2026,"medido":2024,"peso":-0.05,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":1.0083},{"ajuste":2026,"medido":2025,"peso":-0.05,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.34,"perdidaSin":1.0018,"perdidaCon":1.0103}],"entra":false}
+futbol descanso: {"peso":-0.01,"partidos":3319,"pruebas":[{"ajuste":2024,"medido":2025,"peso":0,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.51,"perdidaSin":1.0018,"perdidaCon":1.0018},{"ajuste":2024,"medido":2026,"peso":0,"juegos":530,"aciertosSin":55.09,"aciertosCon":55.09,"perdidaSin":0.9683,"perdidaCon":0.9683},{"ajuste":2025,"medido":2024,"peso":0,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":0.9991},{"ajuste":2025,"medido":2026,"peso":0,"juegos":530,"aciertosSin":55.09,"aciertosCon":55.09,"perdidaSin":0.9683,"perdidaCon":0.9683},{"ajuste":2026,"medido":2024,"peso":-0.05,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":1.0083},{"ajuste":2026,"medido":2025,"peso":-0.05,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.34,"perdidaSin":1.0018,"perdidaCon":1.0103}],"entra":false}
 nfl epa: entra false · peso 0.83
 afuera: nfelo 13 juegos · ClubElo 50 partidos · Tennis Abstract 555/504 jugadores
 nba: mezcla esperando (6 de 150 calificados)
@@ -10,7 +10,7 @@ nfl: mezcla esperando (0 de 150 calificados)
 mlb: mezcla esperando (0 de 150 calificados)
 futbol: mezcla esperando (26 de 150 calificados)
 tenis: mezcla esperando (4 de 150 calificados)
-nba: 17 partidos vistos · 14 guardados/refrescados antes de empezar · ESPN 14
+nba: 17 partidos vistos · 15 guardados/refrescados antes de empezar · ESPN 15
 nhl: 12 partidos vistos · 10 guardados/refrescados antes de empezar · ESPN 0
 nfl: con modelo de afuera 12
 nfl: 13 partidos vistos · 12 guardados/refrescados antes de empezar · ESPN 12
@@ -20,4 +20,4 @@ futbol: 19 partidos vistos · 17 guardados/refrescados antes de empezar · ESPN 
 tenis: con modelo de afuera 5
 tenis: 54 partidos vistos · 6 guardados/refrescados antes de empezar · ESPN 0
 avisos: tema privado sí · pendientes 0 · problemas del vigilante 0 · detective 0 grupos
-calificados ahora: 0 · ascensos: 0 · total guardados: 111
+calificados ahora: 0 · ascensos: 0 · total guardados: 112
