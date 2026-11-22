@@ -134,21 +134,25 @@ function nbaRitmo(filas, R) {
   log('Todo junto: ' + c[1].toFixed(3) + ' puntos de total por cada posesión de ritmo de más.\n');
   log('| Idea | Picks | Acierta | z | Por temporada | ¿Entra? |\n|---|---|---|---|---|---|');
   const out = {};
-  out.ritmo1 = totalesFuera(F, ['pace'], 1); tablaTot('Ritmo solo (≥1 punto)', out.ritmo1);
-  out.ritmo3 = totalesFuera(F, ['pace'], 3); tablaTot('Ritmo solo (≥3 puntos)', out.ritmo3);
-  out.modelo3 = totalesFuera(F, ['mod'], 3); tablaTot('Total del modelo OVA solo (≥3, para comparar)', out.modelo3);
-  out.mixto3 = totalesFuera(F, ['mod', 'pace'], 3); tablaTot('Modelo OVA + ritmo (≥3)', out.mixto3);
+  /* el efecto ajustado es chico (la línea ya trae el ritmo): se cuentan señales desde 0.25 y 0.5 puntos */
+  [0.25, 0.5].forEach(u => {
+    out['ritmo_' + u] = totalesFuera(F, ['pace'], u); tablaTot('Ritmo solo (≥' + u + ' puntos)', out['ritmo_' + u]);
+    out['modelo_' + u] = totalesFuera(F, ['mod'], u); tablaTot('Total del modelo OVA solo (≥' + u + ', para comparar)', out['modelo_' + u]);
+    out['mixto_' + u] = totalesFuera(F, ['mod', 'pace'], u); tablaTot('Modelo OVA + ritmo (≥' + u + ')', out['mixto_' + u]);
+  });
   return out;
 }
 
 /* ---------------- 3) Árbitros ---------------- */
 /* juegos: [{id, s, ts, pH (cierre sin margen), gana 0/1, yT (total real − línea) o null}]; R: {id: {o: [árbitros]}}.
    Efecto de cada árbitro = promedio de sus residuos en las temporadas de ajuste, encogido n/(n+K). Cuadrilla = promedio. */
-function arbitros(dep, J, R) {
-  const K = 60, temps = [...new Set(J.map(j => j.s))].sort(), filasW = [], porT = [], totT = [];
+function arbitros(dep, J, R, opt) {
+  opt = opt || {}; const K = opt.K || 60, THR = opt.thr || 0.03, ANTES = !!opt.soloAntes, CALLA = !!opt.calla;
+  const _log = log; const log2 = CALLA ? () => { } : _log;
+  const temps = [...new Set(J.map(j => j.s))].sort(), filasW = [], porT = [], totT = [];
   let llC = 0, llA = 0, aC = 0, aA = 0, N = 0, W = 0, NT = 0;
   temps.forEach(t => {
-    const tr = J.filter(j => j.s !== t), te = J.filter(j => j.s === t); if (tr.length < 500 || te.length < 200) return;
+    const tr = J.filter(j => ANTES ? j.s < t : j.s !== t), te = J.filter(j => j.s === t); if (tr.length < 500 || te.length < 200) return;
     const ef = {}, et = {};
     tr.forEach(j => { const o = (R[j.id] && R[j.id].o) || []; o.forEach(a => { const e = ef[a] || (ef[a] = [0, 0]); e[0] += j.gana - j.pH; e[1]++; if (j.yT != null) { const u = et[a] || (et[a] = [0, 0]); u[0] += Math.sign(j.yT); u[1]++; } }); });
     const cuad = (j, M) => { const o = (R[j.id] && R[j.id].o) || []; const v = o.map(a => M[a] ? M[a][0] / (M[a][1] + K) : null).filter(x => x !== null); return v.length ? prom(v) : null; };
@@ -161,20 +165,30 @@ function arbitros(dep, J, R) {
       const p1 = Math.min(0.97, Math.max(0.03, j.pH + b * c));
       l0 -= Math.log(j.gana ? j.pH : 1 - j.pH); l1 -= Math.log(j.gana ? p1 : 1 - p1);
       if ((j.pH >= 0.5) === !!j.gana) a0++; if ((p1 >= 0.5) === !!j.gana) a1++; n++;
-      const ct = cuad(j, et); if (ct !== null && j.yT != null && j.yT !== 0 && Math.abs(ct) >= 0.03) { nT++; if (Math.sign(ct) === Math.sign(j.yT)) wT++; }
+      const ct = cuad(j, et); if (ct !== null && j.yT != null && j.yT !== 0 && Math.abs(ct) >= THR) { nT++; if (Math.sign(ct) === Math.sign(j.yT)) wT++; }
     });
     porT.push({ t, n, mejora: l1 < l0, a0, a1 }); llC += l0; llA += l1; aC += a0; aA += a1; N += n;
     totT.push({ t, n: nT, pct: nT ? 100 * wT / nT : null, mejora: nT ? wT / nT > 0.5 : false }); W += wT; NT += nT;
   });
-  log('\n## 3' + (dep === 'nba' ? 'a' : 'b') + ') Árbitros ' + dep.toUpperCase() + ' (' + J.length + ' juegos; efecto de cada árbitro sacado SOLO de las otras temporadas)\n');
+  log2('\n## 3' + (dep === 'nba' ? 'a' : 'b') + ') Árbitros ' + dep.toUpperCase() + ' (' + J.length + ' juegos; efecto de cada árbitro sacado SOLO de las otras temporadas)\n');
   const may = porT.filter(p => p.mejora).length, entraG = N > 0 && may > porT.length / 2 && llA < llC && aA > aC;
-  log('**Ganador:** pérdida log cierre ' + (llC / N).toFixed(4) + ' → con árbitros ' + (llA / N).toFixed(4) + ' · aciertos ' + (100 * aC / N).toFixed(1) + '% → ' + (100 * aA / N).toFixed(1) + '% · mejora en ' + may + ' de ' + porT.length + ' temporadas → ' + (entraG ? '**entra**' : 'no entra'));
+  log2('**Ganador:** pérdida log cierre ' + (llC / N).toFixed(4) + ' → con árbitros ' + (llA / N).toFixed(4) + ' · aciertos ' + (100 * aC / N).toFixed(1) + '% → ' + (100 * aA / N).toFixed(1) + '% · mejora en ' + may + ' de ' + porT.length + ' temporadas → ' + (entraG ? '**entra**' : 'no entra'));
   const zT = NT ? (W - NT / 2) / Math.sqrt(NT / 4) : 0, mayT = totT.filter(p => p.mejora).length, entraT = NT > 0 && mayT > totT.length / 2 && zT >= 2;
-  log('\n**Total (Más/Menos según la cuadrilla):** ' + NT + ' picks, acierta ' + (NT ? (100 * W / NT).toFixed(1) : '—') + '% (z ' + zT.toFixed(2) + ') · ' + totT.map(p => p.t + ': ' + (p.pct == null ? '—' : p.pct.toFixed(0) + '% (' + p.n + ')')).join(' · ') + ' → ' + (entraT ? '**entra**' : 'no entra'));
+  log2('\n**Total (Más/Menos según la cuadrilla):** ' + NT + ' picks, acierta ' + (NT ? (100 * W / NT).toFixed(1) : '—') + '% (z ' + zT.toFixed(2) + ') · ' + totT.map(p => p.t + ': ' + (p.pct == null ? '—' : p.pct.toFixed(0) + '% (' + p.n + ')')).join(' · ') + ' → ' + (entraT ? '**entra**' : 'no entra'));
   return { ganador: { n: N, llC: llC / N, llA: llA / N, aC: 100 * aC / N, aA: 100 * aA / N, may, de: porT.length, entra: entraG }, total: { n: NT, pct: NT ? 100 * W / NT : null, z: zT, entra: entraT } };
 }
 
-module.exports = { mco, totalesFuera, nbaRitmo, arbitros, resumenNBA, resumenNHL, vientoMlb };
+/* ¿aguanta si se cambian los ajustes? y lo realista: el efecto de cada árbitro solo con temporadas ANTERIORES */
+function sensibilidad(dep, J, R, RES) {
+  log('\nSensibilidad del total de árbitros ' + dep.toUpperCase() + ' (encogimiento K, umbral de la cuadrilla, y solo temporadas anteriores):\n\n| K | Umbral | Solo antes | Picks | Acierta | z | ¿Entra? |\n|---|---|---|---|---|---|---|');
+  const S = [];
+  [30, 60, 120].forEach(K => [0.02, 0.03, 0.05].forEach(thr => [false, true].forEach(sa => {
+    const r = arbitros(dep, J, R, { K, thr, soloAntes: sa, calla: true }).total; S.push(r);
+    log('| ' + K + ' | ' + thr + ' | ' + (sa ? 'sí' : 'no') + ' | ' + r.n + ' | ' + (r.pct == null ? '—' : r.pct.toFixed(1) + '%') + ' | ' + r.z.toFixed(2) + ' | ' + (r.entra ? 'sí' : 'no') + ' |');
+  })));
+  RES[dep + 'ArbSens'] = { pasan: S.filter(x => x.entra).length, de: S.length };
+}
+module.exports = { sensibilidad, mco, totalesFuera, nbaRitmo, arbitros, resumenNBA, resumenNHL, vientoMlb };
 if (require.main !== module) return;
 (async () => {
   log('# Medición «haz todo para mejorar» (' + new Date().toISOString().slice(0, 10) + ')\n');
@@ -189,12 +203,14 @@ if (require.main !== module) return;
     RES.nbaRitmo = nbaRitmo(filas.map(f => Object.assign({}, f, { id: String(f.id) })), R);
     const J = filas.filter(f => f.mlH && f.mlA && f.mar).map(f => { const p = nv(f.mlH, f.mlA); return p === null ? null : { id: String(f.id), s: f.sk, ts: f.ts, pH: p, gana: f.mar > 0 ? 1 : 0, yT: f.tot && f.total ? f.tot - f.total : null }; }).filter(Boolean);
     RES.nbaArb = arbitros('nba', J, R);
+    sensibilidad('nba', J, R, RES);
   } catch (e) { log('NBA: ERROR ' + e.stack); }
   try {
     const D = leer('datos-nhl.json', { temps: {} }), J = [];
     Object.keys(D.temps).forEach(y => D.temps[y].juegos.forEach(g => { if (!g.done || g.skip || !g.linea || !g.linea.ml || g.hs === g.as) return; const p = nv(g.linea.ml[0], g.linea.ml[1]); if (p === null) return; J.push({ id: g.id, s: +y, ts: g.ts, pH: p, gana: g.hs > g.as ? 1 : 0, yT: g.linea.tot ? g.hs + g.as - g.linea.tot : null }); }));
     const R = await resumenes('nhl', J.map(j => j.id), cache);
     RES.nhlArb = arbitros('nhl', J, R);
+    sensibilidad('nhl', J, R, RES);
   } catch (e) { log('NHL: ERROR ' + e.stack); }
   fs.writeFileSync('resultado_mejoras.md', L.join('\n') + '\n');
   fs.writeFileSync('resultado_mejoras.json', JSON.stringify(RES, null, 1));
