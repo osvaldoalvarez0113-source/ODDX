@@ -804,6 +804,7 @@ function registrar(reg, dep, partidos, extraDe, ahora) {
     if (!it) it = reg.items[id] = { id: id, dep: dep, ruta: p.ruta, ext: p.ext, ts: p.ts, local: p.local, visita: p.visita, p: {}, t: {} };
     it.ts = p.ts; it.local = p.local; it.visita = p.visita;
     Object.keys(comp).forEach(k => { it.p[k] = comp[k]; it.t[k] = ahora; });
+    if (comp.mercado && !it.m0) it.m0 = comp.mercado;   // el mercado la primera vez que se vio: si se mueve fuerte antes del juego, hubo noticia (lo usa la autopsia)
     if (mx && Object.keys(mx).length) { it.mk = mx; it.mk.t = ahora; }
     n++;
   });
@@ -1086,6 +1087,7 @@ async function predictorESPN(core, ext) {
   if (!ext.ta.a || !Object.keys(ext.ta.a).length) extraP.push({ id: 'tennisabstract', txt: 'Tennis Abstract no respondió o cambió su tabla.' });
   try { salida.salud = await X.vigilar(ahora, extraP); } catch (e) { salida.salud = { error: e.message, problemas: extraP }; }
   salida.detective = X.detective(Object.values(reg.items), tabla);
+  salida.autopsia = X.autopsia(Object.values(reg.items));
   const av = leer(path.join(dir, 'avisos.json'), { enviados: {} }), tema = process.env.NTFY_TOPIC || '';
   Object.keys(av.enviados).forEach(k => { if (ahora - av.enviados[k] > 7 * D) delete av.enviados[k]; });
   const pend = X.avisosPendientes(salida, previo, av.enviados, ahora);

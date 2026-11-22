@@ -223,6 +223,22 @@
     h += '<h3 style="margin:18px 2px 8px;font-size:16px">🔎 Detective de fallos</h3><div style="font-size:12px;color:var(--mut2);margin:0 2px 6px">Grupos donde el titular acierta claramente menos de lo que decía (15+ juegos). Con tantos grupos, alguno sale por suerte: es una pista, no una verdad.</div>';
     h += dt.length ? '<table class="tab"><tr><th>Grupo</th><th>Acertó</th><th>Real</th><th>Decía</th></tr>' + dt.map(function (g) { return '<tr><td>' + esc(g.grupo) + '</td><td class="n">' + g.aciertos + '/' + g.juegos + '</td><td class="n"><b>' + g.real.toFixed(1) + '%</b></td><td class="n">' + g.decia.toFixed(1) + '%</td></tr>'; }).join('') + '</table>'
       : '<div class="vacio" style="padding:12px;font-size:13px">Nada raro todavía (o pocos juegos calificados).</div>';
+    var au = d.autopsia;
+    if (au && au.deportes) {
+      var TT = au.tipos || {}, ordT = ['info', 'modelo', 'sorpresa', 'suerte', 'sin'];
+      h += '<h3 style="margin:18px 2px 8px;font-size:16px">🔬 Por qué falló tu modelo</h3><div style="font-size:12px;color:var(--mut2);margin:0 2px 6px">Cada vez que el modelo de la app falla, el robot lo compara con el mercado y le pone una causa. No cambia ningún número: dice qué tipo de fallo pesa más. 🩹 Faltó información = el mercado se movió 4+ puntos en contra antes del juego (baja o alineación). 📉 El modelo se equivocó = el mercado escogía lo otro y acertó. 🔄 Sorpresa = el mercado también fallaba. 🎲 Mala suerte = era parejo (menos de 60%).</div>';
+      var dks = ORDEN.filter(function (k) { return au.deportes[k]; });
+      h += dks.length ? dks.map(function (k) {
+        var x = au.deportes[k];
+        return '<div class="caja" style="padding:10px 12px;margin-bottom:6px;font-size:13px"><b>' + esc((d.deportes[k] && d.deportes[k].nombre) || k) + '</b> · ' + x.fallos + ' fallos<br>' +
+          ordT.filter(function (t) { return x.tipos[t]; }).map(function (t) { return esc(TT[t] || t) + ' <b>' + x.tipos[t] + '</b> (' + x.pct[t] + '%)'; }).join(' · ') +
+          '<br><span style="color:var(--mut2)">' + esc(x.conclusion) + '</span></div>';
+      }).join('') : '<div class="vacio" style="padding:12px;font-size:13px">Todavía no hay fallos calificados.</div>';
+      var ul = (au.ultimos || []).slice(0, 8);
+      if (ul.length) h += '<div style="font-size:12px;color:var(--mut2);margin:8px 2px 4px">Últimos fallos:</div>' + ul.map(function (f) {
+        return '<div class="caja" style="padding:8px 12px;margin-bottom:5px;font-size:12px"><b>' + esc(f.juego) + '</b>' + (f.marcador ? ' (' + esc(f.marcador) + ')' : '') + ' · escogió ' + esc(f.escogio) + ' ' + Math.round(100 * f.p) + '%, salió ' + esc(f.salio) + '<br>' + esc(TT[f.tipo] || f.tipo) + ': ' + esc(f.txt) + '</div>';
+      }).join('');
+    }
     var sa = d.salud;
     if (sa && sa.filas) {
       h += '<h3 style="margin:18px 2px 8px;font-size:16px">🛡️ Vigilante de los robots</h3><table class="tab"><tr><th>Robot</th><th>Estado</th></tr>' + sa.filas.map(function (f) {

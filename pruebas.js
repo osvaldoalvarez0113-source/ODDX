@@ -2111,6 +2111,17 @@ sec('Liga de modelos');
   const it=[]; for(let i=0;i<30;i++) it.push({dep:'nba',ts:ah-i*864e5,local:'Lakers',visita:'X'+i,p:{mercado:[.7,.3,0]},res:i<12?'L':'A'});
   const dt=X.detective(it,{nba:{titular:'mercado'}});
   ok('detective: encuentra «cuando Lakers es favorito» (acertó 40% y decía 70%)',dt.some(g=>/Lakers es favorito/.test(g.grupo)&&g.real===40&&g.decia===70));
+  { const J=(o)=>Object.assign({dep:'nba',ts:ah,local:'Celtics',visita:'Kings',res:'A',gl:86,gv:89},o);
+    const a1=X.porQue(J({p:{ova:[.66,.34,0],mercado:[.60,.40,0]},m0:[.66,.34,0]}));
+    const a2=X.porQue(J({p:{ova:[.62,.38,0],mercado:[.45,.55,0]}}));
+    const a3=X.porQue(J({p:{ova:[.70,.30,0],mercado:[.68,.32,0]},m0:[.69,.31,0]}));
+    const a4=X.porQue(J({p:{ova:[.55,.45,0],mercado:[.56,.44,0]}}));
+    const a5=X.porQue(J({dep:'futbol',res:'D',p:{modelo:[.5,.2,.3],mercado:[.25,.45,.3]}}));
+    ok('autopsia: mercado que se movió 4+ puntos en contra = faltó información',a1&&a1.tipo==='info'&&/66% a 60%/.test(a1.txt));
+    ok('autopsia: mercado del otro lado y acertó = el modelo se equivocó; parejo = suerte; claro y todos fallaron = sorpresa',a2.tipo==='modelo'&&a3.tipo==='sorpresa'&&a4.tipo==='suerte'&&a5.tipo==='sorpresa');
+    ok('autopsia: si el modelo acertó o el juego se anuló no hay autopsia; usa «ova» antes que «modelo»',X.porQue(J({res:'L',p:{ova:[.6,.4,0]}}))===null&&X.porQue(J({res:'X',p:{ova:[.6,.4,0]}}))===null&&X.porQue(J({p:{ova:[.4,.6,0],modelo:[.7,.3,0]}}))===null);
+    const ap=X.autopsia([J({p:{ova:[.62,.38,0],mercado:[.45,.55,0]}}),J({ts:ah+1,p:{ova:[.55,.45,0],mercado:[.56,.44,0]}})]);
+    ok('autopsia: cuenta por deporte y tipo, con conclusión y los últimos fallos primero',ap.deportes.nba.fallos===2&&ap.deportes.nba.tipos.modelo===1&&/20/.test(ap.deportes.nba.conclusion)&&ap.ultimos[0].ts===ah+1&&ap.ultimos[0].marcador==='89-86'); }
   ok('fábrica: arma todas las combinaciones',FB.producto({a:[1,2],b:[3,4,5]}).length===6);
   const b0=[],c0=[]; for(let i=0;i<400;i++){ const y=i%3?1:0; b0.push({temp:2025+(i%2),p:.6,y}); c0.push({temp:2025+(i%2),p:y?.7:.5,y}); }
   const cm=FB.comparar(b0,c0,f=>-Math.log(f.y?f.p:1-f.p),100,0);

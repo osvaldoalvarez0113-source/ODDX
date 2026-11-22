@@ -129,4 +129,55 @@ function detective(items, tabla) {
   return out.sort((a, b) => a.z - b.z).slice(0, 20);
 }
 
-module.exports = { avisosPendientes, enviar, vigilar, detective, VIGILAR };
+/* ---------- autopsia: por qué falló el modelo de la app en cada juego ----------
+   Mira solo el modelo propio (lo que muestra la app: «ova» en NBA/NHL/NFL, «modelo» en fútbol, tenis y MLB) y lo compara
+   con el mercado. No cambia ningún número: explica los fallos y cuenta cuál tipo pesa más.
+     info      el mercado se movió 4+ puntos contra el pick entre que se vio el juego y el inicio (noticia que el modelo no vio)
+     modelo    el mercado escogía el otro lado y acertó
+     sorpresa  el mercado también fallaba y el pick era claro (60%+), o los dos fallaron por lados distintos
+     suerte    el pick era parejo (menos de 60%): pasa casi la mitad de las veces aunque el modelo esté bien
+     sin       no hubo mercado para comparar */
+const AUT_TIPOS = { info: '🩹 Faltó información', modelo: '📉 El modelo se equivocó', sorpresa: '🔄 Sorpresa general', suerte: '🎲 Mala suerte', sin: '❔ Sin mercado' };
+const AUT_MOV = 0.04;
+function pickAut(p) { const i = p[2] > p[0] && p[2] > p[1] ? 2 : (p[0] >= p[1] ? 0 : 1); return { lado: 'LAD'[i], i: i, p: p[i] }; }
+function porQue(it) {
+  if (!it || !it.res || it.res === 'X' || !it.p) return null;
+  const clave = it.p.ova ? 'ova' : (it.p.modelo ? 'modelo' : null); if (!clave) return null;
+  const pk = pickAut(it.p[clave]); if (pk.lado === it.res) return null;
+  const nom = l => l === 'L' ? it.local : (l === 'A' ? it.visita : 'el empate'), pc = x => Math.round(100 * x) + '%';
+  const m = it.p.mercado, m0 = it.m0;
+  let tipo, txt;
+  if (m && m0 && m0[pk.i] - m[pk.i] >= AUT_MOV) {
+    tipo = 'info'; txt = 'el mercado bajó a ' + nom(pk.lado) + ' de ' + pc(m0[pk.i]) + ' a ' + pc(m[pk.i]) + ' antes del juego: hubo una noticia (baja, alineación, portero) que el modelo no vio';
+  } else if (m) {
+    const pm = pickAut(m);
+    if (pm.lado === pk.lado) { tipo = pk.p >= 0.6 ? 'sorpresa' : 'suerte'; txt = pk.p >= 0.6 ? 'el mercado también daba a ' + nom(pk.lado) + ' (' + pc(m[pk.i]) + '): falló todo el mundo' : 'era parejo (' + pc(pk.p) + ') y el mercado pensaba igual: de esos se pierde casi la mitad'; }
+    else if (pm.lado === it.res) { tipo = 'modelo'; txt = 'el mercado escogía ' + nom(pm.lado) + ' (' + pc(pm.p) + ') y tenía razón'; }
+    else { tipo = 'sorpresa'; txt = 'el mercado escogía ' + nom(pm.lado) + ' y también falló: salió ' + nom(it.res); }
+  } else { tipo = pk.p >= 0.6 ? 'sin' : 'suerte'; txt = pk.p >= 0.6 ? 'no hubo mercado para comparar' : 'era parejo (' + pc(pk.p) + '): de esos se pierde casi la mitad'; }
+  return { dep: it.dep, ts: it.ts, juego: it.visita + ' @ ' + it.local, escogio: nom(pk.lado), p: +pk.p.toFixed(3), salio: nom(it.res),
+    marcador: it.gl != null ? it.gv + '-' + it.gl : null, tipo: tipo, txt: txt };
+}
+function autopsia(items) {
+  const dep = {}, todos = [];
+  items.forEach(it => {
+    const f = porQue(it); if (!f) return;
+    todos.push(f);
+    const d = dep[f.dep] || (dep[f.dep] = { fallos: 0, tipos: {} });
+    d.fallos++; d.tipos[f.tipo] = (d.tipos[f.tipo] || 0) + 1;
+  });
+  Object.keys(dep).forEach(k => {
+    const d = dep[k], orden = Object.keys(d.tipos).sort((a, b) => d.tipos[b] - d.tipos[a]), top = orden[0];
+    d.pct = {}; orden.forEach(t => { d.pct[t] = +(100 * d.tipos[t] / d.fallos).toFixed(1); });
+    d.conclusion = d.fallos < 20 ? 'Pocos fallos todavía (' + d.fallos + '): hace falta llegar a 20 para sacar conclusiones.' :
+      top === 'info' ? 'Lo que más tumba al modelo son las noticias de última hora (' + d.pct.info + '%): meterle bajas y alineaciones sí ayudaría.' :
+      top === 'modelo' ? 'Lo que más pesa es que el mercado ve algo que el modelo no (' + d.pct.modelo + '%): la fórmula tiene margen para mejorar.' :
+      top === 'suerte' ? 'La mayoría son juegos parejos que se perdieron (' + d.pct.suerte + '%): eso es normal, no hay nada que arreglar.' :
+      top === 'sorpresa' ? 'La mayoría son sorpresas donde también falló el mercado (' + d.pct.sorpresa + '%): nadie las veía, el modelo está bien.' :
+      'Faltan datos del mercado para juzgar la mayoría de los fallos.';
+  });
+  todos.sort((a, b) => b.ts - a.ts);
+  return { tipos: AUT_TIPOS, deportes: dep, ultimos: todos.slice(0, 15) };
+}
+
+module.exports = { avisosPendientes, enviar, vigilar, detective, autopsia, porQue, VIGILAR };
