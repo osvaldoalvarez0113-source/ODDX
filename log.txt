@@ -4,8 +4,8 @@ nba viajes: {"pesos":{"altura":-0.13,"kmVisita":-0.92,"kmLocal":-0.844,"husoVisi
 futbol descanso: {"peso":-0.01,"partidos":3318,"pruebas":[{"ajuste":2024,"medido":2025,"peso":0,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.51,"perdidaSin":1.0018,"perdidaCon":1.0018},{"ajuste":2024,"medido":2026,"peso":0,"juegos":529,"aciertosSin":55.01,"aciertosCon":55.01,"perdidaSin":0.9693,"perdidaCon":0.9693},{"ajuste":2025,"medido":2024,"peso":0,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":0.9991},{"ajuste":2025,"medido":2026,"peso":0,"juegos":529,"aciertosSin":55.01,"aciertosCon":55.01,"perdidaSin":0.9693,"perdidaCon":0.9693},{"ajuste":2026,"medido":2024,"peso":-0.05,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":1.0083},{"ajuste":2026,"medido":2025,"peso":-0.05,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.34,"perdidaSin":1.0018,"perdidaCon":1.0103}],"entra":false}
 nfl epa: entra false · peso 0.83
 afuera: nfelo 13 juegos · ClubElo 50 partidos · Tennis Abstract 555/504 jugadores
-nba: mezcla esperando (5 de 150 calificados)
-nhl: mezcla esperando (12 de 150 calificados)
+nba: mezcla esperando (6 de 150 calificados)
+nhl: mezcla esperando (14 de 150 calificados)
 nfl: mezcla esperando (0 de 150 calificados)
 mlb: mezcla esperando (0 de 150 calificados)
 futbol: mezcla esperando (26 de 150 calificados)
@@ -20,4 +20,4 @@ futbol: 45 partidos vistos · 16 guardados/refrescados antes de empezar · ESPN 
 tenis: con modelo de afuera 5
 tenis: 54 partidos vistos · 6 guardados/refrescados antes de empezar · ESPN 0
 avisos: tema privado sí · pendientes 0 · problemas del vigilante 0 · detective 0 grupos
-calificados ahora: 3 · ascensos: 0 · total guardados: 96
+calificados ahora: 0 · ascensos: 0 · total guardados: 96
