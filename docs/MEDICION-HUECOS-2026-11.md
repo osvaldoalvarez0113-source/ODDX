@@ -37,7 +37,7 @@ Mejora en las 4 temporadas. Por tipo: Liga de Naciones −29.6 milésimas (z −
 
 **Trampa del mariscal:** la primera versión dio z −3.3 porque contaba al que más lanzó, y eso incluye lesiones a mitad de juego, que no se saben antes. Contando solo cuando el habitual no lanzó ni un pase, el efecto desaparece.
 
-**En vigilancia, sin aplicar:** viento afuera en MLB y viento en NFL sobre los totales. Hay que verlos con juegos nuevos. Las líneas de MLB son de ESPN, sin 2024 ni 2025 (no las devolvió) y sin garantía de ser el cierre exacto.
+**En vigilancia, sin aplicar:** ~~viento afuera en MLB~~ (cerrado el 22-nov-2026: con las líneas de cierre 2023-2026 no pasa, ver MEDICION-MEJORAS-2026-11.md) y viento en NFL sobre los totales. Hay que verlos con juegos nuevos. Las líneas de MLB son de ESPN, sin 2024 ni 2025 (no las devolvió) y sin garantía de ser el cierre exacto.
 
 ## Medido antes y sin efecto encima de la línea
 
