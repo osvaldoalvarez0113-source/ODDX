@@ -2209,9 +2209,9 @@ sec('Liga de modelos');
   const items={a:{dep:'nba',ts:T0+864e5*400,res:'L',p:{mercado:[.62,.38,0]}},b:{dep:'nba',ts:T0-864e5,res:'L',p:{mercado:[.62,.38,0]}},c:{dep:'nba',ts:T0+864e5*400,res:'X',p:{mercado:[.62,.38,0]}},d:{dep:'nhl',ts:T0+864e5*400,res:'A',p:{mercado:[.62,.38,0]}}};
   ok('historia: suma lo que la liga ya calificó solo DESPUÉS del archivo (no cuenta dos veces) y sin anulados',HL.deRegistro(items,'nba','mercado',T0).length===1);
   const filas=[]; for(let i=0;i<80;i++) filas.push({ts:T0+i*864e5,sk:i<40?2023:2024,mar:i%3===0?-4:6,mlH:-200,mlA:170});
-  const H=HL.armar({nba:filas},{},T0), hz=H.deportes.nba;
+  const H=HL.armar({nba:filas},{},T0).H, hz=H.deportes.nba;
   ok('historia: arma zona con lado (la MISMA de la liga) y franja; peor/mejor año con 30+ juegos por temporada',!!hz.zonas['60-65% · local']&&hz.zonas['60-65% · local'][0]===80&&hz.bandas['60-65%'][0]===80&&hz.zonas['60-65% · local'].length===5&&hz.n===80);
-  ok('historia: tenis usa la franja sola (no hay local de verdad)',Object.keys(HL.armar({tenis:[{ts:T0/1000,fin:'F',pW:0.7}]},{},T0).deportes.tenis.zonas).length===0);
+  ok('historia: tenis usa la franja sola (no hay local de verdad)',Object.keys(HL.armar({tenis:[{ts:T0/1000,fin:'F',pW:0.7}]},{},T0).H.deportes.tenis.zonas).length===0);
   const dH={v:1,reglas:{CONF_MIN:30},nombres:LG.NOMBRES,historia:{v:1,deportes:{nba:hz,tenis:{fuente:'el favorito del modelo de tenis de OVA',desde:'2024-01-01',hasta:'2026-11-21',n:100,w:70,pct:70,zonas:{},bandas:{'65-70%':[100,70,67.5]}}}},
    deportes:{nba:{nombre:'NBA',titular:'ova',modelos:{},confianza:{}}},proximos:[{dep:'nba',ts:t0+H,local:'Boston Celtics',visita:'Los Angeles Lakers',tit:'ova',pick:'L',p:.62,zona:'60-65% · local',zn:3,zw:2}]};
   const xh=LC.buscar(dH,'nba','Lakers','Celtics'), rh=LC.lectura(dH,xh,'Celtics');
@@ -2224,11 +2224,26 @@ sec('Liga de modelos');
   ls.ova_liga_v1=JSON.stringify({t:Date.now(),d:{historia:{v:1,deportes:{nhl:{desde:'2022-10-11',hasta:'2026-11-22',zonas:{'65-70% · local':[485,322,67.1,59,72],'70-75% · local':[90,70,72]}}}}}}); AC2._limpiar();
   const fH=AC2.fila('nhl',0.657,true,true);
   ok('📊 con historia de 120+ juegos en la zona usa esa (322 de 485, años y rango por año)',fH.hist&&fH.n===485&&fH.w===322&&/322 de 485<\/b> juegos \(66%\) entre 2022 y 2026; por año, entre 59% y 72%/.test(AC2.texto('nhl',0.657,true,true)));
-  ok('📊 zona con menos de 120 en la historia, % del modelo o MLB → la tabla de siempre',!AC2.fila('nhl',0.72,true,true).hist&&!AC2.fila('nhl',0.657,true,false).hist&&!AC2.fila('mlb',0.657,true,true).hist&&fEst.n===374);
+  ok('📊 zona con menos de 120 en la historia, % del modelo o deporte sin historia → la tabla de siempre',!AC2.fila('nhl',0.72,true,true).hist&&!AC2.fila('nhl',0.657,true,false).hist&&!AC2.fila('mlb',0.657,true,true).hist&&fEst.n===374);
   ok('📊 El análisis usa la misma fila (mismo número que 📊)',/ctx\.ac\.pct \* 100/.test(rd('analista.js'))&&/fila\(/.test(rd('analista.js')+rd('nhl.html')));
   delete globalThis.localStorage; AC2._limpiar();
   ok('línea 🏆: tenis busca la franja si la zona trae lado',LC.historiaDe(dH,'tenis','65-70% · visita').pct===70&&LC.historiaDe(dH,'tenis','65-70% · visita').banda===true);
   ok('Herramientas → Liga: tabla 📚 por franja y columna de historia en el mapa',/📚 Historia: 80 juegos/.test(LC.pantallaHtml(dH))&&/<th>📚<\/th>/.test(LC.pantallaHtml(Object.assign({},dH,{deportes:{nba:{nombre:'NBA',titular:'ova',modelos:{},confianza:{'60-65% · local':{juegos:3,aciertos:2,pct:66.7,dice:62,suficiente:false}}}}}))));
+  /* archivo de cierres + memoria permanente */
+  const CI=require(D+'scripts/cierres.js'), ahC=Date.UTC(2026,10,22,12);
+  ok('cierres: NBA y NHL arrancan en otoño, NFL en septiembre (enero es de la temporada anterior), MLB por año calendario',CI.SPEC.nba.sk(Date.UTC(2026,10,1))===2026&&CI.SPEC.nba.sk(Date.UTC(2027,4,1))===2026&&CI.SPEC.nfl.sk(Date.UTC(2027,0,10))===2026&&CI.SPEC.mlb.sk(Date.UTC(2025,6,1))===2025&&CI.SPEC.mlb.desde===2023);
+  const dsC=CI.diasDe(CI.SPEC.nba,2026,{juegos:[{done:true,ts:Date.UTC(2026,10,20)}]},ahC);
+  ok('cierres: solo pide desde 4 días antes del último juego terminado hasta mañana (no rebaja la temporada)',dsC.length===8&&dsC[0].getTime()===Date.UTC(2026,10,16));
+  const jn=CI.juntar({juegos:[{id:'1',ts:1,done:true,linea:{ml:[-150,130]}},{id:'2',ts:2,done:false}]},[{id:'1',ts:1,done:true},{id:'3',ts:3,done:true}]);
+  ok('cierres: al refrescar no pierde las líneas ya bajadas y agrega lo nuevo',jn.length===3&&jn[0].linea&&jn[0].linea.ml[0]===-150);
+  ok('cierres: solo baja líneas de juegos terminados que no las tienen (null = ESPN no tiene, no se repite)',CI.faltan({temps:{2026:{juegos:[{done:true,linea:undefined,ts:2},{done:true,linea:null,ts:3},{done:false,ts:4},{done:true,skip:true,ts:5}]}}}).length===1);
+  const itM={a:{dep:'nhl',ext:'77',ts:T0,res:'L',p:{mercado:[.6,.4,0]}}}, mem1=HL.memoria({},itM), mem2=HL.memoria(mem1,{});
+  ok('memoria permanente: guarda lo calificado de la liga y no lo pierde aunque el registro lo borre',!!mem1['nhl|77']&&!!mem2['nhl|77']);
+  const jf=HL.juntarFuentes('nhl',[[[1,.6,'L',1,'x','77']],[[1,.6,'L',0,'x','77'],[2,.6,'L',1,'x','78']],[[3,.6,'L',1,'x','78']]]);
+  ok('historia: en NHL/NBA/NFL/MLB junta por id de ESPN y manda el archivo de cierre (nada se cuenta dos veces)',jf.length===2&&jf.find(f=>f[5]==='77')[3]===1);
+  const Hm=HL.armar({cierres:{mlb:{temps:{2025:{juegos:[{id:'m1',ts:T0,done:true,hs:5,as:2,linea:{ml:[-150,130]}}]}}}}},{},T0).H;
+  ok('historia: MLB entra desde el archivo de cierres (temporada por año)',Hm.deportes.mlb&&Hm.deportes.mlb.n===1&&Hm.deportes.mlb.zonas['55-60% · local'][1]===1);
+  ok('el robot de cierres corre todos los días y guarda en su rama; la historia lo lee',/node scripts\/cierres\.js/.test(rd('.github/workflows/cierres.yml'))&&/cierres$/m.test(rd('.github/workflows/cierres.yml'))&&/traer cierres cierres-\$f\.json/.test(rd('.github/workflows/historia-liga.yml'))&&/historia-liga-juegos\.json/.test(rd('.github/workflows/historia-liga.yml')));
   ok('la liga mete historia.json en liga.json y el robot de historia corre todos los días y guarda en la rama liga',/historia: HIST && HIST\.v === 1/.test(rd('scripts/liga.js'))&&/node scripts\/historia_liga\.js/.test(rd('.github/workflows/historia-liga.yml'))&&/git add historia\.json/.test(rd('.github/workflows/historia-liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/historia-liga.yml')));
  }
 }

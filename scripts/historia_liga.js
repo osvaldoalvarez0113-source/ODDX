@@ -12,8 +12,11 @@
      NHL/NFL moneyline de cierre sin margen (DraftKings/ESPN BET vía ESPN) · rama datos-nhl-nfl (se actualiza sola cada día)
      Fútbol  1X2 de cierre sin margen (Pinnacle; Bet365 o promedio si falta) · rama resultados-futbol-actual (5 grandes ligas)
      Tenis   el modelo de tenis de OVA (Elo, sin mercado) · rama datos-tenis (preds-tenis.json, se actualiza sola)
-   Y se SIGUE ALIMENTANDO SOLA: lo que la liga ya calificó (liga-registro.json, con el mercado guardado ANTES del juego)
-   se suma después de la última fecha de cada archivo, así NBA y fútbol crecen cada semana aunque su archivo viejo no cambie.
+     MLB     moneyline de cierre de la rama cierres (scripts/cierres.js, desde 2023; se completa sola en varios días)
+   Y se SIGUE ALIMENTANDO SOLA: el archivo de cierres (rama cierres, todos los días: NBA, NHL, NFL y MLB de la temporada en curso)
+   y lo que la liga ya calificó (con el mercado guardado ANTES del juego). En NBA/NHL/NFL/MLB se junta por id de ESPN (nada se
+   cuenta dos veces); en fútbol y tenis, lo de la liga posterior al último juego del archivo. Lo de la liga se guarda además en
+   historia-liga-juegos.json, la memoria PERMANENTE (el registro de la liga borra lo de hace más de 400 días).
 
    No toca ningún número ni pick de la app: solo dice cuánto se acertó en juegos así.
    Uso: node scripts/historia_liga.js <carpeta con los archivos de datos> <carpeta de la rama liga>
@@ -34,12 +37,14 @@ function sinMargen(mlH, mlA) {
 function bandaDe(p) { const lo = Math.min(Math.floor(p * 20 + 1e-9) * 5, 85); return lo >= 85 ? '85%+' : lo + '-' + (lo + 5) + '%'; }
 const LADOS = { L: 'local', A: 'visita', D: 'empate' };
 
-/* una fila = [ts, p del pick, lado L/A/D, acertó 0/1, temporada] */
-function fila(ts, probs, res, temp) {
+/* una fila = [ts, p del pick, lado L/A/D, acertó 0/1, temporada, id del juego en ESPN (si hay)] */
+function fila(ts, probs, res, temp, id) {
   if (!probs || !res) return null;
   const pk = LG.pickDe(probs); if (!(pk.p > 0 && pk.p < 1)) return null;
-  return [ts, pk.p, pk.lado, pk.lado === res ? 1 : 0, temp];
+  const f = [ts, pk.p, pk.lado, pk.lado === res ? 1 : 0, temp]; if (id) f.push(String(id));
+  return f;
 }
+const tempOtoño = y => y + '-' + String((+y + 1) % 100).padStart(2, '0');   // NBA y NHL: la temporada arranca en otoño
 const resUS = (hs, as) => (hs > as ? 'L' : (as > hs ? 'A' : null));       // empate en NFL = no cuenta
 
 function deNBA(filas) {
@@ -47,12 +52,12 @@ function deNBA(filas) {
   (filas || []).forEach(r => {
     if (!r || r.mar == null || !r.mar) return;
     const p = sinMargen(r.mlH, r.mlA); if (p === null) return;
-    const f = fila(r.ts, [p, 1 - p, 0], r.mar > 0 ? 'L' : 'A', String(r.sk) + '-' + String((+r.sk + 1) % 100).padStart(2, '0'));
+    const f = fila(r.ts, [p, 1 - p, 0], r.mar > 0 ? 'L' : 'A', tempOtoño(r.sk), r.id);
     if (f) out.push(f);
   });
   return out;
 }
-/* datos-nhl.json / datos-nfl.json: {temps: {año: {juegos: [...]}}} con linea.ml = [local, visita] de cierre */
+/* datos-nhl.json / datos-nfl.json y cierres-<dep>.json (scripts/cierres.js): {temps: {año: {juegos: [...]}}} con linea.ml = [local, visita] de cierre */
 function deUS(datos, dep) {
   const out = [];
   Object.keys((datos && datos.temps) || {}).forEach(y => {
@@ -60,8 +65,8 @@ function deUS(datos, dep) {
       if (!g || !g.done || g.skip || g.neutral || !g.linea || !g.linea.ml) return;
       const p = sinMargen(g.linea.ml[0], g.linea.ml[1]); if (p === null) return;
       const res = resUS(+g.hs, +g.as); if (!res) return;
-      const temp = dep === 'nhl' ? y + '-' + String((+y + 1) % 100).padStart(2, '0') : String(y);   // la llave es el año en que arranca
-      const f = fila(g.ts, [p, 1 - p, 0], res, temp); if (f) out.push(f);
+      const temp = dep === 'nhl' || dep === 'nba' ? tempOtoño(y) : String(y);   // la llave es el año en que arranca
+      const f = fila(g.ts, [p, 1 - p, 0], res, temp, g.id); if (f) out.push(f);
     });
   });
   return out;
@@ -95,8 +100,8 @@ function deRegistro(items, dep, quien, desde) {
     if (!it || it.dep !== dep || !it.res || it.res === 'X' || !(it.ts > desde)) return;
     const p = it.p && it.p[quien]; if (!p) return;
     const d = new Date(it.ts), y = d.getUTCFullYear(), m = d.getUTCMonth();
-    const temp = dep === 'tenis' || dep === 'nfl' ? String(m < 2 && dep === 'nfl' ? y - 1 : y) : (m >= 7 ? y + '-' + String((y + 1) % 100).padStart(2, '0') : (y - 1) + '-' + String(y % 100).padStart(2, '0'));
-    const f = fila(it.ts, p, it.res, temp); if (f) out.push(dep === 'tenis' ? [f[0], f[1], 'L', f[3], f[4]] : f);
+    const temp = dep === 'tenis' || dep === 'nfl' || dep === 'mlb' ? String(m < 2 && dep === 'nfl' ? y - 1 : y) : (m >= 7 ? tempOtoño(y) : tempOtoño(y - 1));
+    const f = fila(it.ts, p, it.res, temp, it.ext); if (f) out.push(dep === 'tenis' ? [f[0], f[1], 'L', f[3], f[4], f[5]] : f);
   });
   return out;
 }
@@ -125,8 +130,28 @@ function resumir(filas, conLado) {
 }
 const FUENTE = {
   nba: 'el favorito del mercado al cierre', nhl: 'el favorito del mercado al cierre', nfl: 'el favorito del mercado al cierre',
+  mlb: 'el favorito del mercado al cierre',
   futbol: 'el favorito del mercado al cierre (Pinnacle)', tenis: 'el favorito del modelo de tenis de OVA'
 };
+const US = { nba: 1, nhl: 1, nfl: 1, mlb: 1 };
+/* MEMORIA PERMANENTE de la liga: liga-registro.json borra lo calificado de hace más de 400 días; aquí se guarda para siempre
+   (historia-liga-juegos.json en la rama liga): {'dep|id': fila}. Solo lo que dijo el competidor ANTES del juego. */
+function memoria(prev, items) {
+  const M = Object.assign({}, prev || {}), QUIEN = { nba: 'mercado', nhl: 'mercado', nfl: 'mercado', mlb: 'mercado', futbol: 'mercado', tenis: 'modelo' };
+  Object.keys(QUIEN).forEach(dep => deRegistro(items, dep, QUIEN[dep], 0).forEach(f => { M[dep + '|' + f[5]] = f; }));
+  return M;
+}
+/* juntar fuentes sin contar dos veces: en NBA/NHL/NFL/MLB por id de ESPN (manda la primera fuente: el archivo de cierre);
+   en fútbol y tenis (otras fuentes, otros ids) solo lo de la liga posterior al último juego del archivo */
+function juntarFuentes(dep, listas) {
+  if (US[dep]) {
+    const m = new Map(), sinId = [];
+    listas.forEach(l => l.forEach(f => { if (!f[5]) sinId.push(f); else if (!m.has(f[5])) m.set(f[5], f); }));
+    return [...m.values()].concat(sinId);
+  }
+  const base = listas[0] || [], ult = base.reduce((x, f) => Math.max(x, f[0]), 0);
+  return base.concat(...listas.slice(1).map(l => l.filter(f => f[0] > ult + 6 * 3600e3)));
+}
 function armarDeporte(dep, filas) {
   if (!filas.length) return null;
   filas.sort((a, b) => a[0] - b[0]);
@@ -136,21 +161,25 @@ function armarDeporte(dep, filas) {
   return { fuente: FUENTE[dep], desde: new Date(filas[0][0]).toISOString().slice(0, 10), hasta: new Date(filas[filas.length - 1][0]).toISOString().slice(0, 10),
     temporadas: temps.length, n: filas.length, w: w, pct: +(100 * w / filas.length).toFixed(1), zonas: r.zonas, bandas: r.bandas };
 }
-/* fuentes: {nba:[filas_nba], nhl:datos, nfl:datos, futbol:[partidos], tenis:[preds]}; items: liga-registro.json → items */
-function armar(fuentes, items, ahora) {
-  const F = {
-    nba: deNBA(fuentes.nba), nhl: deUS(fuentes.nhl, 'nhl'), nfl: deUS(fuentes.nfl, 'nfl'),
+/* fuentes: {nba:[filas_nba], nhl:datos, nfl:datos, futbol:[partidos], tenis:[preds], cierres:{nba,nhl,nfl,mlb}}; items: liga-registro.json → items;
+   prevMem: historia-liga-juegos.json. Devuelve la historia y la memoria permanente actualizada. */
+function armar(fuentes, items, ahora, prevMem) {
+  const C = fuentes.cierres || {};
+  const base = {
+    nba: deNBA(fuentes.nba), nhl: deUS(fuentes.nhl, 'nhl'), nfl: deUS(fuentes.nfl, 'nfl'), mlb: [],
     futbol: deFutbol(fuentes.futbol), tenis: deTenis(fuentes.tenis)
   };
-  const QUIEN = { nba: 'mercado', nhl: 'mercado', nfl: 'mercado', futbol: 'mercado', tenis: 'modelo' }, vivos = {};
-  Object.keys(F).forEach(dep => {
-    const ult = F[dep].reduce((m, f) => Math.max(m, f[0]), 0);
-    const extra = deRegistro(items, dep, QUIEN[dep], ult + 6 * 3600e3);
-    vivos[dep] = extra.length; F[dep] = F[dep].concat(extra);
+  const mem = memoria(prevMem, items), vivos = {}, out = { v: 1, generado: new Date(ahora || Date.now()).toISOString(), minTemp: MIN_TEMP, deportes: {} };
+  Object.keys(base).forEach(dep => {
+    const ci = US[dep] ? deUS(C[dep], dep) : [];
+    const liga = Object.keys(mem).filter(k => k.indexOf(dep + '|') === 0).map(k => mem[k]);
+    const filas = juntarFuentes(dep, [base[dep], ci, liga]);
+    vivos[dep] = filas.filter(f => liga.indexOf(f) >= 0).length;
+    const x = armarDeporte(dep, filas);
+    if (x) { x.deLaLiga = vivos[dep]; x.deCierres = ci.length; out.deportes[dep] = x; }
   });
-  const out = { v: 1, generado: new Date(ahora || Date.now()).toISOString(), minTemp: MIN_TEMP, deportes: {} };
-  Object.keys(F).forEach(dep => { const x = armarDeporte(dep, F[dep]); if (x) { x.deLaLiga = vivos[dep]; out.deportes[dep] = x; } });
-  return out;
+  out.memoria = Object.keys(mem).length;
+  return { H: out, mem };
 }
 /* para la liga y la app: la historia de una zona; en tenis (o si la zona no tiene lado en la historia) se usa la franja */
 function deZona(H, dep, zona) {
@@ -159,18 +188,23 @@ function deZona(H, dep, zona) {
   return (h.bandas && h.bandas[String(zona).split(' · ')[0]]) || null;
 }
 
-module.exports = { sinMargen, bandaDe, fila, deNBA, deUS, deFutbol, deTenis, deRegistro, resumir, armar, deZona, LADOS };
+module.exports = { sinMargen, bandaDe, fila, deNBA, deUS, deFutbol, deTenis, deRegistro, memoria, juntarFuentes, resumir, armar, deZona, LADOS };
 if (require.main !== module) return;
 
 const src = process.argv[2] || 'datos-historia', dir = process.argv[3] || 'salida-liga';
 const leer = f => { try { return JSON.parse(fs.readFileSync(path.join(src, f), 'utf8')); } catch (e) { console.log('no se pudo leer ' + f + ': ' + e.message); return null; } };
-let items = {};
+let items = {}, prevMem = {};
 try { items = JSON.parse(fs.readFileSync(path.join(dir, 'liga-registro.json'), 'utf8')).items || {}; } catch (e) { console.log('sin liga-registro.json'); }
-const H = armar({ nba: leer('filas_nba.json'), nhl: leer('datos-nhl.json'), nfl: leer('datos-nfl.json'), futbol: leer('partidos_actual.json'), tenis: leer('preds-tenis.json') }, items);
+try { prevMem = JSON.parse(fs.readFileSync(path.join(dir, 'historia-liga-juegos.json'), 'utf8')).juegos || {}; } catch (e) { console.log('sin memoria permanente todavía (se crea ahora)'); }
+const R = armar({ nba: leer('filas_nba.json'), nhl: leer('datos-nhl.json'), nfl: leer('datos-nfl.json'), futbol: leer('partidos_actual.json'), tenis: leer('preds-tenis.json'),
+  cierres: { nba: leer('cierres-nba.json'), nhl: leer('cierres-nhl.json'), nfl: leer('cierres-nfl.json'), mlb: leer('cierres-mlb.json') } }, items, Date.now(), prevMem);
+const H = R.H;
 fs.mkdirSync(dir, { recursive: true });
 fs.writeFileSync(path.join(dir, 'historia.json'), JSON.stringify(H));
+fs.writeFileSync(path.join(dir, 'historia-liga-juegos.json'), JSON.stringify({ v: 1, generado: H.generado, juegos: R.mem }));
+console.log('memoria permanente de la liga: ' + H.memoria + ' juegos');
 Object.keys(H.deportes).forEach(dep => {
   const x = H.deportes[dep];
-  console.log(dep + ': ' + x.n + ' juegos (' + x.desde + ' a ' + x.hasta + ', ' + x.temporadas + ' temporadas, ' + x.deLaLiga + ' de la liga) · el favorito acertó ' + x.pct + '%');
+  console.log(dep + ': ' + x.n + ' juegos (' + x.desde + ' a ' + x.hasta + ', ' + x.temporadas + ' temporadas, ' + x.deCierres + ' del archivo de cierres, ' + x.deLaLiga + ' de la liga) · el favorito acertó ' + x.pct + '%');
   Object.keys(x.bandas).forEach(b => { const c = x.bandas[b]; if (c[0] >= 30) console.log('   ' + b.padEnd(8) + String(c[0]).padStart(6) + ' juegos · real ' + (100 * c[1] / c[0]).toFixed(1) + '% · decía ' + c[2] + '%' + (c.length > 3 ? ' · años ' + c[3] + '–' + c[4] + '%' : '')); });
 });

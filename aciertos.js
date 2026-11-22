@@ -14,7 +14,7 @@ var NOMBRE={mlb:'juegos',fut:'partidos',nba:'juegos',nhl:'juegos',nfl:'juegos'};
 /* 📚 Historia de la liga (scripts/historia_liga.js, todos los días; viene dentro de liga.json, que liga.js guarda en el teléfono):
    la misma cuenta con más juegos y al día (incluye la temporada en curso). Si la zona tiene 120+ juegos, manda esa; si no, la tabla
    de arriba. Así el Veredicto dice UN solo número (📊, El análisis y la 🏆 leen lo mismo). Solo para el % del mercado. */
-var DEPH={fut:'futbol',nba:'nba',nhl:'nhl',nfl:'nfl'}, MINH=120, HC={t:0,h:null};
+var DEPH={fut:'futbol',nba:'nba',nhl:'nhl',nfl:'nfl',mlb:'mlb'}, MINH=120, HC={t:0,h:null};
 function historia(){
  var ahora=Date.now(); if(ahora-HC.t<60e3) return HC.h;
  HC.t=ahora; HC.h=null;
