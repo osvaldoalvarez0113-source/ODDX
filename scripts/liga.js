@@ -591,10 +591,10 @@ function clubeloLista(txt) {
 function clubeloWeb(html) {
   const out = [];
   String(html || '').split('data-live-status-game-id').slice(1).forEach(s => {
-    const t = /data-utc-time="(\d{4}-\d\d-\d\dT\d\d:\d\d)Z?"/.exec(s); if (!t) return;
+    const t = /data-utc-time=["']?(\d{4}-\d\d-\d\dT\d\d:\d\d)/.exec(s); if (!t) return;
     const filas = s.split('</tr>'); if (filas.length < 2) return;
-    const nom = f => { const m = /<span class="min641">([^<]+)<\/span>/.exec(f); return m ? m[1].replace(/&amp;/g, '&').trim() : null; };
-    const pc = f => Array.from(f.matchAll(/<span class="min1081">([\d.]+)<\/span>/g), m => +m[1]);
+    const nom = f => { const m = /class=["']?min641["']?\s*>([^<]+)</.exec(f); return m ? m[1].replace(/&amp;/g, '&').trim() : null; };
+    const pc = f => Array.from(f.matchAll(/class=["']?min1081["']?\s*>\s*([\d.]+)\s*</g), m => +m[1]);
     const a = pc(filas[0]), b = pc(filas[1]), L = nom(filas[0]), V = nom(filas[1]);
     if (!L || !V || a.length < 2 || b.length < 1) return;
     const suma = (a[0] + a[1] + b[0]) / 100; if (!(Math.abs(suma - 1) < 0.03)) return;
@@ -1040,7 +1040,7 @@ async function predictorESPN(core, ext) {
   const ext = { nfelo: txNf ? nfeloMapa(txNf) : null, clubelo: txCe ? clubeloWeb(txCe) : null, ta: { a: txTa ? taElo(txTa) : null, w: txTw ? taElo(txTw) : null } };
   let supT = null; try { const T = require('../modelo-tenis.js'); supT = p => T.superficie(p.evNombre, p.ts); } catch (e) { }
   log.push('afuera: nfelo ' + (ext.nfelo ? Object.keys(ext.nfelo).length + ' juegos' : 'NO') + ' · ClubElo ' + (ext.clubelo ? ext.clubelo.length + ' partidos' : 'NO') +
-    (txCe && !(ext.clubelo || []).length ? ' (ClubElo trajo ' + txCe.length + ' letras, ' + (txCe.match(/data-live-status-game-id/g) || []).length + ' juegos, ' + (txCe.match(/min641/g) || []).length + ' nombres, ' + (txCe.match(/min1081/g) || []).length + ' %; inicio: ' + txCe.slice(0, 160).replace(/\s+/g, ' ') + ')' : '') +
+    (txCe && !(ext.clubelo || []).length ? ' (ClubElo trajo ' + txCe.length + ' letras, ' + (txCe.match(/data-live-status-game-id/g) || []).length + ' juegos, ' + (txCe.match(/min641/g) || []).length + ' nombres, ' + (txCe.match(/min1081/g) || []).length + ' %; muestra: ' + (txCe.slice(Math.max(0, txCe.indexOf('data-live-status-game-id') - 20)).slice(0, 1400)).replace(/\s+/g, ' ') + ')' : '') +
     ' · Tennis Abstract ' + (ext.ta.a ? Object.keys(ext.ta.a).length : 'NO') + '/' + (ext.ta.w ? Object.keys(ext.ta.w).length : 'NO') + ' jugadores');
   const pred = {};
   Object.keys(DEPS).forEach(dep => {
