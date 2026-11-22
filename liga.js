@@ -6,8 +6,8 @@
      1) debajo de «🧠 El análisis» de cada juego sale la línea de la liga: quién es el titular, qué escoge y cuánto viene
         acertando en juegos así (si todavía no hay 30 juegos en esa zona, lo dice: no inventa confianza);
      2) Herramientas → 🏆 Liga: la tabla de cada deporte, los duelos contra el titular, el mapa y los cambios de titular.
-     📚 HISTORIA (desde el 22-nov-2026): mientras la liga junta sus 30 juegos por zona, la línea dice cuánto acertó el favorito en
-        juegos así con miles de juegos ya jugados (scripts/historia_liga.js, liga.json → historia). Con 30+ en vivo, manda lo en vivo.
+     📚 HISTORIA (desde el 22-nov-2026): liga.json → historia (scripts/historia_liga.js) trae cuánto acertó el favorito por zona con
+        miles de juegos ya jugados. En el Veredicto la dice aciertos.js (📊, un solo número); aquí sale en Herramientas → Liga.
      3) LA APP CONTRA EL ROBOT: cada vez que abres un juego que no ha empezado, anota en el teléfono (ova_liga_cmp) el % que da el
         modelo de la app al favorito y el que guardó el robot como «Modelo OVA», para ver si la copia del robot es fiel.
    No cambia ningún número ni pick de la app, ni toca tus registros. Sin internet no sale nada. */
@@ -58,10 +58,6 @@
     return { n: z[0], w: z[1], pct: Math.round(100 * z[1] / z[0]), dice: z[2], rango: z.length > 4 ? [z[3], z[4]] : null, banda: banda,
       fuente: H.fuente || 'el favorito', anos: y0 && y1 && y0 !== y1 ? y0 + '–' + y1 : y1 };
   }
-  function textoHist(h, zona) {
-    return 'En juegos así (' + (h.banda ? String(zona).split(' · ')[0] : zona) + '), ' + h.fuente + ' acertó ' + h.pct + '% (' + miles(h.w) + ' de ' + miles(h.n) + ', ' + h.anos + ')' +
-      (h.rango ? '; por año, entre ' + h.rango[0] + '% y ' + h.rango[1] + '%.' : '.');
-  }
   /* la línea en palabras: {tit, quien, p, zona, conf, txt, clase} */
   function lectura(d, x, favApp) {
     if (!d || !x) return null;
@@ -69,16 +65,11 @@
     var quien = x.pick === 'L' ? x.local : (x.pick === 'A' ? x.visita : 'Empate');
     var r = { tit: nombreDe(d, x.tit), quien: quien, p: Math.round(x.p * 100), zona: x.zona, n: x.zn || 0, w: x.zw || 0, min: min };
     r.distinto = !!(favApp && x.pick !== 'D' && !mismo(quien, favApp)) || (x.pick === 'D' && !!favApp);
-    var h = historiaDe(d, x.dep, x.zona), hOk = !!(h && h.n >= min);
-    if (r.n >= min) {
-      r.pctZona = Math.round(100 * r.w / r.n); r.clase = claseDe(r.pctZona); r.txt = 'En juegos así (' + x.zona + ') el titular viene acertando ' + r.pctZona + '% (' + r.w + ' de ' + r.n + ').';
-      if (hOk) r.extra = '📚 Historia: ' + h.pct + '% en ' + miles(h.n) + ' juegos así (' + h.anos + ').';
-    } else if (hOk) {
-      r.hist = h; r.clase = claseDe(h.pct); r.txt = '📚 ' + textoHist(h, x.zona);
-      r.extra = r.n > 0 ? 'En vivo la liga lleva ' + r.w + ' de ' + r.n + ' en esta zona (con ' + min + ' empieza a contar sola).' : 'En vivo la liga todavía no tiene juegos así (empezó el 21-nov-2026).';
-    }
-    else if (r.n > 0) { r.clase = 'mid'; r.txt = 'Juntando datos: en juegos así lleva ' + r.w + ' de ' + r.n + '. Con menos de ' + min + ' todavía no dice nada.'; }
-    else { r.clase = 'mid'; r.txt = 'Todavía no hay juegos así calificados (' + x.zona + '): la liga empezó a contar el 21-nov-2026.'; }
+    /* la historia de la zona ya sale en el Veredicto (📊 «Cuántas veces acierta este %», aciertos.js lee la misma historia):
+       aquí no se repite; la 🏆 habla de lo EN VIVO */
+    if (r.n >= min) { r.pctZona = Math.round(100 * r.w / r.n); r.clase = claseDe(r.pctZona); r.txt = 'En vivo, en juegos así (' + x.zona + ') el titular viene acertando ' + r.pctZona + '% (' + r.w + ' de ' + r.n + ').'; }
+    else if (r.n > 0) { r.clase = 'mid'; r.txt = 'En vivo lleva ' + r.w + ' de ' + r.n + ' en juegos así (' + x.zona + '); con ' + min + ' empieza a contar. Lo de temporadas pasadas está arriba (📊).'; }
+    else { r.clase = 'mid'; r.txt = 'En vivo todavía no hay juegos así (' + x.zona + '; la liga empezó el 21-nov-2026). Lo de temporadas pasadas está arriba (📊).'; }
     if (T && T.modelos && T.modelos[x.tit] && T.modelos[x.tit].jugados) r.global = T.modelos[x.tit];
     return r;
   }

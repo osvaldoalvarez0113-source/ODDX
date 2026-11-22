@@ -2054,7 +2054,7 @@ sec('Liga de modelos');
  const x=LC.buscar(d,'nba','Lakers','Celtics'), r=LC.lectura(d,x,'Celtics');
  ok('la app encuentra el juego con los nombres cortos y en cualquier orden',!!x&&x.local==='Boston Celtics');
  ok('la línea dice titular, pick y cuánto acierta la zona',r&&r.tit==='Mercado'&&r.pctZona===73&&!r.distinto&&/73%/.test(LC.htmlLinea(r)));
- ok('con pocos juegos lo dice y no inventa confianza',/Juntando datos/.test(LC.lectura(d,Object.assign({},x,{zn:7,zw:5}),'Celtics').txt));
+ ok('con pocos juegos lo dice y no inventa confianza',/En vivo lleva 5 de 7/.test(LC.lectura(d,Object.assign({},x,{zn:7,zw:5}),'Celtics').txt));
  ok('avisa si el titular escoge distinto al favorito de la app',LC.lectura(d,x,'Lakers').distinto===true);
  ok('liga.js solo lee: no guarda picks ni toca registros',!/ova_auto_v1|ova_picks|setItem\('ova_(?!liga)/.test(rd('liga.js')));
  ok('lo cargan las seis apps después de analista.js, y Herramientas',['index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html'].every(f=>rd(f).indexOf('<script src="liga.js">')>rd(f).indexOf('<script src="analista.js">')&&rd(f).indexOf('<script src="analista.js">')>0)&&/<script src="liga\.js">/.test(rd('herramientas.html')));
@@ -2195,11 +2195,19 @@ sec('Liga de modelos');
   const dH={v:1,reglas:{CONF_MIN:30},nombres:LG.NOMBRES,historia:{v:1,deportes:{nba:hz,tenis:{fuente:'el favorito del modelo de tenis de OVA',desde:'2024-01-01',hasta:'2026-11-21',n:100,w:70,pct:70,zonas:{},bandas:{'65-70%':[100,70,67.5]}}}},
    deportes:{nba:{nombre:'NBA',titular:'ova',modelos:{},confianza:{}}},proximos:[{dep:'nba',ts:t0+H,local:'Boston Celtics',visita:'Los Angeles Lakers',tit:'ova',pick:'L',p:.62,zona:'60-65% · local',zn:3,zw:2}]};
   const xh=LC.buscar(dH,'nba','Lakers','Celtics'), rh=LC.lectura(dH,xh,'Celtics');
-  ok('línea 🏆: con menos de 30 en vivo, habla la historia de esa zona y dice lo que lleva en vivo aparte',rh.hist&&/📚 En juegos así \(60-65% · local\), el favorito del mercado al cierre acertó 66% \(53 de 80/.test(rh.txt)&&/lleva 2 de 3/.test(rh.extra)&&/📚 En juegos así/.test(LC.htmlLinea(rh)));
+  ok('línea 🏆: ya no repite la historia (la dice 📊 con el mismo número); habla de lo en vivo y manda a mirar arriba',!rh.hist&&/En vivo lleva 2 de 3/.test(rh.txt)&&/📊/.test(rh.txt)&&!/📚/.test(LC.htmlLinea(rh)));
   const rv=LC.lectura(dH,Object.assign({},xh,{zn:40,zw:30}),'Celtics');
-  ok('línea 🏆: con 30+ en vivo manda lo en vivo y la historia queda como dato aparte',rv.pctZona===75&&!rv.hist&&/📚 Historia: 66% en 80/.test(rv.extra));
+  ok('línea 🏆: con 30+ en vivo dice cuánto viene acertando en vivo',rv.pctZona===75&&/En vivo, en juegos así/.test(rv.txt));
+  /* 📊 aciertos.js lee la misma historia que guarda liga.js en el teléfono (un solo número en todo el Veredicto) */
+  const AC2=require(D+'aciertos.js'), ls={}; globalThis.localStorage={getItem:k=>ls[k]||null,setItem:(k,v)=>{ls[k]=v;}};
+  const fEst=AC2.fila('nhl',0.657,true,true);
+  ls.ova_liga_v1=JSON.stringify({t:Date.now(),d:{historia:{v:1,deportes:{nhl:{desde:'2022-10-11',hasta:'2026-11-22',zonas:{'65-70% · local':[485,322,67.1,59,72],'70-75% · local':[90,70,72]}}}}}}); AC2._limpiar();
+  const fH=AC2.fila('nhl',0.657,true,true);
+  ok('📊 con historia de 120+ juegos en la zona usa esa (322 de 485, años y rango por año)',fH.hist&&fH.n===485&&fH.w===322&&/322 de 485<\/b> juegos \(66%\) entre 2022 y 2026; por año, entre 59% y 72%/.test(AC2.texto('nhl',0.657,true,true)));
+  ok('📊 zona con menos de 120 en la historia, % del modelo o MLB → la tabla de siempre',!AC2.fila('nhl',0.72,true,true).hist&&!AC2.fila('nhl',0.657,true,false).hist&&!AC2.fila('mlb',0.657,true,true).hist&&fEst.n===374);
+  ok('📊 El análisis usa la misma fila (mismo número que 📊)',/ctx\.ac\.pct \* 100/.test(rd('analista.js'))&&/fila\(/.test(rd('analista.js')+rd('nhl.html')));
+  delete globalThis.localStorage; AC2._limpiar();
   ok('línea 🏆: tenis busca la franja si la zona trae lado',LC.historiaDe(dH,'tenis','65-70% · visita').pct===70&&LC.historiaDe(dH,'tenis','65-70% · visita').banda===true);
-  ok('línea 🏆: sin historia sigue diciendo que no hay juegos así (no inventa)',/Juntando datos/.test(LC.lectura(Object.assign({},dH,{historia:null}),xh,'Celtics').txt));
   ok('Herramientas → Liga: tabla 📚 por franja y columna de historia en el mapa',/📚 Historia: 80 juegos/.test(LC.pantallaHtml(dH))&&/<th>📚<\/th>/.test(LC.pantallaHtml(Object.assign({},dH,{deportes:{nba:{nombre:'NBA',titular:'ova',modelos:{},confianza:{'60-65% · local':{juegos:3,aciertos:2,pct:66.7,dice:62,suficiente:false}}}}}))));
   ok('la liga mete historia.json en liga.json y el robot de historia corre todos los días y guarda en la rama liga',/historia: HIST && HIST\.v === 1/.test(rd('scripts/liga.js'))&&/node scripts\/historia_liga\.js/.test(rd('.github/workflows/historia-liga.yml'))&&/git add historia\.json/.test(rd('.github/workflows/historia-liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/historia-liga.yml')));
  }

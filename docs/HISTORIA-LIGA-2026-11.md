@@ -85,7 +85,7 @@ La liga de modelos empezó a contar el 21-nov-2026 y su mapa de confianza necesi
 
 ## Cómo se ve en la app
 
-- **Veredicto → línea 🏆**: si la liga en vivo tiene menos de 30 juegos en la zona de ese pick, habla la historia (por ejemplo en NBA: «📚 En juegos así (55-60% · local), el favorito del mercado al cierre acertó 61% (406 de 664, 2021–2026); por año, entre 57% y 69%») y abajo dice cuánto lleva en vivo. Con 30+ manda lo en vivo.
+- **Veredicto → 📊 «Cuántas veces acierta este %»** (y el «de cada 100» de El análisis): `aciertos.js` usa esta historia cuando la zona tiene 120+ juegos (al día, con el rango por año); si no, su tabla fija de octubre. La línea 🏆 ya no la repite: habla solo de lo en vivo. (Corregido el mismo 22-nov: al principio la 🏆 la repetía con otro número que el 📊.)
 - **Herramientas → 🏆 Liga**: columna 📚 en el mapa de confianza y una tabla plegable por franja en cada deporte.
 
 No cambia ningún número ni pick de la app. MLB queda sin historia hasta tener líneas de cierre guardadas (temporada 2027).

@@ -2,7 +2,7 @@
    RED PRIMERO: con internet siempre baja la version nueva (nunca te quedas con un archivo viejo).
    Solo si no hay red (o tarda mas de 4 s) responde con la copia guardada.
    No toca las APIs (MLB, ESPN, Kalshi, Railway...): solo archivos de este mismo sitio. */
-var CACHE = 'ova-shell-v18';
+var CACHE = 'ova-shell-v19';
 var SHELL = ['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html','tenis.html','tenis.js','modelo-tenis.js','modelo-nhl.js','modelo-nfl.js','usdeporte.js','prediccion.js','periodos.js','publico.js','jugadores.js','posiciones.js','animar.js','forma.js','memoria.js','observaciones.js','analista.js','liga.js','mlbextra.js','sello.js','ovaextra.js','ovaedge.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','autoregistro.js','aciertos.js','ganadores.js','top5.js','todas.html','envivo.js','cierre.js','banca.js','herramientas.html','herramientas.js','obsidiana.js','mejoras.js','selecciones.js','torneos.js',
   'railway.js','pinnacle.js','diseno.js','acceso.js','manifest.json','icon-180.png','icon-192.png','icon-512.png'];
 

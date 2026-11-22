@@ -105,7 +105,7 @@ html[data-ui="cristal"] .game.open .head{position:relative!important;top:auto!im
 /* las pestañas pegajosas no se pegan si el juego abierto recorta con overflow:hidden (crea su propio scroll): clip recorta igual sin eso */
 html[data-ui] .game.open{overflow:clip!important}
 html[data-ui="cristal"] .game{--headh:0px!important}
-html[data-ui="cristal"] .game.open .tabs{position:sticky;top:calc(var(--barra,60px) + 6px)!important;z-index:8;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
+html[data-ui="cristal"] .game.open .tabs{position:sticky;top:calc(var(--barra,60px) + 6px)!important;z-index:8;background:rgba(30,19,74,.94)!important;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px)}
 html[data-ui="cristal"] .game .body{padding-left:14px;padding-right:14px}
 /* tarjetas internas */
 html[data-ui="cristal"] .ovaHero{border-radius:26px;background:linear-gradient(160deg,rgba(255,255,255,.1),rgba(255,255,255,.03))!important;border:1px solid rgba(255,255,255,.16);padding:18px 10px 14px}
