@@ -39,7 +39,8 @@
      polymarket   precio de Polymarket (rama «pred»), sin el margen.
      consenso     promedio (en logit) de los que haya: mercado, espn, polymarket y modelo. Necesita 2 o más.
      nfelo        NFL: el modelo público nfelo (github.com/greerreNFL/nfelo, output_data/prediction_tracker.csv, se actualiza solo).
-     clubelo      fútbol: los pronósticos de ClubElo (api.clubelo.com/Fixtures). APAGADO: ClubElo desactivó esa API el 21-nov-2026.
+     clubelo      fútbol: los pronósticos 1X2 de ClubElo, leídos de su página clubelo.com/Fixtures (la API api.clubelo.com
+                  se cayó el 21-nov-2026; la página sigue viva y trae los juegos de hoy y mañana con su 1, X y 2).
      tennisabstract tenis: el Elo por superficie de Tennis Abstract (Jeff Sackmann, informes semanales de la ATP y la WTA).
      mezcla       la mezcla que aprende sola: promedio de los competidores con pesos que se ajustan (mínima pérdida logarítmica) SOLO
                   con juegos ya calificados de ese deporte. Arranca cuando hay 150 calificados; se reajusta en cada vuelta.
@@ -586,6 +587,22 @@ function clubeloLista(txt) {
   });
   return out.filter(x => x.p);
 }
+/* ClubElo, página web (clubelo.com/Fixtures): cada juego son dos filas; la primera trae fecha UTC, local, «1» y «X»; la segunda, visita y «2» */
+function clubeloWeb(html) {
+  const out = [];
+  String(html || '').split('data-live-status-game-id').slice(1).forEach(s => {
+    const t = /data-utc-time="(\d{4}-\d\d-\d\dT\d\d:\d\d)Z?"/.exec(s); if (!t) return;
+    const filas = s.split('</tr>'); if (filas.length < 2) return;
+    const nom = f => { const m = /<span class="min641">([^<]+)<\/span>/.exec(f); return m ? m[1].replace(/&amp;/g, '&').trim() : null; };
+    const pc = f => Array.from(f.matchAll(/<span class="min1081">([\d.]+)<\/span>/g), m => +m[1]);
+    const a = pc(filas[0]), b = pc(filas[1]), L = nom(filas[0]), V = nom(filas[1]);
+    if (!L || !V || a.length < 2 || b.length < 1) return;
+    const suma = (a[0] + a[1] + b[0]) / 100; if (!(Math.abs(suma - 1) < 0.03)) return;
+    const p = arr(a[0] / 100, b[0] / 100, a[1] / 100); if (!p) return;
+    out.push({ fecha: t[1].slice(0, 10), ts: Date.parse(t[1] + ':00Z'), local: L, visita: V, p });
+  });
+  return out;
+}
 /* Tennis Abstract: la tabla del informe; las columnas se buscan por nombre (la ATP y la WTA las ordenan distinto) */
 function taElo(html) {
   const filas = String(html || '').split(/<tr[\s>]/i).slice(1).map(tr => tr.split(/<t[dh][^>]*>/i).slice(1).map(c => c.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim()));
@@ -624,7 +641,8 @@ function mismoClub(a, b) {
 function clubeloPara(lista, p) {
   if (!lista) return null;
   for (const g of lista) {
-    const t = Date.parse(g.fecha + 'T12:00:00Z'); if (!isFinite(t) || Math.abs(t - p.ts) > 1.5 * D) continue;
+    const conHora = isFinite(g.ts), t = conHora ? g.ts : Date.parse(g.fecha + 'T12:00:00Z');
+    if (!isFinite(t) || Math.abs(t - p.ts) > (conHora ? 6 * 36e5 : 1.5 * D)) continue;
     if (mismoClub(g.local, p.local) && mismoClub(g.visita, p.visita)) return g.p;
     if (mismoClub(g.local, p.visita) && mismoClub(g.visita, p.local)) return [g.p[1], g.p[0], g.p[2]];
   }
@@ -889,7 +907,7 @@ function proximos(reg, tabla, ahora) {
 
 module.exports = { DEPS, REGLAS, NOMBRES, arr, pickDe, zonaDe, mismo, consenso, partidosDe, resultadoDe, competidores, registrar, calificar,
   pendientes, resumen, duelos, ascensos, mapa, proximos, prediccionPolymarket, modelosUS, modeloTenis, ymdUTC,
-  ARCHIVO, mesesDesde, finalesDe, ajustarMezcla, mezclar, MEZCLA_MIN, rasgosViaje, mco, calendarioFut, descansoDe, medirDescanso, epaDeCSV, modeloEPA, pasa, ponerFabrica: f => { FAB = f; }, ponerLesiones: l => { LES_NBA = l; }, ajusteBajas, mercadosExtra, resultadoMercado, resumenMercados, modeloNBA, motorFutbol, modeloFutbol, nfeloMapa, clubeloLista, clubeloPara, taElo, taBuscar, probTA, mismoClub };
+  ARCHIVO, mesesDesde, finalesDe, ajustarMezcla, mezclar, MEZCLA_MIN, rasgosViaje, mco, calendarioFut, descansoDe, medirDescanso, epaDeCSV, modeloEPA, pasa, ponerFabrica: f => { FAB = f; }, ponerLesiones: l => { LES_NBA = l; }, ajusteBajas, mercadosExtra, resultadoMercado, resumenMercados, modeloNBA, motorFutbol, modeloFutbol, nfeloMapa, clubeloLista, clubeloWeb, clubeloPara, taElo, taBuscar, probTA, mismoClub };
 if (require.main !== module) return;
 
 /* ---------- corrida ---------- */
@@ -1016,10 +1034,10 @@ async function predictorESPN(core, ext) {
   }
   const [txNf, txCe, txTa, txTw] = await Promise.all([
     getTexto('https://raw.githubusercontent.com/greerreNFL/nfelo/main/output_data/prediction_tracker.csv'),
-    Promise.resolve(null),   // ClubElo apagó su API de pronósticos («Fixtures API deactivated», 21-nov-2026); si vuelve, se pide aquí
+    getTexto('https://clubelo.com/Fixtures'),   // la API se cayó el 21-nov-2026; la página web sigue con el 1X2 de hoy y mañana
     getTexto('https://tennisabstract.com/reports/atp_elo_ratings.html'),
     getTexto('https://tennisabstract.com/reports/wta_elo_ratings.html')]);
-  const ext = { nfelo: txNf ? nfeloMapa(txNf) : null, clubelo: txCe ? clubeloLista(txCe) : null, ta: { a: txTa ? taElo(txTa) : null, w: txTw ? taElo(txTw) : null } };
+  const ext = { nfelo: txNf ? nfeloMapa(txNf) : null, clubelo: txCe ? clubeloWeb(txCe) : null, ta: { a: txTa ? taElo(txTa) : null, w: txTw ? taElo(txTw) : null } };
   let supT = null; try { const T = require('../modelo-tenis.js'); supT = p => T.superficie(p.evNombre, p.ts); } catch (e) { }
   log.push('afuera: nfelo ' + (ext.nfelo ? Object.keys(ext.nfelo).length + ' juegos' : 'NO') + ' · ClubElo ' + (ext.clubelo ? ext.clubelo.length + ' partidos' : 'NO') +
     ' · Tennis Abstract ' + (ext.ta.a ? Object.keys(ext.ta.a).length : 'NO') + '/' + (ext.ta.w ? Object.keys(ext.ta.w).length : 'NO') + ' jugadores');
