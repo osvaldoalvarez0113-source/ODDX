@@ -1040,6 +1040,7 @@ async function predictorESPN(core, ext) {
   const ext = { nfelo: txNf ? nfeloMapa(txNf) : null, clubelo: txCe ? clubeloWeb(txCe) : null, ta: { a: txTa ? taElo(txTa) : null, w: txTw ? taElo(txTw) : null } };
   let supT = null; try { const T = require('../modelo-tenis.js'); supT = p => T.superficie(p.evNombre, p.ts); } catch (e) { }
   log.push('afuera: nfelo ' + (ext.nfelo ? Object.keys(ext.nfelo).length + ' juegos' : 'NO') + ' · ClubElo ' + (ext.clubelo ? ext.clubelo.length + ' partidos' : 'NO') +
+    (txCe && !(ext.clubelo || []).length ? ' (ClubElo trajo ' + txCe.length + ' letras, ' + (txCe.match(/data-live-status-game-id/g) || []).length + ' juegos, ' + (txCe.match(/min641/g) || []).length + ' nombres, ' + (txCe.match(/min1081/g) || []).length + ' %; inicio: ' + txCe.slice(0, 160).replace(/\s+/g, ' ') + ')' : '') +
     ' · Tennis Abstract ' + (ext.ta.a ? Object.keys(ext.ta.a).length : 'NO') + '/' + (ext.ta.w ? Object.keys(ext.ta.w).length : 'NO') + ' jugadores');
   const pred = {};
   Object.keys(DEPS).forEach(dep => {
