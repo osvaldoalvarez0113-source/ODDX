@@ -1,0 +1,410 @@
+{
+ "mlb": {
+  "clima_0.25": {
+   "por": [
+    {
+     "t": 2023,
+     "n": 75,
+     "pct": 53.333333333333336,
+     "mejora": true
+    },
+    {
+     "t": 2024,
+     "n": 611,
+     "pct": 49.42716857610475,
+     "mejora": false
+    },
+    {
+     "t": 2025,
+     "n": 260,
+     "pct": 46.92307692307692,
+     "mejora": false
+    },
+    {
+     "t": 2026,
+     "n": 235,
+     "pct": 54.04255319148936,
+     "mejora": true
+    }
+   ],
+   "n": 1181,
+   "pct": 50.04233700254022,
+   "z": 0.029098798098966275,
+   "entra": false
+  },
+  "clima_0.5": {
+   "por": [
+    {
+     "t": 2023,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2024,
+     "n": 41,
+     "pct": 41.46341463414634,
+     "mejora": false
+    },
+    {
+     "t": 2025,
+     "n": 3,
+     "pct": 100,
+     "mejora": true
+    },
+    {
+     "t": 2026,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    }
+   ],
+   "n": 44,
+   "pct": 45.45454545454545,
+   "z": -0.6030226891555273,
+   "entra": false
+  },
+  "viento": {
+   "por": [
+    {
+     "t": 2023,
+     "n": 28,
+     "pct": 39.285714285714285,
+     "mejora": false
+    },
+    {
+     "t": 2024,
+     "n": 157,
+     "pct": 45.22292993630573,
+     "mejora": false
+    },
+    {
+     "t": 2025,
+     "n": 39,
+     "pct": 51.282051282051285,
+     "mejora": true
+    },
+    {
+     "t": 2026,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    }
+   ],
+   "n": 224,
+   "pct": 45.535714285714285,
+   "z": -1.3363062095621219,
+   "entra": false
+  }
+ },
+ "nbaRitmo": {
+  "ritmo_0.25": {
+   "por": [
+    {
+     "t": 2020,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2021,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2022,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2023,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2024,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2025,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    }
+   ],
+   "n": 0,
+   "pct": null,
+   "z": 0,
+   "entra": false
+  },
+  "modelo_0.25": {
+   "por": [
+    {
+     "t": 2020,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2021,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2022,
+     "n": 41,
+     "pct": 43.90243902439025,
+     "mejora": false
+    },
+    {
+     "t": 2023,
+     "n": 264,
+     "pct": 47.34848484848485,
+     "mejora": false
+    },
+    {
+     "t": 2024,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2025,
+     "n": 591,
+     "pct": 46.53130287648054,
+     "mejora": false
+    }
+   ],
+   "n": 896,
+   "pct": 46.651785714285715,
+   "z": -2.004459314343183,
+   "entra": false
+  },
+  "mixto_0.25": {
+   "por": [
+    {
+     "t": 2020,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2021,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2022,
+     "n": 44,
+     "pct": 36.36363636363637,
+     "mejora": false
+    },
+    {
+     "t": 2023,
+     "n": 307,
+     "pct": 47.557003257328994,
+     "mejora": false
+    },
+    {
+     "t": 2024,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2025,
+     "n": 588,
+     "pct": 47.44897959183673,
+     "mejora": false
+    }
+   ],
+   "n": 939,
+   "pct": 46.96485623003195,
+   "z": -1.860124699519787,
+   "entra": false
+  },
+  "ritmo_0.5": {
+   "por": [
+    {
+     "t": 2020,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2021,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2022,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2023,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2024,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2025,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    }
+   ],
+   "n": 0,
+   "pct": null,
+   "z": 0,
+   "entra": false
+  },
+  "modelo_0.5": {
+   "por": [
+    {
+     "t": 2020,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2021,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2022,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2023,
+     "n": 22,
+     "pct": 40.90909090909091,
+     "mejora": false
+    },
+    {
+     "t": 2024,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2025,
+     "n": 231,
+     "pct": 52.81385281385281,
+     "mejora": true
+    }
+   ],
+   "n": 253,
+   "pct": 51.77865612648221,
+   "z": 0.5658251521157384,
+   "entra": false
+  },
+  "mixto_0.5": {
+   "por": [
+    {
+     "t": 2020,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2021,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2022,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2023,
+     "n": 31,
+     "pct": 48.38709677419355,
+     "mejora": false
+    },
+    {
+     "t": 2024,
+     "n": 0,
+     "pct": null,
+     "mejora": false
+    },
+    {
+     "t": 2025,
+     "n": 235,
+     "pct": 52.765957446808514,
+     "mejora": true
+    }
+   ],
+   "n": 266,
+   "pct": 52.255639097744364,
+   "z": 0.735767207381959,
+   "entra": false
+  }
+ },
+ "nbaArb": {
+  "ganador": {
+   "n": 7159,
+   "llC": 0.5961860746507381,
+   "llA": 0.6029342883522771,
+   "aC": 67.88657633747731,
+   "aA": 67.31387065232575,
+   "may": 0,
+   "de": 6,
+   "entra": false
+  },
+  "total": {
+   "n": 2804,
+   "pct": 52.21112696148359,
+   "z": 2.3417076812615436,
+   "entra": true
+  }
+ },
+ "nbaArbSens": {
+  "pasan": 7,
+  "de": 18
+ },
+ "nhlArb": {
+  "ganador": {
+   "n": 5907,
+   "llC": 0.6614968408306974,
+   "llA": 0.6659779230980788,
+   "aC": 59.92889791772473,
+   "aA": 59.15016082613848,
+   "may": 1,
+   "de": 5,
+   "entra": false
+  },
+  "total": {
+   "n": 2088,
+   "pct": 50.622605363984675,
+   "z": 0.5689945423921311,
+   "entra": false
+  }
+ },
+ "nhlArbSens": {
+  "pasan": 0,
+  "de": 18
+ }
+}
