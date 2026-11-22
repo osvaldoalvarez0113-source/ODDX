@@ -47,6 +47,8 @@
 
    Archivos (rama «liga»): liga-registro.json (todo lo guardado), liga.json (resumen que leen las apps) y liga-hist.json
    (archivo propio de resultados de NBA y de las 5 ligas para correr los modelos; se arma solo, por meses, y se completa en varias vueltas).
+   Lee además historia.json (scripts/historia_liga.js, todos los días): cuánto acertó el favorito por zona con miles de juegos ya jugados,
+   y lo copia en liga.json → historia para que la línea 🏆 diga algo mientras la liga en vivo junta sus 30 juegos por zona.
    Uso: node scripts/liga.js <carpeta con la rama liga> [<carpeta con la rama pred>]
    =================================================================== */
 const fs = require('fs'), path = require('path');
@@ -934,6 +936,7 @@ async function predictorESPN(core, ext) {
   const ahora = Date.now();
   const reg = leer(path.join(dir, 'liga-registro.json'), { v: 1, items: {} });
   FAB = leer(path.join(dir, 'fabrica.json'), null);
+  const HIST = leer(path.join(dir, 'historia.json'), null);   // scripts/historia_liga.js (los lunes): cuánto acertó el favorito por zona, con miles de juegos
   const previo = leer(path.join(dir, 'liga.json'), {});
   const estado = { titular: previo.titular || {}, cambios: previo.cambios || [] };
   const log = [];
@@ -1076,6 +1079,7 @@ async function predictorESPN(core, ext) {
   const salida = { v: 1, generado: new Date(ahora).toISOString(), reglas: REGLAS, nombres: NOMBRES, titular: estado.titular, cambios: estado.cambios, pesos: pesos, mediciones: mediciones,
     fabrica: FAB ? { generado: FAB.generado, regla: FAB.regla, deportes: Object.fromEntries(Object.keys(FAB.deportes || {}).map(k => { const x = FAB.deportes[k]; return [k, { probadas: x.probadas, pasaron: x.pasaron, zExigido: x.zExigido, mejor: x.mejor ? { cambios: x.mejor.cambios, z: x.mejor.z } : null, casi: x.top5 && x.top5[0] ? { cambios: x.top5[0].cambios, z: x.top5[0].z } : null }]; })) } : null,
     deportes: tabla, proximos: proximos(reg, tabla, ahora), mercados: resumenMercados(reg),
+    historia: HIST && HIST.v === 1 ? HIST : null,
     totales: { guardados: Object.keys(reg.items).length, calificados: Object.values(reg.items).filter(i => i.res && i.res !== 'X').length, anulados: Object.values(reg.items).filter(i => i.res === 'X').length } };
   // vigilante, detective y avisos al teléfono (scripts/liga-extras.js)
   const X = require('./liga-extras.js'), mes = new Date(ahora).getUTCMonth() + 1, extraP = [];

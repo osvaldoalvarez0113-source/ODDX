@@ -1,0 +1,54 @@
+name: Historia de la liga
+
+# Todos los días (después del archivo de NHL/NFL y del de tenis): junta los miles de juegos ya jugados que el repo tiene guardados
+# (NBA, NHL, NFL, fútbol con su precio de cierre; tenis con el modelo de OVA) más lo que la liga ya calificó, y calcula cuánto
+# acertó el favorito en cada zona (scripts/historia_liga.js). Guarda historia.json en la rama «liga»; la liga lo mete en liga.json
+# y la línea 🏆 del Veredicto lo muestra mientras la liga en vivo junta sus 30 juegos por zona. No toca la app ni sus números.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "47 11 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/historia_liga.js"
+      - ".github/workflows/historia-liga.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: historia-liga
+  cancel-in-progress: false
+
+jobs:
+  historia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Traer los archivos de datos
+        run: |
+          mkdir -p /tmp/src
+          traer() { git fetch -q --depth 1 origin "$1" && git show "FETCH_HEAD:$2" > "/tmp/src/$2" && echo "ok $1/$2" || echo "FALTA $1/$2"; }
+          traer resultados-nba-6t filas_nba.json
+          traer datos-nhl-nfl datos-nhl.json
+          traer datos-nhl-nfl datos-nfl.json
+          traer resultados-futbol-actual partidos_actual.json
+          traer datos-tenis preds-tenis.json
+          ls -la /tmp/src
+      - name: Calcular la historia
+        run: |
+          URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          mkdir -p /tmp/liga && cd /tmp/liga && git init -q -b liga && git fetch -q --depth 1 "$URL" liga && git checkout -q -B liga FETCH_HEAD
+          cd "$GITHUB_WORKSPACE" && node scripts/historia_liga.js /tmp/src /tmp/liga
+      - name: Guardar en la rama liga
+        run: |
+          URL="https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          cd /tmp/liga
+          git config user.name "historia-ova" && git config user.email "historia-ova@users.noreply.github.com"
+          git add historia.json && git commit -q -m "historia $(date -u +%FT%TZ)" || exit 0
+          for i in 1 2 3 4; do git push -q "$URL" HEAD:liga && exit 0; sleep 5; git pull -q --rebase "$URL" liga || true; done; exit 1

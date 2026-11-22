@@ -2174,6 +2174,35 @@ sec('Liga de modelos');
   ok('nba.html carga posiciones.js y la pinta en Números',/<script src="posiciones\.js">/.test(rd('nba.html'))&&/OVAPosiciones\.pintar/.test(rd('nba.html'))&&rd('sw.js').indexOf("'posiciones.js'")>0);
  }
  ok('el robot corre en el workflow liga.yml y guarda en la rama liga',/node scripts\/liga\.js/.test(rd('.github/workflows/liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/liga.yml')));
+ {
+  /* 📚 historia de la liga (scripts/historia_liga.js + liga.js) */
+  const HL=require(D+'scripts/historia_liga.js'), T0=Date.UTC(2024,10,1);
+  ok('historia: precio sin margen con dos moneylines (−150/+130 → 58.0%) y descarta precios sin sentido',Math.abs(HL.sinMargen(-150,130)-0.580)<0.002&&HL.sinMargen(-150,-150)===null&&HL.sinMargen(0,120)===null);
+  const nba=HL.deNBA([{ts:T0,sk:2024,mar:5,mlH:-200,mlA:170},{ts:T0+1,sk:2024,mar:-3,mlH:-200,mlA:170},{ts:T0+2,sk:2024,mar:0,mlH:-200,mlA:170},{ts:T0+3,sk:2024,mar:4}]);
+  ok('historia NBA: favorito local acierta/falla con el margen; sin margen o sin precio no cuenta',nba.length===2&&nba[0][2]==='L'&&nba[0][3]===1&&nba[1][3]===0&&nba[0][4]==='2024-25');
+  const us=HL.deUS({temps:{'2025':{juegos:[{ts:T0,done:true,hs:2,as:3,linea:{ml:[130,-150]}},{ts:T0,done:true,skip:true,hs:2,as:3,linea:{ml:[130,-150]}},{ts:T0,done:false,linea:{ml:[130,-150]}},{ts:T0,done:true,hs:20,as:20,linea:{ml:[-110,-110]}}]}}},'nhl');
+  ok('historia NHL/NFL: favorito visita que gana = acierto; pretemporada, sin terminar y empates fuera; temporada 2025-26',us.length===1&&us[0][2]==='A'&&us[0][3]===1&&us[0][4]==='2025-26');
+  const fu=HL.deFutbol([{d:T0,t:'2425',mk:[0.25,0.30,0.45],gh:0,ga:2},{d:T0,t:'2425',mk:[0.5,0.3,0.2],gh:1,ga:1}]);
+  ok('historia fútbol: el 1X2 [L,E,V] se ordena como la liga [L,V,E]; visita favorita gana = acierto, empate con local favorito = fallo',fu.length===2&&fu[0][2]==='A'&&fu[0][3]===1&&fu[1][2]==='L'&&fu[1][3]===0&&fu[0][4]==='2024-25');
+  const te=HL.deTenis([{ts:T0/1000,fin:'F',pW:0.7},{ts:T0/1000,fin:'F',pW:0.4},{ts:T0/1000,fin:'R',pW:0.8}]);
+  ok('historia tenis: pW del que ganó → acierto si pasaba de 50%; retiros fuera; ts en segundos',te.length===2&&te[0][3]===1&&te[1][3]===0&&Math.abs(te[1][1]-0.6)<1e-9&&te[0][0]===T0);
+  const items={a:{dep:'nba',ts:T0+864e5*400,res:'L',p:{mercado:[.62,.38,0]}},b:{dep:'nba',ts:T0-864e5,res:'L',p:{mercado:[.62,.38,0]}},c:{dep:'nba',ts:T0+864e5*400,res:'X',p:{mercado:[.62,.38,0]}},d:{dep:'nhl',ts:T0+864e5*400,res:'A',p:{mercado:[.62,.38,0]}}};
+  ok('historia: suma lo que la liga ya calificó solo DESPUÉS del archivo (no cuenta dos veces) y sin anulados',HL.deRegistro(items,'nba','mercado',T0).length===1);
+  const filas=[]; for(let i=0;i<80;i++) filas.push({ts:T0+i*864e5,sk:i<40?2023:2024,mar:i%3===0?-4:6,mlH:-200,mlA:170});
+  const H=HL.armar({nba:filas},{},T0), hz=H.deportes.nba;
+  ok('historia: arma zona con lado (la MISMA de la liga) y franja; peor/mejor año con 30+ juegos por temporada',!!hz.zonas['60-65% · local']&&hz.zonas['60-65% · local'][0]===80&&hz.bandas['60-65%'][0]===80&&hz.zonas['60-65% · local'].length===5&&hz.n===80);
+  ok('historia: tenis usa la franja sola (no hay local de verdad)',Object.keys(HL.armar({tenis:[{ts:T0/1000,fin:'F',pW:0.7}]},{},T0).deportes.tenis.zonas).length===0);
+  const dH={v:1,reglas:{CONF_MIN:30},nombres:LG.NOMBRES,historia:{v:1,deportes:{nba:hz,tenis:{fuente:'el favorito del modelo de tenis de OVA',desde:'2024-01-01',hasta:'2026-11-21',n:100,w:70,pct:70,zonas:{},bandas:{'65-70%':[100,70,67.5]}}}},
+   deportes:{nba:{nombre:'NBA',titular:'ova',modelos:{},confianza:{}}},proximos:[{dep:'nba',ts:t0+H,local:'Boston Celtics',visita:'Los Angeles Lakers',tit:'ova',pick:'L',p:.62,zona:'60-65% · local',zn:3,zw:2}]};
+  const xh=LC.buscar(dH,'nba','Lakers','Celtics'), rh=LC.lectura(dH,xh,'Celtics');
+  ok('línea 🏆: con menos de 30 en vivo, habla la historia de esa zona y dice lo que lleva en vivo aparte',rh.hist&&/📚 En juegos así \(60-65% · local\), el favorito del mercado al cierre acertó 66% \(53 de 80/.test(rh.txt)&&/lleva 2 de 3/.test(rh.extra)&&/📚 En juegos así/.test(LC.htmlLinea(rh)));
+  const rv=LC.lectura(dH,Object.assign({},xh,{zn:40,zw:30}),'Celtics');
+  ok('línea 🏆: con 30+ en vivo manda lo en vivo y la historia queda como dato aparte',rv.pctZona===75&&!rv.hist&&/📚 Historia: 66% en 80/.test(rv.extra));
+  ok('línea 🏆: tenis busca la franja si la zona trae lado',LC.historiaDe(dH,'tenis','65-70% · visita').pct===70&&LC.historiaDe(dH,'tenis','65-70% · visita').banda===true);
+  ok('línea 🏆: sin historia sigue diciendo que no hay juegos así (no inventa)',/Juntando datos/.test(LC.lectura(Object.assign({},dH,{historia:null}),xh,'Celtics').txt));
+  ok('Herramientas → Liga: tabla 📚 por franja y columna de historia en el mapa',/📚 Historia: 80 juegos/.test(LC.pantallaHtml(dH))&&/<th>📚<\/th>/.test(LC.pantallaHtml(Object.assign({},dH,{deportes:{nba:{nombre:'NBA',titular:'ova',modelos:{},confianza:{'60-65% · local':{juegos:3,aciertos:2,pct:66.7,dice:62,suficiente:false}}}}}))));
+  ok('la liga mete historia.json en liga.json y el robot de historia corre todos los días y guarda en la rama liga',/historia: HIST && HIST\.v === 1/.test(rd('scripts/liga.js'))&&/node scripts\/historia_liga\.js/.test(rd('.github/workflows/historia-liga.yml'))&&/git add historia\.json/.test(rd('.github/workflows/historia-liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/historia-liga.yml')));
+ }
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));

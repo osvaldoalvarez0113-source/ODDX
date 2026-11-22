@@ -6,6 +6,8 @@
      1) debajo de «🧠 El análisis» de cada juego sale la línea de la liga: quién es el titular, qué escoge y cuánto viene
         acertando en juegos así (si todavía no hay 30 juegos en esa zona, lo dice: no inventa confianza);
      2) Herramientas → 🏆 Liga: la tabla de cada deporte, los duelos contra el titular, el mapa y los cambios de titular.
+     📚 HISTORIA (desde el 22-nov-2026): mientras la liga junta sus 30 juegos por zona, la línea dice cuánto acertó el favorito en
+        juegos así con miles de juegos ya jugados (scripts/historia_liga.js, liga.json → historia). Con 30+ en vivo, manda lo en vivo.
      3) LA APP CONTRA EL ROBOT: cada vez que abres un juego que no ha empezado, anota en el teléfono (ova_liga_cmp) el % que da el
         modelo de la app al favorito y el que guardó el robot como «Modelo OVA», para ver si la copia del robot es fiel.
    No cambia ningún número ni pick de la app, ni toca tus registros. Sin internet no sale nada. */
@@ -43,6 +45,23 @@
     }
     return mejor;
   }
+  /* ---------- historia (scripts/historia_liga.js → liga.json.historia): miles de juegos ya jugados por zona ---------- */
+  function miles(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function claseDe(pc) { return pc >= 60 ? 'ok' : (pc < 50 ? 'bad' : 'mid'); }
+  /* [juegos, aciertos, decía, peor año, mejor año] de la zona; si la historia no tiene esa zona con lado (tenis), la franja sola */
+  function historiaDe(d, dep, zona) {
+    var H = d && d.historia && d.historia.deportes && d.historia.deportes[DEP[dep] || dep]; if (!H || !zona) return null;
+    var z = H.zonas && H.zonas[zona], banda = false;
+    if (!z) { z = H.bandas && H.bandas[String(zona).split(' · ')[0]]; banda = !!z; }
+    if (!z || !(z[0] > 0)) return null;
+    var y0 = String(H.desde || '').slice(0, 4), y1 = String(H.hasta || '').slice(0, 4);
+    return { n: z[0], w: z[1], pct: Math.round(100 * z[1] / z[0]), dice: z[2], rango: z.length > 4 ? [z[3], z[4]] : null, banda: banda,
+      fuente: H.fuente || 'el favorito', anos: y0 && y1 && y0 !== y1 ? y0 + '–' + y1 : y1 };
+  }
+  function textoHist(h, zona) {
+    return 'En juegos así (' + (h.banda ? String(zona).split(' · ')[0] : zona) + '), ' + h.fuente + ' acertó ' + h.pct + '% (' + miles(h.w) + ' de ' + miles(h.n) + ', ' + h.anos + ')' +
+      (h.rango ? '; por año, entre ' + h.rango[0] + '% y ' + h.rango[1] + '%.' : '.');
+  }
   /* la línea en palabras: {tit, quien, p, zona, conf, txt, clase} */
   function lectura(d, x, favApp) {
     if (!d || !x) return null;
@@ -50,7 +69,14 @@
     var quien = x.pick === 'L' ? x.local : (x.pick === 'A' ? x.visita : 'Empate');
     var r = { tit: nombreDe(d, x.tit), quien: quien, p: Math.round(x.p * 100), zona: x.zona, n: x.zn || 0, w: x.zw || 0, min: min };
     r.distinto = !!(favApp && x.pick !== 'D' && !mismo(quien, favApp)) || (x.pick === 'D' && !!favApp);
-    if (r.n >= min) { r.pctZona = Math.round(100 * r.w / r.n); r.clase = r.pctZona >= 60 ? 'ok' : (r.pctZona < 50 ? 'bad' : 'mid'); r.txt = 'En juegos así (' + x.zona + ') el titular viene acertando ' + r.pctZona + '% (' + r.w + ' de ' + r.n + ').'; }
+    var h = historiaDe(d, x.dep, x.zona), hOk = !!(h && h.n >= min);
+    if (r.n >= min) {
+      r.pctZona = Math.round(100 * r.w / r.n); r.clase = claseDe(r.pctZona); r.txt = 'En juegos así (' + x.zona + ') el titular viene acertando ' + r.pctZona + '% (' + r.w + ' de ' + r.n + ').';
+      if (hOk) r.extra = '📚 Historia: ' + h.pct + '% en ' + miles(h.n) + ' juegos así (' + h.anos + ').';
+    } else if (hOk) {
+      r.hist = h; r.clase = claseDe(h.pct); r.txt = '📚 ' + textoHist(h, x.zona);
+      r.extra = r.n > 0 ? 'En vivo la liga lleva ' + r.w + ' de ' + r.n + ' en esta zona (con ' + min + ' empieza a contar sola).' : 'En vivo la liga todavía no tiene juegos así (empezó el 21-nov-2026).';
+    }
     else if (r.n > 0) { r.clase = 'mid'; r.txt = 'Juntando datos: en juegos así lleva ' + r.w + ' de ' + r.n + '. Con menos de ' + min + ' todavía no dice nada.'; }
     else { r.clase = 'mid'; r.txt = 'Todavía no hay juegos así calificados (' + x.zona + '): la liga empezó a contar el 21-nov-2026.'; }
     if (T && T.modelos && T.modelos[x.tit] && T.modelos[x.tit].jugados) r.global = T.modelos[x.tit];
@@ -64,6 +90,7 @@
       '<a href="herramientas.html#liga" style="font-size:11.5px;color:var(--acc,#C9A24A);text-decoration:none;white-space:nowrap">Ver la tabla ›</a></div>' +
       '<div>Titular: <b>' + esc(r.tit) + '</b> → escoge <b>' + esc(r.quien) + '</b> ' + r.p + '%' + (r.distinto ? ' <span style="color:var(--warn,#F0CE6B);font-weight:700">· distinto al favorito de arriba</span>' : '') + '</div>' +
       '<div style="color:' + col + ';margin-top:2px">' + esc(r.txt) + '</div>' +
+      (r.extra ? '<div style="color:var(--mut2,#A09472);font-size:12px;margin-top:2px">' + esc(r.extra) + '</div>' : '') +
       (r.global ? '<div style="color:var(--mut2,#A09472);font-size:12px;margin-top:2px">En todo el deporte: ' + r.global.aciertos + ' de ' + r.global.jugados + ' (' + r.global.pct + '%).</div>' : '') +
       '</div>';
   }
@@ -145,6 +172,19 @@
 
   /* ---------- Herramientas → 🏆 Liga ---------- */
   var ORDEN = ['nba', 'nhl', 'nfl', 'futbol', 'tenis', 'mlb'];
+  /* la tabla compacta de la historia: por franja (sin el lado), solo las que tienen 30+ juegos */
+  function historiaTabla(d, k, min) {
+    var H = d && d.historia && d.historia.deportes && d.historia.deportes[k]; if (!H || !H.bandas) return '';
+    var bs = Object.keys(H.bandas).filter(function (b) { return H.bandas[b][0] >= min; });
+    if (!bs.length) return '';
+    bs.sort(function (a, b) { return parseInt(a, 10) - parseInt(b, 10); });
+    var h = '<details style="margin:10px 2px 0"><summary style="font-size:13px;cursor:pointer">📚 Historia: ' + miles(H.n) + ' juegos (' + esc(String(H.desde).slice(0, 4)) + '–' + esc(String(H.hasta).slice(0, 4)) + ') · el favorito acertó ' + H.pct + '%</summary>' +
+      '<div style="font-size:12px;color:var(--mut2);margin:6px 0">Cuánto acertó ' + esc(H.fuente || 'el favorito') + ' según qué tan favorito era. «Años»: su peor y su mejor temporada.</div>' +
+      '<table class="tab"><tr><th>Franja</th><th>Juegos</th><th>Real</th><th>Decía</th><th>Años</th></tr>';
+    bs.forEach(function (b) { var c = H.bandas[b], pc = 100 * c[1] / c[0];
+      h += '<tr><td>' + esc(b) + '</td><td class="n">' + miles(c[0]) + '</td><td class="n"><b>' + pc.toFixed(1) + '%</b></td><td class="n">' + c[2].toFixed(1) + '%</td><td class="n">' + (c.length > 4 ? c[3] + '–' + c[4] + '%' : '—') + '</td></tr>'; });
+    return h + '</table></details>';
+  }
   function pct(x) { return x == null ? '—' : x.toFixed(1) + '%'; }
   function pantallaHtml(d) {
     if (!d) return '<div class="vacio" style="padding:16px">No se pudo leer la liga. Revisa la conexión y vuelve a abrir esta pestaña.</div>';
@@ -180,10 +220,11 @@
       h += '<div style="font-size:12px;color:var(--mut2);margin:10px 2px 4px">Mapa de confianza del titular (gris = menos de ' + (R.CONF_MIN || 30) + ' juegos: todavía no dice nada)</div>';
       if (!zk.length) h += '<div class="vacio" style="padding:12px;font-size:13px">Sin juegos calificados todavía.</div>';
       else {
-        h += '<table class="tab"><tr><th>Zona</th><th>Acertó</th><th>Real</th><th>Decía</th></tr>';
-        zk.forEach(function (q) { var c = z[q]; h += '<tr' + (c.suficiente ? '' : ' style="color:var(--mut2)"') + '><td>' + esc(q) + '</td><td class="n">' + c.aciertos + '/' + c.juegos + '</td><td class="n"><b>' + c.pct.toFixed(1) + '%</b></td><td class="n">' + c.dice.toFixed(1) + '%</td></tr>'; });
-        h += '</table>';
+        h += '<table class="tab"><tr><th>Zona</th><th>Acertó</th><th>Real</th><th>Decía</th><th>📚</th></tr>';
+        zk.forEach(function (q) { var c = z[q], hz = historiaDe(d, k, q); h += '<tr' + (c.suficiente ? '' : ' style="color:var(--mut2)"') + '><td>' + esc(q) + '</td><td class="n">' + c.aciertos + '/' + c.juegos + '</td><td class="n"><b>' + c.pct.toFixed(1) + '%</b></td><td class="n">' + c.dice.toFixed(1) + '%</td><td class="n">' + (hz && hz.n >= (R.CONF_MIN || 30) ? hz.pct + '%' : '—') + '</td></tr>'; });
+        h += '</table><div style="font-size:11.5px;color:var(--mut2);margin:4px 2px">📚 = lo que pasó en la historia en esa misma zona.</div>';
       }
+      h += historiaTabla(d, k, R.CONF_MIN || 30);
     });
     var mm = d.mercados || {}, mmk = ORDEN.filter(function (k) { return mm[k]; });
     h += '<h3 style="margin:18px 2px 8px;font-size:16px">🎯 Totales y hándicap</h3><div style="font-size:12px;color:var(--mut2);margin:0 2px 6px">Con la línea de ESPN de cada juego, antes de empezar: ¿acierta más el Modelo OVA o el mercado en el Más/Menos y en el hándicap? «Duelos»: solo los juegos donde escogieron distinto.</div>';
@@ -279,7 +320,7 @@
     cargar(true).then(function (d) { cont.innerHTML = pantallaHtml(d); });
   }
 
-  var API = { robotPara: robotPara, anotar: anotar, resumenCmp: resumenCmp, buscar: buscar, lectura: lectura, htmlLinea: htmlLinea, pantallaHtml: pantallaHtml, pantalla: pantalla, cargar: cargar, envolver: envolver, mismo: mismo, URL: URL };
+  var API = { historiaDe: historiaDe, historiaTabla: historiaTabla, robotPara: robotPara, anotar: anotar, resumenCmp: resumenCmp, buscar: buscar, lectura: lectura, htmlLinea: htmlLinea, pantallaHtml: pantallaHtml, pantalla: pantalla, cargar: cargar, envolver: envolver, mismo: mismo, URL: URL };
   root.OVALiga = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   if (!root.document) return;
