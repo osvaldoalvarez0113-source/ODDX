@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js','memoria.js','observaciones.js','mlbextra.js','liga.js','posiciones.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js','memoria.js','observaciones.js','mlbextra.js','liga.js','posiciones.js','animar.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -2169,6 +2169,7 @@ sec('Liga de modelos');
   ok('posiciones NBA: con los dos de la misma conferencia, una sola tabla',!/Conferencia Oeste/.test(PO.html(cf,'2','18','nba','espn')));
   const dj=PO.desdeJuegos([{done:true,ts:1,h:'2',a:'18',hs:110,as:100},{done:true,ts:2,h:'18',a:'2',hs:105,as:101},{done:true,ts:3,h:'13',a:'2',hs:90,as:100}],{'2':{n:'Boston Celtics'},'18':{n:'New York Knicks'},'13':{n:'Los Angeles Lakers'}},2026,()=>2026);
   ok('posiciones NBA: si ESPN falla, la arma con los juegos de la app (Este/Oeste, G-P y juegos detrás)',dj[0].nombre==='Conferencia Este'&&dj[0].equipos[0].id==='2'&&dj[0].equipos[0].g===2&&dj[0].equipos[1].jd==='0.5'&&dj[1].equipos[0].p===1);
+  ok('animaciones (muestra NBA): nba.html carga animar.js, está en el service worker y se apaga con «reducir movimiento» y ova_anim=0',/<script src="animar\.js">/.test(rd('nba.html'))&&rd('sw.js').indexOf("'animar.js'")>0&&/prefers-reduced-motion: reduce/.test(rd('animar.js'))&&/ova_anim'\) === '0'/.test(rd('animar.js'))&&!/<script src="animar\.js">/.test(rd('nhl.html')));
   ok('nba.html carga posiciones.js y la pinta en Números',/<script src="posiciones\.js">/.test(rd('nba.html'))&&/OVAPosiciones\.pintar/.test(rd('nba.html'))&&rd('sw.js').indexOf("'posiciones.js'")>0);
  }
  ok('el robot corre en el workflow liga.yml y guarda en la rama liga',/node scripts\/liga\.js/.test(rd('.github/workflows/liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/liga.yml')));
