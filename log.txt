@@ -1,11 +1,10 @@
-archivo: nba 2892 · eng.1 869 · esp.1 888 · ita.1 879 · ger.1 702 · fra.1 710 · uefa.champions 450 · uefa.europa 450 · uefa.europa.conf 360 · eng.fa 286 · eng.league_cup 270 · esp.copa_del_rey 339 · ita.coppa_italia 116 · ger.dfb_pokal 174 · fra.coupe_de_france 217 · pedidos 90
-nfl epa 2026: 158 juegos
+archivo: nba 2892 · eng.1 869 · esp.1 888 · ita.1 879 · ger.1 702 · fra.1 710 · uefa.champions 450 · uefa.europa 450 · uefa.europa.conf 360 · eng.fa 286 · eng.league_cup 270 · esp.copa_del_rey 339 · ita.coppa_italia 116 · ger.dfb_pokal 174 · fra.coupe_de_france 217 · pedidos 75
 nba bajas: 81 jugadores «Out»
 nba viajes: {"pesos":{"altura":-0.131,"kmVisita":-0.909,"kmLocal":-0.847,"husoVisita":1.518,"descanso":0.428,"tres4":0.49},"pruebas":[{"ajuste":2024,"medido":2025,"juegos":1322,"aciertosSin":67.78,"aciertosCon":68.68,"perdidaSin":0.6,"perdidaCon":0.5998},{"ajuste":2024,"medido":2026,"juegos":242,"aciertosSin":66.12,"aciertosCon":67.36,"perdidaSin":0.6071,"perdidaCon":0.605},{"ajuste":2025,"medido":2024,"juegos":920,"aciertosSin":66.85,"aciertosCon":66.3,"perdidaSin":0.6069,"perdidaCon":0.6048},{"ajuste":2025,"medido":2026,"juegos":242,"aciertosSin":66.12,"aciertosCon":67.36,"perdidaSin":0.6071,"perdidaCon":0.6012}],"entra":true}
 futbol descanso: {"peso":-0.01,"partidos":3334,"pruebas":[{"ajuste":2024,"medido":2025,"peso":0,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.51,"perdidaSin":1.0018,"perdidaCon":1.0018},{"ajuste":2024,"medido":2026,"peso":0,"juegos":545,"aciertosSin":55.05,"aciertosCon":55.05,"perdidaSin":0.9684,"perdidaCon":0.9684},{"ajuste":2025,"medido":2024,"peso":0,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":0.9991},{"ajuste":2025,"medido":2026,"peso":0,"juegos":545,"aciertosSin":55.05,"aciertosCon":55.05,"perdidaSin":0.9684,"perdidaCon":0.9684},{"ajuste":2026,"medido":2024,"peso":-0.05,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":1.0083},{"ajuste":2026,"medido":2025,"peso":-0.05,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.34,"perdidaSin":1.0018,"perdidaCon":1.0103}],"entra":false}
 nfl epa: entra false · peso 0.83
 afuera: nfelo 13 juegos · ClubElo 50 partidos · Tennis Abstract 555/504 jugadores
-nba: mezcla esperando (6 de 150 calificados)
+nba: mezcla esperando (7 de 150 calificados)
 nhl: mezcla esperando (15 de 150 calificados)
 nfl: mezcla esperando (7 de 150 calificados)
 mlb: mezcla esperando (0 de 150 calificados)
