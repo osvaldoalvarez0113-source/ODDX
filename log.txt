@@ -20,4 +20,4 @@ futbol: 21 partidos vistos · 11 guardados/refrescados antes de empezar · ESPN 
 tenis: con modelo de afuera 11
 tenis: 21 partidos vistos · 10 guardados/refrescados antes de empezar · ESPN 0
 avisos: tema privado sí · pendientes 0 · problemas del vigilante 0 · detective 0 grupos
-calificados ahora: 0 · ascensos: 0 · total guardados: 149
+calificados ahora: 4 · ascensos: 0 · total guardados: 149
