@@ -1567,6 +1567,12 @@ sec('Al gane');
  ok('marcador de tus picks: cuenta ganados, perdidos y unidades del mes; pendientes fuera',mm.g===1&&mm.p===1&&Math.abs(mm.u-(1/1.5-1))<1e-9);
  const mb=G.marcadorMio([{f:'2026-11-03',res:'G',am:'60',plat:'kalshi'},{f:'2026-11-03',res:'G',am:'-120'}],'mlb','2026-11');
  ok('marcador de MLB: entiende centavos de Kalshi y americana',Math.abs(mb.u-((40/60)+(100/120)))<1e-9&&mb.g===2);
+ const fu=[{id:'p',app:'fut',slug:'eng.1',liga:'Premier League',ts:AH+H,local:'Nottingham Forest',visita:'Chelsea',k1:{L:.37,A:.35,D:.28}},
+  {id:'c1',app:'fut',slug:'uefa.champions',liga:'Champions League',ts:AH+H,local:'Inter',visita:'Benfica',k1:{L:.6,A:.2,D:.2}},
+  {id:'v',app:'fut',liga:'Champions League',ts:AH+H,local:'Viejo',visita:'SinSlug',k1:{L:.5,A:.3,D:.2}},
+  {id:'n',app:'nba',ts:AH+H,local:'Celtics',visita:'Nets',k1:{L:.8,A:.2}}];
+ ok('fútbol Al gane: solo la liga abierta (por slug, y los viejos sin slug por nombre); otras apps intactas',G.deLiga(fu,'uefa.champions','Champions League').map(x=>x.id).join()==='c1,v,n'&&G.deLiga(fu,'eng.1','Premier League').map(x=>x.id).join()==='p,n'&&G.deLiga(fu,'','').length===4);
+ ok('fútbol Al gane: se repinta al cambiar de liga y avisa cuántos hay en otras ligas',/getElementById\('ligaSel'\)/.test(gj)&&/de otras ligas/.test(gj));
  ok('fútbol con decimal',Math.abs(G.marcadorMio([{fecha:'2026-11-03',estado:'ganado',cuota:'1.85'}],'fut','2026-11').u-.85)<1e-9);
  ok('no usa innerHTML ni eval: los nombres entran como texto',!/innerHTML|eval\(|new Function/.test(gj));
  const SD=Date.UTC(2026,10,9,12), sm=[];

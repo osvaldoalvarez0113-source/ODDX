@@ -111,7 +111,13 @@ function marcadorMio(picks,app,mes){
  return o;
 }
 function esperados(filas){ var s=0; filas.forEach(function(x){ s+=x.p; }); return s; }
-var API={resumenApp:resumenApp,HCP:HCP,hcpDe:hcpDe,FUERTE:FUERTE,esFuerte:esFuerte,semaforo:semaforo,PROPS:PROPS,lista:lista,marcadorLista:marcadorLista,marcadorMio:marcadorMio,borra:borra,americana:americana,esperados:esperados,ALERTA:ALERTA};
+/* fútbol: Auto guarda todas las ligas juntas y Al gane las mezclaba (con Champions abierta salía Forest-Chelsea de la Premier).
+   Ahora solo la liga abierta: por el slug de ESPN y, en registros viejos sin slug, por el nombre. Las otras apps no cambian. */
+function deLiga(items,slug,nombre){
+ if(!slug&&!nombre) return items||[];
+ return (items||[]).filter(function(r){ return !!r&&(r.app!=='fut'||(slug&&r.slug?r.slug===slug:(!!nombre&&r.liga===nombre))); });
+}
+var API={deLiga:deLiga,resumenApp:resumenApp,HCP:HCP,hcpDe:hcpDe,FUERTE:FUERTE,esFuerte:esFuerte,semaforo:semaforo,PROPS:PROPS,lista:lista,marcadorLista:marcadorLista,marcadorMio:marcadorMio,borra:borra,americana:americana,esperados:esperados,ALERTA:ALERTA};
 root.OVAGanadores=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
 var doc=root.document; if(!doc) return;
@@ -167,8 +173,10 @@ function fila(x,i){
  var hc=hcpDe(APP,x.p); if(hc&&x.conMercado){ var h=mk('div','gnHc'); h.appendChild(doc.createTextNode('🏒 Hándicap en este tramo: ')); h.appendChild(mk('b','',x.rival+' +1.5 pegó '+Math.round(hc.dog*100)+'%')); h.appendChild(doc.createTextNode(' · '+x.fav+' −1.5 pegó '+Math.round(hc.fav*100)+'% ('+hc.n.toLocaleString('en-US')+' juegos).')); f.appendChild(h); }
  return f;
 }
+function ligaFut(){ var c=root.LIGA_ACTUAL, L=root.LIGAS, S=root.ESPN_SLUG; if(APP!=='fut'||!c) return null; return {slug:(S&&S[c])||'',nombre:(L&&L[c]&&L[c].nombre)||''}; }
 function pintar(){
- var ahora=Date.now(), items=json(KEY), mes=diaDe(ahora).slice(0,7), filas=lista(items,APP,ahora,root.OVAAciertos);
+ var ahora=Date.now(), items=json(KEY), mes=diaDe(ahora).slice(0,7), lg=ligaFut(), filas=lista(lg?deLiga(items,lg.slug,lg.nombre):items,APP,ahora,root.OVAAciertos);
+ var otras=lg?lista(items,APP,ahora,null).length-filas.length:0;
  while(cuerpo.firstChild) cuerpo.removeChild(cuerpo.firstChild);
  var mio=marcadorMio(json(REG[APP]),APP,mes), li=marcadorLista(items,APP,mes), mc=mk('div','gnMarc');
  var a=mk('div','','Tus picks este mes'); a.appendChild(mk('b','',mio.g+'–'+mio.p)); a.appendChild(doc.createTextNode((mio.g+mio.p)?sg(mio.u)+(mio.sinCuota?' · '+mio.sinCuota+' sin cuota':''):'Sin picks resueltos'));
@@ -176,6 +184,7 @@ function pintar(){
  mc.appendChild(a); mc.appendChild(b); cuerpo.appendChild(mc);
  cuerpo.appendChild(cajaSemaforo(semaforo(items,APP,ahora,30)));
  var todas=filas.length, fuertes=filas.filter(function(x){ return esFuerte(x,APP); }).length;
+ if(lg&&lg.nombre) cuerpo.appendChild(mk('div','gnTit','Solo '+lg.nombre+', la liga que tienes abierta. Los marcadores de arriba son de todo el fútbol.'));
  var ch=mk('div','gnChips');
  [['todos','Todos ('+todas+')'],['fuertes','💪 Fuertes ('+fuertes+')']].forEach(function(o){ var c=boton('gnChip'+(FILTRO===o[0]?' on':''),o[1],function(){ FILTRO=o[0]; try{ root.localStorage.setItem('ova_gane_filtro',FILTRO); }catch(e){} pintar(); }); c.setAttribute('aria-pressed',String(FILTRO===o[0])); ch.appendChild(c); });
  cuerpo.appendChild(ch);
@@ -184,7 +193,7 @@ function pintar(){
   filas=filas.filter(function(x){ return esFuerte(x,APP); });
   if(todas&&!filas.length) cuerpo.appendChild(mk('div','gnNota','Hoy no hay ningún juego fuerte. Mejor no forzar: vuelve a «Todos» si quieres ver el resto.'));
  }
- if(!todas) cuerpo.appendChild(mk('div','gnNota','No hay juegos por empezar guardados. Abre Juegos para que se guarden y vuelve aquí.'+(APP==='fut'?' En fútbol solo salen las ligas que hayas abierto.':'')));
+ if(!todas) cuerpo.appendChild(mk('div','gnNota',lg&&lg.nombre?'No hay juegos de '+lg.nombre+' por empezar guardados (los que ya empezaron no salen).'+(otras>0?' Hay '+otras+' de otras ligas: cambia de liga arriba para verlos.':''):'No hay juegos por empezar guardados. Abre Juegos para que se guarden y vuelve aquí.'+(APP==='fut'?' En fútbol solo salen las ligas que hayas abierto.':'')));
  var dias={}; filas.forEach(function(x){ (dias[x.dia]=dias[x.dia]||[]).push(x); });
  Object.keys(dias).sort().forEach(function(d){
   var v=dias[d], con=v.filter(function(x){ return x.conMercado; }), cab=mk('div','gnDia',etiquetaDia(d,ahora));
@@ -233,6 +242,7 @@ function armar(){
  cuerpo=mk('div'); panel.appendChild(cuerpo); c.insertBefore(panel,c.firstChild);
  doc.addEventListener('click',function(e){ var b=e.target&&e.target.closest&&e.target.closest('[data-v="vAlgane"],[data-vista="algane"],.navbar [data-p="gane"]'); if(b) root.setTimeout(alEntrar,0); });
  root.addEventListener('ova-auto-cambio',function(){ if(visible()) pintar(); });
+ var sel=doc.getElementById('ligaSel'); if(sel&&APP==='fut') sel.addEventListener('change',function(){ if(visible()) alEntrar(); });
  pintar(); return true;
 }
 /* ---------- arriba de «Mis picks» ---------- */
