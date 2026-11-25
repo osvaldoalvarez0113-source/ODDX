@@ -1748,13 +1748,16 @@ sec('Cómo vienen jugando: forma de la temporada en NBA (forma.js)');
  ok('descanso en días y juegos en 7 días',a.desc===F.calc(G,'A',ts,true).desc&&a.desc>=1&&a.en7>=0&&F.calc(G,'A',d(10,10,22),true).desc===1);
  ok('lectura: respalda si el favorito llega mejor, en contra si es al revés',F.lectura(a,b,true).k==='respalda'&&F.lectura(a,b,false).k==='contra'&&F.lectura(a,a,true).k==='pareja'&&F.lectura(a,null,true).k==='poco');
  const h1=F.html(G,{h:'A',a:'B',ts},{n:'<i>Local',ab:'A'},{n:'Visita',ab:'B'},0.3);
- ok('pinta el aviso del no favorito y escapa nombres',/El no favorito llega mejor/.test(h1)&&h1.indexOf('<i>Local')<0&&/8 victorias seguidas/.test(h1)&&/8 derrotas seguidas/.test(h1));
+ ok('pinta el aviso del no favorito y escapa nombres',/El no favorito llega mejor/.test(F.html(G,{h:'A',a:'B',ts},{n:'<i>Local',ab:'A'},{n:'Visita',ab:'B'},0.3,'nhl'))&&h1.indexOf('<i>Local')<0&&/8 victorias seguidas/.test(h1)&&/8 derrotas seguidas/.test(h1));
  ok('frente a frente: barras de visitante (izquierda) y local (derecha) con quién va mejor',(()=>{const ff=h1.slice(h1.indexOf('ffBox'),h1.indexOf('</div></div></div>',h1.indexOf('ffBox')));
    const filas=(h1.match(/class="ffR"/g)||[]).length, fu=F.filasEquipo(b,a,'nba');
    return filas>=4&&/<span class="a">B<\/span><span class="h">A<\/span>/.test(h1)&&fu[0][5]==='h'&&fu[0][1]===b.u10.w+'-'+b.u10.l&&fu.every(f=>f[3]>=0&&f[3]<=1&&f[4]>=0&&f[4]<=1);})());
  ok('frente a frente: MLB sin fila de descanso y tenis con últimos 10 y últimos 5',!F.filasEquipo(a,b,'mlb').some(f=>f[0]==='Descanso')&&F.filasEquipo(a,b,'nba').some(f=>f[0]==='Descanso')&&
    ((F.tenis('VVVVVVVVDV','DDDDDDVVDV','Jannik Sinner','Ana Pérez',0.8).match(/class="ffR"/g)||[]).length===2));
  ok('con el favorito en forma lo respalda; sin juegos no pinta nada',/La forma respalda al favorito/.test(F.html(G,{h:'A',a:'B',ts},{n:'L'},{n:'V'},0.7))&&F.html(G,{h:'X',a:'Y',ts},{n:'L'},{n:'V'},0.6)==='');
+ ok('señal medida de NBA: el no favorito 2+ victorias mejor en los últimos 10 → la racha engaña',/la racha engaña/.test(h1)&&/el favorito ganó <b>69%<\/b> cuando su precio decía 62%/.test(h1)&&F.rachaEngana(a,b,false,'nba').d===6&&F.rachaEngana(a,b,false)!==null);
+ ok('la señal es solo de NBA, con 10 juegos cada uno, y no sale si el favorito es el que viene mejor',F.rachaEngana(a,b,false,'nhl')===null&&F.rachaEngana(a,b,true,'nba')===null&&F.rachaEngana(F.calc(G,'A',d(9,27),true),b,false,'nba')===null&&!/la racha engaña/.test(F.html(G,{h:'A',a:'B',ts},{n:'L'},{n:'V'},0.3,'nhl')));
+ ok('el aviso del no favorito ya no manda a jugarle al no favorito (medido: no le sube sus chances)',!/miras al no favorito/.test(h1)&&/no le sube sus chances/.test(F.html(G,{h:'A',a:'B',ts},{n:'L'},{n:'V'},0.3,'nhl'))&&!/miras al no favorito/.test(F.html(G,{h:'A',a:'B',ts},{n:'L'},{n:'V'},0.45,'fut'))&&/rvSig ok">📊 La racha engaña/.test(h1)&&!/El no favorito llega mejor/.test(h1));
  const nb=rd('nba.html');
  ok('nba.html carga forma.js y lo pone en el Veredicto con el % del mercado',nb.indexOf('<script src="forma.js"></script>')>0&&/window\.OVAForma\.html\(GAMES,g,H,A,pS\)/.test(nb)&&rd('sw.js').indexOf("'forma.js'")>0);
  ok('forma.js no baja nada ni toca picks',!/fetch\(|localStorage/.test(rd('forma.js')));

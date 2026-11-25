@@ -95,10 +95,27 @@
   function lecturaHtml(k, fav, no, pf, corte) {
     var p = pf === null ? '' : ' (' + pf + '%)';
     if (k === 'respalda') return '<span class="rvSig ok">✓ La forma respalda al favorito</span><div class="nota" style="margin:7px 0 0;font-size:13px"><b>' + esc(fav) + '</b>' + p + ' llega mejor que ' + esc(no) + '. Números y momento dicen lo mismo.</div>';
+    /* antes decía «miras al no favorito con mejor pago»: medido, la racha del no favorito no le sube sus chances en ningún deporte
+       y en NBA las baja (docs/MEDICION-SORPRESAS-2026-11.md) */
     if (k === 'contra') return '<span class="rvSig bad">⚠️ El no favorito llega mejor</span><div class="nota" style="margin:7px 0 0;font-size:13px"><b>' + esc(no) + '</b> viene jugando mejor que el favorito ' + esc(fav) + p + '. ' +
-      (pf !== null && pf >= corte ? 'El precio igual pone lejos al favorito: mira bajas y lesiones antes de ir en contra.' : 'Juego para pensarlo dos veces: o lo dejas pasar o miras al no favorito con mejor pago.') + '</div>';
+      'Medido: la racha del no favorito no le sube sus chances, el precio ya la ve. No te vayas en contra solo por eso; mira bajas y lesiones.</div>';
     if (k === 'pareja') return '<span class="rvSig mid">≈ Forma pareja</span><div class="nota" style="margin:7px 0 0;font-size:13px">Ninguno llega claramente mejor. El momento no cambia lo que dicen los números.</div>';
     return '<span class="rvSig mid">… Muy pocos juegos para leer la forma</span>';
+  }
+  /* ---------- señal medida de NBA: el no favorito viene 2+ victorias mejor en los últimos 10 ----------
+     5,492 juegos 2021-2026 con precio de cierre (docs/MEDICION-SORPRESAS-2026-11.md): en 501 así el no favorito ganó 30.7%
+     cuando su precio decía 38.2% (z −3.5, pasa Holm entre 52 pruebas, igual en las 5 temporadas). La racha engaña: el favorito es más seguro. */
+  var RACHA_NBA = { n: 501, fav: 69, precio: 62 };
+  function rachaEngana(fH, fA, favH, dep) {
+    if ((dep || 'nba') !== 'nba' || !fH || !fA || fH.u10.n < 10 || fA.u10.n < 10) return null;
+    var fav = favH ? fH : fA, no = favH ? fA : fH, d = no.u10.w - fav.u10.w;
+    return d >= 2 ? { d: d, fav: fav.u10, no: no.u10 } : null;
+  }
+  function rachaHtml(sg, fav, no) {
+    return '<div class="nota" style="margin:9px 0 0;padding:9px 11px;border-radius:12px;background:rgba(52,211,153,.12);font-size:13px;line-height:1.45">' +
+      '📊 <b>Señal medida: la racha engaña.</b> ' + esc(no) + ' viene ' + sg.no.w + '-' + sg.no.l + ' en sus últimos 10 y ' + esc(fav) + ' ' + sg.fav.w + '-' + sg.fav.l + '. ' +
+      'En ' + RACHA_NBA.n + ' juegos de NBA así (2021-2026), el favorito ganó <b>' + RACHA_NBA.fav + '%</b> cuando su precio decía ' + RACHA_NBA.precio + '%, y pasó en las 5 temporadas. ' +
+      'El favorito es más seguro de lo que parece: no te vayas en contra por la racha.</div>';
   }
   /* ---------- frente a frente: los dos equipos cara a cara con barras (visitante a la izquierda, local a la derecha) ----------
      fila = [etiqueta, texto visitante, texto local, barra visitante 0-1, barra local 0-1, quién va mejor: 'a' | 'h' | ''] */
@@ -148,7 +165,8 @@
     var fH, fA; try { fH = calc(games, g.h, g.ts, true, dep); fA = calc(games, g.a, g.ts, false, dep); } catch (e) { return ''; }
     if (!fH && !fA) return '';
     var favH = pH >= 0.5, L = lectura(fH, fA, favH, dep), fav = favH ? H : A, no = favH ? A : H, pf = Math.round((pfVer > 0 ? pfVer : (favH ? pH : 1 - pH)) * 100);
-    return '<div class="rv"><h4>Cómo vienen jugando</h4>' + lecturaHtml(L.k, fav.n, no.n, pf, dep === 'fut' ? 55 : 65) + frente(nomC(A, dep), nomC(H, dep), filasEquipo(fA, fH, dep)) +
+    var rs = rachaEngana(fH, fA, favH, dep);
+    return '<div class="rv"><h4>Cómo vienen jugando</h4>' + (rs ? '<span class="rvSig ok">📊 La racha engaña</span>' + rachaHtml(rs, fav.n, no.n) : lecturaHtml(L.k, fav.n, no.n, pf, dep === 'fut' ? 55 : 65)) + frente(nomC(A, dep), nomC(H, dep), filasEquipo(fA, fH, dep)) +
       '<div style="margin-top:9px">' + tarjeta(A, fA, false, dep) + tarjeta(H, fH, true, dep) + '</div>' + pie(dep) + '</div>';
   }
   /* tenis: solo hay la tira de los últimos 10 (V/D, el más viejo primero) de cada jugador */
@@ -172,7 +190,7 @@
     return '<div class="rv"><h4>Cómo vienen jugando</h4>' + lecturaHtml(k, favA ? nA : nB, favA ? nB : nA, Math.round((favA ? pA : 1 - pA) * 100), 70) + frente(ap(nA), ap(nB), ft) + '<div style="margin-top:9px">' + tj(nA, a) + tj(nB, b) + '</div>' +
       '<details class="nota" style="margin-top:6px"><summary style="cursor:pointer;font-weight:700">¿Cómo se lee y cuánto pesa?</summary>Cuadritos: últimos 10 partidos del jugador en cualquier torneo y superficie, el más reciente primero. No dice contra quién fueron ni en qué cancha. <b>Ojo:</b> no cambia el % de arriba; el Elo ya sube y baja con cada resultado. Es contexto, no una ventaja segura.</details></div>';
   }
-  var API = { calc: calc, lectura: lectura, html: html, tenis: tenis, tira: tira, inicioTemp: inicioTemp, CFG: CFG, filasEquipo: filasEquipo, frente: frente };
+  var API = { rachaEngana: rachaEngana, RACHA_NBA: RACHA_NBA, calc: calc, lectura: lectura, html: html, tenis: tenis, tira: tira, inicioTemp: inicioTemp, CFG: CFG, filasEquipo: filasEquipo, frente: frente };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   root.OVAForma = API;
 })(typeof window !== 'undefined' ? window : globalThis);
