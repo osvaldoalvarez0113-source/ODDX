@@ -1577,4 +1577,13 @@
 {"id":"401915379","sl":"uefa.champions","d":1795550400000,"h":"Manchester City","a":"Napoli","gh":2,"ga":2},
 {"id":"401915299","sl":"uefa.champions","d":1795550400000,"h":"RB Leipzig","a":"Lens","gh":3,"ga":1},
 {"id":"401915298","sl":"uefa.champions","d":1795550400000,"h":"Real Madrid","a":"PSV Eindhoven","gh":5,"ga":1},
-{"id":"401915297","sl":"uefa.champions","d":1795550400000,"h":"Slovan Bratislava","a":"Real Betis","gh":0,"ga":2}]
+{"id":"401915297","sl":"uefa.champions","d":1795550400000,"h":"Slovan Bratislava","a":"Real Betis","gh":0,"ga":2},
+{"id":"401915378","sl":"uefa.champions","d":1795628700000,"h":"Sabah FK","a":"Barcelona","gh":1,"ga":4},
+{"id":"401915293","sl":"uefa.champions","d":1795628700000,"h":"Slavia Prague","a":"Villarreal","gh":0,"ga":1},
+{"id":"401915291","sl":"uefa.champions","d":1795636800000,"h":"Atlético Madrid","a":"Viking FK","gh":2,"ga":0},
+{"id":"401915292","sl":"uefa.champions","d":1795636800000,"h":"Club Brugge","a":"Liverpool","gh":0,"ga":3},
+{"id":"401915376","sl":"uefa.champions","d":1795636800000,"h":"Internazionale","a":"VfB Stuttgart","gh":2,"ga":0},
+{"id":"401915377","sl":"uefa.champions","d":1795636800000,"h":"Lille","a":"Bayern Munich","gh":2,"ga":1},
+{"id":"401915374","sl":"uefa.champions","d":1795636800000,"h":"Paris Saint-Germain","a":"AS Roma","gh":2,"ga":2},
+{"id":"401915375","sl":"uefa.champions","d":1795636800000,"h":"Shakhtar Donetsk","a":"Fenerbahce","gh":0,"ga":1},
+{"id":"401915373","sl":"uefa.champions","d":1795636800000,"h":"Sporting CP","a":"Manchester United","gh":2,"ga":2}]
