@@ -4,12 +4,12 @@ nba viajes: {"pesos":{"altura":-0.262,"kmVisita":-0.901,"kmLocal":-0.844,"husoVi
 futbol descanso: {"peso":-0.01,"partidos":3337,"pruebas":[{"ajuste":2024,"medido":2025,"peso":0,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.51,"perdidaSin":1.0018,"perdidaCon":1.0018},{"ajuste":2024,"medido":2026,"peso":0,"juegos":548,"aciertosSin":54.93,"aciertosCon":54.93,"perdidaSin":0.9692,"perdidaCon":0.9692},{"ajuste":2025,"medido":2024,"peso":0,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":0.9991},{"ajuste":2025,"medido":2026,"peso":0,"juegos":548,"aciertosSin":54.93,"aciertosCon":54.93,"perdidaSin":0.9692,"perdidaCon":0.9692},{"ajuste":2026,"medido":2024,"peso":-0.05,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":1.0083},{"ajuste":2026,"medido":2025,"peso":-0.05,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.34,"perdidaSin":1.0018,"perdidaCon":1.0103}],"entra":false}
 nfl epa: entra false · peso 1.09
 afuera: nfelo 16 juegos · ClubElo 50 partidos · Tennis Abstract 555/504 jugadores
-nba: mezcla esperando (26 de 150 calificados)
+nba: mezcla esperando (27 de 150 calificados)
 nhl: mezcla esperando (27 de 150 calificados)
 nfl: mezcla esperando (12 de 150 calificados)
 mlb: mezcla esperando (0 de 150 calificados)
 futbol: mezcla esperando (63 de 150 calificados)
-tenis: mezcla esperando (26 de 150 calificados)
+tenis: mezcla esperando (27 de 150 calificados)
 nba: 20 partidos vistos · 2 guardados/refrescados antes de empezar · ESPN 2
 nhl: 29 partidos vistos · 3 guardados/refrescados antes de empezar · ESPN 0
 nfl: con modelo de afuera 16
@@ -20,4 +20,4 @@ futbol: 53 partidos vistos · 35 guardados/refrescados antes de empezar · ESPN 
 tenis: con modelo de afuera 18
 tenis: 30 partidos vistos · 6 guardados/refrescados antes de empezar · ESPN 0
 avisos: tema privado sí · pendientes 0 · problemas del vigilante 0 · detective 0 grupos
-calificados ahora: 2 · ascensos: 0 · total guardados: 238
+calificados ahora: 0 · ascensos: 0 · total guardados: 238
