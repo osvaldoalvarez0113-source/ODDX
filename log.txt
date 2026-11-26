@@ -6,10 +6,10 @@ nfl epa: entra false · peso 1.12
 afuera: nfelo 16 juegos · ClubElo 50 partidos · Tennis Abstract 543/497 jugadores
 nba: mezcla esperando (35 de 150 calificados)
 nhl: mezcla esperando (41 de 150 calificados)
-nfl: mezcla esperando (13 de 150 calificados)
+nfl: mezcla esperando (14 de 150 calificados)
 mlb: mezcla esperando (0 de 150 calificados)
 futbol: mezcla esperando (80 de 150 calificados)
-tenis: mezcla esperando (27 de 150 calificados)
+tenis: mezcla esperando (29 de 150 calificados)
 nba: 11 partidos vistos · 11 guardados/refrescados antes de empezar · ESPN 11
 nhl: 15 partidos vistos · 15 guardados/refrescados antes de empezar · ESPN 0
 nfl: con modelo de afuera 16
@@ -20,4 +20,4 @@ futbol: 44 partidos vistos · 8 guardados/refrescados antes de empezar · ESPN 0
 tenis: con modelo de afuera 19
 tenis: 31 partidos vistos · 3 guardados/refrescados antes de empezar · ESPN 0
 avisos: tema privado sí · pendientes 1 · problemas del vigilante 1 · detective 0 grupos
-calificados ahora: 3 · ascensos: 0 · total guardados: 273
+calificados ahora: 0 · ascensos: 0 · total guardados: 273
