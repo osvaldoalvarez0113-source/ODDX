@@ -4,6 +4,7 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 
 | Archivo | Tema |
 |---|---|
+| [`MEDICION-MEMORIA-2026-11.md`](MEDICION-MEMORIA-2026-11.md) | **Memoria fraccionaria** (cálculo fraccionario) en la forma: pesos k^(−α) contra últimos 10, temporada y exponencial. Ninguna forma mejora al precio de cierre en NBA, NHL ni NFL. No entra |
 | [`MEDICION-GEMELOS-2026-11.md`](MEDICION-GEMELOS-2026-11.md) | **Gemelos del juego**: los 20/50/200 juegos más parecidos del archivo no predicen mejor que el precio (NBA, NHL, NFL; empeoran el Brier). No entra a la app |
 | [`MEDICION-SORPRESAS-2026-11.md`](MEDICION-SORPRESAS-2026-11.md) | **Sorpresas**: cuándo gana el no favorito más de lo que dice su precio (NBA, NHL, NFL; 52 situaciones). Ninguna; en NBA la racha del no favorito engaña (gana 30.7% contra 38.2%) y entra como señal en el Veredicto |
 | [`MEDICION-MEJORAS-2026-11.md`](MEDICION-MEJORAS-2026-11.md) | **«Haz todo para mejorar»**: clima MLB con cierres 2023-2026, ritmo NBA y árbitros NBA/NHL. Nada entra; árbitros NBA en el total queda en vigilancia (~52%) |
