@@ -1,4 +1,5 @@
-archivo: nba 2911 · eng.1 870 · esp.1 889 · ita.1 880 · ger.1 702 · fra.1 710 · uefa.champions 468 · uefa.europa 450 · uefa.europa.conf 360 · eng.fa 286 · eng.league_cup 270 · esp.copa_del_rey 339 · ita.coppa_italia 116 · ger.dfb_pokal 174 · fra.coupe_de_france 217 · pedidos 75
+archivo: nba 2911 · eng.1 870 · esp.1 889 · ita.1 880 · ger.1 702 · fra.1 710 · uefa.champions 468 · uefa.europa 450 · uefa.europa.conf 360 · eng.fa 286 · eng.league_cup 270 · esp.copa_del_rey 339 · ita.coppa_italia 116 · ger.dfb_pokal 174 · fra.coupe_de_france 217 · pedidos 90
+nfl epa 2026: 163 juegos
 nba bajas: 80 jugadores «Out»
 nba viajes: {"pesos":{"altura":-0.261,"kmVisita":-0.912,"kmLocal":-0.841,"husoVisita":1.533,"descanso":0.428,"tres4":0.434},"pruebas":[{"ajuste":2024,"medido":2025,"juegos":1322,"aciertosSin":67.78,"aciertosCon":68.68,"perdidaSin":0.6,"perdidaCon":0.5998},{"ajuste":2024,"medido":2026,"juegos":261,"aciertosSin":65.9,"aciertosCon":66.28,"perdidaSin":0.6103,"perdidaCon":0.6091},{"ajuste":2025,"medido":2024,"juegos":920,"aciertosSin":66.85,"aciertosCon":66.3,"perdidaSin":0.6069,"perdidaCon":0.6048},{"ajuste":2025,"medido":2026,"juegos":261,"aciertosSin":65.9,"aciertosCon":67.05,"perdidaSin":0.6103,"perdidaCon":0.606}],"entra":true}
 futbol descanso: {"peso":-0.01,"partidos":3337,"pruebas":[{"ajuste":2024,"medido":2025,"peso":0,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.51,"perdidaSin":1.0018,"perdidaCon":1.0018},{"ajuste":2024,"medido":2026,"peso":0,"juegos":548,"aciertosSin":54.93,"aciertosCon":54.93,"perdidaSin":0.9692,"perdidaCon":0.9692},{"ajuste":2025,"medido":2024,"peso":0,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":0.9991},{"ajuste":2025,"medido":2026,"peso":0,"juegos":548,"aciertosSin":54.93,"aciertosCon":54.93,"perdidaSin":0.9692,"perdidaCon":0.9692},{"ajuste":2026,"medido":2024,"peso":-0.05,"juegos":1038,"aciertosSin":51.16,"aciertosCon":51.16,"perdidaSin":0.9991,"perdidaCon":1.0083},{"ajuste":2026,"medido":2025,"peso":-0.05,"juegos":1751,"aciertosSin":51.51,"aciertosCon":51.34,"perdidaSin":1.0018,"perdidaCon":1.0103}],"entra":false}
@@ -8,16 +9,16 @@ nba: mezcla esperando (26 de 150 calificados)
 nhl: mezcla esperando (27 de 150 calificados)
 nfl: mezcla esperando (12 de 150 calificados)
 mlb: mezcla esperando (0 de 150 calificados)
-futbol: mezcla esperando (56 de 150 calificados)
-tenis: mezcla esperando (25 de 150 calificados)
-nba: 9 partidos vistos · 8 guardados/refrescados antes de empezar · ESPN 8
-nhl: 14 partidos vistos · 14 guardados/refrescados antes de empezar · ESPN 0
+futbol: mezcla esperando (63 de 150 calificados)
+tenis: mezcla esperando (26 de 150 calificados)
+nba: 20 partidos vistos · 7 guardados/refrescados antes de empezar · ESPN 7
+nhl: 29 partidos vistos · 6 guardados/refrescados antes de empezar · ESPN 0
 nfl: con modelo de afuera 16
 nfl: 16 partidos vistos · 16 guardados/refrescados antes de empezar · ESPN 16
 mlb: 0 partidos vistos · 0 guardados/refrescados antes de empezar · ESPN 0
 futbol: con modelo de afuera 22
-futbol: 45 partidos vistos · 35 guardados/refrescados antes de empezar · ESPN 0
-tenis: con modelo de afuera 17
-tenis: 29 partidos vistos · 5 guardados/refrescados antes de empezar · ESPN 0
+futbol: 53 partidos vistos · 35 guardados/refrescados antes de empezar · ESPN 0
+tenis: con modelo de afuera 18
+tenis: 30 partidos vistos · 6 guardados/refrescados antes de empezar · ESPN 0
 avisos: tema privado sí · pendientes 0 · problemas del vigilante 0 · detective 0 grupos
-calificados ahora: 8 · ascensos: 0 · total guardados: 237
+calificados ahora: 0 · ascensos: 0 · total guardados: 238
