@@ -59,6 +59,7 @@ def contexto(J, dep):
                 c['gira'] += 1    # este juego cuenta
             u10 = H[-10:]; c['g10'] = sum(x[2] for x in u10) if len(u10) == 10 else None
             c['nj'] = len(H)
+            c['pct'] = sum(x[2] for x in H) / len(H) if len(H) >= 10 else None   # % de victorias en la temporada (investigador.py)
             prev = [x for x in H if x[4] == riv]; c['perdio_cruce'] = (not prev[-1][2]) if prev else None
             g['c'+lado] = c
         gH = g['hs'] > g['as_']
@@ -77,7 +78,7 @@ def filas(J, dep):
         gana = (g['hs'] > g['as_']) == favH
         modf = None
         if g['mod'] is not None: modf = g['mod'] if favH else -g['mod']   # >0: el modelo le ve MÁS al favorito que la línea
-        R.append(dict(s=g['s'], pf=pf, gana=gana, F=F, D=D, favLocal=favH, mod=modf))
+        R.append(dict(s=g['s'], pf=pf, gana=gana, F=F, D=D, favLocal=favH, mod=modf, mes=int(__import__('time').strftime('%m', __import__('time').gmtime(g['ts']/1000)))))
     return R
 
 def reglas(dep):
@@ -143,4 +144,5 @@ def main():
     for i, (p, dep, nom) in enumerate(todas[:6]):
         print('- %s · %s: p = %.4f, umbral Holm %.4f → %s' % (dep.upper(), nom, p, 0.05/(m-i), 'pasa' if p < 0.05/(m-i) else 'no pasa'))
 
-main()
+if __name__ == '__main__':
+    main()

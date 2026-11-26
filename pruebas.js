@@ -1359,6 +1359,28 @@ sec('Lesionados: robot de ESPN (scripts/lesiones.js) y avisos dentro del Escáne
  const nu=LE.nuevos(prev,eq,[{h:'Boston Bruins',a:'Dallas Stars'}]);
  ok('lesiones.js: avisa solo de Out / Doubtful NUEVOS (A Uno pasó de Questionable a Out); Questionable e IR no avisan',nu.length===1&&nu[0].n==='A Uno'&&nu[0].s==='Out');
  ok('lesiones.js: la primera vez (sin archivo anterior) y los equipos que no juegan no avisan nada',LE.nuevos(null,eq,[{h:'Boston Bruins',a:'x'}]).length===0&&LE.nuevos(prev,eq,[{h:'Otro',a:'x'}]).length===0);
+ (()=>{ /* bajas que pesan */
+  const box={nombres:{'1':'Estrella Uno','2':'Banca Dos','3':'Lejos Tres'},g:[
+   {id:'a',sk:2026,ts:1,h:'10',a:'20',p:[['10','1',35,25,0,0,0,1],['10','2',12,4,0,0,0,0],['10','3',33,20,0,0,0,1]]},
+   {id:'b',sk:2026,ts:2,h:'10',a:'30',p:[['10','1',34,28,0,0,0,1],['10','2',10,2,0,0,0,0]]},
+   {id:'c',sk:2026,ts:3,h:'40',a:'10',p:[['10','1',36,30,0,0,0,1]]},
+   {id:'d',sk:2026,ts:4,h:'10',a:'50',p:[['10','1',30,22,0,0,0,1],['10','2',14,6,0,0,0,0]]},
+   {id:'v',sk:2025,ts:0,h:'10',a:'20',p:[['10','2',40,40,0,0,0,1]]}]};
+  const rb=LE.resumenBox(box);
+  ok('bajas: resumen de la temporada más nueva (minutos, puntos, jugó hace poco)',rb['Estrella Uno'].min===33.8&&rb['Estrella Uno'].jj===4&&rb['Estrella Uno'].rec===true&&rb['Lejos Tres'].rec===false&&rb['Banca Dos'].min===12);
+  ok('bajas: pesa = NBA 28+ min jugando hace poco · NHL portero · NFL quarterback',LE.pesa('nba',{n:'Estrella Uno'},rb)&&!LE.pesa('nba',{n:'Banca Dos'},rb)&&!LE.pesa('nba',{n:'Lejos Tres'},rb)&&!LE.pesa('nba',{n:'Nadie'},rb)&&LE.pesa('nhl',{p:'G'})&&!LE.pesa('nhl',{p:'C'})&&LE.pesa('nfl',{p:'QB'})&&!LE.pesa('nfl',{p:'WR'}));
+  const o={moneyline:{home:{open:{odds:'-200'},close:{odds:'-130'}},away:{open:{odds:'+170'},close:{odds:'+110'}}}};
+  const ln=LE.lineaEquipo(o,true);
+  ok('bajas: línea del equipo sin margen, al abrir y ahora',ln.abre===64&&ln.ahora===54&&LE.lineaEquipo(o,false).ahora===46&&LE.lineaEquipo({},true)===null);
+  const juegan=[{id:'9',t:'2026-11-26T00:30Z',h:'Boston Celtics',a:'New York Knicks'}];
+  const fu=LE.bajasFuertes('nba',[{eq:'Boston Celtics',n:'Estrella Uno',p:'F',s:'Out'},{eq:'Boston Celtics',n:'Banca Dos',p:'G',s:'Out'},{eq:'Otro',n:'Estrella Uno',p:'F',s:'Out'}],juegan,{'9':{o}},rb);
+  const m=LE.mensajeFuerte('nba',fu);
+  ok('bajas: solo avisa la que pesa, con rival, minutos y si la línea ya se movió',fu.length===1&&fu[0].rival==='New York Knicks'&&/OUT · 33.8 min y 26.3 pts/.test(m.cuerpo)&&/64% al abrir → 54% ahora \(ya se movió\)/.test(m.cuerpo)&&/baja que pesa \(1\)/.test(m.titulo));
+  const b1=LE.juntarBajas(null,[{eq:'E',n:'A',s:'Out'},{eq:'E',n:'B',s:'Doubtful'}],[{eq:'E',n:'A',linea:{abre:60,ahora:52}}],1e12);
+  const b2=LE.juntarBajas({bajas:b1},[{eq:'E',n:'A',s:'Out'}],[],1e12+36e5), b3=LE.juntarBajas({bajas:b1},[],[],1e12+40*36e5);
+  ok('bajas: se guardan 36 h para el resumen, sin repetir, marcando las que pesan',b1.length===2&&b1[0].pesa===true&&b1[0].linea.ahora===52&&b1[1].pesa===false&&b2.length===2&&b3.length===0);
+  ok('lesiones.yml corre cada 20 min en horas de juego',/17,37,57 17-23,0-3 \* \* \*/.test(rd('.github/workflows/lesiones.yml')));
+ })();
  ok('lesiones.js: el mensaje lista hasta 10 y cuenta el resto',LE.mensaje('nhl',Array.from({length:12},(_,i)=>({eq:'E',n:'J'+i,p:'C',s:'Out',d:''}))).cuerpo.split('\n').length===11&&/NHL/.test(LE.mensaje('nhl',nu).titulo));
  // el lado de la app
  const les={equipos:{'Boston Bruins':{l:[{n:'A Uno',p:'C',s:'Out',d:'Knee',f:'x'},{n:'Pedro Sano',p:'D',s:'Out',d:"Coach's Decision"},{n:'C Tres',p:'W',s:'Questionable',d:'Illness'},{n:'D Cuatro',p:'D',s:'Injured Reserve'}]},'Dallas Stars':{l:[]}}};
@@ -1729,6 +1751,37 @@ sec('Jugadores: props de NBA (jugadores.js)');
  ok('solo lee de ESPN (DraftKings), sin claves',!/apiKey|token|ODDSPAPI/i.test(rd('jugadores.js'))&&/odds\/' \+ CASA \+ '\/propBets/.test(rd('jugadores.js')));
 })();
 
+sec('Resumen de la mañana (scripts/resumen.js) e investigador de patrones');
+(()=>{
+ const R=require(path.join(__dirname,'scripts','resumen.js'));
+ const T=1.8e12, H=36e5;
+ const j=(id,dep,pH,pA,quien,punt,extra)=>Object.assign({id,dep,st:'pre',ts:T+5*H,h:{ab:'H'+id,n:'Local'+id},a:{ab:'A'+id,n:'Visita'+id},m:{ml:{p:[pH,pA]}},ficha:{ml:{quien,puntaje:punt}}},extra||{});
+ const tigre={juegos:[
+  j('1','nba',0.7,0.3,'Local1',1),                       /* coincide: mercado, modelo y ficha con el local */
+  j('2','nba',0.3,0.7,'Local2',2),                       /* evita: la ficha va con el no favorito */
+  j('3','nhl',0.62,0.38,'Local3',1),                     /* sin modelo de acuerdo: no sale en coinciden */
+  j('4','nba',0.66,0.34,'Local4',1),                     /* tiene baja que pesa: no sale */
+  j('5','nba',0.52,0.48,'Local5',3),                     /* favorito chico (<55%): no cuenta */
+  j('6','tenis',0.8,0.2,'Local6',2),                     /* tenis fuera */
+  Object.assign(j('7','nba',0.75,0.25,'Local7',1),{st:'post'}),
+  j('8','ucl',0.6,0.25,'Local8',1,{m:{ml:{p:[0.6,0.25,0.15]}}})]};
+ const reg={items:{'nba|1':{ext:'1',local:'Local1 Full',visita:'V',p:{modelo:[0.66,0.34,0]}},'nhl|3':{ext:'3',p:{modelo:[0.45,0.55,0]}},'nba|4':{ext:'4',local:'Ciudad Local4',visita:'V',p:{modelo:[0.7,0.3,0]}},'futbol|8':{ext:'8',p:{modelo:[0.5,0.2,0.3]}}}};
+ const bajas=[{eq:'Ciudad Local4',n:'Estrella',s:'Out',pesa:true,linea:{abre:70,ahora:62}},{eq:'Otro',n:'Banca',s:'Out',pesa:false}];
+ const r=R.armar(tigre,reg,bajas,{H1:4,A1:7,H4:5,A4:5},T);
+ ok('resumen: coinciden = favorito 55%+ con Modelo OVA y ficha 💪 a favor, sin baja que pesa (fútbol de 3 resultados también)',r.coinciden.map(x=>x.fav).join()==='Local1,Local8');
+ ok('resumen: evita cuando la ficha de TIGRE va con el no favorito',r.evita.length===1&&r.evita[0].fav==='Visita2'&&r.evita[0].contra===2);
+ ok('resumen: La racha engaña solo en NBA con el no favorito 2+ victorias mejor en los últimos 10',r.racha.length===1&&r.racha[0].fav==='Local1'&&r.racha[0].uf===4&&r.racha[0].ur===7);
+ ok('resumen: bajas = solo las que pesan; tenis, ya jugados y favoritos chicos fuera',r.bajas.length===1&&r.juegos===6);
+ const m=R.mensaje(r,T);
+ ok('resumen: el mensaje trae las cuatro partes y el recordatorio de lo medido',/✅ COINCIDEN/.test(m.cuerpo)&&/📊 LA RACHA ENGAÑA/.test(m.cuerpo)&&/👎 EVITA/.test(m.cuerpo)&&/🚑 BAJAS QUE PESAN/.test(m.cuerpo)&&/Ciudad Local4: Estrella Out · línea 70% → 62%/.test(m.cuerpo)&&/Nada es seguro/.test(m.cuerpo));
+ ok('resumen: sin nada a favor lo dice y no fuerza',/ningún favorito tiene todo a favor/.test(R.mensaje(R.armar({juegos:[]},null,[],{},T),T).cuerpo));
+ const ci={temps:{'2025':{juegos:[]},'2026':{juegos:Array.from({length:12},(_,i)=>({done:true,ty:2,ts:i,abH:'BOS',abA:i<9?'NYK':'MIA',hs:i<8?110:90,as:100}))}}};
+ const u=R.ultimos10(ci,100);
+ ok('resumen: últimos 10 de la temporada más nueva con cierres de ESPN',u.BOS===6&&u.NYK===undefined&&R.ultimos10(ci,5).BOS===undefined);
+ ok('resumen.yml corre cada mañana y solo lee',/41 14 \* \* \*/.test(rd('.github/workflows/resumen.yml'))&&/contents: read/.test(rd('.github/workflows/resumen.yml')));
+ const inv=rd('scripts/medicion/investigador.py'), so=rd('scripts/medicion/sorpresas.py');
+ ok('investigador: corre los lunes, avisa solo lo nuevo y vigila la señal de la app con el mismo nombre que la medición',/23 11 \* \* 1/.test(rd('.github/workflows/investigador.yml'))&&/aviso\.txt/.test(rd('.github/workflows/investigador.yml'))&&so.indexOf("'Rival viene mejor en los últimos 10 (2+ victorias más)'")>0&&inv.indexOf("'Rival viene mejor en los últimos 10 (2+ victorias más)'")>0);
+})();
 sec('Cómo vienen jugando: forma de la temporada en NBA (forma.js)');
 (()=>{
  const F=require(D+'forma.js');

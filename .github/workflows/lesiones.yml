@@ -1,11 +1,14 @@
 name: Lesionados NBA, NHL y NFL
 
 # Baja la lista de lesionados de ESPN (pesa 1 a 9 MB) y deja un archivo chico por deporte en la rama «datos»; las apps lo leen desde ahi.
-# No usa OddsPapi (ESPN es publico). Si existe el secreto NTFY_TOPIC manda UN aviso por corrida con los Out / Doubtful nuevos de equipos que juegan.
+# No usa OddsPapi (ESPN es publico). Si existe el secreto NTFY_TOPIC avisa al momento solo las bajas que pesan (NBA 28+ min, portero NHL,
+# QB NFL) con la linea de apertura y la de ahora; las demas quedan para el resumen de la manana (resumen.yml).
+# Cada 20 min en horas de juego (mediodia a 10 p. m. de Chicago) y cada 3 h el resto. GitHub a veces atrasa los horarios.
 on:
   workflow_dispatch:
   schedule:
     - cron: "7 */3 * * *"
+    - cron: "17,37,57 17-23,0-3 * * *"
   push:
     branches: [main]
     paths:
