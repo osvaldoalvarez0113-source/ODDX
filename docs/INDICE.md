@@ -4,6 +4,7 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 
 | Archivo | Tema |
 |---|---|
+| [`MEDICION-GEMELOS-2026-11.md`](MEDICION-GEMELOS-2026-11.md) | **Gemelos del juego**: los 20/50/200 juegos más parecidos del archivo no predicen mejor que el precio (NBA, NHL, NFL; empeoran el Brier). No entra a la app |
 | [`MEDICION-SORPRESAS-2026-11.md`](MEDICION-SORPRESAS-2026-11.md) | **Sorpresas**: cuándo gana el no favorito más de lo que dice su precio (NBA, NHL, NFL; 52 situaciones). Ninguna; en NBA la racha del no favorito engaña (gana 30.7% contra 38.2%) y entra como señal en el Veredicto |
 | [`MEDICION-MEJORAS-2026-11.md`](MEDICION-MEJORAS-2026-11.md) | **«Haz todo para mejorar»**: clima MLB con cierres 2023-2026, ritmo NBA y árbitros NBA/NHL. Nada entra; árbitros NBA en el total queda en vigilancia (~52%) |
 | [`MEDICION-MOVIMIENTO-2026-11.md`](MEDICION-MOVIMIENTO-2026-11.md) | **Movimiento de la línea** (apertura → cierre) en 12,850 juegos de NHL, NFL, MLB y NBA: el cierre acierta ~1 punto más; con el mismo %, el movimiento no agrega aciertos |

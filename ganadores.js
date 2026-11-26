@@ -111,13 +111,44 @@ function marcadorMio(picks,app,mes){
  return o;
 }
 function esperados(filas){ var s=0; filas.forEach(function(x){ s+=x.p; }); return s; }
+/* 🎲 SIMULADOR DE SUERTE (25-nov-2026, idea de Osvaldo). Con el % de cada pick se cuentan TODAS las formas en que pudieron salir
+   (Poisson-binomial exacto: es lo mismo que simular millones de temporadas, sin azar). Dice el rango normal (8 de cada 10 veces),
+   qué tan raro es lo que pasó y qué esperar en los próximos 100 picks iguales. */
+function distAciertos(ps){
+ var d=[1];
+ for(var i=0;i<ps.length;i++){ var p=ps[i], n=[]; for(var j=0;j<=d.length;j++) n.push(0); for(var k=0;k<d.length;k++){ n[k]+=d[k]*(1-p); n[k+1]+=d[k]*p; } d=n; }
+ return d;
+}
+function cuantil(d,q){ var s=0; for(var k=0;k<d.length;k++){ s+=d[k]; if(s>=q-1e-12) return k; } return d.length-1; }
+function suerte(L){
+ L=(L||[]).filter(function(x){ return x&&x.p>0&&x.p<1; }); if(!L.length) return null;
+ var ps=L.map(function(x){ return x.p; }), w=L.filter(function(x){ return x.g; }).length, d=distAciertos(ps), e=0, menos=0, mas=0, k;
+ ps.forEach(function(p){ e+=p; }); for(k=0;k<=w;k++) menos+=d[k]; for(k=w;k<d.length;k++) mas+=d[k];
+ var cien=[]; for(k=0;k<100;k++) cien.push(ps[k%ps.length]); var d2=distAciertos(cien), e2=0; cien.forEach(function(p){ e2+=p; });
+ return {n:L.length,w:w,e:e,lo:cuantil(d,.1),hi:cuantil(d,.9),menos:menos,mas:mas,veredicto:menos<=0.05?'peor':(mas<=0.05?'mejor':(w<cuantil(d,.1)?'bajo':(w>cuantil(d,.9)?'alto':'normal'))),prox:{lo:cuantil(d2,.1),hi:cuantil(d2,.9),e:e2}};
+}
+/* tus picks resueltos con cuota → % que pedía la cuota (con el margen de la casa adentro: es un poco más exigente) */
+function suerteMia(picks,app){
+ var L=[];
+ (picks||[]).forEach(function(x){
+  if(!x) return; var res=app==='mlb'?x.res:(x.estado==='ganado'?'G':(x.estado==='perdido'?'P':null)); if(res!=='G'&&res!=='P') return;
+  var u=ganancia(x,app); if(u===null||!(u>0)) return; L.push({p:1/(1+u),g:res==='G'});
+ });
+ return {sinCuota:0,r:suerte(L),n:L.length};
+}
+/* el favorito del mercado de cada juego que Auto guardó y ya se jugó (toda la historia de esta app) */
+function suerteApp(items,app){
+ var L=[];
+ (items||[]).forEach(function(r){ if(!r||r.app!==app||!r.res||r.res==='X') return; var k=r.k1||r.k0; if(!k) return; var f=favDe(k), p=k[f]; if(p>0&&p<1) L.push({p:p,g:r.res===f}); });
+ return {r:suerte(L),n:L.length};
+}
 /* fútbol: Auto guarda todas las ligas juntas y Al gane las mezclaba (con Champions abierta salía Forest-Chelsea de la Premier).
    Ahora solo la liga abierta: por el slug de ESPN y, en registros viejos sin slug, por el nombre. Las otras apps no cambian. */
 function deLiga(items,slug,nombre){
  if(!slug&&!nombre) return items||[];
  return (items||[]).filter(function(r){ return !!r&&(r.app!=='fut'||(slug&&r.slug?r.slug===slug:(!!nombre&&r.liga===nombre))); });
 }
-var API={deLiga:deLiga,resumenApp:resumenApp,HCP:HCP,hcpDe:hcpDe,FUERTE:FUERTE,esFuerte:esFuerte,semaforo:semaforo,PROPS:PROPS,lista:lista,marcadorLista:marcadorLista,marcadorMio:marcadorMio,borra:borra,americana:americana,esperados:esperados,ALERTA:ALERTA};
+var API={suerte:suerte,distAciertos:distAciertos,suerteMia:suerteMia,suerteApp:suerteApp,deLiga:deLiga,resumenApp:resumenApp,HCP:HCP,hcpDe:hcpDe,FUERTE:FUERTE,esFuerte:esFuerte,semaforo:semaforo,PROPS:PROPS,lista:lista,marcadorLista:marcadorLista,marcadorMio:marcadorMio,borra:borra,americana:americana,esperados:esperados,ALERTA:ALERTA};
 root.OVAGanadores=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
 var doc=root.document; if(!doc) return;
@@ -144,7 +175,7 @@ var CSS=['#gane_zona,#algane,#vAlgane>.nota,#algane_btn,#pane-gane>.controls{dis
  '.gnAl{margin-top:8px;padding:8px 10px;border-radius:10px;font-size:12.5px;line-height:1.4;background:rgba(251,191,36,.12);color:var(--txt,#fff)}',
  '.gnNota{margin:14px 0;font-size:12.5px;line-height:1.5;color:var(--mut,#9aa)}.gnNota b{color:var(--txt,#fff)}',
  '.gnProps{margin:14px 0;border:1px solid var(--line2,#2a3340);border-radius:14px;background:var(--bg1,#0d1420);padding:10px 12px}.gnProps summary{font-weight:700;font-size:14.5px;cursor:pointer}.gnPr{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line2,#2a3340);font-size:13px}.gnPr b{white-space:nowrap}',
- '.gnSem{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid var(--line2,#2a3340);background:var(--bg1,#0d1420);font-size:12.5px;line-height:1.45;color:var(--mut,#9aa)}.gnSem b{color:var(--txt,#fff)}.gnSem .gnLuz{font-size:14px;font-weight:800;color:var(--txt,#fff);margin-bottom:3px}',
+ '.gnSem{margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid var(--line2,#2a3340);background:var(--bg1,#0d1420);font-size:12.5px;line-height:1.45;color:var(--mut,#9aa)}.gnSem b{color:var(--txt,#fff)}.gnSem .gnLuz{font-size:14px;font-weight:800;color:var(--txt,#fff);margin-bottom:3px}.gnSuerte summary{font-size:14px;font-weight:800;color:var(--txt,#fff);cursor:pointer}',
  '.gnChips{display:flex;gap:8px;margin:0 0 6px}.gnChip{flex:1;text-align:center;border-radius:99px;padding:8px 6px;font-size:12.5px;white-space:nowrap;font-weight:700;cursor:pointer;border:1px solid var(--line2,#2a3340);background:var(--bg1,#0d1420);color:var(--mut,#9aa)}.gnChip.on{background:var(--hot,#fbbf24);color:#111;border-color:var(--hot,#fbbf24)}',
  '.gnHc{margin-top:6px;font-size:12px;line-height:1.4;color:var(--mut,#9aa)}.gnHc b{color:var(--txt,#fff)}',
  '.gnMini{display:inline-block;border-radius:99px;background:var(--bg2,#131c2a);color:var(--txt,#fff);padding:8px 13px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--line2,#2a3340)}'].join('');
@@ -157,6 +188,27 @@ function cajaSemaforo(S){
  function lin(nom,o){ if(!o.n) return; var d=mk('div'); d.appendChild(doc.createTextNode(nom+': ')); d.appendChild(mk('b','','ganó '+o.w+' de '+o.n)); d.appendChild(doc.createTextNode(' · se esperaban '+o.e.toFixed(1)+'.')); c.appendChild(d); }
  lin('Favorito del mercado',S.mercado); lin('Pick de tu modelo',S.modelo);
  c.appendChild(mk('div','',S.mercado.n||S.modelo.n?'Últimos '+S.dias+' días, juegos guardados en Auto. '+(peor.color==='rojo'?'Baja el tamaño de tus apuestas en esta app hasta que se enderece, o quédate solo con «Solo fuertes».':(peor.color==='ambar'?'Puede ser mala suerte; míralo otra vez en unos días.':'')):'Sin juegos resueltos en los últimos '+S.dias+' días.'));
+ return c;
+}
+var MIN_SUERTE=10;
+function cajaSuerte(mia,app){
+ var c=mk('details','gnSem gnSuerte'), sm=mk('summary','','🎲 ¿Suerte o algo más?'); c.appendChild(sm); c.open=true;
+ function bloque(nom,o,que){
+  var d=mk('div'); d.style.marginTop='8px';
+  if(!o.r||o.n<MIN_SUERTE){ d.appendChild(mk('b','',nom+': ')); d.appendChild(doc.createTextNode('hacen falta '+MIN_SUERTE+' '+que+' resueltos para juzgar (van '+o.n+').')); c.appendChild(d); return; }
+  var r=o.r, raro=Math.max(1,Math.round((r.w<r.e?r.menos:r.mas)*100));
+  d.appendChild(mk('b','',nom+': ')); d.appendChild(doc.createTextNode((que==='juegos'?'acertó ':'acertaste ')+r.w+' de '+r.n+'. Por sus %, lo normal era entre '+r.lo+' y '+r.hi+' (ahí cae 8 de cada 10 veces; lo esperado, '+r.e.toFixed(1)+'). '));
+  var V={peor:'⚠️ Peor que 95 de cada 100 formas en que pudo salir: es más que mala suerte. Revisa qué tipo de picks estás haciendo.',
+   bajo:'🟡 Por debajo de lo normal, pero todavía puede ser mala suerte: algo así de malo pasa '+raro+' de cada 100 veces.',
+   normal:'✅ Dentro de lo normal: es suerte, no un problema.',
+   alto:'🟢 Por encima de lo normal: algo así de bueno pasa '+raro+' de cada 100 veces. Puede ser buena racha.',
+   mejor:'🍀 Mucho mejor que lo normal: puede ser buena suerte. No subas las apuestas por eso.'};
+  d.appendChild(mk('b','',V[r.veredicto]));
+  d.appendChild(doc.createTextNode(' En los próximos 100 así, lo normal es acertar entre '+r.prox.lo+' y '+r.prox.hi+'.'));
+  c.appendChild(d);
+ }
+ bloque('Tus picks',mia.m,'picks con cuota'); bloque('Favorito del mercado (Auto)',mia.a,'juegos');
+ c.appendChild(mk('div','gnTit','Se cuentan todas las formas en que pudieron salir esos juegos con su %. Tus picks usan el % de su cuota, con el margen de la casa adentro (es un poco más exigente).'));
  return c;
 }
 function fila(x,i){
@@ -183,6 +235,7 @@ function pintar(){
  var b=mk('div','','El ⭐ de cada día este mes'); b.appendChild(mk('b','',li.g+'–'+li.p)); b.appendChild(doc.createTextNode((li.g+li.p)?sg(li.u)+' con margen de casa':'Sin juegos resueltos'));
  mc.appendChild(a); mc.appendChild(b); cuerpo.appendChild(mc);
  cuerpo.appendChild(cajaSemaforo(semaforo(items,APP,ahora,30)));
+ cuerpo.appendChild(cajaSuerte({m:suerteMia(json(REG[APP]),APP),a:suerteApp(items,APP)},APP));
  var todas=filas.length, fuertes=filas.filter(function(x){ return esFuerte(x,APP); }).length;
  if(lg&&lg.nombre) cuerpo.appendChild(mk('div','gnTit','Solo '+lg.nombre+', la liga que tienes abierta. Los marcadores de arriba son de todo el fútbol.'));
  var ch=mk('div','gnChips');

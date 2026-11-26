@@ -1589,6 +1589,14 @@ sec('Al gane');
  ok('marcador de tus picks: cuenta ganados, perdidos y unidades del mes; pendientes fuera',mm.g===1&&mm.p===1&&Math.abs(mm.u-(1/1.5-1))<1e-9);
  const mb=G.marcadorMio([{f:'2026-11-03',res:'G',am:'60',plat:'kalshi'},{f:'2026-11-03',res:'G',am:'-120'}],'mlb','2026-11');
  ok('marcador de MLB: entiende centavos de Kalshi y americana',Math.abs(mb.u-((40/60)+(100/120)))<1e-9&&mb.g===2);
+ ok('🎲 suerte: distribución exacta (dos monedas: 25/50/25) y rango normal de 40 picks de 60%',(()=>{const d=G.distAciertos([.5,.5]);const L=[];for(let i=0;i<40;i++)L.push({p:.6,g:i<23});const r=G.suerte(L);
+   return d.join()==='0.25,0.5,0.25'&&r.lo===20&&r.hi===28&&Math.abs(r.e-24)<1e-9&&r.veredicto==='normal'&&r.prox.lo===54&&r.prox.hi===66;})());
+ ok('🎲 suerte: 15 de 40 con 60% es «peor» (más que mala suerte) y 33 de 40 es «mejor»',(()=>{const f=w=>{const L=[];for(let i=0;i<40;i++)L.push({p:.6,g:i<w});return G.suerte(L);};return f(15).veredicto==='peor'&&f(15).menos<0.01&&f(33).veredicto==='mejor'&&f(19).veredicto==='bajo'&&f(29).veredicto==='alto'&&f(24).veredicto==='normal'&&G.suerte([])===null;})());
+ ok('🎲 suerte: tus picks usan el % de su cuota (−150 → 60%) y solo los resueltos; Auto usa el favorito del mercado',(()=>{
+   const m=G.suerteMia([{estado:'ganado',cuota:'-150'},{estado:'perdido',cuota:'+150'},{estado:'pendiente',cuota:'-110'},{estado:'ganado'}],'nba');
+   const a=G.suerteApp([{app:'nba',res:'L',k1:{L:.7,A:.3}},{app:'nba',res:'A',k1:{L:.7,A:.3}},{app:'nba',res:'X',k1:{L:.6,A:.4}},{app:'nhl',res:'L',k1:{L:.6,A:.4}},{app:'nba',k1:{L:.6,A:.4}}],'nba');
+   return m.n===2&&Math.abs(m.r.e-1)<1e-9&&m.r.w===1&&a.n===2&&a.r.w===1&&Math.abs(a.r.e-1.4)<1e-9;})());
+ ok('🎲 suerte: Al gane pinta la caja debajo del semáforo con los dos bloques',/cajaSuerte\(\{m:suerteMia\(json\(REG\[APP\]\),APP\),a:suerteApp\(items,APP\)\},APP\)/.test(gj)&&/¿Suerte o algo más\?/.test(gj));
  const fu=[{id:'p',app:'fut',slug:'eng.1',liga:'Premier League',ts:AH+H,local:'Nottingham Forest',visita:'Chelsea',k1:{L:.37,A:.35,D:.28}},
   {id:'c1',app:'fut',slug:'uefa.champions',liga:'Champions League',ts:AH+H,local:'Inter',visita:'Benfica',k1:{L:.6,A:.2,D:.2}},
   {id:'v',app:'fut',liga:'Champions League',ts:AH+H,local:'Viejo',visita:'SinSlug',k1:{L:.5,A:.3,D:.2}},
