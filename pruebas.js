@@ -58,7 +58,8 @@ else{
   ok(app+' sin nombres inexistentes',mal.size===0,[...mal].map(([n,w])=>n+' ('+w+')').join(', '));
  }
  revisar('futbol.html',['ovaextra.js','interior.js','interior2.js','obsidiana.js','mejoras.js','selecciones.js']);
- revisar('index.html',['ovaextra.js','interior.js','interior2.js','ajustes.js','asistente.js','obsidiana.js','railway.js']);
+ revisar('index.html',['ovaextra.js','interior.js','interior2.js','ajustes.js','asistente.js','obsidiana.js']);
+ ok('MLB: Railway apagado (el Veredicto usa solo la fórmula de OVA, la misma que se guarda)',!/<script src="railway\.js"><\/script>/.test(rd('index.html'))&&!/'railway\.js'/.test(rd('sw.js')));
  revisar('nba.html',['ovaextra.js','interior.js','interior2.js']);
  revisar('hub.html',['ovaextra.js','hubestilos.js']);
  revisar('panel.html',['ovaextra.js']);
@@ -405,6 +406,7 @@ ok('19 diseños: los 8 de siempre, los 5 de la segunda tanda (historias, duelo, 
  ok('Boleto: los dos diseños definen sus colores y comparten la forma',/html\[data-ui="boleto"\]\{--bzBg1/.test(UI.css)&&/html\[data-ui="boletonoche"\]\{--bzBg1/.test(UI.css)&&/html\[data-ui\^="boleto"\] \.bzSello/.test(UI.css));
  ok('Boleto: el ticket tiene muescas (máscara) y en la barra de abajo solo la pestaña activa lleva nombre',/\.game\.bzOn \.head\{-webkit-mask:radial-gradient/.test(UI.css)&&/\.tbar-btn:not\(\.on\) \.lb\{position:absolute/.test(UI.css));
  ok('Boleto: los botones que la app oculta con display:none siguen ocultos',!/\.tabbar \.tbar-btn\{[^}]*display:flex!important/.test(UI.css));
+ ok('📋 Veredicto simple (NBA/NHL/NFL): apagado por defecto, deja el primer bloque y las señales, pliega lo demás sin borrar',(()=>{const dz=rd('diseno.js');return /SIMPLE_K='ova_ver_simple'/.test(dz)&&/getItem\(SIMPLE_K\)==='1'/.test(dz)&&/La racha engaña\|⚠️/.test(dz)&&/Ver todo el análisis/.test(dz)&&/a==='nba'\|\|a==='nhl'\|\|a==='nfl'/.test(dz)&&!/removeChild/.test(dz);})());
  ok('Boleto: el ticket solo se arma con ese diseño y no borra nada original',/\.bzT\{display:none\}/.test(rd('diseno.js'))&&/function bzArmar/.test(rd('diseno.js'))&&/indexOf\('boleto'\)===0/.test(rd('diseno.js'))&&!/removeChild/.test(rd('diseno.js')));
  ok('Boleto: se activa una sola vez al actualizar y se puede volver a Clásico',/ova_ui_r6/.test(rd('interior.js'))&&UI.UIS.some(u=>u.id==='clasico'));
 
@@ -1589,6 +1591,15 @@ sec('Al gane');
  ok('marcador de tus picks: cuenta ganados, perdidos y unidades del mes; pendientes fuera',mm.g===1&&mm.p===1&&Math.abs(mm.u-(1/1.5-1))<1e-9);
  const mb=G.marcadorMio([{f:'2026-11-03',res:'G',am:'60',plat:'kalshi'},{f:'2026-11-03',res:'G',am:'-120'}],'mlb','2026-11');
  ok('marcador de MLB: entiende centavos de Kalshi y americana',Math.abs(mb.u-((40/60)+(100/120)))<1e-9&&mb.g===2);
+ ok('NBA Al gane: «La racha engaña» en la fila cuando el no favorito viene 2+ victorias mejor (solo NBA)',(()=>{
+   const FO=require(path.join(__dirname,'forma.js')), prev=globalThis.OVAForma; globalThis.OVAForma=FO;
+   const d=(m,dia,h)=>new Date(2026,m,dia,h||19).getTime(),GM=[];let k=0;const j=(ts,h,a,hs,as)=>GM.push({id:'g'+(k++),ts,h,a,hs,as,done:true});
+   for(let i=0;i<10;i++){ j(d(9,22+i*2),i%2?'A':'C',i%2?'C':'A',i%2?(i<2?100:120+i):(i<2?110:100),i%2?(i<2?110:100):(i<2?100:118+i)); j(d(9,23+i*2),i%2?'B':'D',i%2?'D':'B',i%2?(i<2?115:98):(i<2?100:117),i%2?(i<2?100:114):(i<2?112:99)); }
+   globalThis.GAMES=GM; globalThis.TEAMS={A:{n:'Indiana Pacers'},B:{n:'Boston Celtics'},C:{n:'X'},D:{n:'Y'}};
+   const x={conMercado:true,local:false,fav:'Boston Celtics',rival:'Indiana Pacers',ts:d(10,12)};
+   const r=G.rachaFila(x,'nba'), r2=G.rachaFila(x,'nhl'), r3=G.rachaFila(Object.assign({},x,{fav:'Indiana Pacers',rival:'Boston Celtics',local:true}),'nba'), r4=G.rachaFila(Object.assign({},x,{conMercado:false}),'nba');
+   delete globalThis.GAMES; delete globalThis.TEAMS; const r5=G.rachaFila(x,'nba'); globalThis.OVAForma=prev;
+   return r&&r.d===6&&r2===null&&r3===null&&r4===null&&r5===null&&/📊 La racha engaña: /.test(gj);})());
  ok('🎲 suerte: distribución exacta (dos monedas: 25/50/25) y rango normal de 40 picks de 60%',(()=>{const d=G.distAciertos([.5,.5]);const L=[];for(let i=0;i<40;i++)L.push({p:.6,g:i<23});const r=G.suerte(L);
    return d.join()==='0.25,0.5,0.25'&&r.lo===20&&r.hi===28&&Math.abs(r.e-24)<1e-9&&r.veredicto==='normal'&&r.prox.lo===54&&r.prox.hi===66;})());
  ok('🎲 suerte: 15 de 40 con 60% es «peor» (más que mala suerte) y 33 de 40 es «mejor»',(()=>{const f=w=>{const L=[];for(let i=0;i<40;i++)L.push({p:.6,g:i<w});return G.suerte(L);};return f(15).veredicto==='peor'&&f(15).menos<0.01&&f(33).veredicto==='mejor'&&f(19).veredicto==='bajo'&&f(29).veredicto==='alto'&&f(24).veredicto==='normal'&&G.suerte([])===null;})());
@@ -2126,7 +2137,7 @@ sec('Liga de modelos');
  const ps=LG.partidosDe({events:[ev('n1',t0+5*H,'Boston Bruins','Buffalo Sabres','1','2',{ml:['-150','+130']})]},'nhl','hockey/nhl');
  LG.registrar(reg,'nhl',ps,()=>({modelo:mNhl,pred:[{h:'Bruins',a:'Sabres',ph:.57,pa:.43,ini:new Date(t0+5*H).toISOString()}]}),t0);
  const it=reg.items['nhl|n1'];
- ok('guarda antes del juego: mercado sin margen, Polymarket, modelo, modelo sin tiros, OVA y consenso',!!(it&&it.p.mercado&&it.p.polymarket&&it.p.modelo&&it.p['modelo-goles']&&it.p.ova&&it.p.consenso)&&Math.abs(it.p.mercado[0]+it.p.mercado[1]-1)<0.002);
+ ok('guarda antes del juego: mercado sin margen, Polymarket, modelo, OVA y consenso (el modelo sin tiros ya no compite)',!!(it&&it.p.mercado&&it.p.polymarket&&it.p.modelo&&!it.p['modelo-goles']&&it.p.ova&&it.p.consenso)&&Math.abs(it.p.mercado[0]+it.p.mercado[1]-1)<0.002);
  ok('OVA en NHL = mercado con el modelo al 5% (queda pegado al mercado)',Math.abs(it.p.ova[0]-it.p.mercado[0])<0.02);
  const antes=JSON.stringify(it.p); LG.registrar(reg,'nhl',ps.map(p=>Object.assign({},p,{mercado:[.9,.1,0]})),()=>({}),t0+6*H);
  ok('con el juego empezado ya no se toca nada',JSON.stringify(reg.items['nhl|n1'].p)===antes);

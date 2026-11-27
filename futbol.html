@@ -1333,7 +1333,7 @@ function avisoWorldfootball(){
   if(!DIAG) return '';
   var w = DIAG.wf, http = DIAG.wfHttp, desdeEspn = DIAG.pendientesESPN;
   if(http) return '⚠️ worldfootball respondió HTTP '+http+' (error o bloqueo del sitio). '+(desdeEspn ? 'Los próximos partidos salen de ESPN (sin cruces ni escudos de worldfootball).' : 'No se pueden mostrar los próximos partidos.');
-  if(w && w.total===0) return '⚠️ worldfootball no devolvió ningún partido (puede estar bloqueado o haber cambiado). '+(desdeEspn ? 'Los próximos partidos salen de ESPN.' : 'Si hoy hay juegos, toca 🔍 Diagnóstico.');
+  if(w && w.total===0) return desdeEspn ? 'ℹ️ Partidos y resultados de ESPN (worldfootball no respondió; el modelo no lo necesita).' : '⚠️ worldfootball no devolvió ningún partido y ESPN tampoco trajo próximos. Si hoy hay juegos, toca 🔍 Diagnóstico.';
   if(desdeEspn) return 'ℹ️ worldfootball no listó partidos próximos; se muestran los de ESPN.';
   return '';
 }

@@ -6,7 +6,7 @@ name: Fabrica de ideas
 on:
   workflow_dispatch:
   schedule:
-    - cron: "11 8 * * 0"
+    - cron: "11 8 1 * *"   # una vez al mes (26-nov-2026): 356 variantes probadas, ninguna pasó
   push:
     branches: [main]
     paths:

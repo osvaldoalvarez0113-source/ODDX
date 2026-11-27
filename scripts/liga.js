@@ -18,7 +18,7 @@
                   fútbol (el Dixon-Coles v4 de futbol.html: en las 5 ligas ajustado igual que el teléfono con 2 temporadas + la actual;
                   Champions con fuerza-copas.json; copas de cada país con fuerza-nacional.json, como torneos.js),
                   tenis (Elo general + superficie de ratings-tenis.json, como tenis.js).
-     modelo-goles NHL sin tiros a puerta (Ws = 0): la variante de antes de agregar los tiros.
+     modelo-goles NHL sin tiros a puerta (Ws = 0): RETIRADO el 26-nov-2026 (nunca ganó; el nombre queda para los juegos viejos).
      modelo-solo  NBA y NFL sin el pronóstico de ESPN.
      modelo-viajes NBA: el modelo OVA (con BPI) más viajes y altura: Denver/Utah de local, km recorridos desde el juego anterior,
                   husos horarios cruzados, días de descanso y 3 juegos en 4 noches. Pesos ajustados con temporadas ya jugadas
@@ -183,8 +183,6 @@ function modelosUS(dep) {
     const juegos = hist.g.map(unpack).filter(g => g.hs != null && g.as != null).sort((a, b) => a.ts - b.ts);
     const P = Object.assign({}, M.PDEF), S = M.correr(juegos, P);
     const ult = {}; juegos.forEach(g => { const k = M.dayKey(g.ts); ult[g.h] = k; ult[g.a] = k; });
-    let S0 = null, P0 = null;
-    if (dep === 'nhl') { P0 = Object.assign({}, M.PDEF, { Ws: 0 }); S0 = M.correr(juegos, P0); }
     const fc = FAB && FAB.deportes && FAB.deportes[dep] && FAB.deportes[dep].mejor ? FAB.deportes[dep].mejor.cambios : null;
     const PF = fc ? Object.assign({}, M.PDEF, fc) : null, SF = PF ? M.correr(juegos, PF) : null;
     return function (p) {
@@ -194,7 +192,7 @@ function modelosUS(dep) {
         const prN = M.predecir(S, P, g, { dH: ult[p.hId], dA: ult[p.aId] });
         o.modelo = prN.pH;
         o._lin = { tipo: 'nhl', over: L => { const r = M.pOver(prN.D, L); return r.p < 1 ? r.w / (1 - r.p) : null; }, cubre: Sp => { const r = M.pCoverM(prN.D, Sp); return r.p < 1 ? r.w / (1 - r.p) : null; } };
-        o['modelo-goles'] = M.predecir(S0, P0, g, { dH: ult[p.hId], dA: ult[p.aId] }).pH;
+        /* modelo-goles (sin tiros) retirado el 26-nov-2026: nunca ganó en la liga (56% de aciertos, el peor de NHL) */
         if (SF) o['modelo-afinado'] = M.predecir(SF, PF, g, { dH: ult[p.hId], dA: ult[p.aId] }).pH;
       } else {
         const gH = ult[p.hId] === undefined ? undefined : dk - ult[p.hId], gA = ult[p.aId] === undefined ? undefined : dk - ult[p.aId];
@@ -701,7 +699,7 @@ function competidores(dep, p, extra) {
   if (extra.espn != null) o.espn = deLocal(extra.espn);
   const pol = prediccionPolymarket(extra.pred, p); if (pol && (dep !== 'futbol' || pol[2] > 0)) o.polymarket = pol;
   if (m) {
-    if (dep === 'nhl') { o.modelo = deLocal(m.modelo); o['modelo-goles'] = deLocal(m['modelo-goles']); }
+    if (dep === 'nhl') { o.modelo = deLocal(m.modelo); }
     if (dep === 'nfl') {
       o['modelo-solo'] = deLocal(m['modelo-solo']);
       o.modelo = extra.espn != null ? deLocal(sig((1 - W_FPI) * logit(m['modelo-solo']) + W_FPI * logit(extra.espn))) : o['modelo-solo'];

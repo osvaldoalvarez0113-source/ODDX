@@ -148,7 +148,7 @@ function deLiga(items,slug,nombre){
  if(!slug&&!nombre) return items||[];
  return (items||[]).filter(function(r){ return !!r&&(r.app!=='fut'||(slug&&r.slug?r.slug===slug:(!!nombre&&r.liga===nombre))); });
 }
-var API={suerte:suerte,distAciertos:distAciertos,suerteMia:suerteMia,suerteApp:suerteApp,deLiga:deLiga,resumenApp:resumenApp,HCP:HCP,hcpDe:hcpDe,FUERTE:FUERTE,esFuerte:esFuerte,semaforo:semaforo,PROPS:PROPS,lista:lista,marcadorLista:marcadorLista,marcadorMio:marcadorMio,borra:borra,americana:americana,esperados:esperados,ALERTA:ALERTA};
+var API={rachaFila:function(x,app){ var a=APP; APP=app; try{ return rachaFila(x); } finally{ APP=a; } },suerte:suerte,distAciertos:distAciertos,suerteMia:suerteMia,suerteApp:suerteApp,deLiga:deLiga,resumenApp:resumenApp,HCP:HCP,hcpDe:hcpDe,FUERTE:FUERTE,esFuerte:esFuerte,semaforo:semaforo,PROPS:PROPS,lista:lista,marcadorLista:marcadorLista,marcadorMio:marcadorMio,borra:borra,americana:americana,esperados:esperados,ALERTA:ALERTA};
 root.OVAGanadores=API;
 if(typeof module!=='undefined'&&module.exports) module.exports=API;
 var doc=root.document; if(!doc) return;
@@ -190,6 +190,16 @@ function cajaSemaforo(S){
  c.appendChild(mk('div','',S.mercado.n||S.modelo.n?'Últimos '+S.dias+' días, juegos guardados en Auto. '+(peor.color==='rojo'?'Baja el tamaño de tus apuestas en esta app hasta que se enderece, o quédate solo con «Solo fuertes».':(peor.color==='ambar'?'Puede ser mala suerte; míralo otra vez en unos días.':'')):'Sin juegos resueltos en los últimos '+S.dias+' días.'));
  return c;
 }
+/* NBA: «📊 La racha engaña» también en Al gane (la misma señal medida de forma.js, con los juegos que nba.html ya bajó).
+   GAMES y TEAMS son variables de nba.html (let de arriba): se leen dentro de try para no romper en otras apps. */
+function rachaFila(x){
+ if(APP!=='nba'||!root.OVAForma||!root.OVAForma.rachaEngana||!x.conMercado) return null;
+ var G,T; try{ G=GAMES; T=TEAMS; }catch(e){ return null; }
+ if(!G||!G.length||!T) return null;
+ function id(n){ for(var k in T){ if(T[k]&&T[k].n===n) return k; } return null; }
+ var h=id(x.local?x.fav:x.rival), a=id(x.local?x.rival:x.fav); if(!h||!a) return null;
+ var F=root.OVAForma; return F.rachaEngana(F.calc(G,h,x.ts,true,'nba'),F.calc(G,a,x.ts,false,'nba'),x.local,'nba');
+}
 var MIN_SUERTE=10;
 function cajaSuerte(mia,app){
  var c=mk('details','gnSem gnSuerte'), sm=mk('summary','','🎲 ¿Suerte o algo más?'); c.appendChild(sm); c.open=true;
@@ -222,6 +232,7 @@ function fila(x,i){
  f.appendChild(d);
  if(x.alerta) f.appendChild(mk('div','gnAl','⚠️ Tu modelo le da '+Math.round(x.modelo*100)+'%, '+Math.abs(x.dif).toFixed(0)+' puntos '+(x.dif<0?'menos':'más')+'. Revisa bajas y alineaciones antes de jugar.'));
  if(!x.conMercado) f.appendChild(mk('div','gnAl','Sin precio del mercado todavía: este % es solo de tu modelo.'));
+ var rs=rachaFila(x); if(rs){ var R=root.OVAForma.RACHA_NBA, rr=mk('div','gnHc'); rr.appendChild(mk('b','','📊 La racha engaña: ')); rr.appendChild(doc.createTextNode(x.rival+' viene '+rs.no.w+'-'+rs.no.l+' en sus últimos 10 y '+x.fav+' '+rs.fav.w+'-'+rs.fav.l+'. Medido en '+R.n+' juegos así: el favorito ganó '+R.fav+'% cuando su precio decía '+R.precio+'%. Es más seguro de lo que parece.')); f.appendChild(rr); }
  var hc=hcpDe(APP,x.p); if(hc&&x.conMercado){ var h=mk('div','gnHc'); h.appendChild(doc.createTextNode('🏒 Hándicap en este tramo: ')); h.appendChild(mk('b','',x.rival+' +1.5 pegó '+Math.round(hc.dog*100)+'%')); h.appendChild(doc.createTextNode(' · '+x.fav+' −1.5 pegó '+Math.round(hc.fav*100)+'% ('+hc.n.toLocaleString('en-US')+' juegos).')); f.appendChild(h); }
  return f;
 }

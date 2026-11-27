@@ -21,6 +21,7 @@ function $$(s,r){ return Array.prototype.slice.call((r||d).querySelectorAll(s));
 function el(tag,cls,html){ var e=d.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e; }
 
 var CSS=[
+ 'details.ovaMas{margin:10px 0 0;border:1px solid var(--line2,#2a3340);border-radius:12px;padding:8px 11px}details.ovaMas>summary{font-weight:800;font-size:13.5px;cursor:pointer}',
  /* letra mínima 12 px y un gris más legible para las notas */
  '.nota,.kpi small,.kpi span,.marcadores small,.h2h div small,.cuotasbox label,.ajuste label,.fila-rank .nom small,.tabla-bt th,',
  '.cabp .nm span,td small,.tarj span,.fila .pct em,.ovaSk .tx span,.hero .mid small,.ovaMini small,.ovaHero .cx small{font-size:12px!important}',
@@ -154,6 +155,7 @@ function armarAjustes(a,cfg){
  apar.addEventListener('click',abrirApar);
  apar.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); abrirApar(); } });
  v.insertBefore(apar,v.firstChild.nextSibling);
+ if(a==='nba'||a==='nhl'||a==='nfl'){ v.insertBefore(itemSimple(),apar.nextSibling); vigilarSimple(); }
  var det=el('details','dsAv','<summary>Avanzado</summary>');
  var lista=el('div','dsLista');
  lista.appendChild(el('p','dsAviso','Herramientas para medir el modelo y revisar los datos. No hacen falta para el día a día.'));
@@ -476,6 +478,47 @@ function vigilarBoletos(){
  new root.MutationObserver(lanzar).observe(d.documentElement,{attributes:true,attributeFilter:['data-ui']});
  boletos();
 }
+
+/* ---------- 📋 Veredicto simple (NBA, NHL y NFL) · 26-nov-2026 ----------
+   Con el ajuste prendido, el Veredicto enseña lo de arriba (los %), el primer bloque (El análisis + Pronóstico y pick) y las
+   señales (La racha engaña, avisos ⚠️). Lo demás (forma, rachas, línea del mercado, «cómo se lee») queda plegado en
+   «Ver todo el análisis». No borra nada: solo lo mete en un desplegable. Apagado por defecto. */
+var SIMPLE_K='ova_ver_simple';
+function simpleOn(){ try{ return root.localStorage.getItem(SIMPLE_K)==='1'; }catch(e){ return false; } }
+function esSenal(n){ return /La racha engaña|⚠️/.test(n.textContent||''); }
+function plegarVer(p){
+ if(p.getAttribute('data-simple')) return;
+ var hijos=$$(':scope > *',p), primero=null, mover=[];
+ hijos.forEach(function(n){
+  var plegable=n.classList.contains('rv')||(n.tagName==='DETAILS'&&n.classList.contains('comoLee'));
+  if(n.classList.contains('rv')&&!primero){ primero=n; return; }
+  if(plegable&&!esSenal(n)) mover.push(n);
+ });
+ p.setAttribute('data-simple','1');
+ if(mover.length<2) return;
+ var det=el('details','ovaMas'); det.appendChild(el('summary','','Ver todo el análisis ('+mover.length+' bloques más)'));
+ p.insertBefore(det,mover[0]); mover.forEach(function(n){ det.appendChild(n); });
+}
+function desplegarVer(){
+ $$('details.ovaMas').forEach(function(det){ var p=det.parentNode; $$(':scope > *',det).forEach(function(n){ if(n.tagName!=='SUMMARY') p.insertBefore(n,det); }); det.remove(); /* solo el desplegable que puso este mismo código */ });
+ $$('[data-simple]').forEach(function(x){ x.removeAttribute('data-simple'); });
+}
+function aplicarSimple(){ if(simpleOn()) $$('.pane[data-p="ver"]').forEach(plegarVer); }
+function vigilarSimple(){
+ if(vigilarSimple.hecho||!root.MutationObserver) return; vigilarSimple.hecho=1;
+ var pend=false;
+ new root.MutationObserver(function(){ if(pend||!simpleOn()) return; pend=true; setTimeout(function(){ pend=false; try{ aplicarSimple(); }catch(e){} },60); }).observe(d.body,{childList:true,subtree:true});
+ aplicarSimple();
+}
+function itemSimple(){
+ var it=el('div','dsItem dsSimple','');
+ function pinta(){ it.innerHTML='<span>📋 Veredicto simple: '+(simpleOn()?'prendido':'apagado')+'</span><small>'+(simpleOn()?'Solo lo esencial y las señales medidas; lo demás en «Ver todo el análisis».':'Toca para ver solo lo esencial del Veredicto.')+'</small>'; }
+ function toca(){ try{ root.localStorage.setItem(SIMPLE_K,simpleOn()?'0':'1'); }catch(e){} if(simpleOn()) aplicarSimple(); else desplegarVer(); pinta(); }
+ it.setAttribute('role','button'); it.tabIndex=0; pinta();
+ it.addEventListener('click',toca); it.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toca(); } });
+ return it;
+}
+root.OVAVerSimple={plegar:plegarVer,desplegar:desplegarVer,on:simpleOn};
 
 /* ---------- arranque ---------- */
 function que(){
