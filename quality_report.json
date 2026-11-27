@@ -1,0 +1,35 @@
+{
+  "hf_repo": "ganendraditya/understat-data",
+  "hf_revision": "main",
+  "team_match_rows": 25080,
+  "club_season_rows": 660,
+  "leagues": [
+    "EPL",
+    "La_liga",
+    "Serie_A"
+  ],
+  "seasons": [
+    "2014",
+    "2015",
+    "2016",
+    "2017",
+    "2018",
+    "2019",
+    "2020",
+    "2021",
+    "2022",
+    "2023",
+    "2024"
+  ],
+  "twenty_teams_per_cell": true,
+  "thirty_eight_matches_per_club": true,
+  "cells_from_match_dump": [
+    "2014/15",
+    "2022/23"
+  ],
+  "goals_balanced": true,
+  "sha256": {
+    "team_match.csv": "bb7c4c8bbbb53ee2c5a7cb3844a85b6415a3e098afb022b556b4b777df6de90f",
+    "club_season.csv": "f3e358070b5e23c9a02c30f3ee017c4512f5085a617f4b132aa903f0e92c936f"
+  }
+}

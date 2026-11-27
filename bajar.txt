@@ -1,0 +1,7 @@
+ok processed/team_match.csv
+ok processed/quality_report.json
+ok README.md
+25081 team_match.csv
+source,source_snapshot,league,season_start_year,season,team_id,team,date,home_away,result,goals_for,goals_against,xG,xGA,npxG,npxGA,xpts,pts,deep,deep_allowed,ppda_att,ppda_def,oppda_att,oppda_def
+archive,20250516135439,EPL,2014,2014/15,71,Aston Villa,2014-08-16,a,w,1,0,0.909774,0.423368,0.909774,0.423368,1.8321999999999998,3,4,3,323,23,132,32
+archive,20250516135439,EPL,2014,2014/15,71,Aston Villa,2014-08-23,h,d,0,0,0.507525,0.699295,0.507525,0.699295,1.1057,1,4,7,326,21,180,21
