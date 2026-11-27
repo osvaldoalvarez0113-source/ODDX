@@ -4,6 +4,7 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 
 | Archivo | Tema |
 |---|---|
+| [`MEDICION-TENIS-CALIBRAR-2026-11.md`](MEDICION-TENIS-CALIBRAR-2026-11.md) | **Tenis: corregir el % de Kalshi** por el sesgo favorito-perro (ATP, WTA): fuera de muestra empeora, la pendiente cambia entre 2025 y 2026. No entra |
 | [`MEDICION-HCAP-TOTAL-2026-11.md`](MEDICION-HCAP-TOTAL-2026-11.md) | **Hándicap + total → % de ganar** (NBA, NFL): el % del hándicap de cierre (con o sin el total) no es más exacto que el moneyline; 0 de 6 pasan. Ojo: NFL 2019 de `datos-nhl-nfl` trae líneas en vivo |
 | [`MEDICION-RELOJ-NFL-2026-11.md`](MEDICION-RELOJ-NFL-2026-11.md) | **Reloj del cuerpo NFL**: equipo del oeste de visita a la 1 p. m. del este gana 64.5% contra 54.7% de su precio (107 juegos, z 2.2), al revés de la literatura. Sin la NFL 2019 (líneas en vivo) baja a z 1.91 y ya no pasa. **En vigilancia** hasta enero, no entra |
 | [`MEDICION-DIVISION-2026-11.md`](MEDICION-DIVISION-2026-11.md) | **Juegos de división** (NFL, NHL, NBA): el no favorito no gana más que su precio. No entra |
