@@ -13,6 +13,9 @@ Sportsbook») → `MEDICION-MOVIMIENTO-2026-11.md`; sesgo favorito-perro de NBA/
 
 ## En vigilancia
 
+- **xG real en el fútbol** (mitad goles, mitad xG): señal chiquita a favor en 7 de 9 temporadas. Repetir cuando haya xG de 2025-26 en adelante
+  y de Bundesliga/Ligue 1, y si aparece una fuente de xG en vivo que la app pueda leer (`xg_futbol.js`).
+
 - **Reloj del cuerpo NFL** (equipo del oeste de visita a la 1 p. m. del este): pasó la regla al revés de la literatura (+9.7 pts, 107
   juegos, z 2.2). Revisar en enero de 2027 SOLO con los juegos de la temporada 2026 que no estaban en la medición (`reloj_nfl.py`).
   **Ojo (27-nov, tarde):** esos 107 incluyen la NFL 2019, que trae líneas en vivo. Sin 2019: 93 juegos, 62.4% contra 53.2%, z **1.91**
@@ -30,4 +33,4 @@ Sportsbook») → `MEDICION-MOVIMIENTO-2026-11.md`; sesgo favorito-perro de NBA/
 | 2026-11-27 | **NFL 2019 sin líneas en vivo**: se repitieron sorpresas, memoria, gemelos, recalibrar, división, reloj e investigador sin 2019 | Hallazgo de la medición de hándicap + total | Solo cambia el reloj NFL (deja de pasar). Se sacó 2019 en `sorpresas.py` y en la historia de la liga. `MEDICION-HCAP-TOTAL-2026-11.md` |
 | 2026-11-27 | **NHL 2025-26 con favoritos flojos** (55.5%) | Mismo hallazgo | La línea es de cierre y la apertura da igual: temporada pareja de verdad, no error |
 | 2026-11-27 | **Fuentes de machina-sports/sports-skills** | Pedido de Osvaldo | Revisadas: ESPN, football-data.co.uk, Transfermarkt, Kalshi y Polymarket ya están en OVA; openfootball no trae nada nuevo; FPL (bajas de la Premier) y Sleeper (NFL) solo traen lo de hoy, sin historia para medir; Understat no deja bajar con robots; la API de ClubElo no responde desde GitHub (se intentó, 3 veces). Nada nuevo que se pueda medir hoy |
-| 2026-11-27 | **xG real en el modelo de fútbol** | Pedido de Osvaldo (Forest vs Chelsea) | **No se pudo medir.** Understat bloquea las descargas automáticas (no se le da la vuelta), y ESPN solo trae xG de jugadores y solo de 2026-27, no el xG del equipo por partido con historia. Sin historia no hay prueba honesta. El «xG aproximado» con tiros ya se había medido y no mejora |
+| 2026-11-27 | **xG real en el modelo de fútbol** | Pedido de Osvaldo (Forest vs Chelsea) | **No pasa por poco.** Con el dataset público de Hugging Face (Understat vía Wayback Machine; Premier, La Liga, Serie A 2014-25): mitad goles/mitad xG acierta 1,827 → 1,849 de 3,420 en 2022-25 (t 3.5), pero la vuelta (t 1.0) y la confirmación 2016-20 (t 0.66) no se distinguen de cero. En vigilancia; falta fuente de xG en vivo. `MEDICION-XG-FUTBOL-2026-11.md` |
