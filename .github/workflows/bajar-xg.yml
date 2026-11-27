@@ -17,7 +17,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Probar ClubElo
+        run: |
+          for u in http://api.clubelo.com/2024-08-01 https://api.clubelo.com/2024-08-01 http://clubelo.com/; do
+            echo "== $u"; curl -sS -m 40 --retry 2 -o /tmp/p.txt -w "%{http_code}\n" "$u" || true; head -c 200 /tmp/p.txt || true; echo
+          done 2>&1 | tee bajar_clubelo.txt
       - name: Bajar ClubElo
+        continue-on-error: true
         run: node bajar_clubelo.js
       - name: Guardar
         if: always()
