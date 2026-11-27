@@ -25,6 +25,7 @@ def nba(box_f, filas_f):
 def espn(f):
     d = json.load(open(f)); out = []
     for s, T in d['temps'].items():
+        if 'nfl' in f and s == '2019': continue   # NFL 2019: líneas tomadas EN VIVO (docs/MEDICION-HCAP-TOTAL-2026-11.md)
         for g in T['juegos']:
             if not g.get('done') or g.get('skip'): continue
             l = g.get('linea') or {}; ml = l.get('ml') or [None, None]

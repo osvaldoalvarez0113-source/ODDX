@@ -61,6 +61,7 @@ function deNBA(filas) {
 function deUS(datos, dep) {
   const out = [];
   Object.keys((datos && datos.temps) || {}).forEach(y => {
+    if (dep === 'nfl' && String(y) === '2019') return;   // NFL 2019: ESPN guardó líneas EN VIVO (docs/MEDICION-HCAP-TOTAL-2026-11.md)
     ((datos.temps[y] && datos.temps[y].juegos) || []).forEach(g => {
       if (!g || !g.done || g.skip || g.neutral || !g.linea || !g.linea.ml) return;
       const p = sinMargen(g.linea.ml[0], g.linea.ml[1]); if (p === null) return;

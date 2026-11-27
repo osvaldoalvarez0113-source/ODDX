@@ -54,3 +54,25 @@ sin 2019 quedan 93 juegos, 62.4% contra 53.2%, **z 1.91: ya no pasa**. `recalibr
 
 También se vio que en la NHL 2025-26 el favorito de cierre ganó solo 55.5% (1,394 juegos; 2022-24: 61%). Es igual con DraftKings
 y con ESPN BET y en casi todos los meses, así que parece una temporada pareja de verdad y no un error; se anota por si acaso.
+
+## Repetición sin la NFL 2019 (27-nov-2026, a pedido de Osvaldo)
+
+Se corrieron otra vez, con y sin 2019, todas las mediciones que leen `datos-nfl.json`:
+
+| Medición | Con 2019 | Sin 2019 | ¿Cambia la conclusión? |
+|---|---|---|---|
+| Sorpresas (`sorpresas.py`), NFL | 1,891 juegos; ninguna situación pasa (la más cerca: favorito de visita −3.2 pts, z −1.9) | 1,652; ninguna pasa (−3.0 pts, z −1.6) | No |
+| Memoria (`memoria.py`), NFL | ninguna forma mejora (−11 a −20 milésimas) | ninguna (−12 a −20) | No |
+| Gemelos (`gemelos.py`), NFL | Brier 0.20598 → 0.21441 (peor) | 0.20660 → 0.21550 (peor) | No |
+| Recalibrar (`recalibrar.py`), NFL | no pasa (t −1.2 / −0.9) | no pasa (t −1.7 / −1.5) | No |
+| División (`division.py`), NFL | −0.2 pts, p 0.89 | +0.4 pts, p 0.82 | No |
+| Investigador, NFL | 0 pasan | 0 pasan | No |
+| **Reloj del cuerpo NFL** (`reloj_nfl.py`) | **pasa** (107 juegos, z 2.18) | **no pasa** (93 juegos, z 1.91) | **Sí** |
+
+**Se arregló en el código:** `sorpresas.py` (que importan memoria, gemelos, recalibrar, división, reloj y el investigador) y
+`scripts/historia_liga.js` (la 📚 historia de la liga que sale en «de cada 100») ya no cuentan la NFL 2019. En la historia,
+lo que más cambia es la franja de 90%+: tenía 46 juegos con el favorito ganando 95.7% y queda en 10 juegos con 90.0%.
+Las otras franjas casi no se mueven (50-60%: 56.5% → 56.3%; 70-80%: 77.4% → 77.3%). Prueba nueva en `pruebas.js`.
+
+**NHL 2025-26 (favoritos que ganan solo 55.5%):** revisado. La línea guardada es de cierre (en el 89% de los juegos es distinta
+de la apertura) y con la apertura sale igual (55.4%). Fue una temporada pareja de verdad, no un error de datos.

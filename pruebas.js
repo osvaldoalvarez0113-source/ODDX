@@ -2287,6 +2287,7 @@ sec('Liga de modelos');
   ok('historia: precio sin margen con dos moneylines (−150/+130 → 58.0%) y descarta precios sin sentido',Math.abs(HL.sinMargen(-150,130)-0.580)<0.002&&HL.sinMargen(-150,-150)===null&&HL.sinMargen(0,120)===null);
   const nba=HL.deNBA([{ts:T0,sk:2024,mar:5,mlH:-200,mlA:170},{ts:T0+1,sk:2024,mar:-3,mlH:-200,mlA:170},{ts:T0+2,sk:2024,mar:0,mlH:-200,mlA:170},{ts:T0+3,sk:2024,mar:4}]);
   ok('historia NBA: favorito local acierta/falla con el margen; sin margen o sin precio no cuenta',nba.length===2&&nba[0][2]==='L'&&nba[0][3]===1&&nba[1][3]===0&&nba[0][4]==='2024-25');
+  ok('la historia de la liga no cuenta la NFL 2019 (líneas en vivo)',HL.deUS({temps:{'2019':{juegos:[{ts:T0,done:true,hs:2,as:3,linea:{ml:[130,-150]}}]},'2020':{juegos:[{ts:T0,done:true,hs:2,as:3,linea:{ml:[130,-150]}}]}}},'nfl').length===1&&HL.deUS({temps:{'2019':{juegos:[{ts:T0,done:true,hs:2,as:3,linea:{ml:[130,-150]}}]}}},'nhl').length===1);
   const us=HL.deUS({temps:{'2025':{juegos:[{ts:T0,done:true,hs:2,as:3,linea:{ml:[130,-150]}},{ts:T0,done:true,skip:true,hs:2,as:3,linea:{ml:[130,-150]}},{ts:T0,done:false,linea:{ml:[130,-150]}},{ts:T0,done:true,hs:20,as:20,linea:{ml:[-110,-110]}}]}}},'nhl');
   ok('historia NHL/NFL: favorito visita que gana = acierto; pretemporada, sin terminar y empates fuera; temporada 2025-26',us.length===1&&us[0][2]==='A'&&us[0][3]===1&&us[0][4]==='2025-26');
   const fu=HL.deFutbol([{d:T0,t:'2425',mk:[0.25,0.30,0.45],gh:0,ga:2},{d:T0,t:'2425',mk:[0.5,0.3,0.2],gh:1,ga:1}]);
