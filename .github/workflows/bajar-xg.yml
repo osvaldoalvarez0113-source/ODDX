@@ -1,6 +1,7 @@
-name: Bajar ClubElo (fútbol, para medir)
+name: Bajar xG (dataset público de Hugging Face)
 
-# Solo baja datos para una medición: xG por partido de las 5 ligas desde 2018-19. Guarda en la rama "datos-xg-futbol".
+# Solo para medir: baja el dataset público ganendraditya/understat-data (xG por equipo y partido, EPL, La Liga y Serie A,
+# 2014-15 a 2024-25) a la rama "datos-xg-futbol". No toca la app.
 on:
   push:
     branches: [bajar-xg]
@@ -11,23 +12,18 @@ permissions:
 jobs:
   bajar:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: Probar ClubElo
+      - name: Bajar
         run: |
-          for u in http://api.clubelo.com/2024-08-01 https://api.clubelo.com/2024-08-01 http://clubelo.com/; do
-            echo "== $u"; curl -sS -m 40 --retry 2 -o /tmp/p.txt -w "%{http_code}\n" "$u" || true; head -c 200 /tmp/p.txt || true; echo
-          done 2>&1 | tee bajar_clubelo.txt
-      - name: Bajar ClubElo
-        continue-on-error: true
-        run: node bajar_clubelo.js
+          mkdir -p /tmp/res && cd /tmp/res
+          B=https://huggingface.co/datasets/ganendraditya/understat-data/resolve/main
+          for f in processed/team_match.csv processed/quality_report.json README.md; do
+            curl -sSL --fail --retry 3 -o "$(basename $f)" "$B/$f" && echo "ok $f" || echo "falla $f"
+          done | tee bajar.txt
+          wc -l team_match.csv >> bajar.txt || true; head -3 team_match.csv >> bajar.txt || true
       - name: Guardar
         if: always()
         run: |
-          mkdir -p /tmp/res && cp -f clubelo.json bajar_clubelo.txt /tmp/res/ 2>/dev/null || true
           cd /tmp/res && git init -q -b datos-xg-futbol && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
-          git add -A && git commit -q -m "ClubElo" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" datos-xg-futbol
+          git add -A && git commit -q -m "xG dataset HF" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" datos-xg-futbol
