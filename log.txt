@@ -13,11 +13,11 @@ tenis: mezcla esperando (30 de 150 calificados)
 nba: 16 partidos vistos · 11 guardados/refrescados antes de empezar · ESPN 11
 nhl: 28 partidos vistos · 15 guardados/refrescados antes de empezar · ESPN 0
 nfl: con modelo de afuera 16
-nfl: 16 partidos vistos · 13 guardados/refrescados antes de empezar · ESPN 13
+nfl: 16 partidos vistos · 12 guardados/refrescados antes de empezar · ESPN 12
 mlb: 0 partidos vistos · 0 guardados/refrescados antes de empezar · ESPN 0
 futbol: con modelo de afuera 19
 futbol: 97 partidos vistos · 12 guardados/refrescados antes de empezar · ESPN 0
 tenis: con modelo de afuera 20
 tenis: 32 partidos vistos · 4 guardados/refrescados antes de empezar · ESPN 0
 avisos: tema privado sí · pendientes 1 · problemas del vigilante 1 · detective 0 grupos
-calificados ahora: 0 · ascensos: 0 · total guardados: 278
+calificados ahora: 1 · ascensos: 0 · total guardados: 278
