@@ -6,6 +6,9 @@ visita en la costa este a la 1 p. m. (10 a. m. en su cuerpo) rinde menos. ¿Gana
 `python3 scripts/medicion/reloj_nfl.py`. **Regla fijada antes de correr:** |z| ≥ 2 y las dos mitades (antes de 2023 / desde 2023)
 hacia el mismo lado con 1+ punto.
 
+> **Corrección (27-nov, tarde, `MEDICION-HCAP-TOTAL-2026-11.md`):** la NFL 2019 de `datos-nfl.json` trae líneas tomadas en vivo.
+> Sin 2019: 93 juegos, el del oeste ganó 62.4% contra 53.2% (+9.2 pts, **z 1.91**; mitades +11.6 y +7.7) → **no pasa** la regla.
+
 ## Resultado: pasa la regla, pero AL REVÉS de la idea, y con muy pocos juegos. En vigilancia, no entra
 
 - El equipo del oeste a la 1 p. m. del este ganó **64.5%** cuando su precio decía **54.7%** (+9.7 puntos, z +2.18, 107 juegos).

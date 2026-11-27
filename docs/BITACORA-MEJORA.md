@@ -9,11 +9,25 @@ mide UNA idea de la cola y anota aquí la fecha, la idea y el resultado. Lo ya m
   fuentes «profundas» por liga (además de ESPN) en https://github.com/machina-sports/sports-skills (`skills/<deporte>/references/`)
   y ver si alguna trae un dato que OVA no tenga y que se pueda medir contra el precio de cierre. NO instalar la skill (riesgo medio
   en la revisión de seguridad de skills.sh y OVA ya hace lo que hace su parte de apuestas): solo usarla como pista de datos.
+  Ojo: casi todo lo que traería necesita bajar datos nuevos (no se puede medir con lo guardado).
+- **Limpiar la NFL 2019 (líneas en vivo)** (27-nov-2026, salió midiendo hándicap + total). `datos-nfl.json` de `datos-nhl-nfl` trae en
+  2019 líneas tomadas durante el juego (totales de 21.5 y 60+, el precio «acierta» 74%). Repetir `sorpresas.py`, `memoria.py`,
+  `gemelos.py`, `recalibrar.py`, `division.py` e investigador sin 2019 (el reloj NFL ya se repitió: deja de pasar) y ver si algo cambia; si se confirma, filtrar 2019 en esos scripts (son mediciones, no la app).
+- **Favoritos grandes de tenis en Kalshi** (lo único del sesgo favorito-perro que `MEDICION-RECALIBRAR-2026-11.md` no cubrió; de `MEDICION-TENIS-BATERIA-2026-11.md`: 80-90% ganó 86.5% contra 84.4%; 90%+ ganó 95.9%
+  contra 93.4%). Probar una curva de calibración del precio de Kalshi ajustada en 2025 y probada en 2026, medida en aciertos/pérdida log.
+- **NHL 2025-26 con favoritos flojos** (55.5% contra 61% en 2022-24, igual con DraftKings y ESPN BET). Parece real; solo revisar si la
+  línea guardada es de cierre y no de apertura antes de usar esa temporada para ajustar algo.
+
+Ya cubiertas por mediciones viejas (no repetir): movimiento de línea en vivo (Management Science 2024, «Inefficient Forecasts at the
+Sportsbook») → `MEDICION-MOVIMIENTO-2026-11.md`; sesgo favorito-perro de NBA/NHL/NFL/MLB (Woodland & Woodland en la NHL) →
+`MEDICION-RECALIBRAR-2026-11.md`; y TIGRE (movimiento rápido y acumulado: 4,033 avisos, gana 48.3% contra 49.3% que promete).
 
 ## En vigilancia
 
 - **Reloj del cuerpo NFL** (equipo del oeste de visita a la 1 p. m. del este): pasó la regla al revés de la literatura (+9.7 pts, 107
   juegos, z 2.2). Revisar en enero de 2027 SOLO con los juegos de la temporada 2026 que no estaban en la medición (`reloj_nfl.py`).
+  **Ojo (27-nov, tarde):** esos 107 incluyen la NFL 2019, que trae líneas en vivo. Sin 2019: 93 juegos, 62.4% contra 53.2%, z **1.91**
+  → con datos limpios **ya no pasa** la regla. Sigue en vigilancia solo por curiosidad; no cuenta como señal.
 
 ## Hechas
 
@@ -21,4 +35,5 @@ mide UNA idea de la cola y anota aquí la fecha, la idea y el resultado. Lo ya m
 |---|---|---|---|
 | 2026-11-27 | Recalibrar el % del mercado (sesgo favorito–longshot) | Historia de la liga + literatura | No pasa en NBA, NHL, NFL ni MLB |
 | 2026-11-27 | Juegos de división | Literatura de la NFL | No pasa en NFL, NHL ni NBA |
-| 2026-11-27 | Reloj del cuerpo en la NFL (oeste a la 1 p. m. del este) | Estudios de ritmo circadiano | Pasa al revés con 107 juegos: en vigilancia, no entra |
+| 2026-11-27 | Reloj del cuerpo en la NFL (oeste a la 1 p. m. del este) | Estudios de ritmo circadiano | Pasa al revés con 107 juegos: en vigilancia, no entra. Sin NFL 2019 (líneas en vivo): z 1.91, no pasa |
+| 2026-11-27 | **Hándicap + total → % de ganar** (NBA y NFL): ¿el % que sale del hándicap de cierre, con σ que crece con el total, es más exacto que el moneyline? | Stern 1991; arXiv 1211.4000 y 2212.08116 | **No pasa.** NBA 7,254 juegos: pérdida −0.57/−0.67/−0.23 milésimas (A/B/C), aciertos 67.98% → 67.76%. NFL 1,683: −0.96/−0.92/−0.33, 66.90% → 66.61%. Holm: 0 de 6. Hallazgo: NFL 2019 trae líneas en vivo. `MEDICION-HCAP-TOTAL-2026-11.md` |
