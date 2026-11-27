@@ -13,6 +13,12 @@ mide UNA idea de la cola y anota aquí la fecha, la idea y el resultado. Lo ya m
 - **Limpiar la NFL 2019 (líneas en vivo)** (27-nov-2026, salió midiendo hándicap + total). `datos-nfl.json` de `datos-nhl-nfl` trae en
   2019 líneas tomadas durante el juego (totales de 21.5 y 60+, el precio «acierta» 74%). Repetir `sorpresas.py`, `memoria.py`,
   `gemelos.py`, `recalibrar.py`, `division.py` e investigador sin 2019 (el reloj NFL ya se repitió: deja de pasar) y ver si algo cambia; si se confirma, filtrar 2019 en esos scripts (son mediciones, no la app).
+- **xG real en el fútbol (Understat u otra fuente con historia)** (27-nov-2026, pedido de Osvaldo hablando del Forest vs Chelsea). El modelo
+  de fútbol solo probó un «xG aproximado» hecho con tiros (tiros a puerta + 0.1 × tiros fuera, `resultados-futbol-xg`, no mejoró). Nunca
+  se probó el xG de verdad (calidad de cada tiro). Bajar xG a favor y en contra por partido de las 5 ligas (Understat tiene desde 2014),
+  meterlo en los ratings del modelo (mezcla goles/xG) y medir en aciertos y pérdida 1X2: ajusta en unas temporadas, prueba en otras.
+  Si pasa: entra al modelo y se puede mostrar «juega mejor/peor de lo que dice la tabla» en el Veredicto (lo aprueba Osvaldo).
+  Ojo: en la NHL el xG real (MoneyPuck) no ayudó; hace falta bajar datos nuevos (no se mide con lo guardado).
 - **NHL 2025-26 con favoritos flojos** (55.5% contra 61% en 2022-24, igual con DraftKings y ESPN BET). Parece real; solo revisar si la
   línea guardada es de cierre y no de apertura antes de usar esa temporada para ajustar algo.
 
