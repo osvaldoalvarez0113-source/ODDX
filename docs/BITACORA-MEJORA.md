@@ -5,17 +5,8 @@ en el momento, sin dejar nada para después. Esta bitácora sigue como registro 
 
 ## Cola de ideas (por medir)
 
-- **Fuentes de datos gratis de machina-sports/sports-skills** (anotada el 27-nov-2026 a pedido de Osvaldo). Revisar su lista de
-  fuentes «profundas» por liga (además de ESPN) en https://github.com/machina-sports/sports-skills (`skills/<deporte>/references/`)
-  y ver si alguna trae un dato que OVA no tenga y que se pueda medir contra el precio de cierre. NO instalar la skill (riesgo medio
-  en la revisión de seguridad de skills.sh y OVA ya hace lo que hace su parte de apuestas): solo usarla como pista de datos.
-  Ojo: casi todo lo que traería necesita bajar datos nuevos (no se puede medir con lo guardado).
-- **xG real en el fútbol (Understat u otra fuente con historia)** (27-nov-2026, pedido de Osvaldo hablando del Forest vs Chelsea). El modelo
-  de fútbol solo probó un «xG aproximado» hecho con tiros (tiros a puerta + 0.1 × tiros fuera, `resultados-futbol-xg`, no mejoró). Nunca
-  se probó el xG de verdad (calidad de cada tiro). Bajar xG a favor y en contra por partido de las 5 ligas (Understat tiene desde 2014),
-  meterlo en los ratings del modelo (mezcla goles/xG) y medir en aciertos y pérdida 1X2: ajusta en unas temporadas, prueba en otras.
-  Si pasa: entra al modelo y se puede mostrar «juega mejor/peor de lo que dice la tabla» en el Veredicto (lo aprueba Osvaldo).
-  Ojo: en la NHL el xG real (MoneyPuck) no ayudó; hace falta bajar datos nuevos (no se mide con lo guardado).
+Vacía (27-nov-2026): todo lo que estaba en cola se corrió o se cerró. Ver «Hechas».
+
 Ya cubiertas por mediciones viejas (no repetir): movimiento de línea en vivo (Management Science 2024, «Inefficient Forecasts at the
 Sportsbook») → `MEDICION-MOVIMIENTO-2026-11.md`; sesgo favorito-perro de NBA/NHL/NFL/MLB (Woodland & Woodland en la NHL) →
 `MEDICION-RECALIBRAR-2026-11.md`; y TIGRE (movimiento rápido y acumulado: 4,033 avisos, gana 48.3% contra 49.3% que promete).
@@ -38,3 +29,5 @@ Sportsbook») → `MEDICION-MOVIMIENTO-2026-11.md`; sesgo favorito-perro de NBA/
 | 2026-11-27 | **Tenis: corregir el % de Kalshi por el sesgo favorito-perro** (una curva, y una por circuito) | `MEDICION-TENIS-BATERIA-2026-11.md` + literatura favorito-longshot | **No pasa.** 7,483 partidos; fuera de muestra empeora (−0.29 y −0.65 milésimas, t −1.4 y −2.2), aciertos 5,173 → 5,175 / 5,172; la pendiente de la WTA cambia de 0.92 a 1.23. `MEDICION-TENIS-CALIBRAR-2026-11.md` |
 | 2026-11-27 | **NFL 2019 sin líneas en vivo**: se repitieron sorpresas, memoria, gemelos, recalibrar, división, reloj e investigador sin 2019 | Hallazgo de la medición de hándicap + total | Solo cambia el reloj NFL (deja de pasar). Se sacó 2019 en `sorpresas.py` y en la historia de la liga. `MEDICION-HCAP-TOTAL-2026-11.md` |
 | 2026-11-27 | **NHL 2025-26 con favoritos flojos** (55.5%) | Mismo hallazgo | La línea es de cierre y la apertura da igual: temporada pareja de verdad, no error |
+| 2026-11-27 | **Fuentes de machina-sports/sports-skills** | Pedido de Osvaldo | Revisadas: ESPN, football-data.co.uk, Transfermarkt, Kalshi y Polymarket ya están en OVA; openfootball no trae nada nuevo; FPL (bajas de la Premier) y Sleeper (NFL) solo traen lo de hoy, sin historia para medir; Understat no deja bajar con robots; la API de ClubElo no responde desde GitHub (se intentó, 3 veces). Nada nuevo que se pueda medir hoy |
+| 2026-11-27 | **xG real en el modelo de fútbol** | Pedido de Osvaldo (Forest vs Chelsea) | **No se pudo medir.** Understat bloquea las descargas automáticas (no se le da la vuelta), y ESPN solo trae xG de jugadores y solo de 2026-27, no el xG del equipo por partido con historia. Sin historia no hay prueba honesta. El «xG aproximado» con tiros ya se había medido y no mejora |
