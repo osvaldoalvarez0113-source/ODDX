@@ -1,0 +1,27 @@
+name: Bajar xG de Understat (fútbol)
+
+# Solo baja datos para una medición: xG por partido de las 5 ligas desde 2018-19. Guarda en la rama "datos-xg-futbol".
+on:
+  push:
+    branches: [bajar-xg]
+
+permissions:
+  contents: write
+
+jobs:
+  bajar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Bajar
+        run: node bajar_xg_understat.js
+      - name: Guardar
+        if: always()
+        run: |
+          mkdir -p /tmp/res && cp -f xg-futbol.json bajar_xg.txt /tmp/res/ 2>/dev/null || true
+          cd /tmp/res && git init -q -b datos-xg-futbol && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "xG de Understat" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" datos-xg-futbol
