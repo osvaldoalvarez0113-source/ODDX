@@ -79,8 +79,23 @@
     try { if (root.OVAObs) o += root.OVAObs.html(GAMES, g, { n: H.name, logo: logo(H.id) }, { n: A.name, logo: logo(A.id) }, 'mlb'); } catch (e) { }
     return o;
   }
+  /* 📐 Paso a paso (pasoapaso.js) de MLB: el ganador del mercado (Pinnacle o Polymarket) o de OVA; el total es el de OVA
+     (el escáner de MLB solo trae el ganador). La tabla contra el juego usa el pitagórico (exponente 1.83). */
+  function paso(el) {
+    try {
+      var d = el && el._d, c = el && el._calc; if (!d || !c || !root.OVAPaso) return '<div class="nota">No se pudo armar el paso a paso.</div>';
+      cargar();
+      var mk = null; try { mk = root.OVAMercado && root.OVAMercado.de ? root.OVAMercado.de(el) : null; } catch (e) { }
+      var A = d.a.team, H = d.h.team, ts = (d.fecha && d.fecha.getTime) ? d.fecha.getTime() : Date.now(), F = root.OVAForma;
+      var pH = mk ? mk.pH : +c.pH / 100, T = isFinite(c.T) ? Math.round(c.T * 2) / 2 : null;
+      return root.OVAPaso.html({ dep: 'mlb', nL: H.name, nV: A.name, p: pH, sinMercado: !mk,
+        mkTxt: mk ? (mk.src === 'pred' ? 'Polymarket' + (mk.vivo ? ' (en vivo)' : '') : 'Pinnacle') : '',
+        tot: T, modL: isFinite(c.lamHt) ? c.lamHt : null, modV: isFinite(c.lamAt) ? c.lamAt : null,
+        fL: GAMES && F ? F.calc(GAMES, String(H.id), ts, true, 'mlb') : null, fV: GAMES && F ? F.calc(GAMES, String(A.id), ts, false, 'mlb') : null });
+    } catch (e) { return '<div class="nota">No se pudo armar el paso a paso de este juego.</div>'; }
+  }
   function listo() { return !!GAMES; }
-  var API = { cargar: cargar, ctx: ctx, analisis: analisis, bloques: bloques, listo: listo, razonesMlb: razonesMlb, _set: function (j) { GAMES = leer(j); } };
+  var API = { cargar: cargar, paso: paso, ctx: ctx, analisis: analisis, bloques: bloques, listo: listo, razonesMlb: razonesMlb, _set: function (j) { GAMES = leer(j); } };
   root.OVAMlbExtra = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   try { if (typeof document !== 'undefined') cargar(); } catch (e) { }

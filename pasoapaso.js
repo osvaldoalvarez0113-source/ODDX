@@ -253,7 +253,7 @@
       if (dep === 'fut' && Array.isArray(P)) { ex = golesDe1x2(P[0], P[2], c.pMas25); if (ex) r = matriz(ex.L, ex.V, 10); }
       else if ((dep === 'nhl' || dep === 'mlb') && P != null) { ex = golesDe2(P, c.tot, c.pMasTot); if (ex) r = matriz(ex.L, ex.V, 16); }
       if (dep !== 'tenis') {
-        o += '<h3>2) Lo que espera la casa</h3>';
+        o += '<h3>2) Lo que espera ' + (c.sinMercado && dep !== 'nba' && dep !== 'nfl' ? 'el modelo' : 'la casa') + '</h3>';
         if (dep === 'nba' || dep === 'nfl') {
           pt = puntosDe(c.sp, c.tot);
           if (pt) {
@@ -267,12 +267,12 @@
         } else if (ex) {
           var mc = marcadores(ex.L, ex.V, 3);
           o += '<div class="psChips"><div>' + nL + '<b>' + ex.L.toFixed(2) + '</b><small>' + q + '</small></div><div>' + nV + '<b>' + ex.V.toFixed(2) + '</b><small>' + q + '</small></div><div>Total<b>' + (ex.L + ex.V).toFixed(2) + '</b><small>' + q + '</small></div></div>' +
-            '<div class="nota">Es el partido que la casa tiene en la cabeza. ' + (dep === 'fut' ? 'Marcadores más probables: <b>' + mc.map(function (m) { return m[0] + '</b> (' + p0(m[1]) + ')'; }).join(', <b>') + '.' : '') + '</div>' +
-            (c.modL != null && c.modV != null ? '<div class="psMod"><b>¿Y los del modelo de OVA?</b> El modelo espera ' + nL + ' ' + (+c.modL).toFixed(2) + ' · ' + nV + ' ' + (+c.modV).toFixed(2) + ' ' + q + '. ' +
+            '<div class="nota">' + (c.sinMercado ? 'Sin precio de la casa: es el partido que ve el modelo de OVA. ' : 'Es el partido que la casa tiene en la cabeza. ') + (dep === 'fut' ? 'Marcadores más probables: <b>' + mc.map(function (m) { return m[0] + '</b> (' + p0(m[1]) + ')'; }).join(', <b>') + '.' : '') + '</div>' +
+            (c.modL != null && c.modV != null && !c.sinMercado ? '<div class="psMod"><b>¿Y los del modelo de OVA?</b> El modelo espera ' + nL + ' ' + (+c.modL).toFixed(2) + ' · ' + nV + ' ' + (+c.modV).toFixed(2) + ' ' + q + '. ' +
               'No son los mismos: los de arriba salen de la <b>cuota</b> (lo que cree la casa) y los del modelo salen de lo que cada equipo <b>ha metido y recibido</b>. ' +
               (Math.abs(c.modL - ex.L) + Math.abs(c.modV - ex.V) >= 0.35 ? 'Aquí se separan bastante: cuando pasa, la casa suele tener razón (sabe de bajas y alineaciones; el modelo no).' : 'Aquí casi coinciden.') + '</div>' : '') +
-            plegado('¿De dónde sale?', 'Se buscan los ' + q + ' de cada equipo que dan exactamente el % del ganador' + (ex.conTotal ? ' y el del Más/Menos' : (dep === 'fut' ? ' (sin precio del total se toma la media de las grandes ligas, 2.65 goles)' : ' con el total de la casa')) + ', con la fórmula de Poisson (la que usan casi todos los modelos de ' + (dep === 'fut' ? 'fútbol' : 'hockey') + '). De ahí salen las opciones del punto 4.');
-          corto.push('La casa espera ~' + ex.L.toFixed(1) + ' a ' + ex.V.toFixed(1) + ' ' + q + (dep === 'fut' ? ': algo como ' + mc.slice(0, 2).map(function (m) { return m[0]; }).join(' o ') : '') + '.');
+            plegado('¿De dónde sale?', 'Se buscan los ' + q + ' de cada equipo que dan exactamente el % del ganador' + (ex.conTotal ? ' y el del Más/Menos' : (dep === 'fut' ? ' (sin precio del total se toma la media de las grandes ligas, 2.65 goles)' : (dep === 'mlb' ? ' con el total de OVA (en MLB el escáner solo trae el precio del ganador, no el total de la casa)' : ' con el total de la casa'))) + ', con la fórmula de Poisson (la que usan casi todos los modelos de ' + (dep === 'fut' ? 'fútbol' : (dep === 'mlb' ? 'conteo; en béisbol las carreras varían más que eso, así que las opciones de «por 2 o más» son aproximadas' : 'hockey')) + '). De ahí salen las opciones del punto 4.');
+          corto.push((c.sinMercado ? 'El modelo espera ~' : 'La casa espera ~') + ex.L.toFixed(1) + ' a ' + ex.V.toFixed(1) + ' ' + q + (dep === 'fut' ? ': algo como ' + mc.slice(0, 2).map(function (m) { return m[0]; }).join(' o ') : '') + '.');
         } else o += '<div class="nota">Sin precio suficiente para despejarlo.</div>';
       }
 

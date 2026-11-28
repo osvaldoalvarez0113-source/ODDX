@@ -3502,6 +3502,7 @@ function pintar(el){
   if(pest){
     body.querySelectorAll('.tb').forEach(function(z){ z.classList.toggle('on', z.dataset.t===pest); });
     body.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('on', t.dataset.t===pest); });
+    if(pest==='p'){ try{ var spP=body.querySelector('.tab[data-t="p"]'); if(spP&&window.OVAMlbExtra&&window.OVAMlbExtra.paso){ spP.innerHTML=window.OVAMlbExtra.paso(el); if(window.OVAPaso) window.OVAPaso.enlazar(spP); } }catch(e){} }   /* 📐 si se repinta estando en Paso a paso */
   }
   conectar(body);
   body.querySelectorAll('input').forEach(function(i){
@@ -3643,6 +3644,7 @@ function detalle(x){
   var brecha=Math.abs(deltaMult-deltaFinal);
 
   x._ca=[sea,seh,l5a,l5h,ba,bh,pk];
+  if(ULTIMO){ ULTIMO.lamAt=lamAt; ULTIMO.lamHt=lamHt; ULTIMO.T=T; }   /* para 📐 Paso a paso (mlbextra.js) */
   var cal=calidad(x,sea,seh,l5a,l5h,ba,bh,pk,x._lu);
 
   var pick;
@@ -3885,12 +3887,14 @@ function detalle(x){
   var out=
   '<div class="tabs">'+
     '<button class="tb on" data-t="v"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg> Veredicto</button>'+
+    '<button class="tb" data-t="p"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19h14M7 15l3-4 3 2 4-6"/></svg>Paso a paso</button>'+
     '<button class="tb" data-t="c"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7.5v9M9.8 10h4.4M9.8 14h4.4"/></svg> Cuotas</button>'+
     '<button class="tb" data-t="n"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18M7 20v-6M12 20V5M17 20v-9"/></svg> Números</button>'+
     '<button class="tb" data-t="f"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c3 4 5 6 5 9a5 5 0 0 1-10 0c0-2 1-3.2 2.2-4.2C9.2 10 10 11 11 11c0-3-1-5 1-8z"/></svg> Forma</button>'+
     '<button class="tb" data-t="x"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="10" rx="9" ry="4.6"/><path d="M3 10v6a9 4.6 0 0 0 18 0v-6"/></svg> Parque</button>'+
   '</div>'+
   '<section class="tab on" data-t="v">'+tVer+'</section>'+
+  '<section class="tab" data-t="p"></section>'+
   '<section class="tab" data-t="c">'+tCuo+'</section>'+
   '<section class="tab" data-t="n">'+tNum+'</section>'+
   '<section class="tab" data-t="f">'+tFor+'</section>'+
@@ -3957,6 +3961,7 @@ function conectar(root){
     b.addEventListener('click',function(){
       root.querySelectorAll('.tb').forEach(function(z){ z.classList.toggle('on', z===b); });
       root.querySelectorAll('.tab').forEach(function(s){ s.classList.toggle('on', s.dataset.t===b.dataset.t); });
+      if(b.dataset.t==='p'){ try{ var sp=root.querySelector('.tab[data-t="p"]'); if(sp&&juego&&window.OVAMlbExtra&&window.OVAMlbExtra.paso){ sp.innerHTML=window.OVAMlbExtra.paso(juego); if(window.OVAPaso) window.OVAPaso.enlazar(sp); } }catch(e){} }   /* 📐 Paso a paso (pasoapaso.js) */
       if(juego) irA(juego);
     });
   });
@@ -5154,6 +5159,7 @@ document.addEventListener('visibilitychange',function(){
 <script src="memoria.js"></script>
 <script src="observaciones.js"></script>
 <script src="analista.js"></script>
+<script src="pasoapaso.js"></script>
 <script src="liga.js"></script>
 <script src="prediccion.js"></script>
 <script src="mlbextra.js"></script>

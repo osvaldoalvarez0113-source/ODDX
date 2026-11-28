@@ -2368,6 +2368,15 @@ sec('Liga de modelos');
   ok('pestaña Cuotas fuera en fútbol, NBA, NHL y NFL (MLB la conserva: ahí se meten los precios de Kalshi); en fútbol también Números (la tabla pasa a Paso a paso)',!/data-t="cuo"/.test(rd3('futbol.html'))&&!/data-t="num"/.test(rd3('futbol.html'))&&!/data-t="cuo"/.test(rd3('nba.html'))&&!/data-t="cuo"/.test(rd3('usdeporte.js'))&&/data-t="num"/.test(rd3('nba.html'))&&/tablaHtml: tablaPos/.test(rd3('futbol.html')));
   ok('💾 Guardar en Mis picks pasó al «¿Hay pick?» del Veredicto (fútbol, NBA, NHL/NFL) con el mismo formato de pick',/mercado:'1X2', seleccion: vi\.getAttribute\('data-sel'\)/.test(rd3('futbol.html'))&&/mercado:'ML',side:vi\.dataset\.side,seleccion:vi\.dataset\.sel/.test(rd3('nba.html'))&&/mercado: 'ML', side: vi\.dataset\.side, seleccion: vi\.dataset\.sel/.test(rd3('usdeporte.js'))&&!/pestaña Cuotas de cada partido/.test(rd3('futbol.html')+rd3('nba.html')+rd3('usdeporte.js')));
   ok('fútbol: los goles del aro salen del mismo precio que los % y se explica la diferencia con los del modelo',/goles esp\.'\+\(deMercado\?' \(casa\)':''\)/.test(rd3('futbol.html'))&&/Goles del modelo de OVA/.test(rd3('futbol.html'))&&/¿Y los del modelo de OVA\?/.test(rd3('pasoapaso.js')));
+  {
+    const yaW=typeof global.window!=='undefined'; if(!yaW) global.window=global; global.OVAPaso=PS; const X=require(D+'mlbextra.js'); if(!global.OVAForma) global.OVAForma=require(D+'forma.js');
+    const now=Date.now(), G=[]; for(let i=0;i<20;i++){ G.push(['g'+i,now-(i+1)*864e5,i%2?2:3,i%2?3:2,5+(i%3),3+(i%4)+0.5]); }
+    X._set({teams:{},g:G});
+    const hM=X.paso({_d:{a:{team:{id:1,name:'Minnesota Twins'}},h:{team:{id:2,name:'Boston Red Sox'}},fecha:new Date(now+3600e3)},_calc:{pA:44,pH:56,T:8.62,lamAt:4.1,lamHt:4.52}});
+    ok('MLB: Paso a paso con el % de OVA si no hay precio («lo que espera el modelo»), carreras con el total de OVA y la tabla contra el juego',/Lo que espera el modelo/.test(hM)&&/total de OVA/.test(hM)&&/La tabla contra el juego/.test(hM)&&!/No se pudo/.test(hM));
+    ok('MLB: pestaña Paso a paso en index.html, se arma al tocarla y al repintar, y carga pasoapaso.js',/data-t="p"[^>]*>.*Paso a paso<\/button>/.test(rd3('index.html'))&&/OVAMlbExtra\.paso\(juego\)/.test(rd3('index.html'))&&/OVAMlbExtra\.paso\(el\)/.test(rd3('index.html'))&&/<script src="pasoapaso\.js"><\/script>/.test(rd3('index.html'))&&/ULTIMO\.lamAt=lamAt/.test(rd3('index.html')));
+    if(!yaW) delete global.window;
+  }
   ok('paso a paso: las 5 páginas cargan pasoapaso.js y el service worker lo guarda',['futbol.html','nba.html','nhl.html','nfl.html','tenis.html'].every(f=>/<script src="pasoapaso\.js"><\/script>/.test(rd3(f)))&&/'pasoapaso\.js'/.test(rd3('sw.js')));
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{
