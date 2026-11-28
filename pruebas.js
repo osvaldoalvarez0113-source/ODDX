@@ -1497,7 +1497,7 @@ sec('Fútbol con Polymarket (1X2 en vivo y de respaldo)');
  ok('fútbol pred.js: local, empate y visita suman 100% (51.2 / 27.4 / 21.4) y vol/liq son el mínimo de los 3',Math.abs(r[0].ph+r[0].pd+r[0].pa-1)<1e-3&&Math.abs(r[0].ph-0.5124)<1e-3&&Math.abs(r[0].pd-0.2736)<1e-3&&r[0].vol===2800);
  const fh=rd('futbol.html');
  ok('futbol.html: en vivo manda Polymarket, antes del partido Pinnacle y, si no hay, Polymarket; avisa que en vivo no se compara con el modelo',/function buscarMkF/.test(fh)&&/if\(pr && pr\.vivo\) return pr;/.test(fh)&&/En vivo: el precio ya incluye el marcador/.test(fh)&&/prediccion\.js/.test(fh));
- ok('futbol.html: el Más/Menos sigue usando Pinnacle (Polymarket aquí solo trae 1X2)',/mk2=buscarPinF\(p\)/.test(fh)&&/mk1=buscarMkF\(p\)/.test(fh));
+ ok('futbol.html: el Más/Menos de Paso a paso sale del precio de Pinnacle (ou25) y sin precio usa la media de goles',/pMas25: \(m && m\.g && m\.g\.ou25\) \? m\.g\.ou25\[0\] : null/.test(fh));
 }
 
 sec('Polymarket contra la línea de cierre (divergencia)');
@@ -1724,7 +1724,7 @@ sec('Por tramos: 1er cuarto, 1a mitad y 1er periodo (periodos.js)');
  ok('escapa los nombres de equipo',hx.indexOf('<b>X')<0&&hx.indexOf('&lt;b&gt;X')>=0);
  ok('pinta 1er cuarto y 1a mitad (NBA/NFL) y 1er periodo (NHL)',/1er cuarto/.test(hx)&&/1a mitad/.test(hx)&&/1er periodo/.test(P.html('nhl',{pH:0.6,pt:6},'A','B')));
  ok('nba, nfl y nhl cargan periodos.js antes de pintar',['nba.html','nfl.html','nhl.html'].every(f=>rd(f).indexOf('<script src="periodos.js"></script>')>0)&&['nfl.html','nhl.html'].every(f=>rd(f).indexOf('periodos.js')<rd(f).indexOf('usdeporte.js')));
- ok('usdeporte.js y nba.html lo ponen en la pestaña Números',/OVAPeriodos\.html\(DEP/.test(rd('usdeporte.js'))&&/data-p="num">\$\{tramos\}\$\{num\}/.test(rd('nba.html')));
+ ok('usdeporte.js y nba.html lo ponen en la pestaña Números',/OVAPeriodos\.html\(DEP/.test(rd('usdeporte.js'))&&/data-p="num">[^$]*\$\{tramos\}\$\{num\}/.test(rd('nba.html')));
  ok('el service worker guarda periodos.js',rd('sw.js').indexOf("'periodos.js'")>0);
 })();
 
@@ -2364,7 +2364,10 @@ sec('Liga de modelos');
   const hT=PS.html({dep:'tenis',nL:'Sinner',nV:'Alcaraz',p:.55,mkTxt:'Kalshi',cuotas:{tipo:'cent',v:[54,44],casa:'Kalshi',misma:true},bo:3});
   ok('paso a paso: tenis con precios de Kalshi que suman menos de 100¢ no inventa una comisión negativa',/suman 98¢, no 100/.test(hT)&&!/lo que se queda Kalshi/.test(hT));
   ok('paso a paso: «Tu %» compara contra la casa (5+ pts arriba = pregúntate qué sabes)',/Le ves 10 pts más que la casa/.test(PS.leerTu(48,.38))&&/Casi lo mismo/.test(PS.leerTu(40,.38))&&/menos que la casa/.test(PS.leerTu(30,.38))&&/data-ps-tu/.test(hF)&&typeof PS.enlazar==='function');
-  ok('paso a paso: pestaña en fútbol, NBA, NHL/NFL y tenis, armada al tocarla',/data-t="paso">Paso a paso/.test(rd3('futbol.html'))&&/pasoF\(p, base\)/.test(rd3('futbol.html'))&&/data-t="paso">Paso a paso/.test(rd3('nba.html'))&&/pasoN\(g,pr,H,A\)/.test(rd3('nba.html'))&&/data-t="paso">Paso a paso/.test(rd3('usdeporte.js'))&&/pasoU\(g, pr, H, A\)/.test(rd3('usdeporte.js'))&&/\['paso', 'Paso a paso'\]/.test(rd3('tenis.js')));
+  ok('paso a paso: pestaña en fútbol, NBA, NHL/NFL y tenis, armada al tocarla',/data-t="paso">Paso a paso/.test(rd3('futbol.html'))&&/pasoF\(p, base, tablaPosicionesHtml\(eL, eV\)\)/.test(rd3('futbol.html'))&&/data-t="paso">Paso a paso/.test(rd3('nba.html'))&&/pasoN\(g,pr,H,A\)/.test(rd3('nba.html'))&&/data-t="paso">Paso a paso/.test(rd3('usdeporte.js'))&&/pasoU\(g, pr, H, A\)/.test(rd3('usdeporte.js'))&&/\['paso', 'Paso a paso'\]/.test(rd3('tenis.js')));
+  ok('pestaña Cuotas fuera en fútbol, NBA, NHL y NFL (MLB la conserva: ahí se meten los precios de Kalshi); en fútbol también Números (la tabla pasa a Paso a paso)',!/data-t="cuo"/.test(rd3('futbol.html'))&&!/data-t="num"/.test(rd3('futbol.html'))&&!/data-t="cuo"/.test(rd3('nba.html'))&&!/data-t="cuo"/.test(rd3('usdeporte.js'))&&/data-t="num"/.test(rd3('nba.html'))&&/tablaHtml: tablaPos/.test(rd3('futbol.html')));
+  ok('💾 Guardar en Mis picks pasó al «¿Hay pick?» del Veredicto (fútbol, NBA, NHL/NFL) con el mismo formato de pick',/mercado:'1X2', seleccion: vi\.getAttribute\('data-sel'\)/.test(rd3('futbol.html'))&&/mercado:'ML',side:vi\.dataset\.side,seleccion:vi\.dataset\.sel/.test(rd3('nba.html'))&&/mercado: 'ML', side: vi\.dataset\.side, seleccion: vi\.dataset\.sel/.test(rd3('usdeporte.js'))&&!/pestaña Cuotas de cada partido/.test(rd3('futbol.html')+rd3('nba.html')+rd3('usdeporte.js')));
+  ok('fútbol: los goles del aro salen del mismo precio que los % y se explica la diferencia con los del modelo',/goles esp\.'\+\(deMercado\?' \(casa\)':''\)/.test(rd3('futbol.html'))&&/Goles del modelo de OVA/.test(rd3('futbol.html'))&&/¿Y los del modelo de OVA\?/.test(rd3('pasoapaso.js')));
   ok('paso a paso: las 5 páginas cargan pasoapaso.js y el service worker lo guarda',['futbol.html','nba.html','nhl.html','nfl.html','tenis.html'].every(f=>/<script src="pasoapaso\.js"><\/script>/.test(rd3(f)))&&/'pasoapaso\.js'/.test(rd3('sw.js')));
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{

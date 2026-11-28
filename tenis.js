@@ -229,7 +229,7 @@
     try {
       if (!window.OVAPaso) return '<div class="nota">No se pudo cargar el paso a paso.</div>';
       const k = an.k;
-      return window.OVAPaso.html({ dep: 'tenis', nL: m.a.nombre, nV: m.b.nombre, p: an.pGana, sinMercado: !k, mkTxt: k ? 'Kalshi sin comisión (+5% del modelo)' : '',
+      return window.OVAPaso.html({ dep: 'tenis', nL: m.a.nombre, nV: m.b.nombre, p: an.pGana, sinMercado: !k, mkTxt: k ? 'Kalshi (+5% del modelo)' : '',
         cuotas: k && k.cA && k.cB ? { tipo: 'cent', v: [k.cA, k.cB], casa: 'Kalshi', misma: true } : null, bo: an.bestOf === 5 ? 5 : 3 });
     } catch (e) { return '<div class="nota">No se pudo armar el paso a paso de este partido.</div>'; }
   }

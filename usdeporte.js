@@ -538,7 +538,7 @@
     const fuente = mk ? (mk.src === 'pin' ? 'Pinnacle, sin margen' : (mk.src === 'pred' ? 'mercado de predicción (Polymarket)' + (mk.live ? ', en vivo' : '') : 'ESPN (DraftKings), sin margen')) : '';
     const main = `<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">${pf >= umbral ? esc(nf) + ' gana · ' + Math.round(pf * 100) + '%' : 'Juego parejo'}</div>
      <div class="rvP">${pf >= umbral ? 'Es el favorito' + (hit !== null ? ' según el mercado (' + fuente + ').' : ' según el modelo.') : 'Ninguno pasa del ' + Math.round(umbral * 100) + '%. Lo más probable: ' + esc(nf) + ' ' + Math.round(pf * 100) + '%.'}${DEP === 'nhl' ? ' Incluye tiempo extra y shootout.' : ''}</div>${sig}${acH}
-     <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amTxt(pf)}</b> por ${esc(nf)}${hit !== null ? '' : ' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(nf)}</label><input type="number" inputmode="decimal" data-vl="o" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${hit !== null ? 1 : 0}"><div class="rvVal" data-vl="r"></div></div></div>`;
+     <div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>${amTxt(pf)}</b> por ${esc(nf)}${hit !== null ? '' : ' (cuota del modelo, menos confiable)'}. Escribe la que te dan:</div><div class="rvIn"><label>Cuota que te pagan por ${esc(nf)}</label><input type="number" inputmode="decimal" data-vl="o" placeholder="-150 ó 55¢" data-p="${pf}" data-m="${hit !== null ? 1 : 0}" data-side="${favM ? 'H' : 'A'}" data-sel="${esc((favM ? H : A).ab)} gana"><div class="rvVal" data-vl="r"></div></div></div>`;
     const row = (n, m, k) => `<div class="nm">${esc(n)} gana</div><div class="n md">${pct1(m)}</div><div class="n mk">${k === null ? '—' : pct1(k)}</div><div class="n">${amTxt(k === null ? m : k)}</div>`;
     const tab = `<div class="rvTab"><div class="th">Resultado</div><div class="th n">${pr.conEspn ? 'Modelo + ESPN' : 'Modelo'}</div><div class="th n">Mercado</div><div class="th n">Cuota justa</div>${row(A.n, 1 - pr.pHMod, hit === null ? null : 1 - hit)}${row(H.n, pr.pHMod, hit)}</div>
      <div class="nota" style="margin-top:6px">Mercado = ${mk ? fuente : 'sin precio todavía'}.</div>`;
@@ -567,14 +567,14 @@
     try {
       if (!window.OVAPaso) return '<div class="nota">No se pudo cargar el paso a paso.</div>';
       const mk = pr.mk || mkPk(g), o = g.odds || {}, pin = pinDe(g) || {}, F = window.OVAForma;
-      const src = mk ? (mk.src === 'pin' ? 'Pinnacle, sin comisión' : (mk.src === 'espn' ? 'ESPN (DraftKings), sin comisión' : (mk.live ? 'Polymarket, en vivo' : 'Polymarket'))) : '';
+      const src = mk ? (mk.src === 'pin' ? 'Pinnacle' : (mk.src === 'espn' ? 'ESPN (DraftKings)' : (mk.live ? 'Polymarket, en vivo' : 'Polymarket'))) : '';
       const sp = isFinite(o.spread) ? +o.spread : (pin.sp ? pin.sp.l : null), tot = isFinite(o.total) ? +o.total : (pin.tot ? pin.tot.l : null);
       let pMas = null;
       if (pin.tot && pin.tot.l === tot && pin.tot.p) pMas = pin.tot.p[0];
       else if (o.toO && o.toU) { const a = impProb(o.toO), b = impProb(o.toU); if (a && b) pMas = a / (a + b); }
       return window.OVAPaso.html({ dep: DEP, nL: H.n, nV: A.n, p: mk ? mk.p : pr.pH, sinMercado: !mk, mkTxt: src,
         cuotas: (o.mlH && o.mlA) ? { tipo: 'am', v: [o.mlH, o.mlA], casa: 'DraftKings (ESPN)', misma: !!mk && mk.src === 'espn' } : null, abre: (o.mlHo && o.mlAo && !(mk && mk.live)) ? [o.mlHo, o.mlAo] : null,
-        sp: sp, tot: tot, pMasTot: DEP === 'nhl' ? pMas : null, bajasL: g._an && g._an.bajasH ? g._an.bajasH : null, bajasV: g._an && g._an.bajasA ? g._an.bajasA : null,
+        sp: sp, tot: tot, pMasTot: DEP === 'nhl' ? pMas : null, modM: DEP === 'nfl' ? pr.pm : null, modT: DEP === 'nfl' ? pr.pt : null, modL: DEP === 'nhl' ? (pr.pt + pr.pm) / 2 : null, modV: DEP === 'nhl' ? (pr.pt - pr.pm) / 2 : null, bajasL: g._an && g._an.bajasH ? g._an.bajasH : null, bajasV: g._an && g._an.bajasA ? g._an.bajasA : null,
         fL: F ? F.calc(GAMES, g.h, g.ts, true, DEP) : null, fV: F ? F.calc(GAMES, g.a, g.ts, false, DEP) : null });
     } catch (e) { return '<div class="nota">No se pudo armar el paso a paso de este juego.</div>'; }
   }
@@ -676,8 +676,8 @@
      <h3>Lesionados (ESPN)</h3><div data-k="les" class="nota">Archivo grande (${DEP === 'nfl' ? 'unos 9 MB' : 'más de 1 MB'}): solo se baja cuando tú lo pides.</div><button class="btnAncho sec" data-a="les" style="margin-top:6px">Cargar lesionados</button>
      <div class="nota">Rating del modelo: ${esc(A.ab)} ${(pr.ma >= 0 ? '+' : '') + pr.ma.toFixed(SP.dec + 1)} · ${esc(H.ab)} ${(pr.mh >= 0 ? '+' : '') + pr.mh.toFixed(SP.dec + 1)} (con arrastre de temporada si aplica).</div>`;
 
-    body.innerHTML = `<div class="tabs"><button class="tb on" data-t="ver">Veredicto</button><button class="tb" data-t="paso">Paso a paso</button><button class="tb" data-t="cuo">Cuotas</button><button class="tb" data-t="num">Números</button><button class="tb" data-t="for">Forma</button><button class="tb" data-t="jug">Jugadores</button></div>
-     <div class="pane on" data-p="ver">${ver}</div><div class="pane" data-p="paso"></div><div class="pane" data-p="cuo">${cuo}</div><div class="pane" data-p="num">${num}</div><div class="pane" data-p="for">${forPane}</div><div class="pane" data-p="jug"><div class="nota">Toca la pestaña para cargar las líneas de jugadores.</div></div>`;
+    body.innerHTML = `<div class="tabs"><button class="tb on" data-t="ver">Veredicto</button><button class="tb" data-t="paso">Paso a paso</button><button class="tb" data-t="num">Números</button><button class="tb" data-t="for">Forma</button><button class="tb" data-t="jug">Jugadores</button></div>
+     <div class="pane on" data-p="ver">${ver}</div><div class="pane" data-p="paso"></div><div class="pane" data-p="num"><div class="nota" style="margin:0 0 8px">Estos números salen del <b>modelo de OVA</b> (con la línea de la casa mezclada). Las opciones de <b>Paso a paso</b> salen solo de la cuota de la casa: por eso pueden variar un poco.</div>${num}</div><div class="pane" data-p="for">${forPane}</div><div class="pane" data-p="jug"><div class="nota">Toca la pestaña para cargar las líneas de jugadores.</div></div>`;
 
     body.querySelectorAll('.tb').forEach(b => b.onclick = e => {
       e.stopPropagation();
@@ -697,25 +697,14 @@
         if (ev > 0 && ev < 0.02) { vr.className = 'rvVal'; vr.innerHTML = `≈ <b>Valor mínimo:</b> paga un poco más que la cuota justa (${jt}), pero +${(ev * 100).toFixed(1)}% está dentro del margen de error del precio de referencia. No cuenta como pick; busca +2% o más.`; }
         else if (ev > 0) { vr.className = 'rvVal ok'; vr.innerHTML = `✓ <b>Hay valor:</b> te pagan más que la cuota justa (${jt}). Ganancia esperada: +${(ev * 100).toFixed(1)}% por cada $1 (${dif2.toFixed(1)} pts de ventaja).` + (fm ? '' : ' Ojo: sale del modelo, que no le gana al mercado; desconfía.'); }
         else { vr.className = 'rvVal no'; vr.innerHTML = `✗ <b>No hay valor:</b> la cuota justa es ${jt} y esta paga menos. Pérdida esperada: ${(ev * 100).toFixed(1)}% por cada $1.`; }
+        /* 💾 guardar en Mis picks (antes estaba en la pestaña Cuotas) */
+        const bG = document.createElement('button'); bG.className = 'btnChico'; bG.style.marginTop = '8px'; bG.textContent = '💾 Guardar en Mis picks';
+        bG.onclick = e => { e.stopPropagation(); guardarPick({ hId: g.h, aId: g.a, hN: T(g.h).n, aN: T(g.a).n, ts: g.ts, mercado: 'ML', side: vi.dataset.side, seleccion: vi.dataset.sel, cuota: odd, prob: p }); bG.textContent = '✓ Guardado'; bG.disabled = true; };
+        vr.appendChild(document.createElement('br')); vr.appendChild(bG);
       });
     })();
     const q = k => body.querySelector('[data-k="' + k + '"]');
     body.querySelector('[data-a="adj"]').onclick = () => { g.adjA = parseFloat(q('adjA').value) || 0; g.adjH = parseFloat(q('adjH').value) || 0; pintarCuerpo(body, g); };
-    body.querySelector('[data-a="ml"]').onclick = () => {
-      const oA = normCuota(q('mlA').value), oH = normCuota(q('mlH').value);
-      const pM = pr.mk ? pr.mk.p : null, pW = (pM !== null ? pM : pr.pH);   /* mismo número que Veredicto: el mercado sin margen si hay precio */
-      valorHtml(g, 'ML', 'win', [{ sel: A.ab + ' gana', side: 'A', odd: oA, prob: 1 - pW }, { sel: H.ab + ' gana', side: 'H', odd: oH, prob: pW }], body.querySelector('[data-o="ml"]'));
-    };
-    body.querySelector('[data-a="sp"]').onclick = () => {
-      const Lh = parseFloat(q('spL').value); if (!isFinite(Lh)) { body.querySelector('[data-o="sp"]').textContent = 'Mete la línea del local (ej. ' + SP.tipLinea + ').'; return; }
-      const c = pr.cover(Lh), pHc = c.w / (1 - c.p);
-      valorHtml(g, 'SPR', 'mar', [{ sel: A.ab + ' ' + fmtL(-Lh), side: 'A', odd: normCuota(q('spA').value), prob: 1 - pHc, linea: Lh }, { sel: H.ab + ' ' + fmtL(Lh), side: 'H', odd: normCuota(q('spH').value), prob: pHc, linea: Lh }], body.querySelector('[data-o="sp"]'));
-    };
-    body.querySelector('[data-a="to"]').onclick = () => {
-      const Lt = parseFloat(q('toL').value); if (!isFinite(Lt)) { body.querySelector('[data-o="to"]').textContent = 'Mete la línea del total (ej. ' + SP.tipTot + ').'; return; }
-      const c = pr.over(Lt), po = c.w / (1 - c.p);
-      valorHtml(g, 'TOT', 'tot', [{ sel: 'Más de ' + Lt, side: 'O', odd: normCuota(q('toO').value), prob: po, linea: Lt }, { sel: 'Menos de ' + Lt, side: 'U', odd: normCuota(q('toU').value), prob: 1 - po, linea: Lt }], body.querySelector('[data-o="to"]'));
-    };
     if (INJ) INJ.then(m => repintarAn(body, g, m)).catch(() => { });   /* si ya se bajó la lista en otro juego, El análisis la usa sin tocar el botón */
     body.querySelector('[data-a="les"]').onclick = function () {
       const btn = this, el = q('les'); btn.disabled = true; btn.textContent = 'Bajando…'; el.textContent = 'Bajando la lista de ESPN…';
@@ -923,7 +912,7 @@
   }
   function pintarRegistro() {
     const cont = $('registro'), arr = regGet().slice().reverse();
-    if (!arr.length) { cont.innerHTML = '<div class="estado">Todavía no has guardado ningún pick. Guárdalos con el botón 💾 desde la pestaña Cuotas de cada partido. (La app también guarda sola cada juego con su pronóstico: míralo en Herramientas → 🤖 Auto.)</div>'; return; }
+    if (!arr.length) { cont.innerHTML = '<div class="estado">Todavía no has guardado ningún pick. Guárdalos con el botón 💾 de «¿Hay pick?» en el Veredicto de cada juego (escribe la cuota que te dan). (La app también guarda sola cada juego con su pronóstico: míralo en Herramientas → 🤖 Auto.)</div>'; return; }
     let g = 0, pe = 0, pu = 0, pn = 0, net = 0;
     arr.forEach(p => { if (p.estado === 'ganado') { g++; const d = decAm(p.cuota); if (d) net += d - 1; } else if (p.estado === 'perdido') { pe++; net -= 1; } else if (p.estado === 'push') pu++; else pn++; });
     cont.innerHTML = `<div class="kpi"><div><b>${g}-${pe}${pu ? '-' + pu : ''}</b><small>Récord (G-P${pu ? '-push' : ''})</small></div><div><b>${pn}</b><small>Pendientes</small></div><div><b>${net >= 0 ? '+' : ''}${net.toFixed(2)}u</b><small>Neto (1u plano)</small></div></div>

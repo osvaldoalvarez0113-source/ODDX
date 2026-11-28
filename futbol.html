@@ -2206,7 +2206,7 @@ function ctxAnF(p, r, mod, f, m){
     pE: fu[1], pDoble: fu[fi] + fu[1], extras: [{ t:'Gol en el 1er tiempo', p: gol1T(r.overLin[2.5]) }], alertas: [], aFavor: [] };
 }
 /* 📐 Paso a paso (pasoapaso.js): la cuota en %, los goles que espera la casa, la tabla contra el juego y las opciones */
-function pasoF(p, base){
+function pasoF(p, base, tablaPos){
   try{
     if(!window.OVAPaso) return '<div class="nota">No se pudo cargar el paso a paso.</div>';
     var r = base.r, m = buscarMkF(p), f = m ? (m.inv ? [m.g.r[2], m.g.r[1], m.g.r[0]] : m.g.r.slice()) : null;
@@ -2219,7 +2219,7 @@ function pasoF(p, base){
     var xg = function(n){ var x = XLIVE && XLIVE.mapa ? buscarEnMapa(XLIVE.mapa, n) : null; return x && x.px >= 5 ? {f:x.xf*XLIVE.escala/x.px, c:x.xc*XLIVE.escala/x.px} : null; };
     return window.OVAPaso.html({ dep:'fut', nL:p.local, nV:p.visita, fL:fL, fV:fV, p: f || [r.pL, r.pD, r.pV], sinMercado: !f,
       mkTxt: m ? (m.src==='pred' ? 'Polymarket'+(m.vivo?' (en vivo)':'') : 'Pinnacle') : '', pMas25: (m && m.g && m.g.ou25) ? m.g.ou25[0] : null,
-      xgL: xg(p.local), xgV: xg(p.visita),
+      xgL: xg(p.local), xgV: xg(p.visita), modL: r.lamL, modV: r.lamV, tablaHtml: tablaPos ? '<h4 style="margin:10px 0 6px">Tabla de posiciones</h4>'+tablaPos : '',
       bajasL: (p._an && p._an.bajasFav) ? (p._an.fav===p.local ? p._an.bajasFav : p._an.bajasRiv) : null,
       bajasV: (p._an && p._an.bajasFav) ? (p._an.fav===p.local ? p._an.bajasRiv : p._an.bajasFav) : null });
   }catch(e){ return '<div class="nota">No se pudo armar el paso a paso de este partido.</div>'; }
@@ -2256,7 +2256,7 @@ function resumenVeredictoF(p, base, id){
     if(!mismo) sig += '<div class="rvP" style="margin-top:7px">Modelo: <b>'+txtRes(bm)+'</b> ('+pc0(mod[bm])+'). Mercado: <b>'+txtRes(best)+'</b> ('+pc0(f[best])+').</div>';
   } else sig = '<span class="rvSig mid">! Sin precios del mercado para este partido: pronóstico solo del modelo</span>';
   var pick = '<div class="rvP" style="margin-top:9px"><b>¿Hay pick?</b> Solo si te pagan más de <b>'+cj(fuente[best])+'</b> por '+escR(txtRes(best))+(f?'':' (cuota del modelo, menos confiable)')+'. Escribe la que te dan:</div>'+
-    '<div class="rvIn"><label>Cuota que te pagan por '+escR(txtRes(best))+'</label><input type="number" inputmode="decimal" id="'+id+'vlO" placeholder="-150 ó 37¢" data-p="'+fuente[best]+'" data-m="'+(f?'1':'0')+'"><div class="rvVal" id="'+id+'vlR"></div></div>';
+    '<div class="rvIn"><label>Cuota que te pagan por '+escR(txtRes(best))+'</label><input type="number" inputmode="decimal" id="'+id+'vlO" placeholder="-150 ó 37¢" data-p="'+fuente[best]+'" data-m="'+(f?'1':'0')+'" data-sel="'+escR(best===0?p.local:(best===1?'Empate':p.visita))+'"><div class="rvVal" id="'+id+'vlR"></div></div>';
   var acH = ''; try{ if(window.OVAAciertos && best!==1 && !(f && m.vivo)) acH = window.OVAAciertos.html('fut', fuente[best], best===0, !!f); }catch(e){}   /* cuántas veces acierta este % (aciertos.js) */
   var main = '<div class="rvMain"><div class="rvT">Pronóstico</div><div class="rvH">'+escR(h)+'</div><div class="rvP">'+escR(sub)+'</div>'+sig+acH+pick+'</div>';
 
@@ -2293,7 +2293,7 @@ function resumenVeredictoF(p, base, id){
   var conf = '<div class="rvLs">'+li.join('')+'</div>';
 
   var anH = ''; try{ if(window.OVAAnalista){ p._an = ctxAnF(p, r, mod, f, m); anH = '<div data-an>'+window.OVAAnalista.html(p._an)+'</div>'; } }catch(e){}   /* 🧠 El análisis (analista.js); mejoras.js lo repinta con las bajas */
-  return '<div class="rv">'+anH+'<h4>Pronóstico y pick</h4>'+main+'<h4>Modelo contra mercado</h4>'+tab+'<h4>Goles y marcadores</h4>'+chips+'<h4>Qué tan confiable es</h4>'+conf+'</div>';
+  return '<div class="rv">'+anH+'<h4>Pronóstico y pick</h4>'+main+'<h4>Modelo contra mercado</h4>'+tab+'<h4>Goles del modelo de OVA</h4>'+chips+'<div class="nota" style="margin-top:6px">Salen de lo que cada equipo mete y recibe (esta temporada y las dos anteriores). Los del aro de arriba salen de la cuota de la casa: por eso pueden no ser iguales. En Paso a paso están los dos lado a lado.</div>'+'<h4>Qué tan confiable es</h4>'+conf+'</div>';
 }
 function pintarGameBody(bodyEl, p, eL, eV){
   var base = bloqueBase(eL, eV, p.local, p.visita);
@@ -2317,55 +2317,16 @@ function pintarGameBody(bodyEl, p, eL, eV){
     '<div class="tabs" id="'+id+'tabs">' +
       '<button class="tb on" data-t="ver">Veredicto</button>' +
       '<button class="tb" data-t="paso">Paso a paso</button>' +
-      '<button class="tb" data-t="cuo">Cuotas</button>' +
-      '<button class="tb" data-t="num">Números</button>' +
       '<button class="tb" data-t="for">Forma</button>' +
     '</div>' +
     '<div class="pane on" id="'+id+'ver">' + base.veredictoHtml + resumenVeredictoF(p, base, id) + formaF(p, base) +
       '<details class="comoLee"><summary>¿Cómo se lee y qué tan confiable es?</summary><div class="nota">'+
         '<b>Los tres porcentajes de arriba</b> son la probabilidad de que gane el local, empaten o gane la visita; suman 100%. '+
-        '<b>Goles esp.</b> es el promedio de goles que el modelo espera de cada equipo. '+
+        '<b>Goles esp.</b> (en el aro) son los goles que espera la casa, sacados del mismo precio que los porcentajes; si no hay precio, son los del modelo. Los del modelo de OVA salen más abajo en «Goles del modelo de OVA» y la diferencia se explica en Paso a paso. '+
         '<b>Cuota justa</b> es lo que tendría que pagar la casa para que apostar ahí no gane ni pierda a la larga: si paga más, hay valor; si paga menos, no.<br><br>'+
         comoCalc+'</div></details>' +
     '</div>' +
-    '<div class="pane" id="'+id+'cuo">' +
-      '<div class="rankbox"></div>' +
-      '<h3>Ganador (1X2)</h3>' + badgeMercado('x12') +
-      '<div class="cuotasbox">' +
-        '<button id="'+id+'btnKalshi" class="btnAncho sec" style="margin:0 0 10px">🦈 Traer cuota de Kalshi</button>' +
-        '<div id="'+id+'kalshiOut" class="nota" style="margin:0 0 10px"></div>' +
-        '<div class="fila">' +
-          '<div style="flex:1"><label>Cuota '+p.local+'</label><input type="number" id="'+id+'oddL" placeholder="-150 ó 37¢"></div>' +
-          '<div style="flex:1"><label>Cuota empate</label><input type="number" id="'+id+'oddD" placeholder="+230 ó 28¢"></div>' +
-          '<div style="flex:1"><label>Cuota '+p.visita+'</label><input type="number" id="'+id+'oddV" placeholder="+400 ó 65¢"></div>' +
-        '</div>' +
-        '<button id="'+id+'btn" class="btnAncho">Calcular valor</button>' +
-        '<div class="veredictoCuota" id="'+id+'verC"></div>' +
-      '</div>' +
-      '<h3>Más/Menos de 2.5 goles</h3>' + badgeMercado('ou') +
-      '<div class="cuotasbox">' +
-        '<div class="fila">' +
-          '<div style="flex:1"><label>Cuota Más de 2.5</label><input type="number" id="'+id+'oddOver" placeholder="-120 ó 55¢"></div>' +
-          '<div style="flex:1"><label>Cuota Menos de 2.5</label><input type="number" id="'+id+'oddUnder" placeholder="+100 ó 45¢"></div>' +
-        '</div>' +
-        '<button id="'+id+'btnOU" class="btnAncho">Calcular valor</button>' +
-        '<div class="veredictoCuota" id="'+id+'verOU"></div>' +
-      '</div>' +
-      '<h3>Ambos anotan</h3>' + badgeMercado('bt') +
-      '<div class="cuotasbox">' +
-        '<div class="fila">' +
-          '<div style="flex:1"><label>Cuota Sí</label><input type="number" id="'+id+'oddBttsSi" placeholder="-110 ó 52¢"></div>' +
-          '<div style="flex:1"><label>Cuota No</label><input type="number" id="'+id+'oddBttsNo" placeholder="-110 ó 48¢"></div>' +
-        '</div>' +
-        '<button id="'+id+'btnBtts" class="btnAncho">Calcular valor</button>' +
-        '<div class="veredictoCuota" id="'+id+'verBtts"></div>' +
-      '</div>' +
-    '</div>' +
     '<div class="pane" id="'+id+'paso"><div class="nota">Toca la pestaña para armarlo.</div></div>' +
-    '<div class="pane" id="'+id+'num">' +
-      base.numerosHtml +
-      '<h3>Tabla de posiciones</h3>' + tablaPosicionesHtml(eL, eV) +
-    '</div>' +
     '<div class="pane" id="'+id+'for">' +
       '<h3>Forma reciente</h3>' +
       '<div class="fcard"><div class="ft" id="'+id+'ftL"></div><div class="forma" id="'+id+'formaL"></div><div id="'+id+'cvL"></div></div>' +
@@ -2383,76 +2344,13 @@ function pintarGameBody(bodyEl, p, eL, eV){
       btn.classList.add('on');
       bodyEl.querySelectorAll('.pane').forEach(function(pn){ pn.classList.remove('on'); });
       document.getElementById(id+btn.dataset.t).classList.add('on');
-      if(btn.dataset.t==='paso'){ var pnP = document.getElementById(id+'paso'); pnP.innerHTML = pasoF(p, base); if(window.OVAPaso) window.OVAPaso.enlazar(pnP); }   /* 📐 se arma cada vez que se toca (así trae las bajas si ya llegaron) */
+      if(btn.dataset.t==='paso'){ var pnP = document.getElementById(id+'paso'); pnP.innerHTML = pasoF(p, base, tablaPosicionesHtml(eL, eV)); if(window.OVAPaso) window.OVAPaso.enlazar(pnP); }   /* 📐 se arma cada vez que se toca (así trae las bajas si ya llegaron) */
     });
-  });
-
-  document.getElementById(id+'btnKalshi').addEventListener('click', function(){
-    var btnK = this;
-    var outK = document.getElementById(id+'kalshiOut');
-    var serieTicker = KALSHI_SERIES[LIGA_ACTUAL];
-    if(!serieTicker){ outK.textContent = 'No tengo el ticker de Kalshi para esta liga.'; return; }
-    if(!KALSHI_PROXY || KALSHI_PROXY.indexOf('TU-WORKER')>-1){
-      outK.textContent = 'Falta configurar KALSHI_PROXY con la URL real de tu Worker.';
-      return;
-    }
-    btnK.disabled = true;
-    outK.textContent = 'Buscando en Kalshi...';
-    buscarEventoKalshi(serieTicker, p.local, p.visita).then(function(res){
-      btnK.disabled = false;
-      if(!res){
-        outK.textContent = 'No encontré este partido en Kalshi (puede que no lo liste todavía, o que el ticker de esta liga esté mal).';
-        return;
-      }
-      if(res.local===null && res.empate===null && res.visita===null){
-        outK.textContent = 'Encontré el evento en Kalshi pero no pude leer ningún precio.';
-        return;
-      }
-      if(res.local!==null) document.getElementById(id+'oddL').value = res.local;
-      if(res.empate!==null) document.getElementById(id+'oddD').value = res.empate;
-      if(res.visita!==null) document.getElementById(id+'oddV').value = res.visita;
-      outK.textContent = 'Cuotas de Kalshi cargadas' + (res.empate===null?' (sin mercado de empate detectado)':'') + '. Dale "Calcular valor".';
-    }).catch(function(e){
-      btnK.disabled = false;
-      outK.textContent = 'Kalshi falló: '+e.message+' (revisa que el Worker esté desplegado y la URL en KALSHI_PROXY sea correcta).';
-    });
-  });
-
-  document.getElementById(id+'btn').addEventListener('click', function(){
-    var oL=normalizarEntradaCuota(document.getElementById(id+'oddL').value);
-    var oD=normalizarEntradaCuota(document.getElementById(id+'oddD').value);
-    var oV=normalizarEntradaCuota(document.getElementById(id+'oddV').value);
-    var mk1=null; try{ mk1=buscarMkF(p); }catch(e){}   /* mismo número que Veredicto: Pinnacle sin margen si hay precio */
-    var f1=mk1?(mk1.inv?[mk1.g.r[2],mk1.g.r[1],mk1.g.r[0]]:mk1.g.r.slice()):[base.r.pL,base.r.pD,base.r.pV];
-    pintarFilasValor([
-      {mercado:'1X2', sel:p.local, odd:oL, modelo:f1[0], mk:!!mk1},
-      {mercado:'1X2', sel:'Empate', odd:oD, modelo:f1[1], mk:!!mk1},
-      {mercado:'1X2', sel:p.visita, odd:oV, modelo:f1[2], mk:!!mk1}
-    ], document.getElementById(id+'verC'), p);
-  });
-
-  document.getElementById(id+'btnOU').addEventListener('click', function(){
-    var oOver=normalizarEntradaCuota(document.getElementById(id+'oddOver').value);
-    var oUnder=normalizarEntradaCuota(document.getElementById(id+'oddUnder').value);
-    var mk2=null; try{ mk2=buscarPinF(p); }catch(e){}
-    var pOv=(mk2&&mk2.g.ou25)?mk2.g.ou25[0]:base.r.overLin[2.5];
-    pintarFilasValor([
-      {mercado:'OU2.5', sel:'Más de 2.5', odd:oOver, modelo:pOv, mk:!!(mk2&&mk2.g.ou25)},
-      {mercado:'OU2.5', sel:'Menos de 2.5', odd:oUnder, modelo:1-pOv, mk:!!(mk2&&mk2.g.ou25)}
-    ], document.getElementById(id+'verOU'), p);
-  });
-
-  document.getElementById(id+'btnBtts').addEventListener('click', function(){
-    var oSi=normalizarEntradaCuota(document.getElementById(id+'oddBttsSi').value);
-    var oNo=normalizarEntradaCuota(document.getElementById(id+'oddBttsNo').value);
-    pintarFilasValor([
-      {mercado:'BTTS', sel:'Sí', odd:oSi, modelo:base.r.pBtts},
-      {mercado:'BTTS', sel:'No', odd:oNo, modelo:1-base.r.pBtts}
-    ], document.getElementById(id+'verBtts'), p);
   });
 
   (function(){
     var vi = document.getElementById(id+'vlO'), vr = document.getElementById(id+'vlR'); if(!vi||!vr) return;
+    var pj = p;   /* el partido (dentro del input «p» es el %) */
     vi.addEventListener('input', function(){
       var odd = normalizarEntradaCuota(vi.value), p = parseFloat(vi.getAttribute('data-p')), fm = vi.getAttribute('data-m')==='1';
       if(odd===null){ vr.textContent=''; vr.className='rvVal'; return; }
@@ -2460,6 +2358,10 @@ function pintarGameBody(bodyEl, p, eL, eV){
       var just = cuotaJustaAmericana(p), jt = just===null?'—':(just>0?'+':'')+just;
       if(ev>0){ vr.className='rvVal ok'; vr.innerHTML='✓ <b>Hay valor:</b> te pagan más que la cuota justa ('+jt+'). Ganancia esperada: +'+(ev*100).toFixed(1)+'% por cada $1 ('+dif.toFixed(1)+' pts de ventaja).'+(fm?'':' Ojo: sale del modelo, que no le gana al mercado; desconfía.'); }
       else { vr.className='rvVal no'; vr.innerHTML='✗ <b>No hay valor:</b> la cuota justa es '+jt+' y esta paga menos. Pérdida esperada: '+(ev*100).toFixed(1)+'% por cada $1.'; }
+      /* 💾 guardar en Mis picks (antes estaba en la pestaña Cuotas) */
+      var bG = document.createElement('button'); bG.className = 'btnChico'; bG.style.marginTop = '8px'; bG.textContent = '💾 Guardar en Mis picks';
+      bG.addEventListener('click', function(e){ e.stopPropagation(); guardarPick({ liga: LIGA_ACTUAL, local:pj.local, visita:pj.visita, fecha:pj.fecha||'', mercado:'1X2', seleccion: vi.getAttribute('data-sel'), probModelo: pr_, cuota: odd }); bG.textContent = '✓ Guardado'; bG.disabled = true; });
+      var pr_ = p; vr.appendChild(document.createElement('br')); vr.appendChild(bG);
     });
   })();
   pintarEquipoForma(id, 'L', p.local, true);
@@ -3087,7 +2989,7 @@ function pintarRegistro(){
   if(!cont) return;
   var arr = cargarRegistro().slice().reverse();
   if(!arr.length){
-    cont.innerHTML = '<div class="estado">Todavía no has guardado ningún pick. Guárdalos con el botón 💾 desde la pestaña Cuotas de cada partido.</div>';
+    cont.innerHTML = '<div class="estado">Todavía no has guardado ningún pick. Guárdalos con el botón 💾 de «¿Hay pick?» en el Veredicto de cada partido (escribe la cuota que te dan).</div>';
     return;
   }
   var ganados=0, perdidos=0, unidadesNeto=0, pendientes=0;
@@ -3414,10 +3316,12 @@ document.getElementById('ligaSel').addEventListener('change', function(){
    return '<div class="side'+(fav?' fav':'')+'"><img class="cr" src="'+escT(img)+'" alt="" onerror="this.style.display=\'none\'">'+
      '<span class="ab">'+escT(nom)+'</span><span class="pc">'+pct(x)+'</span></div>';
   };
+  var gL=r.lamL, gV=r.lamV;
+  try{ if(deMercado && window.OVAPaso){ var gm=window.OVAPaso.golesDe1x2(pL, pV, (mk.g&&mk.g.ou25)?mk.g.ou25[0]:null); if(gm){ gL=gm.L; gV=gm.V; } } }catch(e){}   /* los goles salen del mismo precio que los % (Paso a paso) */
   var mx=Math.max(pL,pD,pV);
   var hero=document.createElement('div'); hero.className='ovaHero fut';
   hero.innerHTML='<div class="row3">'+side(p.escudoLocal,p.local,pL,pL===mx)+
-   '<div class="gz">'+ring(pL,pD,pV)+'<div class="cx"><small>goles esp.</small><b>'+r.lamL.toFixed(1)+'–'+r.lamV.toFixed(1)+'</b></div></div>'+
+   '<div class="gz">'+ring(pL,pD,pV)+'<div class="cx"><small>goles esp.'+(deMercado?' (casa)':'')+'</small><b>'+gL.toFixed(1)+'–'+gV.toFixed(1)+'</b></div></div>'+
    side(p.escudoVisita,p.visita,pV,pV===mx)+'</div>'+
    '<div class="cap">Empate <b>'+pct(pD)+'</b> · '+(deMercado?'probabilidades del mercado ('+((mk&&mk.src==='pred')?'Polymarket'+(mk.vivo?', en vivo':''):'Pinnacle')+')':'probabilidades del modelo (sin precio de mercado)')+'</div>';
   pane.insertBefore(hero,pane.firstChild);
@@ -3450,7 +3354,7 @@ document.getElementById('ligaSel').addEventListener('change', function(){
    row(escT(p.local)+' o '+escT(p.visita)+' (12, sin empate)',d.x12)+
    row('Empate no apuesta · '+escT(p.local),d.dnbL)+row('Empate no apuesta · '+escT(p.visita),d.dnbV)+'</div>'+
    '<div class="nota">1X = gana o empata el local, X2 = gana o empata la visita, 12 = no habrá empate. Salen del mismo ganador/empate de arriba. La cifra de la derecha es la cuota justa: solo hay valor si la casa paga <b>más</b>. En empate no apuesta, si empatan te devuelven el dinero.</div>';
-  var pn=$q('.pane[id$="num"]',bodyEl)||pane, th=null; [].slice.call(pn.querySelectorAll('h3')).forEach(function(h){ if(/^Tabla de posiciones/.test(h.textContent)) th=h; });
+  var pn=$q('.pane[id$="num"]',bodyEl), th=null; if(!pn) return;   /* sin pestaña Números: la doble oportunidad ya sale en Paso a paso */ [].slice.call(pn.querySelectorAll('h3')).forEach(function(h){ if(/^Tabla de posiciones/.test(h.textContent)) th=h; });
   if(th) pn.insertBefore(box,th); else pn.appendChild(box);
  }
  if(typeof pintarGameBody==='function'){

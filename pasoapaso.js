@@ -155,7 +155,7 @@
     bo = bo || 3; var s = setDe(pA, bo), w = (bo + 1) / 2, sinPerder = function (x) { return Math.pow(x, w); };
     var o = [[nA + ' gana', pA], [nB + ' gana', 1 - pA], [nA + ' gana al menos un set', 1 - sinPerder(1 - s)], [nB + ' gana al menos un set', 1 - sinPerder(s)],
       [nA + ' gana sin perder set', sinPerder(s)], [nB + ' gana sin perder set', sinPerder(1 - s)]];
-    if (bo === 3) o.push(['Se juega el 3er set', 2 * s * (1 - s)], ['Termina en 2 sets', 1 - 2 * s * (1 - s)]);
+
     return { o: o, s: s };
   }
   function filasOp(o) { return o.map(function (x) { return '<div class="nm">' + esc(x[0]) + '</div><div class="n"><b>' + p0(x[1]) + '</b></div><div class="n">' + amer(x[1]) + ' · ' + deci(x[1]) + '</div>'; }).join(''); }
@@ -242,7 +242,7 @@
         if (a0 && a1) {
           dm = (a1.sin[0] - a0.sin[0]) * 100;
           var haciaL = dm > 0, quien = haciaL ? nL : nV;
-          o += '<div class="psMov' + (Math.abs(dm) >= 2 ? ' si' : '') + '"><b>¿Se movió la cuota?</b> Abrió ' + nL + ' ' + p0(a0.sin[0]) + ' · ' + nV + ' ' + p0(a0.sin[1]) + '; ahora ' + nL + ' ' + p0(a1.sin[0]) + ' · ' + nV + ' ' + p0(a1.sin[1]) + '. ' +
+          o += '<div class="psMov' + (Math.abs(dm) >= 2 ? ' psMv' : '') + '"><b>¿Se movió la cuota?</b> Abrió ' + nL + ' ' + p0(a0.sin[0]) + ' · ' + nV + ' ' + p0(a0.sin[1]) + '; ahora ' + nL + ' ' + p0(a1.sin[0]) + ' · ' + nV + ' ' + p0(a1.sin[1]) + '. ' +
             (Math.abs(dm) < 2 ? 'Casi no se ha movido: no ha salido nada que cambie el juego.' : '<b>Se movió ' + Math.abs(dm).toFixed(1) + ' pts hacia ' + quien + '.</b> Casi siempre es una noticia (una baja, un portero, un descanso). La cuota de ahora ya la trae; mira las bajas.') + '</div>';
           if (Math.abs(dm) >= 2) corto.push('La cuota se movió ' + Math.abs(dm).toFixed(0) + ' pts hacia ' + quien + ' desde que abrió: algo pasó, mira las bajas.');
         }
@@ -259,6 +259,8 @@
           if (pt) {
             o += '<div class="psChips"><div>' + nL + '<b>' + n1(pt.L) + '</b><small>puntos</small></div><div>' + nV + '<b>' + n1(pt.V) + '</b><small>puntos</small></div></div>' +
               '<div class="nota">La casa espera que <b>' + esc(c.sp <= 0 ? c.nL : c.nV) + ' gane por ~' + Math.abs(c.sp) + '</b>, en un juego de ~' + c.tot + ' puntos.</div>' +
+              (c.modM != null && c.modT != null ? '<div class="psMod"><b>¿Y el modelo de OVA?</b> Espera ' + esc(c.modM >= 0 ? c.nL : c.nV) + ' por ~' + n1(Math.abs(c.modM)) + ' en ' + n1(c.modT) + ' puntos (es lo que sale en el aro del Veredicto). ' +
+                (Math.abs(c.modM + c.sp) >= 2 ? 'Se separa de la casa: cuando pasa, la casa suele tener razón.' : 'Casi lo mismo que la casa.') + '</div>' : '') +
               plegado('¿De dónde sale?', 'Del hándicap (' + esc(c.nL) + ' ' + (c.sp > 0 ? '+' : '') + c.sp + ') y el total (' + c.tot + '): local = (total − hándicap) ÷ 2 = (' + c.tot + ' − (' + c.sp + ')) ÷ 2 = ' + n1(pt.L) + '; visita = el total menos eso = ' + n1(pt.V) + '.');
             corto.push('La casa espera ' + esc(c.sp <= 0 ? c.nL : c.nV) + ' por ~' + Math.abs(c.sp) + ' (' + Math.round(Math.max(pt.L, pt.V)) + '-' + Math.round(Math.min(pt.L, pt.V)) + ' más o menos).');
           } else o += '<div class="nota">Todavía no hay hándicap y total de la casa para este juego.</div>';
@@ -266,6 +268,9 @@
           var mc = marcadores(ex.L, ex.V, 3);
           o += '<div class="psChips"><div>' + nL + '<b>' + ex.L.toFixed(2) + '</b><small>' + q + '</small></div><div>' + nV + '<b>' + ex.V.toFixed(2) + '</b><small>' + q + '</small></div><div>Total<b>' + (ex.L + ex.V).toFixed(2) + '</b><small>' + q + '</small></div></div>' +
             '<div class="nota">Es el partido que la casa tiene en la cabeza. ' + (dep === 'fut' ? 'Marcadores más probables: <b>' + mc.map(function (m) { return m[0] + '</b> (' + p0(m[1]) + ')'; }).join(', <b>') + '.' : '') + '</div>' +
+            (c.modL != null && c.modV != null ? '<div class="psMod"><b>¿Y los del modelo de OVA?</b> El modelo espera ' + nL + ' ' + (+c.modL).toFixed(2) + ' · ' + nV + ' ' + (+c.modV).toFixed(2) + ' ' + q + '. ' +
+              'No son los mismos: los de arriba salen de la <b>cuota</b> (lo que cree la casa) y los del modelo salen de lo que cada equipo <b>ha metido y recibido</b>. ' +
+              (Math.abs(c.modL - ex.L) + Math.abs(c.modV - ex.V) >= 0.35 ? 'Aquí se separan bastante: cuando pasa, la casa suele tener razón (sabe de bajas y alineaciones; el modelo no).' : 'Aquí casi coinciden.') + '</div>' : '') +
             plegado('¿De dónde sale?', 'Se buscan los ' + q + ' de cada equipo que dan exactamente el % del ganador' + (ex.conTotal ? ' y el del Más/Menos' : (dep === 'fut' ? ' (sin precio del total se toma la media de las grandes ligas, 2.65 goles)' : ' con el total de la casa')) + ', con la fórmula de Poisson (la que usan casi todos los modelos de ' + (dep === 'fut' ? 'fútbol' : 'hockey') + '). De ahí salen las opciones del punto 4.');
           corto.push('La casa espera ~' + ex.L.toFixed(1) + ' a ' + ex.V.toFixed(1) + ' ' + q + (dep === 'fut' ? ': algo como ' + mc.slice(0, 2).map(function (m) { return m[0]; }).join(' o ') : '') + '.');
         } else o += '<div class="nota">Sin precio suficiente para despejarlo.</div>';
@@ -274,7 +279,7 @@
       /* ---------- 3) la tabla contra el juego ---------- */
       if (dep !== 'tenis') {
         var lL = lecturaTabla('<b>' + nL + '</b>', tablaVsJuego(c.fL, dep), dep, c.xgL), lV = lecturaTabla('<b>' + nV + '</b>', tablaVsJuego(c.fV, dep), dep, c.xgV);
-        o += '<h3>3) La tabla contra el juego</h3><ul class="psLs">' + lL.html + lV.html + '</ul>' +
+        o += '<h3>3) La tabla contra el juego</h3><ul class="psLs">' + lL.html + lV.html + '</ul>' + (c.tablaHtml || '') +
           plegado('¿Qué quiere decir «debería»?', 'Es lo que da su diferencia de ' + q + ' por juego (los que mete contra los que le meten)' + (c.xgL || c.xgV ? ' y, en fútbol, la calidad de sus tiros' : '') + '. Cuando la tabla y eso no cuadran, eso dice más de lo que viene que la tabla. Ojo: la casa también lo sabe; medido en OVA, esto no le gana al precio. Sirve para entender por qué la cuota no sigue la tabla.');
         [[lL.flag, nL], [lV.flag, nV]].forEach(function (x) { if (x[0] === 'mejor') corto.push(x[1] + ' juega mejor de lo que dice su tabla.'); else if (x[0] === 'peor') corto.push('A ' + x[1] + ' la tabla lo trata mejor de lo que juega.'); });
       }
@@ -282,7 +287,7 @@
       /* ---------- 4) opciones ---------- */
       var nO = dep === 'tenis' ? 2 : 4, ops, extra = '';
       if (dep === 'fut') ops = opcionesFut(c.nL, c.nV, pPrin, r);
-      else if (dep === 'tenis') { var ot = opcionesTenis(c.nL, c.nV, pPrin[0], c.bo); ops = ot.o; extra = '<div class="nota">Con ' + p0(pPrin[0]) + ' para ' + nL + ' en el partido, su chance de ganar cada set es ~' + p0(ot.s) + (c.bo === 5 ? ' (a 5 sets)' : '') + '.</div>'; }
+      else if (dep === 'tenis') { var ot = opcionesTenis(c.nL, c.nV, pPrin[0], c.bo); ops = ot.o; extra = '<div class="nota">Con ' + p0(pPrin[0]) + ' para ' + nL + ' en el partido, su chance de ganar cada set es ~' + p0(ot.s) + (c.bo === 5 ? ' (a 5 sets)' : '') + '. Sets exactos, games y tie-breaks (medidos) están en la pestaña <b>Sets y games</b>.</div>'; }
       else { ops = opcionesUS(dep, c.nL, c.nV, pPrin[0], c.sp, c.tot, r); if (dep === 'nba' || dep === 'nfl') extra = '<div class="nota">' + lineaPrincipal(dep, c.nL, c.nV, c.sp, c.tot) + '</div>'; }
       o += '<h3>' + nO + ') Las opciones, de más a menos chance</h3>' + extra + tablaOpciones(ops) +
         '<div class="nota">Más chance = paga menos. La cuota justa es lo mínimo que tendrían que pagarte para que valga la pena.</div>' +
@@ -315,8 +320,8 @@
     '.psChips b{display:block;font-size:19px;margin-top:2px}.psChips small{color:var(--mut2,#888)}.psLs{margin:4px 0;padding-left:18px;font-size:13px;line-height:1.45}.psLs li{margin:4px 0}' +
     '.psCorto{background:var(--bg2,rgba(127,127,127,.12));border-radius:12px;padding:10px 12px;margin:2px 0 6px}.psCt{font-weight:800;font-size:14px;margin-bottom:4px}.psCorto ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.45}.psCorto li{margin:3px 0}' +
     '.psCom,.psMas{margin:4px 0 6px}.psCom summary,.psMas summary{cursor:pointer;font-size:12px;color:var(--mut,#aab);font-weight:700}.psCom .nota{margin-top:6px}' +
-    '.psMov{font-size:12.5px;line-height:1.45;margin:8px 0;padding:8px 10px;border-radius:10px;background:var(--bg2,rgba(127,127,127,.12))}.psMov.si{box-shadow:inset 3px 0 0 #e0a030}' +
-    '.psTu{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.psTu select,.psTu input{font-size:16px;padding:8px 10px;border-radius:9px;border:1px solid rgba(127,127,127,.35);background:var(--bg2,transparent);color:inherit;flex:1 1 140px;min-width:0}.psTu .nota{flex:1 1 100%}</style>';
+    '.psMov{font-size:12.5px;line-height:1.45;margin:8px 0;padding:8px 10px;border-radius:10px;background:var(--bg2,rgba(127,127,127,.12))}.psMov.psMv{box-shadow:inset 3px 0 0 #e0a030}' +
+    '.psMod{font-size:12.5px;line-height:1.45;margin:8px 0;padding:8px 10px;border-radius:10px;border:1px dashed rgba(127,127,127,.4)}.psTu{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.psTu select,.psTu input{font-size:16px;padding:8px 10px;border-radius:9px;border:1px solid rgba(127,127,127,.35);background:var(--bg2,transparent);color:inherit;flex:1 1 140px;min-width:0}.psTu .nota{flex:1 1 100%}</style>';
 
   var api = { html: html, enlazar: enlazar, leerTu: leerTu, lineaPrincipal: lineaPrincipal, marcadores: marcadores, sinComision: sinComision, impAm: impAm, amer: amer, matriz: matriz, pMas: pMas, golesDe1x2: golesDe1x2, golesDe2: golesDe2, puntosDe: puntosDe,
     tablaVsJuego: tablaVsJuego, opcionesFut: opcionesFut, opcionesUS: opcionesUS, opcionesTenis: opcionesTenis, setDe: setDe };
