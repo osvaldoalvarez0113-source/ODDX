@@ -1,7 +1,6 @@
-name: Bajar xG (dataset público de Hugging Face)
+name: Sonda MLB en ESPN (para la pestaña Jugadores)
 
-# Solo para medir: baja el dataset público ganendraditya/understat-data (xG por equipo y partido, EPL, La Liga y Serie A,
-# 2014-15 a 2024-25) a la rama "datos-xg-futbol". No toca la app.
+# Solo mira la estructura de ESPN para MLB en juegos ya jugados. Guarda en la rama "sonda-mlb". No toca la app.
 on:
   push:
     branches: [bajar-xg]
@@ -10,20 +9,19 @@ permissions:
   contents: write
 
 jobs:
-  bajar:
+  sonda:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
-      - name: Bajar
-        run: |
-          mkdir -p /tmp/res && cd /tmp/res
-          B=https://huggingface.co/datasets/ganendraditya/understat-data/resolve/main
-          for f in processed/team_match.csv processed/quality_report.json README.md; do
-            curl -sSL --fail --retry 3 -o "$(basename $f)" "$B/$f" && echo "ok $f" || echo "falla $f"
-          done | tee bajar.txt
-          wc -l team_match.csv >> bajar.txt || true; head -3 team_match.csv >> bajar.txt || true
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Sonda
+        run: node sonda_mlb.js
       - name: Guardar
         if: always()
         run: |
-          cd /tmp/res && git init -q -b datos-xg-futbol && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
-          git add -A && git commit -q -m "xG dataset HF" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" datos-xg-futbol
+          mkdir -p /tmp/res && cp -f sonda_mlb.txt /tmp/res/ 2>/dev/null || true
+          cd /tmp/res && git init -q -b sonda-mlb && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "sonda mlb" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" sonda-mlb
