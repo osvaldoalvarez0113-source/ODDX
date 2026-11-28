@@ -5,7 +5,10 @@ const BASE = 'http://127.0.0.1:8080/', out = 'salida'; fs.mkdirSync(out, { recur
 const log = []; const L = (...a) => { const t = a.map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(' '); log.push(t); console.log(t); };
 const espera = ms => new Promise(r => setTimeout(r, ms));
 async function abrir(b, pagina, nombre, antes) {
-  const pg = await b.newPage({ viewport: { width: 390, height: 844 } }), errs = [];
+  const pg = await b.newPage({ viewport: { width: 390, height: 844 }, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1' }), errs = [], fallas = [];
+  pg.on('requestfailed', r => { if (/espn/.test(r.url())) fallas.push(r.url().slice(0, 120) + ' ' + (r.failure() && r.failure().errorText)); });
+  pg.on('response', r => { if (/espn/.test(r.url()) && r.status() >= 400) fallas.push(r.status() + ' ' + r.url().slice(0, 120)); });
+  pg._fallas = fallas;
   pg.on('pageerror', e => errs.push(e.message));
   await pg.route('**/acceso.js*', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));   /* sin el candado de códigos para probar */
   await pg.goto(BASE + pagina + (pagina.includes('?') ? '&' : '?') + 'admin-acceso', { waitUntil: 'domcontentloaded' });
@@ -49,7 +52,7 @@ async function tocarTabs(pg, nombre, tabs, sel) {
       });
       L('MLB pick de jugador y cierre:', r);
     }
-    L('MLB errores JS:', errs.slice(0, 6));
+    L('MLB errores JS:', errs.slice(0, 6), 'ESPN fallas:', pg._fallas.slice(0, 4));
     await pg.close();
   }
   // NBA, NHL, NFL y fútbol de hoy (sin pestaña Cuotas): Veredicto, Paso a paso y el 💾 del «¿Hay pick?»
@@ -63,7 +66,7 @@ async function tocarTabs(pg, nombre, tabs, sel) {
       if (inp) { await inp.fill('150'); await espera(500); const bG = await g.$((esF ? '[id$="vlR"]' : '[data-vl="r"]') + ' button'); L(nombre, '💾 en ¿Hay pick?:', bG ? await bG.innerText() : 'NO SALE'); }
       L(nombre, 'pestañas:', await g.$$eval('.tabs .tb', x => x.map(y => y.textContent)));
     }
-    L(nombre, 'errores JS:', errs.slice(0, 6));
+    L(nombre, 'errores JS:', errs.slice(0, 6), 'ESPN fallas:', pg._fallas.slice(0, 4));
     await pg.close();
   }
   await b.close();
