@@ -8,7 +8,8 @@
    NBA: puntos, rebotes, asistencias, triples, pts+reb+ast · NHL: puntos, asistencias, tiros a puerta (y atajadas)
    NFL: yardas de pase / carrera / recepción, pases de TD y recepciones. En la NFL ESPN trae la línea pero NO el precio:
    ahí la jugada sale solo del historial del jugador y se avisa.
-   Fútbol no tiene: ESPN/DraftKings no publica líneas por jugador (solo de equipo). MLB queda para cuando haya temporada.
+   MLB: hits+carreras+impulsadas, hits, bases totales, carreras, impulsadas y ponches del abridor (mlbextra.js la conecta).
+   Fútbol no tiene: ESPN/DraftKings no publica líneas por jugador (solo de equipo).
    Medición: docs/MEDICION-PROPS-JUGADOR-2026-11.md (NBA 109,977 props · NHL 120,768 · NFL 12,232): lo que dice el precio
    pasa casi exacto y apostar a ciegas pierde por el margen. Aquí NO hay un modelo propio: es el mercado bien leído.
    Los picks guardados (mercado 'PROP') se resuelven solos con el boxscore de ESPN (resolver()).
@@ -47,6 +48,25 @@
         var yd = function (i) { return Math.max(P[i].ryd ? P[i].ryd.L : 0, P[i].cyd ? P[i].cyd.L : 0); };
         var ot = ids.filter(function (i) { return !P[i].pyd && yd(i) > 0; }).sort(function (a, b) { return yd(b) - yd(a); })[0];
         return [qb, ot].filter(Boolean);
+      } }
+    ,
+    /* MLB (desde 28-nov-2026, probado con juegos reales de 2026): solo los mercados que traen «hitos» (X+) para saber cuál cuota es el Más.
+       El gamelog de un bateador trae bateo y el de un lanzador, pitcheo: cada mercado lee solo el suyo. En el boxscore los grupos
+       batting y pitching repiten llaves (hits, runs, strikeouts): se separan con B: y P: (leerBox). Bases totales no se puede
+       resolver con el boxscore (no trae dobles ni triples): ese pick se cierra a mano. */
+    mlb: { sp: 'baseball', lg: 'mlb', medido: '232,667 props de MLB', tipos: [
+      { k: 'hrr', t: 'Total Hits + Runs + RBIs', m: 'Hits + Runs + RBIs Milestones', n: 'Hits + carreras + impulsadas', c: 'H+C+I', log: function (s) { return s.atBats != null ? s.hits + s.runs + s.RBIs : NaN; }, box: function (b) { return b['B:hits'] + b['B:runs'] + b['B:RBIs']; } },
+      { k: 'hit', t: 'Total Hits', m: 'Hits Milestones', n: 'Hits', c: 'hits', log: function (s) { return s.atBats != null ? s.hits : NaN; }, box: function (b) { return b['B:hits']; } },
+      { k: 'tb', t: 'Total Bases', m: 'Total Bases Milestones', n: 'Bases totales', c: 'bases totales', log: function (s) { return s.atBats != null ? s.hits + s.doubles + 2 * s.triples + 3 * s.homeRuns : NaN; }, box: function () { return NaN; } },
+      { k: 'run', t: 'Total Runs Scored', m: 'Runs Milestones', n: 'Carreras anotadas', c: 'carreras', log: function (s) { return s.atBats != null ? s.runs : NaN; }, box: function (b) { return b['B:runs']; } },
+      { k: 'rbi', t: 'Total RBIs', m: 'RBIs Milestones', n: 'Impulsadas', c: 'impulsadas', log: function (s) { return s.atBats != null ? s.RBIs : NaN; }, box: function (b) { return b['B:RBIs']; } },
+      { k: 'k', t: 'Total Strikeouts', m: 'Strikeouts Thrown Milestones', n: 'Ponches (abridor)', c: 'ponches', log: function (s) { return s.innings != null ? s.strikeouts : NaN; }, box: function (b) { return b['P:strikeouts']; } }],
+      /* el abridor (el de la línea de ponches más alta) + el bateador con la línea de H+C+I más alta */
+      elegir: function (P, ids) {
+        var pit = ids.filter(function (i) { return P[i].k; }).sort(function (a, b) { return P[b].k.L - P[a].k.L; })[0];
+        var hrr = function (i) { return P[i].hrr ? P[i].hrr.L + z(P[i].hrr.pO) : (P[i].hit ? P[i].hit.L : 0); };
+        var bat = ids.filter(function (i) { return !P[i].k && (P[i].hrr || P[i].hit); }).sort(function (a, b) { return hrr(b) - hrr(a); })[0];
+        return [pit, bat].filter(Boolean);
       } }
   };
   function D(dep) { return DEPS[dep] || DEPS.nba; }
@@ -155,11 +175,11 @@
     var crudo = {}, tipos = D(dep).tipos;
     (((sum && sum.boxscore) || {}).players || []).forEach(function (t) {
       (t.statistics || []).forEach(function (g) {
-        var k = g.keys || g.names || [];
+        var k = g.keys || g.names || [], pre = dep === 'mlb' ? (/pitch/i.test(g.name || g.type || '') ? 'P:' : 'B:') : '';   /* MLB: bateo y pitcheo repiten llaves */
         (g.athletes || []).forEach(function (a) {
           var s = a.stats || [], id = String(a.athlete && a.athlete.id); if (!s.length || a.didNotPlay) return;
           var b = crudo[id] = crudo[id] || {};
-          s.forEach(function (v, i) { if (k[i] && !(k[i] in b)) b[k[i]] = num(v); });
+          s.forEach(function (v, i) { if (k[i] && !((pre + k[i]) in b)) b[pre + k[i]] = num(v); });
         });
       });
     });
@@ -232,7 +252,7 @@
       rosH.concat(rosA).forEach(function (x) { nom[x.id] = x; est[x.id] = x.est; if (/^out$|injured reserve/i.test(x.est)) fuera[x.id] = 1; });
       var idsH = principales(props, rosH.map(function (x) { return x.id; }), fuera, dep), idsA = principales(props, rosA.map(function (x) { return x.id; }), fuera, dep);
       if (!idsH.length && !idsA.length) {
-        pane.innerHTML = '<div class="pick no"><b>Sin líneas de jugadores todavía</b>DraftKings suele publicarlas ' + (dep === 'nfl' ? 'unos días antes' : 'la mañana') + ' del juego. ' + (g.done ? 'Este juego ya terminó.' : (g.live ? 'Con el juego en vivo las quitan.' : 'Vuelve a abrir esta pestaña más tarde.')) + '</div>' + nota(dep, false);
+        pane.innerHTML = '<div class="pick no"><b>Sin líneas de jugadores todavía</b>DraftKings suele publicarlas ' + (dep === 'nfl' ? 'unos días antes' : (dep === 'mlb' ? 'cuando salen los abridores' : 'la mañana')) + ' del juego. ' + (g.done ? 'Este juego ya terminó.' : (g.live ? 'Con el juego en vivo las quitan.' : 'Vuelve a abrir esta pestaña más tarde.')) + '</div>' + nota(dep, false);
         return;
       }
       var todos = idsA.concat(idsH);

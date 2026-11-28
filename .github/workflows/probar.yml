@@ -1,0 +1,32 @@
+name: Prueba con datos reales (rama prueba-mlb)
+
+# Solo prueba: abre las apps con datos reales en Chrome (MLB en una fecha de 2026) y guarda capturas en la rama "prueba-salida".
+on:
+  push:
+    branches: [prueba-mlb]
+
+permissions:
+  contents: write
+
+jobs:
+  probar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Playwright
+        run: npm i --no-save playwright@1.48.2 && npx playwright install --with-deps chromium
+      - name: Probar
+        run: |
+          python3 -m http.server 8080 >/dev/null 2>&1 &
+          sleep 2
+          node .prueba/probar_real.js
+      - name: Guardar
+        if: always()
+        run: |
+          mkdir -p /tmp/res && cp -r salida/* /tmp/res/ 2>/dev/null || true
+          cd /tmp/res && git init -q -b prueba-salida && git config user.name "escaner-ova" && git config user.email "escaner-ova@users.noreply.github.com"
+          git add -A && git commit -q -m "prueba con datos reales" && git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" prueba-salida
