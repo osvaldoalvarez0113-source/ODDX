@@ -10,7 +10,7 @@ async function abrir(b, pagina, nombre, antes) {
   pg.on('response', r => { if (/espn/.test(r.url()) && r.status() >= 400) fallas.push(r.status() + ' ' + r.url().slice(0, 120)); });
   pg._fallas = fallas;
   pg.on('pageerror', e => errs.push(e.message));
-  await pg.route(/espn\.com/, async r => { try { const resp = await r.fetch(); await r.fulfill({ response: resp, headers: Object.assign({}, resp.headers(), { 'access-control-allow-origin': '*' }) }); } catch (e) { await r.abort(); } });   /* desde 127.0.0.1 ESPN no manda CORS: se pasa por aquí */
+  await pg.route(/espn\.com/, async r => { try { const h = Object.assign({}, r.request().headers()); delete h.origin; delete h.referer; h['user-agent'] = 'ova'; const resp = await r.fetch({ headers: h }); await r.fulfill({ response: resp, headers: Object.assign({}, resp.headers(), { 'access-control-allow-origin': '*' }) }); } catch (e) { await r.abort(); } });   /* desde 127.0.0.1 ESPN no manda CORS: se pasa por aquí */
   await pg.route('**/acceso.js*', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));   /* sin el candado de códigos para probar */
   await pg.goto(BASE + pagina + (pagina.includes('?') ? '&' : '?') + 'admin-acceso', { waitUntil: 'domcontentloaded' });
   await pg.evaluate(() => { document.documentElement.style.visibility = 'visible'; const a = document.getElementById('ovaAcc'); if (a) a.remove(); });
@@ -21,7 +21,8 @@ async function abrir(b, pagina, nombre, antes) {
 async function tocarTabs(pg, nombre, tabs, sel) {
   L(nombre, 'DOM:', await pg.evaluate(() => ({ games: document.querySelectorAll('.game').length, ids: [...document.querySelectorAll('.game')].slice(0, 2).map(g => (g.parentNode && (g.parentNode.id || g.parentNode.className)) + ' :: ' + g.outerHTML.slice(0, 300)), estado: (document.body.innerText || '').replace(/\s+/g, ' ').slice(0, 400) })));
   const g = await pg.$(sel.juego); if (!g) { L(nombre, 'SIN JUEGOS'); return; }
-  await (await g.$(sel.cabeza) || g).click(); await espera(3500);
+  await (await g.$(sel.cabeza) || g).click(); await espera(8000);
+  if (!(await g.$('.tb'))) { await (await g.$(sel.cabeza) || g).click(); await espera(8000); }
   for (const t of tabs) {
     const b = await g.$('.tb[data-t="' + t + '"]'); if (!b) { L(nombre, 'sin pestaña', t); continue; }
     await b.click(); await espera(t === 'j' || t === 'jug' ? 9000 : 2500);
