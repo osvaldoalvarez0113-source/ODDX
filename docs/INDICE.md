@@ -4,6 +4,7 @@ Auditorías, mediciones y rondas de diseño de OVA, por tema.
 
 | Archivo | Tema |
 |---|---|
+| [`MEDICION-SORPRESAS-MLB-2026-11.md`](MEDICION-SORPRESAS-MLB-2026-11.md) | **Sorpresas en MLB** (17 situaciones del no favorito, 8,284 juegos 2023-2026): ninguna pasa. «La racha engaña» de NBA no se cumple en MLB (45.0% contra 42.7%, z +1.7, al revés). No entra |
 | [`MEDICION-XG-FUTBOL-2026-11.md`](MEDICION-XG-FUTBOL-2026-11.md) | **xG real (Understat, vía Hugging Face) en el modelo de fútbol**: mitad goles y mitad xG acierta +22 de 3,420 en 2022-25 (t 3.5), pero en la vuelta y en 2016-20 no se distingue de cero. No pasa por poco; falta fuente de xG en vivo |
 | [`MEDICION-TENIS-CALIBRAR-2026-11.md`](MEDICION-TENIS-CALIBRAR-2026-11.md) | **Tenis: corregir el % de Kalshi** por el sesgo favorito-perro (ATP, WTA): fuera de muestra empeora, la pendiente cambia entre 2025 y 2026. No entra |
 | [`MEDICION-HCAP-TOTAL-2026-11.md`](MEDICION-HCAP-TOTAL-2026-11.md) | **Hándicap + total → % de ganar** (NBA, NFL): el % del hándicap de cierre (con o sin el total) no es más exacto que el moneyline; 0 de 6 pasan. Ojo: NFL 2019 de `datos-nhl-nfl` trae líneas en vivo |
