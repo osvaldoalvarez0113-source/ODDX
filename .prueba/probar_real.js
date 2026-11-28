@@ -15,6 +15,7 @@ async function abrir(b, pagina, nombre, antes) {
   return { pg, errs };
 }
 async function tocarTabs(pg, nombre, tabs, sel) {
+  L(nombre, 'DOM:', await pg.evaluate(() => ({ games: document.querySelectorAll('.game').length, ids: [...document.querySelectorAll('.game')].slice(0, 2).map(g => (g.parentNode && (g.parentNode.id || g.parentNode.className)) + ' :: ' + g.outerHTML.slice(0, 300)), estado: (document.body.innerText || '').replace(/\s+/g, ' ').slice(0, 400) })));
   const g = await pg.$(sel.juego); if (!g) { L(nombre, 'SIN JUEGOS'); return; }
   await (await g.$(sel.cabeza) || g).click(); await espera(3500);
   for (const t of tabs) {
