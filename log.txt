@@ -5,19 +5,19 @@ futbol descanso: {"peso":-0.01,"partidos":3342,"pruebas":[{"ajuste":2024,"medido
 nfl epa: entra false · peso 1.07
 afuera: nfelo 16 juegos · ClubElo 50 partidos · Tennis Abstract 543/497 jugadores
 nba: mezcla esperando (35 de 150 calificados)
-nhl: mezcla esperando (52 de 150 calificados)
+nhl: mezcla esperando (53 de 150 calificados)
 nfl: mezcla esperando (17 de 150 calificados)
 mlb: mezcla esperando (0 de 150 calificados)
 futbol: mezcla esperando (106 de 150 calificados)
 tenis: mezcla esperando (34 de 150 calificados)
-nba: 26 partidos vistos · 9 guardados/refrescados antes de empezar · ESPN 9
+nba: 26 partidos vistos · 5 guardados/refrescados antes de empezar · ESPN 5
 nhl: 30 partidos vistos · 13 guardados/refrescados antes de empezar · ESPN 0
 nfl: con modelo de afuera 16
 nfl: 16 partidos vistos · 11 guardados/refrescados antes de empezar · ESPN 11
 mlb: 0 partidos vistos · 0 guardados/refrescados antes de empezar · ESPN 0
 futbol: con modelo de afuera 20
-futbol: 91 partidos vistos · 65 guardados/refrescados antes de empezar · ESPN 0
+futbol: 91 partidos vistos · 70 guardados/refrescados antes de empezar · ESPN 0
 tenis: con modelo de afuera 22
 tenis: 34 partidos vistos · 2 guardados/refrescados antes de empezar · ESPN 0
 avisos: tema privado sí · pendientes 0 · problemas del vigilante 0 · detective 0 grupos
-calificados ahora: 1 · ascensos: 0 · total guardados: 359
+calificados ahora: 0 · ascensos: 0 · total guardados: 364
