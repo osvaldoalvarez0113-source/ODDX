@@ -7,8 +7,9 @@ const espera = ms => new Promise(r => setTimeout(r, ms));
 async function abrir(b, pagina, nombre, antes) {
   const pg = await b.newPage({ viewport: { width: 390, height: 844 } }), errs = [];
   pg.on('pageerror', e => errs.push(e.message));
+  await pg.route('**/acceso.js*', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));   /* sin el candado de códigos para probar */
   await pg.goto(BASE + pagina + (pagina.includes('?') ? '&' : '?') + 'admin-acceso', { waitUntil: 'domcontentloaded' });
-  await pg.evaluate(() => { document.documentElement.style.visibility = 'visible'; });
+  await pg.evaluate(() => { document.documentElement.style.visibility = 'visible'; const a = document.getElementById('ovaAcc'); if (a) a.remove(); });
   if (antes) await antes(pg);
   await espera(9000);
   return { pg, errs };
