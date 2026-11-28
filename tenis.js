@@ -225,13 +225,22 @@
   function vacio(t, d) { return `<div class="vacio"><div class="vico"><div class="anillo"></div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M4.5 6.5c3 2.5 3 8.5 0 11M19.5 6.5c-3 2.5-3 8.5 0 11"/></svg></div><b>${esc(t)}</b>${esc(d)}</div>`; }
 
   /* ---------- cuerpo: Veredicto · Mercados · Jugadores ---------- */
+  function htmlPaso(m, an) {
+    try {
+      if (!window.OVAPaso) return '<div class="nota">No se pudo cargar el paso a paso.</div>';
+      const k = an.k;
+      return window.OVAPaso.html({ dep: 'tenis', nL: m.a.nombre, nV: m.b.nombre, p: an.pGana, sinMercado: !k, mkTxt: k ? 'Kalshi sin comisión (+5% del modelo)' : '',
+        cuotas: k && k.cA && k.cB ? { tipo: 'cent', v: [k.cA, k.cB], nombres: [m.a.nombre, m.b.nombre] } : null, bo: an.bestOf === 5 ? 5 : 3 });
+    } catch (e) { return '<div class="nota">No se pudo armar el paso a paso de este partido.</div>'; }
+  }
   function pintarCuerpo(bd, m, tab) {
     const an = analisis(m);
-    const tabs = [['ver', 'Veredicto'], ['mer', 'Sets y games'], ['jug', 'Jugadores']];
+    const tabs = [['ver', 'Veredicto'], ['paso', 'Paso a paso'], ['mer', 'Sets y games'], ['jug', 'Jugadores']];
     bd.innerHTML = `<div class="tabs">${tabs.map(([k, n]) => `<button class="tb${k === tab ? ' on' : ''}" data-t="${k}">${n}</button>`).join('')}</div><div class="pane on"></div>${kpiOculto(an)}`;
     bd.querySelector('.tabs').onclick = e => { const b = e.target.closest('.tb'); if (b) pintarCuerpo(bd, m, b.dataset.t); };
     const pane = bd.querySelector('.pane');
     if (tab === 'ver') pane.innerHTML = htmlVeredicto(m, an);
+    if (tab === 'paso') pane.innerHTML = htmlPaso(m, an);   /* 📐 Paso a paso: pasoapaso.js */
     if (tab === 'mer') pane.innerHTML = htmlMercados(m, an);
     if (tab === 'jug') pane.innerHTML = htmlJugadores(m, an);
     const sel = pane.querySelector('.supSel');

@@ -21,6 +21,7 @@
 <script src="memoria.js"></script>
 <script src="observaciones.js"></script>
 <script src="analista.js"></script>
+<script src="pasoapaso.js"></script>
 <script src="liga.js"></script>
 <script src="sello.js"></script>
 <script src="publico.js"></script>
@@ -716,6 +717,17 @@ function mkPN(g){
   if(g.pred) return {p:g.pred.pH,src:'pred'};
   return null;
 }
+/* 📐 Paso a paso (pasoapaso.js): cuota → %, puntos que espera la casa, récord contra diferencia de puntos y opciones */
+function pasoN(g,pr,H,A){
+  try{
+    if(!window.OVAPaso) return '<div class="nota">No se pudo cargar el paso a paso.</div>';
+    const mk=mkPN(g), o=g.odds||{}, F=window.OVAForma;
+    const src=mk?(mk.src==='pin'?'Pinnacle, sin comisión':(mk.src==='espn'?'ESPN (DraftKings), sin comisión':(mk.live?'Polymarket, en vivo':'Polymarket'))):'';
+    return window.OVAPaso.html({dep:'nba',nL:H.n,nV:A.n,p:mk?mk.p:pr.pH,sinMercado:!mk,mkTxt:src,
+      cuotas:(o.mlH&&o.mlA)?{tipo:'am',v:[o.mlH,o.mlA],nombres:[H.n,A.n]}:null,sp:isFinite(o.spread)?+o.spread:null,tot:isFinite(o.total)?+o.total:null,
+      fL:F?F.calc(GAMES,g.h,g.ts,true,'nba'):null,fV:F?F.calc(GAMES,g.a,g.ts,false,'nba'):null});
+  }catch(e){ return '<div class="nota">No se pudo armar el paso a paso de este juego.</div>'; }
+}
 function pinPH(g){
   if(!PIN_N) return null;
   const H=T(g.h), A=T(g.a), kh=nickN(H.n), ka=nickN(A.n); let r=null;
@@ -835,8 +847,8 @@ function pintarCuerpo(body,g){
    <h3>Lesionados (ESPN)</h3><div data-k="les" class="nota">Cargando…</div>
    <div class="nota">Rating del modelo: ${esc(A.ab)} ${(pr.ma>=0?'+':'')+pr.ma.toFixed(1)} · ${esc(H.ab)} ${(pr.mh>=0?'+':'')+pr.mh.toFixed(1)} (con arrastre de temporada si aplica).</div>`;
 
-  body.innerHTML=`<div class="tabs"><button class="tb on" data-t="ver">Veredicto</button><button class="tb" data-t="cuo">Cuotas</button><button class="tb" data-t="num">Números</button><button class="tb" data-t="for">Forma</button><button class="tb" data-t="jug">Jugadores</button></div>
-   <div class="pane on" data-p="ver">${ver}</div><div class="pane" data-p="cuo">${cuo}</div><div class="pane" data-p="num">${tramos}${num}<h3>Tabla de posiciones</h3><div data-pos><div class="nota">Cargando la tabla…</div></div></div><div class="pane" data-p="for">${forPane}</div><div class="pane" data-p="jug"><div class="nota">Toca la pestaña para cargar las líneas de jugadores.</div></div>`;
+  body.innerHTML=`<div class="tabs"><button class="tb on" data-t="ver">Veredicto</button><button class="tb" data-t="paso">Paso a paso</button><button class="tb" data-t="cuo">Cuotas</button><button class="tb" data-t="num">Números</button><button class="tb" data-t="for">Forma</button><button class="tb" data-t="jug">Jugadores</button></div>
+   <div class="pane on" data-p="ver">${ver}</div><div class="pane" data-p="paso"></div><div class="pane" data-p="cuo">${cuo}</div><div class="pane" data-p="num">${tramos}${num}<h3>Tabla de posiciones</h3><div data-pos><div class="nota">Cargando la tabla…</div></div></div><div class="pane" data-p="for">${forPane}</div><div class="pane" data-p="jug"><div class="nota">Toca la pestaña para cargar las líneas de jugadores.</div></div>`;
 
   body.querySelectorAll('.tb').forEach(b=>b.onclick=e=>{
     e.stopPropagation();
@@ -844,6 +856,7 @@ function pintarCuerpo(body,g){
     body.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
     const pn=body.querySelector('.pane[data-p="'+b.dataset.t+'"]'); pn.classList.add('on');
     if(b.dataset.t==='jug'&&window.OVAJugadores&&!pn.dataset.c){ pn.dataset.c='1'; window.OVAJugadores.pintar(pn,g,H,A); }   /* props de jugador: jugadores.js */
+    if(b.dataset.t==='paso'&&!pn.dataset.c){ pn.dataset.c='1'; pn.innerHTML=pasoN(g,pr,H,A); }   /* 📐 Paso a paso: pasoapaso.js */
   });
   /* tabla de posiciones (posiciones.js): la conferencia de cada equipo, con los dos resaltados; si ESPN falla, con los juegos de la app */
   try{ if(window.OVAPosiciones){ const pe=body.querySelector('[data-pos]'); window.OVAPosiciones.pintar(pe,'nba',g.h,g.a,()=>window.OVAPosiciones.desdeJuegos(GAMES,TEAMS,seasonOf(g.ts),seasonOf)); } }catch(e){}

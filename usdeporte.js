@@ -562,6 +562,21 @@
     return `<div class="rv">${anH}<h4>Pronóstico y pick</h4>${main}${guiaNhl(g, pr, pf)}${kalshiN(g, mk, H, A)}${coincide ? '' : '<h4>Modelo contra mercado</h4>' + tab}<h4>Qué tan confiable es</h4><div class="rvLs">${li.join('')}</div></div>`;
   }
 
+  /* 📐 Paso a paso (pasoapaso.js): cuota → %, goles o puntos que espera la casa, récord contra diferencia y opciones */
+  function pasoU(g, pr, H, A) {
+    try {
+      if (!window.OVAPaso) return '<div class="nota">No se pudo cargar el paso a paso.</div>';
+      const mk = pr.mk || mkPk(g), o = g.odds || {}, pin = pinDe(g) || {}, F = window.OVAForma;
+      const src = mk ? (mk.src === 'pin' ? 'Pinnacle, sin comisión' : (mk.src === 'espn' ? 'ESPN (DraftKings), sin comisión' : (mk.live ? 'Polymarket, en vivo' : 'Polymarket'))) : '';
+      const sp = isFinite(o.spread) ? +o.spread : (pin.sp ? pin.sp.l : null), tot = isFinite(o.total) ? +o.total : (pin.tot ? pin.tot.l : null);
+      let pMas = null;
+      if (pin.tot && pin.tot.l === tot && pin.tot.p) pMas = pin.tot.p[0];
+      else if (o.toO && o.toU) { const a = impProb(o.toO), b = impProb(o.toU); if (a && b) pMas = a / (a + b); }
+      return window.OVAPaso.html({ dep: DEP, nL: H.n, nV: A.n, p: mk ? mk.p : pr.pH, sinMercado: !mk, mkTxt: src,
+        cuotas: (o.mlH && o.mlA) ? { tipo: 'am', v: [o.mlH, o.mlA], nombres: [H.n, A.n] } : null, sp: sp, tot: tot, pMasTot: DEP === 'nhl' ? pMas : null,
+        fL: F ? F.calc(GAMES, g.h, g.ts, true, DEP) : null, fV: F ? F.calc(GAMES, g.a, g.ts, false, DEP) : null });
+    } catch (e) { return '<div class="nota">No se pudo armar el paso a paso de este juego.</div>'; }
+  }
   function pintarCuerpo(body, g) {
     const pr = prediccion(g), H = T(g.h), A = T(g.a);
     const pS = pr.mk ? pr.mk.p : pr.pH;
@@ -660,14 +675,15 @@
      <h3>Lesionados (ESPN)</h3><div data-k="les" class="nota">Archivo grande (${DEP === 'nfl' ? 'unos 9 MB' : 'más de 1 MB'}): solo se baja cuando tú lo pides.</div><button class="btnAncho sec" data-a="les" style="margin-top:6px">Cargar lesionados</button>
      <div class="nota">Rating del modelo: ${esc(A.ab)} ${(pr.ma >= 0 ? '+' : '') + pr.ma.toFixed(SP.dec + 1)} · ${esc(H.ab)} ${(pr.mh >= 0 ? '+' : '') + pr.mh.toFixed(SP.dec + 1)} (con arrastre de temporada si aplica).</div>`;
 
-    body.innerHTML = `<div class="tabs"><button class="tb on" data-t="ver">Veredicto</button><button class="tb" data-t="cuo">Cuotas</button><button class="tb" data-t="num">Números</button><button class="tb" data-t="for">Forma</button><button class="tb" data-t="jug">Jugadores</button></div>
-     <div class="pane on" data-p="ver">${ver}</div><div class="pane" data-p="cuo">${cuo}</div><div class="pane" data-p="num">${num}</div><div class="pane" data-p="for">${forPane}</div><div class="pane" data-p="jug"><div class="nota">Toca la pestaña para cargar las líneas de jugadores.</div></div>`;
+    body.innerHTML = `<div class="tabs"><button class="tb on" data-t="ver">Veredicto</button><button class="tb" data-t="paso">Paso a paso</button><button class="tb" data-t="cuo">Cuotas</button><button class="tb" data-t="num">Números</button><button class="tb" data-t="for">Forma</button><button class="tb" data-t="jug">Jugadores</button></div>
+     <div class="pane on" data-p="ver">${ver}</div><div class="pane" data-p="paso"></div><div class="pane" data-p="cuo">${cuo}</div><div class="pane" data-p="num">${num}</div><div class="pane" data-p="for">${forPane}</div><div class="pane" data-p="jug"><div class="nota">Toca la pestaña para cargar las líneas de jugadores.</div></div>`;
 
     body.querySelectorAll('.tb').forEach(b => b.onclick = e => {
       e.stopPropagation();
       body.querySelectorAll('.tb').forEach(x => x.classList.remove('on')); b.classList.add('on');
       body.querySelectorAll('.pane').forEach(x => x.classList.remove('on'));
       const pn = body.querySelector('.pane[data-p="' + b.dataset.t + '"]'); pn.classList.add('on');
+      if (b.dataset.t === 'paso' && !pn.dataset.c) { pn.dataset.c = '1'; pn.innerHTML = pasoU(g, pr, H, A); }   /* 📐 Paso a paso: pasoapaso.js */
       if (b.dataset.t === 'jug' && window.OVAJugadores && !pn.dataset.c) { pn.dataset.c = '1'; window.OVAJugadores.pintar.guardar = guardarPick; window.OVAJugadores.pintar(pn, g, H, A, DEP); }   /* props de jugador: jugadores.js */
     });
     (() => {

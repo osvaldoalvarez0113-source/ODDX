@@ -2205,6 +2205,23 @@ function ctxAnF(p, r, mod, f, m){
     memFav: mem ? mem[favL ? '#L' : '#V'] : null, memRiv: mem ? mem[favL ? '#V' : '#L'] : null,
     pE: fu[1], pDoble: fu[fi] + fu[1], extras: [{ t:'Gol en el 1er tiempo', p: gol1T(r.overLin[2.5]) }], alertas: [], aFavor: [] };
 }
+/* 📐 Paso a paso (pasoapaso.js): la cuota en %, los goles que espera la casa, la tabla contra el juego y las opciones */
+function pasoF(p, base){
+  try{
+    if(!window.OVAPaso) return '<div class="nota">No se pudo cargar el paso a paso.</div>';
+    var r = base.r, m = buscarMkF(p), f = m ? (m.inv ? [m.g.r[2], m.g.r[1], m.g.r[0]] : m.g.r.slice()) : null;
+    var F = window.OVAForma, fL = null, fV = null, ts = tsPartido(p); if(!(ts > 0)) ts = Date.now();
+    if(F && TERMINADOS && TERMINADOS.length){
+      var nm = function(x){ return mismoEquipo(x, p.local) ? '#L' : (mismoEquipo(x, p.visita) ? '#V' : x); };
+      var G = TERMINADOS.map(function(x){ return {h:nm(x.local), a:nm(x.visita), hs:(x.golesLocal==null?NaN:+x.golesLocal), as:(x.golesVisita==null?NaN:+x.golesVisita), ts:tsPartido(x)}; }).filter(function(x){ return x.ts>0 && isFinite(x.hs) && isFinite(x.as); });
+      fL = F.calc(G, '#L', ts, true, 'fut'); fV = F.calc(G, '#V', ts, false, 'fut');
+    }
+    var xg = function(n){ var x = XLIVE && XLIVE.mapa ? buscarEnMapa(XLIVE.mapa, n) : null; return x && x.px >= 5 ? {f:x.xf*XLIVE.escala/x.px, c:x.xc*XLIVE.escala/x.px} : null; };
+    return window.OVAPaso.html({ dep:'fut', nL:p.local, nV:p.visita, fL:fL, fV:fV, p: f || [r.pL, r.pD, r.pV], sinMercado: !f,
+      mkTxt: m ? (m.src==='pred' ? 'Polymarket'+(m.vivo?' (en vivo)':'') : 'Pinnacle') : '', pMas25: (m && m.g && m.g.ou25) ? m.g.ou25[0] : null,
+      xgL: xg(p.local), xgV: xg(p.visita) });
+  }catch(e){ return '<div class="nota">No se pudo armar el paso a paso de este partido.</div>'; }
+}
 /* mejoras.js avisa cuando llegan los lesionados de ESPN: solo los que están fuera entran a El análisis */
 window.OVAAnFutLes = function(bodyEl, p, lesL, lesV){
   var an = bodyEl && bodyEl.querySelector('[data-an]'); if(!an || !p || !p._an || !window.OVAAnalista) return;
@@ -2297,6 +2314,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
   bodyEl.innerHTML =
     '<div class="tabs" id="'+id+'tabs">' +
       '<button class="tb on" data-t="ver">Veredicto</button>' +
+      '<button class="tb" data-t="paso">Paso a paso</button>' +
       '<button class="tb" data-t="cuo">Cuotas</button>' +
       '<button class="tb" data-t="num">Números</button>' +
       '<button class="tb" data-t="for">Forma</button>' +
@@ -2341,6 +2359,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
         '<div class="veredictoCuota" id="'+id+'verBtts"></div>' +
       '</div>' +
     '</div>' +
+    '<div class="pane" id="'+id+'paso"><div class="nota">Toca la pestaña para armarlo.</div></div>' +
     '<div class="pane" id="'+id+'num">' +
       base.numerosHtml +
       '<h3>Tabla de posiciones</h3>' + tablaPosicionesHtml(eL, eV) +
@@ -2362,6 +2381,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
       btn.classList.add('on');
       bodyEl.querySelectorAll('.pane').forEach(function(pn){ pn.classList.remove('on'); });
       document.getElementById(id+btn.dataset.t).classList.add('on');
+      if(btn.dataset.t==='paso' && !btn._ok){ btn._ok = true; document.getElementById(id+'paso').innerHTML = pasoF(p, base); }   /* 📐 se arma al tocarla */
     });
   });
 
@@ -3729,6 +3749,7 @@ h3{display:flex;align-items:center;gap:6px}
 <script src="forma.js"></script>
 <script src="memoria.js"></script>
 <script src="analista.js"></script>
+<script src="pasoapaso.js"></script>
 <script src="liga.js"></script>
 <script src="sello.js"></script>
 <script src="mejoras.js"></script>

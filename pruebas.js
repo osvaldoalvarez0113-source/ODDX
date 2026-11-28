@@ -10,7 +10,7 @@ function sec(t){console.log('\n== '+t);}
 const rd=f=>fs.readFileSync(D+f,'utf8');
 function scriptsInline(f){const h=rd(f),out=[],re=/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi;let m;while((m=re.exec(h)))out.push(m[1]);return out;}
 const APPS=['hub.html','panel.html','index.html','futbol.html','nba.html','nhl.html','nfl.html'];
-const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js','memoria.js','observaciones.js','mlbextra.js','liga.js','posiciones.js','animar.js'].filter(f=>fs.existsSync(D+f));
+const JS=['ganadores.js','top5.js','ovaextra.js','hubestilos.js','interior.js','interior2.js','ajustes.js','asistente.js','envivo.js','cierre.js','obsidiana.js','mejoras.js','selecciones.js','railway.js','diseno.js','ovaedge.js','autoregistro.js','herramientas.js','sw.js','usdeporte.js','jugadores.js','forma.js','prediccion.js','modelo-nhl.js','modelo-nfl.js','periodos.js','sello.js','publico.js','analista.js','pasoapaso.js','memoria.js','observaciones.js','mlbextra.js','liga.js','posiciones.js','animar.js'].filter(f=>fs.existsSync(D+f));
 
 /* ---------------- 1. sintaxis ---------------- */
 sec('Sintaxis');
@@ -2334,6 +2334,27 @@ sec('Liga de modelos');
   ok('el robot de cierres corre todos los días y guarda en su rama; la historia lo lee',/node scripts\/cierres\.js/.test(rd('.github/workflows/cierres.yml'))&&/cierres$/m.test(rd('.github/workflows/cierres.yml'))&&/traer cierres cierres-\$f\.json/.test(rd('.github/workflows/historia-liga.yml'))&&/historia-liga-juegos\.json/.test(rd('.github/workflows/historia-liga.yml')));
   ok('la liga mete historia.json en liga.json y el robot de historia corre todos los días y guarda en la rama liga',/historia: HIST && HIST\.v === 1/.test(rd('scripts/liga.js'))&&/node scripts\/historia_liga\.js/.test(rd('.github/workflows/historia-liga.yml'))&&/git add historia\.json/.test(rd('.github/workflows/historia-liga.yml'))&&/HEAD:liga/.test(rd('.github/workflows/historia-liga.yml')));
  }
+}
+/* 📐 Paso a paso (pasoapaso.js): pestaña en fútbol, NBA, NHL, NFL y tenis */
+{
+  console.log('\n📐 Paso a paso');
+  const PS=require(D+'pasoapaso.js'), rd3=f=>fs.readFileSync(D+f,'utf8');
+  const g=PS.golesDe1x2(.381,.334,.545);
+  ok('paso a paso: del 1X2 y el Más 2.5 salen los goles que espera la casa (Forest 1.47, Chelsea 1.37)',Math.abs(g.L-1.47)<=0.03&&Math.abs(g.V-1.37)<=0.03);
+  const sc=PS.sinComision([2.5,3.35,2.85],'dec');
+  ok('paso a paso: quita la comisión (2.50/3.35/2.85 suman 104.9% → 38.1/28.4/33.4)',Math.abs(sc.suma-1.0494)<0.001&&Math.abs(sc.sin[0]-.381)<0.002);
+  ok('paso a paso: americana −130 / +100 → 56.5% y 50% con comisión',Math.abs(PS.impAm(-130)-.5652)<0.001&&PS.impAm(100)===.5);
+  const pt=PS.puntosDe(-5.5,220.5); ok('paso a paso: hándicap −5.5 y total 220.5 → local 113, visita 107.5',pt.L===113&&pt.V===107.5);
+  const tv=PS.tablaVsJuego({temp:{w:10,e:0,l:5,n:15},pfT:112,pcT:113},'nba');
+  ok('paso a paso: 10-5 con diferencia negativa = récord mejor de lo que juega',tv.dif>2&&tv.txtEsp==='7-8');
+  const te=PS.opcionesTenis('A','B',.7,3); ok('paso a paso: tenis despeja el % por set y «gana al menos un set» ≥ «gana el partido»',te.s>.6&&te.s<.7&&te.o[2][1]>.7);
+  const h2=PS.golesDe2(.55,6.5,null); ok('paso a paso: NHL despeja goles con el ganador y el total',h2.L>h2.V&&Math.abs(h2.L+h2.V-6.5)<0.1);
+  const fm={temp:{w:6,e:2,l:3,n:11},pfT:1.6,pcT:1.1};
+  const hs=['fut','nba','nhl','nfl','tenis'].map(dep=>PS.html({dep,nL:'Local <x>',nV:'Visita',p:dep==='fut'?[.45,.27,.28]:.6,mkTxt:'prueba',cuotas:dep==='fut'?null:{tipo:dep==='tenis'?'cent':'am',v:dep==='tenis'?[62,41]:[-150,130]},sp:-3.5,tot:dep==='nhl'?6.5:45.5,fL:fm,fV:fm,pMas25:.52,bo:3}));
+  ok('paso a paso: arma las secciones en los 5 deportes sin romperse y escapa los nombres',hs.every(h=>/1\) De la cuota al %/.test(h)&&/Las opciones, de más a menos chance/.test(h)&&!/<x>/.test(h)&&!/No se pudo/.test(h)));
+  ok('paso a paso: la tabla contra el juego avisa que no es ventaja medida',/no le gana al precio/.test(hs[0]));
+  ok('paso a paso: pestaña en fútbol, NBA, NHL/NFL y tenis, armada al tocarla',/data-t="paso">Paso a paso/.test(rd3('futbol.html'))&&/pasoF\(p, base\)/.test(rd3('futbol.html'))&&/data-t="paso">Paso a paso/.test(rd3('nba.html'))&&/pasoN\(g,pr,H,A\)/.test(rd3('nba.html'))&&/data-t="paso">Paso a paso/.test(rd3('usdeporte.js'))&&/pasoU\(g, pr, H, A\)/.test(rd3('usdeporte.js'))&&/\['paso', 'Paso a paso'\]/.test(rd3('tenis.js')));
+  ok('paso a paso: las 5 páginas cargan pasoapaso.js y el service worker lo guarda',['futbol.html','nba.html','nhl.html','nfl.html','tenis.html'].every(f=>/<script src="pasoapaso\.js"><\/script>/.test(rd3(f)))&&/'pasoapaso\.js'/.test(rd3('sw.js')));
 }
 (async()=>{ await t_envivo(); await t_cierre(); await t_respaldo(); await t_sw(); await t_publico(); })().then(()=>{
  console.log('\n'+(fallas?'✗ '+fallas+' FALLAS de '+total+' pruebas':'✓ TODO BIEN: '+total+' pruebas pasaron'));
