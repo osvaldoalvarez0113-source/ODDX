@@ -10,7 +10,7 @@ async function abrir(b, pagina, nombre, antes) {
   pg.on('response', r => { if (/espn/.test(r.url()) && r.status() >= 400) fallas.push(r.status() + ' ' + r.url().slice(0, 120)); });
   pg._fallas = fallas;
   pg.on('pageerror', e => errs.push(e.message));
-  await pg.route(/espn\.com/, async r => { try { const h = Object.assign({}, r.request().headers()); delete h.origin; delete h.referer; h['user-agent'] = 'ova'; const resp = await r.fetch({ headers: h }); await r.fulfill({ response: resp, headers: Object.assign({}, resp.headers(), { 'access-control-allow-origin': '*' }) }); } catch (e) { await r.abort(); } });   /* desde 127.0.0.1 ESPN no manda CORS: se pasa por aquí */
+  await pg.route(/espn\.com/, async r => { try { const res = await fetch(r.request().url(), { headers: { 'user-agent': 'ova' } }); const body = Buffer.from(await res.arrayBuffer()); await r.fulfill({ status: res.status, body, headers: { 'content-type': res.headers.get('content-type') || 'application/json', 'access-control-allow-origin': '*' } }); } catch (e) { await r.abort(); } });   /* ESPN desde Node (como el robot), con CORS */
   await pg.route('**/acceso.js*', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: '' }));   /* sin el candado de códigos para probar */
   await pg.goto(BASE + pagina + (pagina.includes('?') ? '&' : '?') + 'admin-acceso', { waitUntil: 'domcontentloaded' });
   await pg.evaluate(() => { document.documentElement.style.visibility = 'visible'; const a = document.getElementById('ovaAcc'); if (a) a.remove(); });
