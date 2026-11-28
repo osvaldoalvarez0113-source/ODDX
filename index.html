@@ -246,6 +246,14 @@ footer details summary:before{content:none}
  background:currentColor;display:inline-block;flex:0 0 auto;animation:pulsopick 1.8s infinite}
 @media (prefers-reduced-motion:reduce){.pick,.pick .q::before{animation:none}}
 .pick .q{font-size:17px;font-weight:600;line-height:1.25;display:flex;align-items:center;gap:8px}
+/* 🧑 Jugadores (jugadores.js, mismo diseño que NBA/NHL/NFL) */
+.tab[data-t="j"] .estado{font-size:12.5px;color:var(--mut);margin:12px 2px}
+.tab[data-t="j"] .lineas{display:flex;flex-direction:column;gap:6px}
+.tab[data-t="j"] .linea{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--bg2);border-radius:var(--r);padding:8px 11px;font-size:12.5px}
+.tab[data-t="j"] .pick{border-left:3px solid var(--good);border-radius:0 var(--r) var(--r) 0;padding:11px 13px;margin:10px 0;font-size:13px}
+.tab[data-t="j"] .pick b{display:block;color:var(--good);font-size:14.5px;margin-bottom:2px}
+.tab[data-t="j"] .pick.no b{color:var(--mut)}
+.tab[data-t="j"] .btnChico{background:var(--bg3);color:var(--txt);border:1px solid var(--line2);border-radius:7px;padding:5px 9px;font-size:12px;cursor:pointer}
 .pick .r{font-size:12.5px;color:var(--mut);margin-top:5px;line-height:1.55}
 .pick.no{border-left-color:var(--line2);background:var(--bg2);border-color:transparent;
  padding-left:12px}
@@ -3502,7 +3510,8 @@ function pintar(el){
   if(pest){
     body.querySelectorAll('.tb').forEach(function(z){ z.classList.toggle('on', z.dataset.t===pest); });
     body.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('on', t.dataset.t===pest); });
-    if(pest==='p'){ try{ var spP=body.querySelector('.tab[data-t="p"]'); if(spP&&window.OVAMlbExtra&&window.OVAMlbExtra.paso){ spP.innerHTML=window.OVAMlbExtra.paso(el); if(window.OVAPaso) window.OVAPaso.enlazar(spP); } }catch(e){} }   /* 📐 si se repinta estando en Paso a paso */
+    if(pest==='p'){ try{ var spP=body.querySelector('.tab[data-t="p"]'); if(spP&&window.OVAMlbExtra&&window.OVAMlbExtra.paso){ spP.innerHTML=window.OVAMlbExtra.paso(el); if(window.OVAPaso) window.OVAPaso.enlazar(spP); } }catch(e){} }
+    if(pest==='j'){ try{ var sjP=body.querySelector('.tab[data-t="j"]'); if(sjP&&window.OVAMlbExtra&&window.OVAMlbExtra.jugadores){ sjP.dataset.c='1'; window.OVAMlbExtra.jugadores(el,sjP); } }catch(e){} }   /* 📐 si se repinta estando en Paso a paso */
   }
   conectar(body);
   body.querySelectorAll('input').forEach(function(i){
@@ -3891,6 +3900,7 @@ function detalle(x){
     '<button class="tb" data-t="c"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7.5v9M9.8 10h4.4M9.8 14h4.4"/></svg> Cuotas</button>'+
     '<button class="tb" data-t="n"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18M7 20v-6M12 20V5M17 20v-9"/></svg> Números</button>'+
     '<button class="tb" data-t="f"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c3 4 5 6 5 9a5 5 0 0 1-10 0c0-2 1-3.2 2.2-4.2C9.2 10 10 11 11 11c0-3-1-5 1-8z"/></svg> Forma</button>'+
+    '<button class="tb" data-t="j"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>Jugadores</button>'+
     '<button class="tb" data-t="x"><svg class="ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="10" rx="9" ry="4.6"/><path d="M3 10v6a9 4.6 0 0 0 18 0v-6"/></svg> Parque</button>'+
   '</div>'+
   '<section class="tab on" data-t="v">'+tVer+'</section>'+
@@ -3898,6 +3908,7 @@ function detalle(x){
   '<section class="tab" data-t="c">'+tCuo+'</section>'+
   '<section class="tab" data-t="n">'+tNum+'</section>'+
   '<section class="tab" data-t="f">'+tFor+'</section>'+
+  '<section class="tab" data-t="j"><div class="nota">Toca la pestaña para cargar las líneas de jugadores.</div></section>'+
   '<section class="tab" data-t="x">'+tPar+'</section>';
   return out;
 }
@@ -3961,7 +3972,8 @@ function conectar(root){
     b.addEventListener('click',function(){
       root.querySelectorAll('.tb').forEach(function(z){ z.classList.toggle('on', z===b); });
       root.querySelectorAll('.tab').forEach(function(s){ s.classList.toggle('on', s.dataset.t===b.dataset.t); });
-      if(b.dataset.t==='p'){ try{ var sp=root.querySelector('.tab[data-t="p"]'); if(sp&&juego&&window.OVAMlbExtra&&window.OVAMlbExtra.paso){ sp.innerHTML=window.OVAMlbExtra.paso(juego); if(window.OVAPaso) window.OVAPaso.enlazar(sp); } }catch(e){} }   /* 📐 Paso a paso (pasoapaso.js) */
+      if(b.dataset.t==='p'){ try{ var sp=root.querySelector('.tab[data-t="p"]'); if(sp&&juego&&window.OVAMlbExtra&&window.OVAMlbExtra.paso){ var pon=function(h){ sp.innerHTML=h; if(window.OVAPaso) window.OVAPaso.enlazar(sp); }; pon(window.OVAMlbExtra.paso(juego,pon)); } }catch(e){} }   /* 📐 Paso a paso (pasoapaso.js); se rearma cuando llegan las líneas de ESPN */
+      if(b.dataset.t==='j'){ try{ var sj=root.querySelector('.tab[data-t="j"]'); if(sj&&juego&&!sj.dataset.c&&window.OVAMlbExtra&&window.OVAMlbExtra.jugadores){ sj.dataset.c='1'; window.OVAMlbExtra.jugadores(juego,sj); } }catch(e){} }   /* 🧑 props de jugador (jugadores.js) */
       if(juego) irA(juego);
     });
   });
@@ -5075,6 +5087,7 @@ document.addEventListener('visibilitychange',function(){
      var b=buscar(p,js||[]); if(!b.G){ out.pend.push({p:p,why:b.why}); return; }
      var G=b.G;
      if(!terminado(G)){ out.pend.push({p:p,why:G.est==='Final'?'juego especial o acortado; ciérralo a mano':'el juego todavía no termina'}); return; }
+     if(/^PROP /.test(String(p.m||''))&&window.OVAMlbExtra&&window.OVAMlbExtra.resolverProp) return window.OVAMlbExtra.resolverProp(p).then(function(rr){ fin(p,G,rr); });   /* 🧑 props de jugador: boxscore de ESPN */
      var r=resolver(p,G);
      if(r.need==='box') return caja(G).then(function(){ r=resolver(p,G); return r; },function(){ return {why:'no pude bajar el detalle del juego'}; }).then(function(rr){ fin(p,G,rr); });
      fin(p,G,r);
@@ -5160,6 +5173,7 @@ document.addEventListener('visibilitychange',function(){
 <script src="observaciones.js"></script>
 <script src="analista.js"></script>
 <script src="pasoapaso.js"></script>
+<script src="jugadores.js"></script>
 <script src="liga.js"></script>
 <script src="prediccion.js"></script>
 <script src="mlbextra.js"></script>
