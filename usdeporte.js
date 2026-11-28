@@ -573,7 +573,8 @@
       if (pin.tot && pin.tot.l === tot && pin.tot.p) pMas = pin.tot.p[0];
       else if (o.toO && o.toU) { const a = impProb(o.toO), b = impProb(o.toU); if (a && b) pMas = a / (a + b); }
       return window.OVAPaso.html({ dep: DEP, nL: H.n, nV: A.n, p: mk ? mk.p : pr.pH, sinMercado: !mk, mkTxt: src,
-        cuotas: (o.mlH && o.mlA) ? { tipo: 'am', v: [o.mlH, o.mlA], nombres: [H.n, A.n] } : null, sp: sp, tot: tot, pMasTot: DEP === 'nhl' ? pMas : null,
+        cuotas: (o.mlH && o.mlA) ? { tipo: 'am', v: [o.mlH, o.mlA], casa: 'DraftKings (ESPN)', misma: !!mk && mk.src === 'espn' } : null, abre: (o.mlHo && o.mlAo && !(mk && mk.live)) ? [o.mlHo, o.mlAo] : null,
+        sp: sp, tot: tot, pMasTot: DEP === 'nhl' ? pMas : null, bajasL: g._an && g._an.bajasH ? g._an.bajasH : null, bajasV: g._an && g._an.bajasA ? g._an.bajasA : null,
         fL: F ? F.calc(GAMES, g.h, g.ts, true, DEP) : null, fV: F ? F.calc(GAMES, g.a, g.ts, false, DEP) : null });
     } catch (e) { return '<div class="nota">No se pudo armar el paso a paso de este juego.</div>'; }
   }
@@ -683,7 +684,7 @@
       body.querySelectorAll('.tb').forEach(x => x.classList.remove('on')); b.classList.add('on');
       body.querySelectorAll('.pane').forEach(x => x.classList.remove('on'));
       const pn = body.querySelector('.pane[data-p="' + b.dataset.t + '"]'); pn.classList.add('on');
-      if (b.dataset.t === 'paso' && !pn.dataset.c) { pn.dataset.c = '1'; pn.innerHTML = pasoU(g, pr, H, A); }   /* 📐 Paso a paso: pasoapaso.js */
+      if (b.dataset.t === 'paso') { pn.innerHTML = pasoU(g, pr, H, A); if (window.OVAPaso) window.OVAPaso.enlazar(pn); }   /* 📐 Paso a paso: pasoapaso.js (se rearma al tocarla: trae las bajas si ya llegaron) */
       if (b.dataset.t === 'jug' && window.OVAJugadores && !pn.dataset.c) { pn.dataset.c = '1'; window.OVAJugadores.pintar.guardar = guardarPick; window.OVAJugadores.pintar(pn, g, H, A, DEP); }   /* props de jugador: jugadores.js */
     });
     (() => {

@@ -724,7 +724,8 @@ function pasoN(g,pr,H,A){
     const mk=mkPN(g), o=g.odds||{}, F=window.OVAForma;
     const src=mk?(mk.src==='pin'?'Pinnacle, sin comisión':(mk.src==='espn'?'ESPN (DraftKings), sin comisión':(mk.live?'Polymarket, en vivo':'Polymarket'))):'';
     return window.OVAPaso.html({dep:'nba',nL:H.n,nV:A.n,p:mk?mk.p:pr.pH,sinMercado:!mk,mkTxt:src,
-      cuotas:(o.mlH&&o.mlA)?{tipo:'am',v:[o.mlH,o.mlA],nombres:[H.n,A.n]}:null,sp:isFinite(o.spread)?+o.spread:null,tot:isFinite(o.total)?+o.total:null,
+      cuotas:(o.mlH&&o.mlA)?{tipo:'am',v:[o.mlH,o.mlA],casa:'DraftKings (ESPN)',misma:!!mk&&mk.src==='espn'}:null,abre:(o.mlHo&&o.mlAo&&!(mk&&mk.live))?[o.mlHo,o.mlAo]:null,
+      sp:isFinite(o.spread)?+o.spread:null,tot:isFinite(o.total)?+o.total:null,bajasL:g._an&&g._an.bajasH?g._an.bajasH:null,bajasV:g._an&&g._an.bajasA?g._an.bajasA:null,
       fL:F?F.calc(GAMES,g.h,g.ts,true,'nba'):null,fV:F?F.calc(GAMES,g.a,g.ts,false,'nba'):null});
   }catch(e){ return '<div class="nota">No se pudo armar el paso a paso de este juego.</div>'; }
 }
@@ -856,7 +857,7 @@ function pintarCuerpo(body,g){
     body.querySelectorAll('.pane').forEach(x=>x.classList.remove('on'));
     const pn=body.querySelector('.pane[data-p="'+b.dataset.t+'"]'); pn.classList.add('on');
     if(b.dataset.t==='jug'&&window.OVAJugadores&&!pn.dataset.c){ pn.dataset.c='1'; window.OVAJugadores.pintar(pn,g,H,A); }   /* props de jugador: jugadores.js */
-    if(b.dataset.t==='paso'&&!pn.dataset.c){ pn.dataset.c='1'; pn.innerHTML=pasoN(g,pr,H,A); }   /* 📐 Paso a paso: pasoapaso.js */
+    if(b.dataset.t==='paso'){ pn.innerHTML=pasoN(g,pr,H,A); if(window.OVAPaso) window.OVAPaso.enlazar(pn); }   /* 📐 Paso a paso: pasoapaso.js (se rearma al tocarla: trae las bajas si ya llegaron) */
   });
   /* tabla de posiciones (posiciones.js): la conferencia de cada equipo, con los dos resaltados; si ESPN falla, con los juegos de la app */
   try{ if(window.OVAPosiciones){ const pe=body.querySelector('[data-pos]'); window.OVAPosiciones.pintar(pe,'nba',g.h,g.a,()=>window.OVAPosiciones.desdeJuegos(GAMES,TEAMS,seasonOf(g.ts),seasonOf)); } }catch(e){}

@@ -2219,7 +2219,9 @@ function pasoF(p, base){
     var xg = function(n){ var x = XLIVE && XLIVE.mapa ? buscarEnMapa(XLIVE.mapa, n) : null; return x && x.px >= 5 ? {f:x.xf*XLIVE.escala/x.px, c:x.xc*XLIVE.escala/x.px} : null; };
     return window.OVAPaso.html({ dep:'fut', nL:p.local, nV:p.visita, fL:fL, fV:fV, p: f || [r.pL, r.pD, r.pV], sinMercado: !f,
       mkTxt: m ? (m.src==='pred' ? 'Polymarket'+(m.vivo?' (en vivo)':'') : 'Pinnacle') : '', pMas25: (m && m.g && m.g.ou25) ? m.g.ou25[0] : null,
-      xgL: xg(p.local), xgV: xg(p.visita) });
+      xgL: xg(p.local), xgV: xg(p.visita),
+      bajasL: (p._an && p._an.bajasFav) ? (p._an.fav===p.local ? p._an.bajasFav : p._an.bajasRiv) : null,
+      bajasV: (p._an && p._an.bajasFav) ? (p._an.fav===p.local ? p._an.bajasRiv : p._an.bajasFav) : null });
   }catch(e){ return '<div class="nota">No se pudo armar el paso a paso de este partido.</div>'; }
 }
 /* mejoras.js avisa cuando llegan los lesionados de ESPN: solo los que están fuera entran a El análisis */
@@ -2381,7 +2383,7 @@ function pintarGameBody(bodyEl, p, eL, eV){
       btn.classList.add('on');
       bodyEl.querySelectorAll('.pane').forEach(function(pn){ pn.classList.remove('on'); });
       document.getElementById(id+btn.dataset.t).classList.add('on');
-      if(btn.dataset.t==='paso' && !btn._ok){ btn._ok = true; document.getElementById(id+'paso').innerHTML = pasoF(p, base); }   /* 📐 se arma al tocarla */
+      if(btn.dataset.t==='paso'){ var pnP = document.getElementById(id+'paso'); pnP.innerHTML = pasoF(p, base); if(window.OVAPaso) window.OVAPaso.enlazar(pnP); }   /* 📐 se arma cada vez que se toca (así trae las bajas si ya llegaron) */
     });
   });
 

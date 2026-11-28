@@ -230,7 +230,7 @@
       if (!window.OVAPaso) return '<div class="nota">No se pudo cargar el paso a paso.</div>';
       const k = an.k;
       return window.OVAPaso.html({ dep: 'tenis', nL: m.a.nombre, nV: m.b.nombre, p: an.pGana, sinMercado: !k, mkTxt: k ? 'Kalshi sin comisión (+5% del modelo)' : '',
-        cuotas: k && k.cA && k.cB ? { tipo: 'cent', v: [k.cA, k.cB], nombres: [m.a.nombre, m.b.nombre] } : null, bo: an.bestOf === 5 ? 5 : 3 });
+        cuotas: k && k.cA && k.cB ? { tipo: 'cent', v: [k.cA, k.cB], casa: 'Kalshi', misma: true } : null, bo: an.bestOf === 5 ? 5 : 3 });
     } catch (e) { return '<div class="nota">No se pudo armar el paso a paso de este partido.</div>'; }
   }
   function pintarCuerpo(bd, m, tab) {
@@ -240,7 +240,7 @@
     bd.querySelector('.tabs').onclick = e => { const b = e.target.closest('.tb'); if (b) pintarCuerpo(bd, m, b.dataset.t); };
     const pane = bd.querySelector('.pane');
     if (tab === 'ver') pane.innerHTML = htmlVeredicto(m, an);
-    if (tab === 'paso') pane.innerHTML = htmlPaso(m, an);   /* 📐 Paso a paso: pasoapaso.js */
+    if (tab === 'paso') { pane.innerHTML = htmlPaso(m, an); if (window.OVAPaso) window.OVAPaso.enlazar(pane); }   /* 📐 Paso a paso: pasoapaso.js */
     if (tab === 'mer') pane.innerHTML = htmlMercados(m, an);
     if (tab === 'jug') pane.innerHTML = htmlJugadores(m, an);
     const sel = pane.querySelector('.supSel');
